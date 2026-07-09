@@ -1,0 +1,91 @@
+// ==================== 思迹 全局设计系统 ====================
+// 设计风格：极简科技 + 温暖生活
+// 视觉语言：微拟物 + 玻璃拟物（Glassmorphism）
+
+// ─── AI 主色调（极简未来 — 纯黑） ───
+$ai-primary: #000000;          // 极简黑
+$ai-primary-light: #3F3F46;
+$ai-primary-dark: #18181B;
+$ai-glow: rgba(0, 0, 0, 0.06);
+
+// ─── 功能辅助色 ───
+$color-plan: #10B981;           // 计划 — 清爽绿
+$color-bill: #F59E0B;           // 记账 — 活力橙
+$color-diary: #FCD34D;          // 日记 — 温暖黄
+$color-plan-light: rgba(16, 185, 129, 0.12);
+$color-bill-light: rgba(245, 158, 11, 0.12);
+$color-diary-light: rgba(252, 211, 77, 0.15);
+
+// ─── 旧变量兼容（逐步迁移） ───
+$primary: #000000;
+$primary-light: #3F3F46;
+$primary-dark: #18181B;
+$accent: #000000;
+$accent-light: #3F3F46;
+
+// ─── 背景 / 表面（浅色模式 — Zinc 灰阶） ───
+$bg-page: #FAFAFA;             // Zinc-50 页面背景
+$bg-card: #FFFFFF;              // 纯白卡片
+$bg-input: #F4F4F5;            // 输入框背景 Zinc-100
+$bg-glass: rgba(255, 255, 255, 0.72);  // 毛玻璃白
+$bg-glass-dark: rgba(255, 255, 255, 0.08);
+
+// ─── 文字（Zinc 灰阶） ───
+$text-primary: #18181B;        // Zinc-900
+$text-secondary: #71717A;      // Zinc-500
+$text-hint: #A1A1AA;           // Zinc-400
+$text-on-ai: #FFFFFF;          // AI 色上的白字
+
+// ─── 功能色 ───
+$success: #10B981;
+$warning: #F59E0B;
+$danger: #EF4444;
+$info: #0EA5E9;
+
+// ─── 间距 ───
+$spacing-xs: 8rpx;
+$spacing-sm: 16rpx;
+$spacing-md: 24rpx;
+$spacing-lg: 32rpx;
+$spacing-xl: 48rpx;
+
+// ─── 圆角 ───
+$radius-sm: 8rpx;
+$radius-md: 16rpx;
+$radius-lg: 24rpx;
+$radius-xl: 32rpx;
+$radius-round: 50%;
+
+// ─── 阴影（微层次 — 有呼吸感） ───
+$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.10);
+$shadow-ai: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+$shadow-glow: none;
+
+// ─── 玻璃拟物（已废弃，保留兼容） ───
+$glass-border: 1rpx solid #E4E4E7;
+$glass-blur: none;
+$glass-bg: #FFFFFF;
+$glass-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.04);
+
+// ─── 渐变（极简模式 — 全部纯色，无渐变） ───
+$gradient-ai: #000000;
+$gradient-ai-deep: #000000;
+$gradient-plan: #000000;
+$gradient-bill: #000000;
+$gradient-diary: #000000;
+$gradient-mesh: #000000;
+
+// ─── 字体 ───
+$font-xs: 22rpx;
+$font-sm: 26rpx;
+$font-md: 28rpx;
+$font-lg: 32rpx;
+$font-xl: 36rpx;
+$font-xxl: 44rpx;
+
+// ─── 过渡 ───
+$transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);

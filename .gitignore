@@ -1,0 +1,19 @@
+# 构建产物
+unpackage/dist/
+unpackage/cache/
+unpackage/release/
+
+# IDE
+.hbuilderx/
+.claude/
+
+# 依赖
+node_modules/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 敏感配置（如有）
+*.local
+*.env
