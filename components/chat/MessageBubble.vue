@@ -13,6 +13,7 @@
 import { computed } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import ExecResultCard from './ExecResultCard.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const props = defineProps({
   message: { type: Object, required: true },
@@ -110,7 +111,11 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 
         <view class="bubble" :class="[message.role, { 'has-edge': edgeColor }]" :style="edgeColor ? { borderLeftColor: edgeColor } : {}">
           <text v-if="message.role === 'assistant'" class="ai-label">AI</text>
-          <text class="bubble-text" selectable="true" user-select="true">{{ message.content }}</text>
+          <image v-if="message.image" :src="message.image.base64" class="bubble-image" mode="widthFix" />
+          <!-- AI 消息使用 MarkdownRenderer 渲染富文本 -->
+          <MarkdownRenderer v-if="message.role === 'assistant'" :content="message.content" />
+          <!-- 用户消息保持纯文本 -->
+          <text v-else class="bubble-text" selectable="true" user-select="true">{{ message.content }}</text>
           <text class="bubble-time">{{ message.time }}</text>
         </view>
       </view>
@@ -246,6 +251,14 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
     margin-top: 6rpx;
     opacity: 0.4;
     text-align: right;
+  }
+
+  &-image {
+    width: 100%;
+    max-width: 300rpx;
+    border-radius: 12rpx;
+    margin-bottom: $spacing-sm;
+    display: block;
   }
 }
 

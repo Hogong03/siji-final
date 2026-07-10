@@ -136,6 +136,46 @@
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
+        },
+        {
+          "path": "relations",
+          "style": {
+            "navigationBarTitleText": "关系图谱",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "relation-detail",
+          "style": {
+            "navigationBarTitleText": "人物详情",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "decisions",
+          "style": {
+            "navigationBarTitleText": "决策日志",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "decision-detail",
+          "style": {
+            "navigationBarTitleText": "决策详情",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "simulation",
+          "style": {
+            "navigationBarTitleText": "社交沙盘",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
         }
       ]
     },

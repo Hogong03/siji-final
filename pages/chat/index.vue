@@ -6,12 +6,13 @@
  * 架构: 核心逻辑抽至 composables/useChatEngine.js，本文件只处理 UI 渲染 + 交互状态
  */
 import { ref, nextTick, onMounted, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onLoad, onHide } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
 import { AI_PROVIDERS } from '@/utils/api.js'
 import { getPlanList, getDiaryList } from '@/utils/storage.js'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import InputArea from '@/components/chat/InputArea.vue'
 import { useChatEngine } from '@/composables/useChatEngine.js'
 
@@ -22,11 +23,48 @@ const inputAreaRef = ref(null)
 // ===== 聊天核心逻辑（从 composable 引入） =====
 const {
   isSending, stopSignal, pendingAction, pendingActions, pendingReply, currentSuggestions,
+  simulationMode,
   getWelcomeMessage, handleSend: engineSend, handleStop, autoExecuteAndDisplay,
-  handleConfirmAction, handleCancelAction
+  handleConfirmAction, handleCancelAction, initSimulation
 } = useChatEngine()
 
 const editingMessage = ref(null)
+
+// ==================== 页面生命周期 ====================
+// 接收模拟演练参数（onLoad 仅首次加载时触发）
+onLoad((options) => {
+  if (options && options.simulation) {
+    // 不预先创建空对话 — initSimulation 内部会创建专用会话
+    initSimulation({
+      simulation: options.simulation,
+      mode: options.mode || 'social',
+      relation_id: options.relation_id || '',
+      name: options.name ? decodeURIComponent(options.name) : '',
+      scene: options.scene ? decodeURIComponent(options.scene) : '',
+      goal: options.goal ? decodeURIComponent(options.goal) : '',
+      resume: options.resume === '1'
+    })
+  }
+})
+
+// switchTab 跳转时通过事件传递模拟参数
+let _pendingSimParams = null
+const _simHandler = (params) => { _pendingSimParams = params }
+uni.$on('init-simulation', _simHandler)
+
+onShow(() => {
+  if (_pendingSimParams) {
+    const params = _pendingSimParams
+    _pendingSimParams = null
+    // 不预先创建空对话 — initSimulation 内部会创建专用会话
+    initSimulation(params)
+  }
+})
+
+onHide(() => {
+  // 页面隐藏时清除待处理参数
+  _pendingSimParams = null
+})
 
 // ==================== 滚动控制 ====================
 const scrollTopValue = ref(0)
@@ -76,7 +114,9 @@ function backToBottom() {
 
 onMounted(() => {
   if (store.conversations.length === 0) store.createConversation()
-  if (store.messages.length === 0) {
+  // 模拟模式下不显示欢迎语（initSimulation 已在 onLoad 中添加了开场白）
+  // 同时检查 _pendingSimParams（switchTab 跳转时 onShow 可能在 onMounted 之后才处理）
+  if (store.messages.length === 0 && !simulationMode.value && !_pendingSimParams) {
     store.addMessage({ role: 'assistant', content: getWelcomeMessage() })
   }
   const sysInfo = uni.getSystemInfoSync()
@@ -84,10 +124,22 @@ onMounted(() => {
 })
 
 /** 发送消息 — 包装 engine 的 handleSend，注入 inputAreaRef 和 scrollToBottom */
+const pendingImage = ref(null)
+
 function handleSend(text) {
   const message = text || inputText.value.trim()
   if (!message || isSending.value) return
-  engineSend(message, inputAreaRef, scrollToBottom)
+  const img = pendingImage.value
+  engineSend(message, inputAreaRef, scrollToBottom, img)
+  pendingImage.value = null
+}
+
+function onImageSelected(data) {
+  pendingImage.value = data
+}
+
+function onImageCleared() {
+  pendingImage.value = null
 }
 
 /** 点击自己消息的编辑按钮 */
@@ -101,8 +153,9 @@ function startEdit(index) { editingMessage.value = index }
 function saveEdit(formData) {
   if (editingMessage.value === null) return
   const msg = store.messages[editingMessage.value]
-  const detail = msg.execResult.detail
-  if (!detail || !formData) return
+  const execResult = msg?.execResult
+  if (!execResult?.detail || !formData) return
+  const detail = execResult.detail
   let ok = true
   if (detail.type === 'bill') {
     const month = detail.bill_date ? String(detail.bill_date).substring(0, 7) : undefined
@@ -189,6 +242,23 @@ const showConvList = ref(false)
 const showModelSwitch = ref(false)
 
 const sortedConversations = computed(() => [...store.conversations].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)))
+
+const simBannerTitle = computed(() => {
+  if (!simulationMode.value) return ''
+  const modeMap = { social: '社交沙盘', planning: '规划推演', relationship: '关系处理' }
+  const modeLabel = modeMap[simulationMode.value.mode] || '模拟演练'
+  const name = simulationMode.value.relationName || ''
+  return name ? `${modeLabel} · ${name}` : modeLabel
+})
+
+function exitSimulation() {
+  if (simulationMode.value) {
+    const prev = simulationMode.value.previousAgentId
+    simulationMode.value = null
+    if (prev && store.activeAgentId !== prev) store.setActiveAgent(prev)
+    uni.switchTab({ url: '/pages/settings/index' })
+  }
+}
 
 function toggleConvList() { showConvList.value = !showConvList.value }
 
@@ -358,12 +428,22 @@ function syncAllMessageTags() {
         </view>
         <text class="nav-subtitle">{{ store.activeAgent.name || 'AI 生活助手' }}</text>
         <view class="nav-badge" @tap="toggleAgentSwitch">
-          <text class="badge-text">{{ store.activeAgent.avatar }} {{ store.activeAgent.name }} ▾</text>
+          <AgentAvatar :name="store.activeAgent.name" size="48" />
+          <text class="badge-text">{{ store.activeAgent.name }} ▾</text>
         </view>
         <view class="nav-guide-btn" @tap="showGuideModal">
           <text class="guide-icon">?</text>
         </view>
       </view>
+    </view>
+
+    <!-- 模拟模式标识条 -->
+    <view v-if="simulationMode" class="sim-banner">
+      <view class="sim-banner-left" @tap="exitSimulation">
+        <SijiIcon name="arrow-left" size="sm" />
+        <text class="sim-banner-text">{{ simBannerTitle }} · 模拟中</text>
+      </view>
+      <text class="sim-banner-hint">说「复盘」结束</text>
     </view>
 
     <!-- 消息列表 -->
@@ -403,7 +483,7 @@ function syncAllMessageTags() {
     </view>
 
     <!-- 输入区 -->
-    <InputArea ref="inputAreaRef" v-model="inputText" :disabled="isSending" :is-sending="isSending" @send="handleSend" @stop="handleStop" />
+    <InputArea ref="inputAreaRef" v-model="inputText" :disabled="isSending" :is-sending="isSending" @send="handleSend" @stop="handleStop" @image-selected="onImageSelected" @image-cleared="onImageCleared" />
 
     <!-- AI 使用说明 Modal -->
     <view v-if="showGuide" class="modal-mask" @tap="closeGuide">
@@ -528,9 +608,12 @@ function syncAllMessageTags() {
               :class="{ active: store.activeAgentId === a.id }"
               @tap="quickSwitchAgent(a.id)"
             >
-              <view class="switch-model-info">
-                <text class="switch-model-name">{{ a.avatar }} {{ a.name }}</text>
-                <text class="switch-model-desc">{{ a.description || '自定义 Agent' }}</text>
+              <view class="switch-model-info switch-agent-info">
+                <AgentAvatar :name="a.name" size="56" />
+                <view class="switch-agent-text">
+                  <text class="switch-model-name">{{ a.name }}</text>
+                  <text class="switch-model-desc">{{ a.description || '自定义 Agent' }}</text>
+                </view>
               </view>
               <SijiIcon name="check" size="sm" class="switch-model-check" v-if="store.activeAgentId === a.id" />
             </view>
@@ -610,6 +693,16 @@ function syncAllMessageTags() {
   flex-shrink: 0;
 }
 
+.sim-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12rpx 24rpx;
+  background: var(--accent, #000000);
+  flex-shrink: 0;
+}
+.sim-banner-left { display: flex; align-items: center; gap: 8rpx; }
+.sim-banner-text { font-size: 24rpx; color: var(--bg-card, #FFFFFF); font-weight: 500; }
+.sim-banner-hint { font-size: 22rpx; color: rgba(255,255,255,0.6); }
+
 .nav-content {
   display: flex;
   align-items: center;
@@ -654,15 +747,17 @@ function syncAllMessageTags() {
   overflow: hidden;
   flex-shrink: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: var(--bg-input);
+  padding: 4rpx 16rpx 4rpx 4rpx;
+  border-radius: 24rpx;
+  border: 1rpx solid var(--border-color);
 
   .badge-text {
     font-size: $font-xs;
     color: var(--text-secondary);
-    background: var(--bg-input);
-    padding: 6rpx 20rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid var(--border-color);
-    display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -970,6 +1065,21 @@ function syncAllMessageTags() {
   }
 
   .switch-model-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rpx;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .switch-agent-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  .switch-agent-text {
     flex: 1;
     display: flex;
     flex-direction: column;

@@ -9,6 +9,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { getDiaryList, getUsedTags } from '@/utils/storage.js'
 import { useAppStore } from '@/store/index.js'
 import EmptyState from '@/components/common/EmptyState.vue'
+import VirtualList from '@/components/common/VirtualList.vue'
 
 const store = useAppStore()
 const diaries = ref([])
@@ -108,6 +109,7 @@ function tagColor(name) {
   const t = filterTags.value.find(t => t.name === name)
   return t?.color || '#000000'
 }
+const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
 </script>
 
 <template>
@@ -149,32 +151,35 @@ function tagColor(name) {
       </view>
     </scroll-view>
 
-    <!-- 日记列表 -->
-    <scroll-view class="diary-scroll" scroll-y>
-      <view v-if="loading" class="loading-hint">加载中...</view>
+    <!-- 日记列表（虚拟滚动） -->
+    <view v-if="loading" class="loading-hint">加载中...</view>
 
-      <EmptyState
-        v-else-if="diaries.length === 0"
-        icon="diary"
-        title="这个月还没有日记"
-        description="去和思迹聊聊，让 AI 帮你写一篇吧"
-      >
-        <view class="empty-btn" @tap="goNew">写日记</view>
-      </EmptyState>
+    <EmptyState
+      v-else-if="diaries.length === 0"
+      icon="diary"
+      title="这个月还没有日记"
+      description="去和思迹聊聊，让 AI 帮你写一篇吧"
+    >
+      <view class="empty-btn" @tap="goNew">写日记</view>
+    </EmptyState>
 
-      <EmptyState
-        v-else-if="filteredDiaries.length === 0"
-        icon="search"
-        title="没有匹配的日记"
-        :description="`标签「${filterTag}」下无日记`"
-      />
+    <EmptyState
+      v-else-if="filteredDiaries.length === 0"
+      icon="search"
+      title="没有匹配的日记"
+      :description="`标签「${filterTag}」下无日记`"
+    />
 
-      <view v-else class="diary-list">
-        <view
-          v-for="item in filteredDiaries" :key="item.client_id"
-          class="diary-card"
-          @tap="goDetail(item.client_id)"
-        >
+    <VirtualList
+      v-else
+      class="diary-scroll"
+      :items="filteredDiaries"
+      :item-height="DIARY_ITEM_HEIGHT"
+      :buffer="3"
+      key-field="client_id"
+    >
+      <template #default="{ item }">
+        <view class="diary-card" @tap="goDetail(item.client_id)">
           <view class="card-header">
             <text class="card-date">{{ formatDate(item.created_at) }}</text>
             <text class="card-mood">{{ moodEmojis[item.mood] || '😌' }}</text>
@@ -199,10 +204,8 @@ function tagColor(name) {
             >#{{ t }}</text>
           </view>
         </view>
-      </view>
-
-      <view style="height: 120rpx" />
-    </scroll-view>
+      </template>
+    </VirtualList>
 
     <!-- 新建浮动按钮 -->
     <view class="fab" @tap="goNew">

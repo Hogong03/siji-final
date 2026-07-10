@@ -10,9 +10,14 @@
  *  ④ AI 拆解按钮（请求 AI 拆解当前计划为子任务）
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import PlanTimeSection from '@/components/plan/PlanTimeSection.vue'
+import PlanReminderSection from '@/components/plan/PlanReminderSection.vue'
+import PlanChildPlans from '@/components/plan/PlanChildPlans.vue'
+import PlanSubtasksSection from '@/components/plan/PlanSubtasksSection.vue'
+import PlanTagPicker from '@/components/plan/PlanTagPicker.vue'
 import { ref, computed, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getPlanList, savePlan, deletePlan, getUsedTags, addCustomTag, getTags, getChildPlans } from '@/utils/storage.js'
+import { getPlanList, savePlan, deletePlan, getTags, getChildPlans } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { enqueue } from '@/utils/sync.js'
 import { useAppStore } from '@/store/index.js'
@@ -75,13 +80,9 @@ const statusOptions = [
 const statusMap = ['待开始', '进行中', '已完成']
 
 // 标签相关
-const availableTags = ref([])
 const showTagPicker = ref(false)
-const newTagInput = ref('')
-const allUsedTags = ref([])
 
 function openTagPicker() {
-  allUsedTags.value = getUsedTags('plan')
   showTagPicker.value = true
 }
 function toggleTag(tagName) {
@@ -89,24 +90,9 @@ function toggleTag(tagName) {
   if (idx >= 0) form.value.tags.splice(idx, 1)
   else form.value.tags.push(tagName)
 }
-function isTagSelected(tagName) {
-  return form.value.tags.includes(tagName)
-}
-function addNewTag() {
-  const name = newTagInput.value.trim()
-  if (!name) return
-  if (form.value.tags.includes(name)) {
-    uni.showToast({ title: '标签已存在', icon: 'none' })
-    return
-  }
+function handleAddTag(name) {
+  if (form.value.tags.includes(name)) return
   form.value.tags.push(name)
-  const newTag = addCustomTag('plan', name)
-  // 刷新可选标签列表
-  allUsedTags.value = getUsedTags('plan')
-  // 清除颜色缓存
-  delete tagColorCache[name]
-  newTagInput.value = ''
-  uni.showToast({ title: '标签已创建', icon: 'success' })
 }
 function removeTagFromPlan(tagName) {
   const idx = form.value.tags.indexOf(tagName)
@@ -346,48 +332,7 @@ function handleDelete() {
   })
 }
 
-function quickSetDue(days) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  form.value.due_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
-function quickSetEst(days) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  form.value.estimated_time = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function onDueDateChange(e) {
-  form.value.due_date = e.detail.value
-}
-
-function onDueTimeChange(e) {
-  // uni picker mode=time 返回 HH:mm，补上秒
-  form.value.due_time = e.detail.value ? e.detail.value + ':00' : ''
-}
-
-function onEstDateChange(e) {
-  form.value.estimated_time = e.detail.value
-}
-
-function onEstTimeChange(e) {
-  form.value.estimated_time_value = e.detail.value ? e.detail.value + ':00' : ''
-}
-
-/** 快捷设置：现在 */
-function quickSetEstNow() {
-  const d = new Date()
-  form.value.estimated_time = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  form.value.estimated_time_value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`
-}
-
-/** 快捷设置：今天结束 (23:59:59) */
-function quickSetDueEndOfDay() {
-  const d = new Date()
-  form.value.due_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  form.value.due_time = '23:59:59'
-}
 
 /** 跳转到子计划创建页 */
 function goAddChildPlan() {
@@ -403,13 +348,6 @@ function goChildPlan(clientId) {
 const tagColorCache = {}
 function tagColor(name) {
   if (tagColorCache[name]) return tagColorCache[name]
-  // 先从已用标签中找
-  const used = allUsedTags.value.find(t => t.name === name)
-  if (used?.color) {
-    tagColorCache[name] = used.color
-    return used.color
-  }
-  // 再从注册表找
   const registry = getTags('plan')
   const regItem = registry.find(t => t.name === name)
   if (regItem?.color) {
@@ -497,199 +435,45 @@ function tagColor(name) {
         </view>
       </view>
 
-      <!-- 预计时间 -->
-      <view class="section">
-        <text class="section-label">预计开始时间</text>
-        <view class="date-row">
-          <picker mode="date" :value="form.estimated_time" @change="onEstDateChange">
-            <input
-              v-model="form.estimated_time"
-              class="input-field"
-              type="text"
-              placeholder="选择日期（可选）"
-              disabled
-            />
-          </picker>
-          <picker mode="time" :value="form.estimated_time_value" :end="'23:59:59'" @change="onEstTimeChange">
-            <input
-              v-model="form.estimated_time_value"
-              class="input-field time-picker"
-              type="text"
-              placeholder="选择时间（可选）"
-              disabled
-            />
-          </picker>
-        </view>
-        <view class="quick-dates">
-          <text class="qd-btn" @tap="quickSetEst(0)">今天</text>
-          <text class="qd-btn" @tap="quickSetEst(1)">明天</text>
-          <text class="qd-btn" @tap="quickSetEst(3)">3天后</text>
-          <text class="qd-btn" @tap="quickSetEstNow">现在</text>
-        </view>
-      </view>
-
-      <!-- 截止日期 -->
-      <view class="section">
-        <text class="section-label">截止时间</text>
-        <view class="date-row">
-          <picker mode="date" :value="form.due_date" @change="onDueDateChange">
-            <input
-              v-model="form.due_date"
-              class="input-field"
-              type="text"
-              placeholder="选择截止日期（可选）"
-              disabled
-            />
-          </picker>
-          <picker mode="time" :value="form.due_time" :end="'23:59:59'" @change="onDueTimeChange">
-            <input
-              v-model="form.due_time"
-              class="input-field time-picker"
-              type="text"
-              placeholder="选择时间（可选）"
-              disabled
-            />
-          </picker>
-        </view>
-        <view class="quick-dates">
-          <text class="qd-btn" @tap="quickSetDue(3)">3天后</text>
-          <text class="qd-btn" @tap="quickSetDue(7)">一周后</text>
-          <text class="qd-btn" @tap="quickSetDue(30)">一月后</text>
-          <text class="qd-btn" @tap="quickSetDueEndOfDay">今天结束</text>
-        </view>
-      </view>
+      <!-- 预计时间 & 截止日期 -->
+      <PlanTimeSection
+        v-model:estimated-date="form.estimated_time"
+        v-model:estimated-time="form.estimated_time_value"
+        v-model:due-date="form.due_date"
+        v-model:due-time="form.due_time"
+      />
 
       <!-- 提醒设置 -->
-      <view class="section">
-        <view class="reminder-header">
-          <text class="section-label">提醒</text>
-          <switch :checked="reminderEnabled" @change="reminderEnabled = $event.detail.value" color="#000000" />
-        </view>
-        <template v-if="reminderEnabled">
-          <view class="reminder-options">
-            <text class="reminder-desc">基于截止时间提前提醒</text>
-            <view class="reminder-chips">
-              <view
-                v-for="opt in reminderAdvanceOptions" :key="opt.value"
-                class="reminder-chip"
-                :class="{ active: reminderAdvanceMin === opt.value && !reminderCustomDate }"
-                @tap="reminderAdvanceMin = opt.value; reminderCustomDate = ''; reminderCustomTimeValue = ''"
-              >
-                {{ opt.label }}
-              </view>
-            </view>
-            <view class="reminder-custom">
-              <text class="reminder-custom-label">或指定提醒时间</text>
-              <view class="date-row">
-                <picker mode="date" :value="reminderCustomDate" @change="reminderCustomDate = $event.detail.value">
-                  <input
-                    v-model="reminderCustomDate"
-                    class="input-field"
-                    type="text"
-                    placeholder="选择日期"
-                    disabled
-                  />
-                </picker>
-                <picker mode="time" :value="reminderCustomTimeValue" @change="reminderCustomTimeValue = $event.detail.value">
-                  <input
-                    v-model="reminderCustomTimeValue"
-                    class="input-field time-picker"
-                    type="text"
-                    placeholder="选择时间"
-                    disabled
-                  />
-                </picker>
-              </view>
-              <view v-if="reminderCustomDate" class="quick-dates">
-                <text class="qd-btn" @tap="reminderCustomDate = ''; reminderCustomTimeValue = ''">取消自定义</text>
-              </view>
-            </view>
-            <text v-if="!form.due_date && !reminderCustomDate" class="reminder-hint">请先设置截止时间或自定义提醒时间</text>
-          </view>
-        </template>
-      </view>
+      <PlanReminderSection
+        v-model:enabled="reminderEnabled"
+        v-model:advance-min="reminderAdvanceMin"
+        v-model:custom-date="reminderCustomDate"
+        v-model:custom-time-value="reminderCustomTimeValue"
+        :due-date="form.due_date"
+        :advance-options="reminderAdvanceOptions"
+      />
 
       <!-- 子计划（嵌套计划） -->
-      <view v-if="!isNew" class="section">
-        <view class="subtask-header">
-          <text class="section-label">子计划</text>
-          <view class="add-subplan-btn" @tap="goAddChildPlan">
-            <text>+ 添加子计划</text>
-          </view>
-        </view>
-        <view v-if="form.childPlans.length === 0" class="empty-subplan">
-          <text class="empty-subplan-text">暂无子计划。你可以为这个计划创建嵌套的子计划，实现更精细的管理。</text>
-        </view>
-        <view v-else class="child-plan-list">
-          <view
-            v-for="child in form.childPlans" :key="child.client_id"
-            class="child-plan-card"
-            @tap="goChildPlan(child.client_id)"
-          >
-            <view class="cp-top">
-              <view class="cp-dot" :style="{ background: priorityColors[child.priority] || '#999' }" />
-              <text class="cp-title">{{ child.title }}</text>
-              <text class="cp-status" :class="'cp-status-' + child.status">{{ statusMap[child.status] }}</text>
-            </view>
-            <view v-if="child.due_date" class="cp-due">
-              <text class="cp-due-text">截止: {{ child.due_date }}</text>
-            </view>
-            <view v-if="child.subtasks && child.subtasks.length > 0" class="cp-sub">
-              <text class="cp-sub-text">{{ child.subtasks.filter(s => s.done).length }}/{{ child.subtasks.length }} 子任务</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- AI 拆解 -->
-      <view v-if="form.ai_breakdown" class="section ai-section">
-        <view class="section-label"><SijiIcon name="sparkle" size="sm" class="section-icon" /><text>AI 拆解</text></view>
-        <text class="ai-text">{{ form.ai_breakdown }}</text>
-      </view>
+      <PlanChildPlans
+        v-if="!isNew"
+        :child-plans="form.childPlans"
+        :priority-colors="priorityColors"
+        :status-map="statusMap"
+        @go-child-plan="goChildPlan"
+        @add-child-plan="goAddChildPlan"
+      />
 
       <!-- 子任务 -->
-      <view class="section">
-        <view class="subtask-header">
-          <text class="section-label">子任务</text>
-          <view
-            class="ai-breakdown-btn"
-            :class="{ loading: aiLoading }"
-            @tap="!aiLoading && aiBreakdown()"
-          >
-            <SijiIcon name="sparkle" size="sm" class="ab-icon" />
-            <text class="ab-text">{{ aiLoading ? '拆解中...' : 'AI拆解' }}</text>
-          </view>
-        </view>
-
-        <!-- 进度条 -->
-        <view v-if="subtaskProgress" class="subtask-progress">
-          <view class="sp-bar">
-            <view class="sp-fill" :style="{ width: subtaskProgress.pct + '%' }" />
-          </view>
-          <text class="sp-text">{{ subtaskProgress.done }}/{{ subtaskProgress.total }} ({{ subtaskProgress.pct }}%)</text>
-        </view>
-
-        <!-- 子任务列表 -->
-        <view class="subtask-list">
-          <view
-            v-for="(s, i) in form.subtasks" :key="i"
-            class="subtask-item"
-            :class="{ done: s.done }"
-          >
-            <view class="si-check" @tap="toggleSubtask(i)">
-              <text class="si-check-icon">{{ s.done ? '✓' : '○' }}</text>
-            </view>
-            <input
-              v-model="s.title"
-              class="si-input"
-              placeholder="子任务内容"
-              maxlength="50"
-            />
-            <text class="si-del" @tap="removeSubtask(i)">✕</text>
-          </view>
-          <view class="add-subtask" @tap="addSubtask">+ 添加子任务</view>
-        </view>
-      </view>
+      <PlanSubtasksSection
+        :subtasks="form.subtasks"
+        :ai-loading="aiLoading"
+        :subtask-progress="subtaskProgress"
+        :ai-breakdown-text="form.ai_breakdown"
+        @toggle-subtask="toggleSubtask"
+        @remove-subtask="removeSubtask"
+        @add-subtask="addSubtask"
+        @ai-breakdown="aiBreakdown"
+      />
 
       <!-- AI 建议 -->
       <view v-if="form.ai_advice" class="section ai-section">
@@ -699,55 +483,13 @@ function tagColor(name) {
     </scroll-view>
 
     <!-- 标签选择弹窗 -->
-    <view class="tag-picker-overlay" v-if="showTagPicker" @tap.self="showTagPicker = false">
-      <view class="tag-picker">
-        <text class="tp-title">选择标签</text>
-
-        <!-- 当前计划标签 -->
-        <view class="tp-current" v-if="form.tags.length > 0">
-          <view
-            v-for="t in form.tags" :key="t"
-            class="tag-chip"
-            :style="{ background: tagColor(t) + '1a', color: tagColor(t), borderColor: tagColor(t) }"
-            @tap="removeTagFromPlan(t)"
-          >
-            <text class="tc-label">{{ t }}</text>
-            <text class="tc-close">✕</text>
-          </view>
-        </view>
-
-        <!-- 可选标签 -->
-        <view class="tp-list">
-          <view
-            v-for="t in allUsedTags" :key="t.name"
-            class="tp-item"
-            :class="{ selected: isTagSelected(t.name) }"
-            @tap="toggleTag(t.name)"
-          >
-            <text class="tp-dot" :style="{ background: t.color }">{{ isTagSelected(t.name) ? '✓' : '' }}</text>
-            <text class="tp-name">{{ t.name }}</text>
-            <text class="tp-count">{{ t.count }}</text>
-          </view>
-          <view class="tp-empty" v-if="allUsedTags.length === 0">
-            <text>暂无标签，输入下方创建</text>
-          </view>
-        </view>
-
-        <!-- 新建标签 -->
-        <view class="tp-input-row">
-          <input
-            v-model="newTagInput"
-            class="tp-input"
-            placeholder="输入新标签名..."
-            maxlength="20"
-            @confirm="addNewTag"
-          />
-          <text class="tp-add" @tap="addNewTag">创建</text>
-        </view>
-
-        <view class="tp-done" @tap="showTagPicker = false">完成</view>
-      </view>
-    </view>
+    <PlanTagPicker
+      v-model:visible="showTagPicker"
+      :selected-tags="form.tags"
+      @toggle-tag="toggleTag"
+      @add-tag="handleAddTag"
+      @remove-tag="removeTagFromPlan"
+    />
 
     <!-- 底部操作栏 -->
     <view class="bottom-bar safe-area-bottom">
@@ -770,6 +512,7 @@ function tagColor(name) {
   padding: $spacing-md;
 }
 
+/* ─── 表单基础元素（供本页 + 子组件根节点继承）─── */
 .section {
   margin-bottom: $spacing-md;
   background: $bg-card;
@@ -785,7 +528,22 @@ function tagColor(name) {
   display: block;
 }
 
-/* 优先级 */
+.input-field {
+  font-size: $font-md;
+  padding: $spacing-sm 0;
+  border-bottom: 1rpx solid rgba(0,0,0,0.06);
+  width: 100%;
+}
+
+.textarea-field {
+  font-size: $font-md;
+  min-height: 200rpx;
+  width: 100%;
+  line-height: 1.8;
+  padding: $spacing-sm 0;
+}
+
+/* ─── 优先级 ─── */
 .priority-row {
   display: flex;
   gap: $spacing-sm;
@@ -801,7 +559,7 @@ function tagColor(name) {
   transition: all $transition-fast;
 }
 
-/* 状态 */
+/* ─── 状态 ─── */
 .status-row {
   display: flex;
   gap: $spacing-sm;
@@ -825,39 +583,7 @@ function tagColor(name) {
   }
 }
 
-.input-field {
-  font-size: $font-md;
-  padding: $spacing-sm 0;
-  border-bottom: 1rpx solid rgba(0,0,0,0.06);
-  width: 100%;
-}
-
-.textarea-field {
-  font-size: $font-md;
-  min-height: 200rpx;
-  width: 100%;
-  line-height: 1.8;
-  padding: $spacing-sm 0;
-}
-
-/* 截止日期 */
-.date-row {
-  .quick-dates {
-    display: flex;
-    gap: $spacing-sm;
-    margin-top: $spacing-sm;
-
-    .qd-btn {
-      font-size: $font-xs;
-      color: $accent;
-      padding: 6rpx 20rpx;
-      background: rgba(0, 0, 0, 0.04);
-      border-radius: 20rpx;
-    }
-  }
-}
-
-/* AI 区域 */
+/* ─── AI 建议（仍在本页模板中）─── */
 .ai-section {
   background: rgba(0, 0, 0, 0.02);
   border: 1rpx solid rgba(0, 0, 0, 0.06);
@@ -870,225 +596,7 @@ function tagColor(name) {
   }
 }
 
-/* 子任务 */
-.subtask-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: $spacing-sm;
-}
-
-.ai-breakdown-btn {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 6rpx 20rpx;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 20rpx;
-
-  &.loading { opacity: 0.6; }
-
-  .ab-icon { font-size: 24rpx; }
-  .ab-text { font-size: $font-xs; color: $accent; }
-}
-
-.subtask-progress {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-}
-
-.sp-bar {
-  flex: 1;
-  height: 10rpx;
-  background: $bg-input;
-  border-radius: 5rpx;
-  overflow: hidden;
-}
-
-.sp-fill {
-  height: 100%;
-  background: var(--color-ai);
-  border-radius: 5rpx;
-  transition: width 0.3s;
-}
-
-.sp-text {
-  font-size: $font-xs;
-  color: $text-secondary;
-  font-weight: 600;
-  min-width: 120rpx;
-  text-align: right;
-}
-
-.subtask-list { display: flex; flex-direction: column; gap: $spacing-xs; }
-
-.subtask-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: 12rpx 0;
-
-  &.done {
-    .si-check-icon { color: var(--color-plan); font-weight: 700; }
-    .si-input { text-decoration: line-through; color: $text-hint; }
-  }
-}
-
-.si-check {
-  width: 48rpx; height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.si-check-icon {
-  font-size: 36rpx;
-  color: $text-hint;
-}
-
-.si-input {
-  flex: 1;
-  font-size: $font-sm;
-  padding: 8rpx 0;
-  border-bottom: 1rpx solid rgba(0, 0, 0, 0.04);
-}
-
-.si-del {
-  font-size: 24rpx;
-  color: $danger;
-  padding: 8rpx;
-  flex-shrink: 0;
-}
-
-.add-subtask {
-  font-size: $font-sm;
-  color: $accent;
-  padding: 12rpx 0;
-  text-align: center;
-  border: 2rpx dashed rgba(0, 0, 0, 0.1);
-  border-radius: $radius-sm;
-  margin-top: $spacing-xs;
-}
-
-/* 时间选择器 */
-.time-picker {
-  width: 200rpx !important;
-  text-align: center;
-  font-size: $font-sm !important;
-}
-
-/* 子计划区域 */
-.add-subplan-btn {
-  padding: 6rpx 20rpx;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 20rpx;
-  font-size: $font-xs;
-  color: $accent;
-}
-
-.empty-subplan {
-  padding: $spacing-md 0;
-  text-align: center;
-}
-
-.empty-subplan-text {
-  font-size: $font-xs;
-  color: $text-hint;
-  line-height: 1.6;
-}
-
-.child-plan-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.child-plan-card {
-  padding: $spacing-sm $spacing-md;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: $radius-sm;
-  border-left: 4rpx solid $accent;
-  transition: all $transition-fast;
-
-  &:active { transform: scale(0.98); }
-}
-
-.cp-top {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.cp-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.cp-title {
-  flex: 1;
-  font-size: $font-sm;
-  font-weight: 600;
-  color: $text-primary;
-}
-
-.cp-status {
-  font-size: 20rpx;
-  padding: 2rpx 12rpx;
-  border-radius: 16rpx;
-  font-weight: 600;
-
-  &.cp-status-0 { background: rgba(0,0,0,0.05); color: $text-secondary; }
-  &.cp-status-1 { background: rgba(0,0,0,0.06); color: $text-primary; }
-  &.cp-status-2 { background: rgba(16, 185, 129, 0.1); color: var(--color-plan); }
-}
-
-.cp-due, .cp-sub {
-  margin-top: 4rpx;
-  padding-left: 20rpx;
-}
-
-.cp-due-text, .cp-sub-text {
-  font-size: 20rpx;
-  color: $text-hint;
-}
-
-/* 底部 */
-.bottom-bar {
-  display: flex;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  background: $bg-card;
-  border-top: 1rpx solid rgba(0,0,0,0.06);
-
-  .btn-delete {
-    flex: 1;
-    text-align: center;
-    padding: 24rpx 0;
-    border-radius: $radius-md;
-    background: $bg-input;
-    color: $danger;
-    font-size: $font-md;
-    font-weight: 600;
-  }
-
-  .btn-save {
-    flex: 2;
-    text-align: center;
-    padding: 24rpx 0;
-    border-radius: $radius-md;
-    background: $accent;
-    color: var(--text-on-ai);
-    font-size: $font-md;
-    font-weight: 600;
-  }
-}
-
-/* ===== 标签系统 ===== */
+/* ─── 标签 chips（仍在本页模板中）─── */
 .tag-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1117,169 +625,34 @@ function tagColor(name) {
   color: var(--text-secondary);
 }
 
-/* 标签选择弹窗 */
-.tag-picker-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+/* ─── 底部操作栏 ─── */
+.bottom-bar {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 999;
-}
-
-.tag-picker {
-  width: 100%;
-  max-height: 70vh;
-  background: var(--bg-card);
-  border-radius: $radius-xl $radius-xl 0 0;
+  gap: $spacing-md;
   padding: $spacing-md;
-  display: flex;
-  flex-direction: column;
-  box-shadow: $shadow-lg;
-}
-
-.tp-title {
-  font-size: $font-lg;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
-  margin-bottom: $spacing-md;
-}
-
-.tp-current {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-  padding-bottom: $spacing-md;
-  border-bottom: 1rpx solid rgba(0,0,0,0.06);
-}
-
-.tp-list {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 400rpx;
-}
-
-.tp-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: 18rpx $spacing-sm;
-  border-radius: $radius-md;
-  margin-bottom: 6rpx;
-  transition: all $transition-fast;
-
-  &.selected { background: rgba(0, 0, 0, 0.04); }
-
-  .tp-dot {
-    width: 36rpx; height: 36rpx;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18rpx; color: var(--text-on-ai);
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .tp-name { flex: 1; font-size: $font-sm; color: var(--text-primary); font-weight: 500; }
-  .tp-count { font-size: $font-xs; color: var(--text-hint); }
-}
-
-.tp-empty {
-  text-align: center;
-  padding: $spacing-lg;
-  font-size: $font-sm;
-  color: var(--text-hint);
-}
-
-.tp-input-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-top: $spacing-md;
-  padding: 0 $spacing-sm;
-  padding-top: $spacing-md;
+  background: $bg-card;
   border-top: 1rpx solid rgba(0,0,0,0.06);
 
-  .tp-input {
+  .btn-delete {
     flex: 1;
-    height: 72rpx;
-    padding: 0 $spacing-md;
-    background: var(--bg-input);
+    text-align: center;
+    padding: 24rpx 0;
     border-radius: $radius-md;
-    font-size: $font-sm;
+    background: $bg-input;
+    color: $danger;
+    font-size: $font-md;
+    font-weight: 600;
   }
 
-  .tp-add {
-    font-size: $font-sm;
-    color: var(--color-ai);
-    font-weight: 700;
-    padding: 0 $spacing-sm;
-    flex-shrink: 0;
+  .btn-save {
+    flex: 2;
+    text-align: center;
+    padding: 24rpx 0;
+    border-radius: $radius-md;
+    background: $accent;
+    color: var(--text-on-ai);
+    font-size: $font-md;
+    font-weight: 600;
   }
-}
-
-.tp-done {
-  margin-top: $spacing-md;
-  padding: 24rpx 0;
-  text-align: center;
-  background: var(--color-ai);
-  border-radius: $radius-md;
-  color: var(--text-on-ai);
-  font-size: $font-md;
-  font-weight: 700;
-}
-
-/* ─── 提醒设置 ─── */
-.reminder-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.reminder-options {
-  margin-top: $spacing-sm;
-}
-.reminder-desc {
-  font-size: $font-sm;
-  color: var(--text-secondary);
-  margin-bottom: $spacing-xs;
-  display: block;
-}
-.reminder-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-.reminder-chip {
-  padding: 12rpx 28rpx;
-  border-radius: $radius-sm;
-  border: 1rpx solid var(--border-color);
-  font-size: $font-sm;
-  color: var(--text-secondary);
-  background: var(--bg-card);
-  transition: all 0.2s;
-}
-.reminder-chip.active {
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  border-color: var(--color-ai);
-}
-.reminder-custom {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1rpx solid var(--border-color);
-}
-.reminder-custom-label {
-  font-size: $font-sm;
-  color: var(--text-secondary);
-  display: block;
-  margin-bottom: $spacing-xs;
-}
-.reminder-hint {
-  font-size: $font-xs;
-  color: var(--text-hint);
-  margin-top: $spacing-xs;
-  display: block;
 }
 </style>

@@ -5,19 +5,20 @@
  *
  * 功能：
  *  ① 顶部搜索框（自动聚焦，可修改关键词重新搜索）
- *  ② 时间范围筛选（全部/近7天/近30天）
- *  ③ 类型筛选（日记/账单/计划）
- *  ④ 结果按类型分组展示，点击跳转详情
+ *  ② 筛选栏（类型 + 时间，单行紧凑）
+ *  ③ 结果按类型分组展示，点击跳转详情
  */
 import { ref, computed, onMounted } from 'vue'
 import { globalSearch } from '@/utils/storage.js'
+import { searchConversations } from '@/utils/conversation-search.js'
 import { debounce } from '@/utils/debounce.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import { useAppStore } from '@/store/index.js'
 
 const keyword = ref('')
 const searchInput = ref('')
 const results = ref([])
+const convResults = ref([])
 const loading = ref(false)
 
 // 筛选
@@ -81,6 +82,7 @@ function doSearch() {
   const kw = searchInput.value.trim()
   if (!kw) {
     results.value = []
+    convResults.value = []
     showHistory.value = true
     return
   }
@@ -98,9 +100,13 @@ function doSearch() {
       types,
       days: timeRange.value
     })
+    // 同步搜索对话内容（仅"全部"类型时）
+    convResults.value = typeFilter.value === 'all'
+      ? searchConversations(kw, { limit: 15 })
+      : []
   } catch (e) {
-    console.warn('[搜索] 失败:', e.message)
     results.value = []
+    convResults.value = []
   } finally {
     loading.value = false
   }
@@ -120,22 +126,30 @@ const groupedResults = computed(() => {
   return groups
 })
 
-const totalCount = computed(() => results.value.length)
+const totalCount = computed(() => results.value.length + convResults.value.length)
 
 const typeMeta = {
   diary: { label: '日记', iconName: 'diary', color: '#FCD34D' },
   bill: { label: '账单', iconName: 'bill', color: '#F59E0B' },
-  plan: { label: '计划', iconName: 'plan', color: '#10B981' }
+  plan: { label: '计划', iconName: 'plan', color: '#10B981' },
+  conversation: { label: '对话', iconName: 'chat-bubble', color: '#18181B' }
 }
 
 function formatTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
 function tapResult(item) {
   uni.navigateTo({ url: item.route })
+}
+
+/** 点击对话搜索结果的跳转 */
+function tapConvResult(msg) {
+  const store = useAppStore()
+  store.switchConversation(msg.convId)
+  uni.switchTab({ url: '/pages/chat/index' })
 }
 
 function switchType(type) {
@@ -151,10 +165,10 @@ function switchTime(days) {
 
 <template>
   <view class="search-page">
-    <!-- 搜索栏 -->
+    <!-- 搜索栏（紧凑） -->
     <view class="search-bar">
       <view class="search-input-wrap">
-        <SijiIcon name="search" size="sm" color="var(--text-hint)" />
+        <SijiIcon name="search" size="sm" color="#A1A1AA" />
         <input
           v-model="searchInput"
           class="search-input"
@@ -164,14 +178,12 @@ function switchTime(days) {
           @input="onInput"
           :focus="true"
         />
-        <view v-if="searchInput" class="clear-btn" @tap="searchInput = ''; doSearch()">
-          <text class="clear-icon">×</text>
-        </view>
+        <text v-if="searchInput" class="clear-icon" @tap="searchInput = ''; doSearch()">✕</text>
       </view>
       <text class="cancel-btn" @tap="uni.navigateBack()">取消</text>
     </view>
 
-    <!-- 筛选栏 -->
+    <!-- 筛选栏（单行紧凑） -->
     <view class="filter-bar" v-if="!showHistory">
       <view class="filter-group">
         <text
@@ -181,9 +193,10 @@ function switchTime(days) {
           @tap="switchType(t.v)"
         >{{ t.l }}</text>
       </view>
+      <view class="filter-divider" />
       <view class="filter-group">
         <text
-          v-for="t in [{v:0,l:'全部'},{v:7,l:'近7天'},{v:30,l:'近30天'}]"
+          v-for="t in [{v:0,l:'全部'},{v:7,l:'7天'},{v:30,l:'30天'}]"
           :key="t.v"
           class="filter-chip" :class="{ active: timeRange === t.v }"
           @tap="switchTime(t.v)"
@@ -208,19 +221,13 @@ function switchTime(days) {
 
     <!-- 空状态 -->
     <view class="empty-state" v-if="showHistory && searchHistory.length === 0">
-      <EmptyState
-        title="搜索什么？"
-        subtitle="输入关键词，同时搜索日记、账单和计划"
-        icon-name="search"
-      />
+      <text class="empty-text">输入关键词搜索</text>
     </view>
 
     <!-- 搜索结果 -->
     <scroll-view v-if="!showHistory" class="result-scroll" scroll-y>
       <!-- 结果统计 -->
-      <view class="result-summary" v-if="!loading">
-        <text class="result-count">共 {{ totalCount }} 条结果</text>
-      </view>
+      <text class="result-count" v-if="!loading && totalCount > 0">共 {{ totalCount }} 条</text>
 
       <!-- 加载中 -->
       <view class="loading-state" v-if="loading">
@@ -229,11 +236,31 @@ function switchTime(days) {
 
       <!-- 无结果 -->
       <view class="no-result" v-if="!loading && totalCount === 0">
-        <EmptyState
-          title="未找到相关内容"
-          subtitle="试试其他关键词"
-          icon-name="search"
-        />
+        <text class="no-result-text">未找到相关内容</text>
+      </view>
+
+      <!-- 对话搜索结果 -->
+      <view v-if="!loading && convResults.length > 0" class="result-group">
+        <view class="group-header">
+          <view class="group-dot" :style="{ background: typeMeta.conversation.color }" />
+          <text class="group-title">{{ typeMeta.conversation.label }}</text>
+          <text class="group-count">{{ convResults.length }}</text>
+        </view>
+        <view class="group-list">
+          <view
+            v-for="msg in convResults" :key="msg.convId + '-' + msg.messageIndex"
+            class="result-item"
+            @tap="tapConvResult(msg)"
+          >
+            <view class="item-main">
+              <view class="conv-item-top">
+                <text class="conv-role-tag" :class="msg.role">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
+                <text class="conv-source">{{ msg.convTitle }}</text>
+              </view>
+              <text class="item-preview">{{ msg.preview }}</text>
+            </view>
+          </view>
+        </view>
       </view>
 
       <!-- 按类型分组展示 -->
@@ -245,31 +272,31 @@ function switchTime(days) {
           v-if="group.length > 0"
         >
           <view class="group-header">
-            <view class="group-left">
-              <view class="group-dot" :style="{ background: typeMeta[type].color }" />
-              <text class="group-title">{{ typeMeta[type].label }}</text>
-              <text class="group-count">{{ group.length }}</text>
-            </view>
+            <view class="group-dot" :style="{ background: typeMeta[type].color }" />
+            <text class="group-title">{{ typeMeta[type].label }}</text>
+            <text class="group-count">{{ group.length }}</text>
           </view>
 
-          <view
-            v-for="item in group" :key="item.id"
-            class="result-item"
-            @tap="tapResult(item)"
-          >
-            <view class="item-main">
-              <text class="item-title">{{ item.title }}</text>
-              <text class="item-preview" v-if="item.preview">{{ item.preview }}</text>
-            </view>
-            <view class="item-meta">
-              <text class="item-extra" v-if="item.extra">{{ item.extra }}</text>
-              <text class="item-date">{{ formatTime(item.date) }}</text>
+          <view class="group-list">
+            <view
+              v-for="item in group" :key="item.id"
+              class="result-item"
+              @tap="tapResult(item)"
+            >
+              <view class="item-main">
+                <text class="item-title">{{ item.title }}</text>
+                <text class="item-preview" v-if="item.preview">{{ item.preview }}</text>
+              </view>
+              <view class="item-meta">
+                <text class="item-extra" v-if="item.extra">{{ item.extra }}</text>
+                <text class="item-date">{{ formatTime(item.date) }}</text>
+              </view>
             </view>
           </view>
         </view>
       </template>
 
-      <view style="height: 60rpx" />
+      <view style="height: 40rpx" />
     </scroll-view>
   </view>
 </template>
@@ -279,125 +306,120 @@ function switchTime(days) {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: $bg-page;
+  background: #F4F4F5;
 }
 
-/* 搜索栏 */
+/* ─── 搜索栏 ─── */
 .search-bar {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  background: $bg-card;
-  border-bottom: 1rpx solid $bg-input;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+  background: #FFFFFF;
 }
 
 .search-input-wrap {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
-  background: $bg-input;
-  border-radius: $radius-lg;
-  padding: $spacing-xs $spacing-sm;
+  gap: 12rpx;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  padding: 14rpx 20rpx;
 }
 
 .search-input {
   flex: 1;
-  font-size: $font-sm;
-  color: $text-primary;
-}
-
-.clear-btn {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  background: $text-hint;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 28rpx;
+  color: #18181B;
 }
 
 .clear-icon {
-  color: #FFFFFF;
   font-size: 24rpx;
-  line-height: 1;
+  color: #A1A1AA;
+  padding: 4rpx 8rpx;
 }
 
 .cancel-btn {
-  font-size: $font-sm;
-  color: $text-secondary;
-  padding: $spacing-xs 0;
+  font-size: 28rpx;
+  color: #71717A;
+  flex-shrink: 0;
 }
 
-/* 筛选栏 */
+/* ─── 筛选栏（单行紧凑） ─── */
 .filter-bar {
   display: flex;
-  justify-content: space-between;
-  padding: $spacing-xs $spacing-md;
-  background: $bg-card;
-  border-bottom: 1rpx solid $bg-input;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid #F4F4F5;
+  gap: 12rpx;
 }
 
 .filter-group {
   display: flex;
-  gap: $spacing-xs;
+  gap: 8rpx;
+}
+
+.filter-divider {
+  width: 1rpx;
+  height: 24rpx;
+  background: #E4E4E7;
 }
 
 .filter-chip {
-  font-size: $font-xs;
+  font-size: 24rpx;
   padding: 6rpx 20rpx;
-  border-radius: $radius-round;
-  background: $bg-input;
-  color: $text-secondary;
-  transition: all $transition-fast;
+  border-radius: 100rpx;
+  background: #F4F4F5;
+  color: #71717A;
 
   &.active {
-    background: $text-primary;
-    color: $text-on-ai;
+    background: #18181B;
+    color: #FFFFFF;
     font-weight: 600;
   }
 }
 
-/* 搜索历史 */
+/* ─── 搜索历史 ─── */
 .history-section {
-  padding: $spacing-md;
+  padding: 24rpx;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: $spacing-sm;
+  margin-bottom: 12rpx;
 }
 
 .section-title {
-  font-size: $font-sm;
-  color: $text-secondary;
+  font-size: 26rpx;
+  color: #71717A;
   font-weight: 600;
 }
 
 .clear-link {
-  font-size: $font-xs;
-  color: $text-hint;
+  font-size: 24rpx;
+  color: #A1A1AA;
 }
 
 .history-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-xs;
+  gap: 12rpx;
 }
 
 .history-tag {
-  font-size: $font-xs;
+  font-size: 24rpx;
   padding: 10rpx 24rpx;
-  border-radius: $radius-round;
-  background: $bg-card;
-  color: $text-secondary;
-  border: 1rpx solid $bg-input;
+  border-radius: 100rpx;
+  background: #FFFFFF;
+  color: #52525B;
+  border: 1rpx solid #E4E4E7;
 }
 
-/* 空状态 */
+/* ─── 空状态 ─── */
 .empty-state {
   flex: 1;
   display: flex;
@@ -405,83 +427,93 @@ function switchTime(days) {
   justify-content: center;
 }
 
-/* 结果列表 */
-.result-scroll {
-  flex: 1;
-  padding: 0 $spacing-md;
+.empty-text {
+  font-size: 28rpx;
+  color: #A1A1AA;
 }
 
-.result-summary {
-  padding: $spacing-sm 0;
+/* ─── 结果列表 ─── */
+.result-scroll {
+  flex: 1;
+  padding: 0 24rpx;
 }
 
 .result-count {
-  font-size: $font-xs;
-  color: $text-hint;
+  display: block;
+  font-size: 22rpx;
+  color: #A1A1AA;
+  padding: 12rpx 0 8rpx;
 }
 
 .loading-state {
-  padding: $spacing-xl;
+  padding: 60rpx 0;
   text-align: center;
 }
 
 .loading-text {
-  font-size: $font-sm;
-  color: $text-hint;
+  font-size: 26rpx;
+  color: #A1A1AA;
 }
 
 .no-result {
-  padding: $spacing-xl 0;
+  padding: 80rpx 0;
+  text-align: center;
 }
 
-/* 分组 */
+.no-result-text {
+  font-size: 28rpx;
+  color: #A1A1AA;
+}
+
+/* ─── 分组 ─── */
 .result-group {
-  margin-bottom: $spacing-md;
+  margin-bottom: 16rpx;
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  padding: $spacing-sm 0;
-}
-
-.group-left {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
+  gap: 8rpx;
+  padding: 12rpx 0 8rpx;
 }
 
 .group-dot {
-  width: 12rpx;
-  height: 12rpx;
+  width: 10rpx;
+  height: 10rpx;
   border-radius: 50%;
 }
 
 .group-title {
-  font-size: $font-sm;
+  font-size: 26rpx;
   font-weight: 700;
-  color: $text-primary;
+  color: #18181B;
 }
 
 .group-count {
-  font-size: $font-xs;
-  color: $text-hint;
-  background: $bg-input;
+  font-size: 22rpx;
+  color: #A1A1AA;
+  background: #F4F4F5;
   padding: 2rpx 12rpx;
-  border-radius: $radius-round;
+  border-radius: 100rpx;
 }
 
-/* 结果项 */
+/* ─── 结果项 ─── */
+.group-list {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
 .result-item {
-  background: $bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  margin-bottom: $spacing-xs;
-  box-shadow: $shadow-sm;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: $spacing-sm;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+
+  &:last-child { border-bottom: none; }
+  &:active { background: #FAFAFA; }
 }
 
 .item-main {
@@ -490,9 +522,9 @@ function switchTime(days) {
 }
 
 .item-title {
-  font-size: $font-sm;
+  font-size: 28rpx;
   font-weight: 600;
-  color: $text-primary;
+  color: #18181B;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -500,8 +532,8 @@ function switchTime(days) {
 }
 
 .item-preview {
-  font-size: $font-xs;
-  color: $text-secondary;
+  font-size: 24rpx;
+  color: #71717A;
   display: block;
   margin-top: 4rpx;
   overflow: hidden;
@@ -518,13 +550,39 @@ function switchTime(days) {
 }
 
 .item-extra {
-  font-size: $font-xs;
-  color: $text-primary;
+  font-size: 24rpx;
+  color: #18181B;
   font-weight: 600;
 }
 
 .item-date {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+/* ─── 对话搜索结果项 ─── */
+.conv-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 4rpx;
+}
+
+.conv-role-tag {
   font-size: 18rpx;
-  color: $text-hint;
+  font-weight: 600;
+  padding: 2rpx 8rpx;
+  border-radius: 4rpx;
+  flex-shrink: 0;
+
+  &.user { background: #F4F4F5; color: #71717A; }
+  &.assistant { background: #18181B; color: #FFFFFF; }
+}
+
+.conv-source {
+  font-size: 22rpx;
+  color: #A1A1AA;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

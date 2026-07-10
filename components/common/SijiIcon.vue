@@ -39,7 +39,7 @@ const ICON_NAMES = [
   'chevron-right', 'menu', 'more-h', 'eye', 'eye-off', 'heart', 'filter',
   'refresh', 'save', 'ai', 'x', 'palette', 'mail', 'book', 'smile',
   'sparkle', 'fire', 'home', 'pin', 'chat-bubble', 'voice-wave', 'music',
-  'unlock'
+  'unlock', 'briefcase', 'dumbbell', 'provider-ds', 'provider-oa', 'provider-ms', 'provider-zg', 'provider-qw'
 ]
 
 const props = defineProps({
@@ -279,6 +279,12 @@ const containerStyle = computed(() => ({
         <circle cx="8.5" cy="11" r="1.5" fill="currentColor"/>
         <circle cx="15.5" cy="11" r="1.5" fill="currentColor"/>
       </template>
+      <template v-else-if="name === 'camera'">
+        <rect x="3" y="7" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="12" cy="14.5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="12" cy="14.5" r="1.5" fill="currentColor"/>
+        <path d="M8 4.5l1.8-2.5h4.4L16 4.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      </template>
       <template v-else-if="name === 'x'">
         <path d="M18 6 6 18M6 6l12 12"/>
       </template>
@@ -320,6 +326,12 @@ const containerStyle = computed(() => ({
       <template v-else-if="name === 'chat-bubble'">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </template>
+      <template v-else-if="name === 'relation'">
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+        <line x1="17" y1="11" x2="23" y2="11"/>
+        <line x1="20" y1="8" x2="20" y2="14"/>
+      </template>
       <template v-else-if="name === 'voice-wave'">
         <path d="M11 5 6 9H2v6h4l5 4z"/>
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>
@@ -332,6 +344,40 @@ const containerStyle = computed(() => ({
       <template v-else-if="name === 'unlock'">
         <rect x="3" y="11" width="18" height="11" rx="2"/>
         <path d="M7 11V7a5 5 0 0 1 10 0"/>
+      </template>
+      <!-- ===== Agent 图标 ===== -->
+      <template v-else-if="name === 'briefcase'">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        <path d="M12 14v4M10 14h4"/>
+      </template>
+      <template v-else-if="name === 'dumbbell'">
+        <path d="M17.75 2.25a2 2 0 0 1 0 2.83l-1.78 1.78a2 2 0 0 1-2.83 0l-.65-.65-2.12 2.12.65.65a2 2 0 0 1 0 2.83l-1.78 1.78a2 2 0 0 1-2.83 0L2.25 9.75a2 2 0 0 1 0-2.83l1.78-1.78a2 2 0 0 1 2.83 0l.65.65 2.12-2.12-.65-.65a2 2 0 0 1 0-2.83L10.76 2.4a2 2 0 0 1 2.83 0z"/>
+        <path d="M7 10.5v5M17 13.5v5"/>
+        <path d="M4.5 4l16 16"/>
+      </template>
+      <!-- ===== 厂商图标（简化版品牌标识）===== -->
+      <template v-else-if="name === 'provider-ds'">
+        <rect x="4" y="4" width="16" height="16" rx="3" transform="rotate(45 12 12)"/>
+        <path d="M9.5 9.5l5 5M14.5 9.5l-5 5" opacity=".5"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      </template>
+      <template v-else-if="name === 'provider-oa'">
+        <path d="m12 2 6.5 4v8L12 18l-6.5-4V6z"/>
+        <circle cx="12" cy="10" r="2.5" fill="currentColor"/>
+      </template>
+      <template v-else-if="name === 'provider-ms'">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="16" cy="8" r="6" fill="var(--bg-card)" stroke="currentColor" stroke-width="1.5"/>
+      </template>
+      <template v-else-if="name === 'provider-zg'">
+        <rect x="4" y="4" width="16" height="16" rx="4"/>
+        <path d="M8 12h8M8 8h4M8 16h6"/>
+      </template>
+      <template v-else-if="name === 'provider-qw'">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 6a6 6 0 0 0-6 6 6 6 0 0 0 6 6 4 4 0 0 1 0-12z"/>
+        <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
       </template>
       <!-- Fallback -->
       <template v-else>

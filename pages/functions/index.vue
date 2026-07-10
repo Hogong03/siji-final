@@ -1,13 +1,21 @@
-﻿<script setup>
+<script setup>
 /**
- * 功能中心 — AI + 工具融合仪表盘
- * 玻璃拟物卡片 + 功能色编码 + AI 辅助入口
+ * 功能中心 v3 — 统一布局
+ *
+ * 搜索栏独立置顶，仅搜索功能
+ * 下方功能模块统一卡片风格，分两大分区：生活记录 + AI 助手
  */
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { useAppStore }from '@/store/index.js'
+import { useAppStore } from '@/store/index.js'
 import { getDiaryList, getBillList, getPlanList } from '@/utils/storage.js'
+import { isMemoryEnabled } from '@/utils/memory.js'
+import { getProfile, getFilledCount } from '@/utils/profile.js'
+import { getRelationsStats } from '@/utils/relations.js'
+import { getDecisionStats } from '@/utils/decisions.js'
+import { getSimulationStats } from '@/utils/simulation.js'
+import { searchConversations } from '@/utils/conversation-search.js'
 
 const store = useAppStore()
 
@@ -19,11 +27,107 @@ const dashboard = ref({
 })
 const weekTrend = ref([])
 
+// ─── AI 助手分区统计 ───
+const memoryEnabled = ref(true)
+const profileEnabled = ref(false)
+const profileFilled = ref(0)
+const relationsStats = ref({ total: 0 })
+const decisionStats = ref({ total: 0, pendingReview: 0 })
+const simStats = ref({ total: 0 })
+
+const aiAssistantEntries = computed(() => [
+  { id: 'profile', iconName: 'user', title: '我的信息', desc: profileEnabled.value ? `已开启 · ${profileFilled.value} 项` : '点击开启', route: '/pages/settings/sub/profile' },
+  { id: 'memory', iconName: 'brain', title: '记忆管理', desc: memoryEnabled.value ? '已开启' : '已关闭', route: '/pages/settings/sub/memory' },
+  { id: 'relations', iconName: 'heart', title: '关系图谱', desc: `${relationsStats.value.total} 人`, route: '/pages/settings/sub/relations' },
+  { id: 'decisions', iconName: 'target', title: '决策日志', desc: `${decisionStats.value.total} 条`, route: '/pages/settings/sub/decisions' },
+  { id: 'simulation', iconName: 'chat-bubble', title: '情景模拟', desc: simStats.value.total > 0 ? `${simStats.value.total} 次` : '对话演练', route: '/pages/settings/sub/simulation' }
+])
+
+// ─── 生活记录入口 ───
+const funcEntries = computed(() => [
+  { id: 'diary', iconName: 'diary', title: '日记', desc: `${dashboard.value.diaryCount} 篇本月`, listPage: '/pages/diary/list', newPage: '/pages/diary/detail?id=new' },
+  { id: 'bill', iconName: 'bill', title: '记账', desc: `¥${formatAmount(dashboard.value.monthExpense)} 本月`, listPage: '/pages/bill/index', newPage: '/pages/bill/edit?type=expense' },
+  { id: 'plan', iconName: 'plan', title: '计划', desc: `${dashboard.value.planActive} 个进行中`, listPage: '/pages/plan/index', newPage: '/pages/plan/templates' },
+])
+
 onMounted(() => { loadAll() })
 onShow(() => {
   loadAll()
+  loadAIStats()
 })
 function loadAll() { loadDashboard(); loadWeekTrend() }
+
+function loadAIStats() {
+  memoryEnabled.value = isMemoryEnabled()
+  const p = getProfile(); profileEnabled.value = p.enabled; profileFilled.value = getFilledCount()
+  relationsStats.value = getRelationsStats()
+  decisionStats.value = getDecisionStats()
+  simStats.value = getSimulationStats()
+}
+
+function goSub(url) { uni.navigateTo({ url }) }
+function goPage(url) { uni.navigateTo({ url }) }
+function goAI() { uni.switchTab({ url: '/pages/chat/index' }) }
+function goSearch() { uni.navigateTo({ url: '/pages/search/result' }) }
+function goStats() { uni.navigateTo({ url: '/pages/bill/stats' }) }
+
+// ─── 功能搜索 ───
+const searchKeyword = ref('')
+
+// 所有可搜索的功能入口（统一列表）
+const allFuncEntries = computed(() => [
+  ...funcEntries.value.map(e => ({ ...e, category: 'life' })),
+  ...aiAssistantEntries.value.map(e => ({ ...e, category: 'ai', route: e.route })),
+  { id: 'stats', iconName: 'trend', title: '消费分析', desc: '账单统计与趋势', category: 'life', listPage: '/pages/bill/stats' }
+])
+
+// 搜索过滤功能入口
+const filteredFuncEntries = computed(() => {
+  const kw = searchKeyword.value.trim().toLowerCase()
+  if (!kw) return []
+  return allFuncEntries.value.filter(e => {
+    return e.title.toLowerCase().includes(kw) ||
+           e.desc.toLowerCase().includes(kw) ||
+           e.id.toLowerCase().includes(kw)
+  })
+})
+
+// 搜索对话内容（AI 助手聊天记录）
+const conversationResults = computed(() => {
+  const kw = searchKeyword.value.trim()
+  if (!kw || kw.length < 1) return []
+  return searchConversations(kw, { limit: 10 })
+})
+
+function onSearchInput(e) {
+  searchKeyword.value = e.detail.value || ''
+}
+
+function onSearchConfirm() {
+  const kw = searchKeyword.value.trim()
+  if (!kw) return
+  // 有功能匹配或对话匹配时留在当前页展示
+  // 都无结果时跳转全局搜索页
+  if (filteredFuncEntries.value.length === 0 && conversationResults.value.length === 0) {
+    uni.navigateTo({ url: '/pages/search/result?keyword=' + kw })
+  }
+}
+
+function clearSearch() {
+  searchKeyword.value = ''
+}
+
+function goToEntry(entry) {
+  const url = entry.listPage || entry.route
+  if (url) goPage(url)
+}
+
+/** 跳转到指定对话 */
+function goToConversation(convId) {
+  // 切换到该会话并跳转 chat 页
+  store.switchConversation(convId)
+  uni.switchTab({ url: '/pages/chat/index' })
+}
 
 function getRecentDays(n) {
   const days = []; const now = new Date()
@@ -76,13 +180,6 @@ function loadWeekTrend() {
   }))
 }
 
-const overviewItems = computed(() => [
-  { label: '支出', value: dashboard.value.monthExpense, sub: `日均¥${dashboard.value.avgDailyExpense.toFixed(0)}`, color: '#F59E0B', isAmount: true },
-  { label: '收入', value: dashboard.value.monthIncome, sub: `结余¥${dashboard.value.balance.toFixed(0)}`, color: '#10B981', isAmount: true },
-  { label: '今日', value: dashboard.value.todayExpense, sub: dashboard.value.yesterdayExpense > 0 ? `昨¥${dashboard.value.yesterdayExpense.toFixed(0)}` : '—', color: '#EF4444', isAmount: true },
-  { label: '计划', value: dashboard.value.planCompleted, suffix: `/${dashboard.value.planTotal}`, sub: dashboard.value.planTotal > 0 ? `${Math.round(dashboard.value.planCompleted / dashboard.value.planTotal * 100)}%` : '—', color: '#18181B', isAmount: false }
-])
-
 const categoryRanking = computed(() => {
   const now = new Date()
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -98,25 +195,6 @@ const categoryRanking = computed(() => {
 const trendMax = computed(() => Math.max(...weekTrend.value.map(d => d.amount), 1))
 const weekTotal = computed(() => weekTrend.value.reduce((s, d) => s + d.amount, 0))
 
-// 功能入口 — 三大模块各用功能色
-const funcEntries = [
-  { id: 'diary', iconName: 'diary', title: '日记', stat: () => dashboard.value.diaryCount, statLabel: '本月', gradient: '#F4F4F5', color: '#18181B', listPage: '/pages/diary/list', newPage: '/pages/diary/detail?id=new' },
-  { id: 'bill', iconName: 'bill', title: '记账', stat: () => '—', statLabel: '明细', gradient: '#F4F4F5', color: '#18181B', listPage: '/pages/bill/index', newPage: '/pages/bill/edit?type=expense' },
-  { id: 'plan', iconName: 'plan', title: '计划', stat: () => dashboard.value.planActive, statLabel: '进行中', gradient: '#F4F4F5', color: '#18181B', listPage: '/pages/plan/index', newPage: '/pages/plan/templates' },
-]
-
-const quickPills = [
-  { label: '写日记', iconName: 'diary', mode: 'diary', action: () => uni.navigateTo({ url: '/pages/diary/detail?id=new' }) },
-  { label: '记笔账', iconName: 'bill', mode: 'bill', action: () => uni.navigateTo({ url: '/pages/bill/edit?type=expense' }) },
-  { label: '定计划', iconName: 'plan', mode: 'plan', action: () => uni.navigateTo({ url: '/pages/plan/templates' }) },
-  { label: '问AI', iconName: 'ai', mode: 'chat', action: () => uni.switchTab({ url: '/pages/chat/index' }) }
-]
-
-function goPage(url) { uni.navigateTo({ url }) }
-function quickChat(mode) { store.setCurrentMode(mode); uni.switchTab({ url: '/pages/chat/index' }) }
-function goStats() { uni.navigateTo({ url: '/pages/bill/stats' }) }
-function goAI() { uni.switchTab({ url: '/pages/chat/index' }) }
-
 function formatAmount(val) {
   if (val >= 10000) return (val / 10000).toFixed(1) + 'w'
   return val.toFixed(0)
@@ -129,55 +207,93 @@ function formatDateStr(date) {
 <template>
   <view class="functions-page">
     <scroll-view class="func-scroll" scroll-y @refresherrefresh="loadAll" refresher-enabled>
-      <!-- AI 玻璃头部 -->
-      <view class="hero-card">
-        <view class="hero-bg" />
-        <view class="hero-content">
-          <view class="hero-row">
-            <view>
-              <text class="hero-title">功能中心</text>
-              <text class="hero-sub">{{ dashboard.diaryCount + dashboard.planActive }} 项进行中</text>
+
+      <!-- 搜索栏（独立置顶，可搜数据+功能） -->
+      <view class="search-box">
+        <SijiIcon name="search" size="sm" color="#A1A1AA" />
+        <input
+          class="search-input"
+          v-model="searchKeyword"
+          placeholder="搜索功能、日记、账单、计划..."
+          :confirm-type="search"
+          @input="onSearchInput"
+          @confirm="onSearchConfirm"
+        />
+        <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
+      </view>
+
+      <!-- 功能搜索结果（有关键词时显示） -->
+      <view v-if="searchKeyword && filteredFuncEntries.length > 0" class="search-results">
+        <text class="section-label">功能匹配</text>
+        <view class="card-list">
+          <view
+            v-for="entry in filteredFuncEntries" :key="entry.id"
+            class="entry-card"
+            @tap="goToEntry(entry)"
+          >
+            <view class="entry-left">
+              <view class="entry-icon-circle">
+                <SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+              </view>
+              <view class="entry-info">
+                <text class="entry-title">{{ entry.title }}</text>
+                <text class="entry-desc">{{ entry.desc }}</text>
+              </view>
             </view>
-            <view class="ai-entry" @tap="goAI">
-              <view class="ai-orb" />
-              <text class="ai-entry-text">问 AI</text>
-            </view>
+            <text class="entry-arrow">›</text>
           </view>
         </view>
       </view>
 
-      <!-- 搜索入口 -->
-      <view class="search-entry" @tap="uni.navigateTo({ url: '/pages/search/result' })">
-        <SijiIcon name="search" size="sm" color="var(--text-hint)" />
-        <text class="search-placeholder">搜索日记、账单、计划...</text>
-      </view>
-
-      <!-- 概览横排 — 玻璃卡片 -->
-      <view class="overview-bar glass-card">
-        <view v-for="item in overviewItems" :key="item.label" class="ov-item">
-          <text class="ov-value" :style="{ color: item.color }">
-            {{ item.isAmount ? '¥' + formatAmount(item.value) : item.value + (item.suffix || '') }}
-          </text>
-          <text class="ov-label">{{ item.label }}</text>
-          <text class="ov-sub">{{ item.sub }}</text>
+      <!-- 对话搜索结果（有关键词时显示） -->
+      <view v-if="searchKeyword && conversationResults.length > 0" class="search-results">
+        <text class="section-label">对话内容 · {{ conversationResults.length }} 条</text>
+        <view class="card-list">
+          <view
+            v-for="msg in conversationResults" :key="msg.convId + '-' + msg.messageIndex"
+            class="conv-result-card"
+            @tap="goToConversation(msg.convId)"
+          >
+            <view class="conv-result-top">
+              <text class="conv-role-tag" :class="msg.role">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
+              <text class="conv-title">{{ msg.convTitle }}</text>
+              <SijiIcon name="chevron-right" size="sm" class="conv-arrow" />
+            </view>
+            <text class="conv-preview">{{ msg.preview }}</text>
+          </view>
         </view>
       </view>
 
-      <!-- 快捷操作 — pill 胶囊 -->
-      <view class="pill-row">
-        <view v-for="p in quickPills" :key="p.mode" class="pill-btn" @tap="p.action()">
-          <SijiIcon :name="p.iconName" size="sm" color="var(--text-primary)" />
-          <text class="pill-text">{{ p.label }}</text>
+      <!-- 生活记录分区 -->
+      <text class="section-label">生活记录</text>
+      <view class="card-list">
+        <view
+          v-for="card in funcEntries" :key="card.id"
+          class="entry-card"
+          @tap="goPage(card.listPage)"
+        >
+          <view class="entry-left">
+            <view class="entry-icon-circle">
+              <SijiIcon :name="card.iconName" size="md" color="#18181B" />
+            </view>
+            <view class="entry-info">
+              <text class="entry-title">{{ card.title }}</text>
+              <text class="entry-desc">{{ card.desc }}</text>
+            </view>
+          </view>
+          <view class="entry-right">
+            <view class="entry-new-btn" @tap.stop="goPage(card.newPage)">
+              <text class="entry-new-text">+</text>
+            </view>
+            <text class="entry-arrow">›</text>
+          </view>
         </view>
       </view>
 
-      <!-- 消费分析 — 玻璃合并卡 -->
-      <view class="analysis-card glass-card" v-if="categoryRanking.length > 0 || weekTrend.length > 0">
+      <!-- 消费分析 -->
+      <view class="analysis-card" v-if="categoryRanking.length > 0 || weekTrend.length > 0">
         <view class="ac-header">
-          <view class="ac-title-row">
-            <SijiIcon name="trend" size="sm" color="var(--text-primary)" />
-            <text class="ac-title">消费分析</text>
-          </view>
+          <text class="ac-title">消费分析</text>
           <text class="ac-link" @tap="goStats">详细 →</text>
         </view>
 
@@ -214,17 +330,24 @@ function formatDateStr(date) {
         </view>
       </view>
 
-      <!-- 功能入口 — 渐变卡片 -->
-      <view class="func-row">
-        <view v-for="card in funcEntries" :key="card.id" class="func-entry" @tap="goPage(card.listPage)">
-          <view class="fe-icon-circle" :style="{ background: card.gradient }">
-            <SijiIcon :name="card.iconName" size="md" :color="card.color" />
+      <!-- AI 助手分区 -->
+      <text class="section-label">AI 助手</text>
+      <view class="card-list">
+        <view
+          v-for="entry in aiAssistantEntries" :key="entry.id"
+          class="entry-card"
+          @tap="goSub(entry.route)"
+        >
+          <view class="entry-left">
+            <view class="entry-icon-circle">
+              <SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+            </view>
+            <view class="entry-info">
+              <text class="entry-title">{{ entry.title }}</text>
+              <text class="entry-desc">{{ entry.desc }}</text>
+            </view>
           </view>
-          <text class="fe-title">{{ card.title }}</text>
-          <text class="fe-stat" :style="{ color: card.color }">{{ card.stat() }} {{ card.statLabel }}</text>
-          <view class="fe-new-btn" :style="{ background: card.color }" @tap.stop="goPage(card.newPage)">
-            <text class="fe-new-text">+ 新建</text>
-          </view>
+          <text class="entry-arrow">›</text>
         </view>
       </view>
 
@@ -236,205 +359,187 @@ function formatDateStr(date) {
 <style lang="scss" scoped>
 .functions-page {
   height: 100vh;
-  background: var(--bg-page);
+  background: #F4F4F5;
   overflow: hidden;
 }
 
 .func-scroll {
   height: 100%;
-  padding: $spacing-sm $spacing-md;
+  padding: 24rpx;
   box-sizing: border-box;
 }
 
-/* AI Hero 卡片 */
-.hero-card {
-  position: relative;
-  border-radius: $radius-md;
-  overflow: hidden;
-  margin-bottom: $spacing-sm;
-  box-sizing: border-box;
-  box-shadow: $shadow-sm;
-}
-
-.hero-bg {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: var(--color-ai);
-}
-
-.hero-content {
-  position: relative;
-  padding: $spacing-md $spacing-lg;
-  box-sizing: border-box;
-}
-
-.hero-row {
+/* ─── 搜索栏（独立置顶） ─── */
+.search-box {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: $spacing-sm;
-  overflow: hidden;
+  gap: 12rpx;
+  padding: 20rpx 24rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
-.hero-title {
-  font-size: $font-xl;
-  font-weight: 800;
-  color: var(--text-on-ai);
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #18181B;
+  background: transparent;
 }
 
-.hero-sub {
-  font-size: $font-xs;
-  color: rgba(255, 255, 255, 0.7);
-  display: block;
-  margin-top: 4rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ai-entry {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  background: rgba(255, 255, 255, 0.18);
-  padding: 12rpx 24rpx;
-  border-radius: $radius-md;
-  border: 1rpx solid rgba(255, 255, 255, 0.2);
-  transition: transform $transition-fast;
-  flex-shrink: 0;
-  box-sizing: border-box;
-
-  &:active { transform: scale(0.95); }
-}
-
-.ai-orb {
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 50%;
-  background: var(--bg-card);
-}
-
-.ai-entry-text {
-  font-size: $font-sm;
-  color: var(--text-on-ai);
-  font-weight: 600;
-}
-
-/* 搜索入口 */
-.search-entry {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  margin: 0 $spacing-sm $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  background: $bg-card;
-  border-radius: $radius-lg;
-  box-shadow: $shadow-sm;
+.search-clear {
+  font-size: 28rpx;
+  color: #A1A1AA;
+  padding: 4rpx 8rpx;
 }
 
 .search-placeholder {
-  font-size: $font-sm;
-  color: $text-hint;
+  font-size: 28rpx;
+  color: #A1A1AA;
 }
 
-/* 概览横排 — 玻璃 */
-.overview-bar {
+.search-results {
+  margin-bottom: 16rpx;
+}
+
+/* ─── 分区标签 ─── */
+.section-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #A1A1AA;
+  letter-spacing: 2rpx;
+  margin: 16rpx 0 12rpx 8rpx;
+}
+
+/* ─── 统一卡片列表 ─── */
+.card-list {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.entry-card {
   display: flex;
-  padding: $spacing-sm 0;
-  margin-bottom: $spacing-sm;
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
-  border-radius: $radius-md;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 24rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+  gap: 16rpx;
   box-sizing: border-box;
-  overflow: hidden;
+
+  &:last-child { border-bottom: none; }
+  &:active { background: #FAFAFA; }
 }
 
-.ov-item {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-
-  &:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 20%;
-    height: 60%;
-    width: 1rpx;
-    background: var(--border-color);
-  }
-
-  .ov-value { font-size: $font-lg; font-weight: 800; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ov-label { font-size: 20rpx; color: var(--text-secondary); display: block; margin-top: 2rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ov-sub { font-size: 18rpx; color: var(--text-hint); display: block; margin-top: 2rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-}
-
-/* 快捷 pill */
-.pill-row {
+.entry-left {
   display: flex;
-  gap: $spacing-xs;
-  margin-bottom: $spacing-sm;
-  overflow: hidden;
-}
-
-.pill-btn {
+  align-items: center;
+  gap: 20rpx;
   flex: 1;
   min-width: 0;
+}
+
+.entry-icon-circle {
+  width: 72rpx;
+  height: 72rpx;
+  min-width: 72rpx;
+  border-radius: 50%;
+  background: #F4F4F5;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6rpx;
-  padding: 14rpx 0;
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
-  transition: transform $transition-fast;
   box-sizing: border-box;
-  overflow: hidden;
-  box-shadow: $shadow-sm;
-
-  &:active { transform: scale(0.95); }
-  .pill-icon { font-size: $font-md; flex-shrink: 0; }
-  .pill-text { font-size: $font-xs; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
-/* 分析卡 — 玻璃 */
-.analysis-card {
-  padding: $spacing-sm $spacing-md;
-  margin-bottom: $spacing-sm;
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
-  border-radius: $radius-md;
-  box-sizing: border-box;
+.entry-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.entry-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #18181B;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-desc {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+.entry-new-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #18181B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.entry-new-text {
+  font-size: 36rpx;
+  font-weight: 400;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.entry-arrow {
+  font-size: 36rpx;
+  color: #D4D4D8;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* ─── 消费分析 ─── */
+.analysis-card {
+  padding: 28rpx 24rpx;
+  margin-bottom: 16rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
 }
 
 .ac-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: $spacing-xs;
-  gap: $spacing-sm;
-  overflow: hidden;
+  padding-bottom: 16rpx;
+  gap: 16rpx;
 
-  .ac-title { font-size: $font-sm; font-weight: 700; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ac-link { font-size: $font-xs; color: var(--color-ai); flex-shrink: 0; white-space: nowrap; }
+  .ac-title { font-size: 28rpx; font-weight: 700; color: #18181B; }
+  .ac-link { font-size: 24rpx; color: #000000; font-weight: 500; }
 }
 
 .trend-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: $spacing-xs;
-  gap: $spacing-xs;
-  overflow: hidden;
-  .trend-label { font-size: 20rpx; color: var(--text-hint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .trend-total { font-size: $font-xs; color: $color-bill; font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+  margin-bottom: 12rpx;
+  gap: 12rpx;
+  .trend-label { font-size: 22rpx; color: #A1A1AA; }
+  .trend-total { font-size: 26rpx; color: #18181B; font-weight: 600; }
 }
 
 .trend-chart {
@@ -442,23 +547,19 @@ function formatDateStr(date) {
   justify-content: space-between;
   align-items: flex-end;
   height: 120rpx;
-  overflow: hidden;
 }
 
 .trend-col {
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4rpx;
-  overflow: hidden;
 }
 
 .trend-bar-bg {
   flex: 1;
   width: 24rpx;
-  max-width: 24rpx;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -471,92 +572,92 @@ function formatDateStr(date) {
   transition: height 0.3s ease;
 }
 
-.trend-day { font-size: 16rpx; color: var(--text-hint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.trend-day { font-size: 18rpx; color: #A1A1AA; }
 
 .ac-divider {
   height: 1rpx;
-  background: var(--border-color);
-  margin: $spacing-xs 0;
+  background: #F4F4F5;
+  margin: 16rpx 0;
 }
 
-.rank-section { padding-top: $spacing-xs; }
+.rank-section { padding-top: 4rpx; }
 
 .rank-title {
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #71717A;
   display: block;
-  margin-bottom: $spacing-xs;
+  margin-bottom: 12rpx;
 }
 
 .rank-row {
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
-  padding: 4rpx 0;
-  overflow: hidden;
+  gap: 12rpx;
+  padding: 6rpx 0;
 
-  .rank-name { width: 80rpx; min-width: 80rpx; font-size: $font-xs; color: var(--text-secondary); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank-bar-wrap { flex: 1; min-width: 0; height: 10rpx; background: var(--bg-input); border-radius: 5rpx; overflow: hidden; }
-  .rank-bar { height: 100%; background: var(--color-ai); border-radius: 5rpx; transition: width 0.3s ease; }
-  .rank-amount { font-size: $font-xs; font-weight: 600; color: var(--text-primary); width: 80rpx; min-width: 80rpx; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rank-pct { font-size: 18rpx; color: var(--text-hint); width: 50rpx; min-width: 50rpx; text-align: right; flex-shrink: 0; }
+  .rank-name { width: 80rpx; min-width: 80rpx; font-size: 24rpx; color: #71717A; flex-shrink: 0; }
+  .rank-bar-wrap { flex: 1; min-width: 0; height: 10rpx; background: #F4F4F5; border-radius: 5rpx; overflow: hidden; }
+  .rank-bar { height: 100%; background: #000000; border-radius: 5rpx; transition: width 0.3s ease; }
+  .rank-amount { font-size: 24rpx; font-weight: 600; color: #18181B; width: 80rpx; min-width: 80rpx; text-align: right; flex-shrink: 0; }
+  .rank-pct { font-size: 20rpx; color: #A1A1AA; width: 50rpx; min-width: 50rpx; text-align: right; flex-shrink: 0; }
 }
 
-/* 功能入口 — 渐变圆图标 */
-.func-row {
-  display: flex;
-  gap: $spacing-sm;
-  overflow: hidden;
-}
-
-.func-entry {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  padding: $spacing-sm $spacing-xs;
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
+/* ─── 对话搜索结果 ─── */
+.conv-result-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6rpx;
-  transition: transform $transition-fast;
+  gap: 8rpx;
+  padding: 24rpx 24rpx;
+  border-bottom: 1rpx solid #F4F4F5;
   box-sizing: border-box;
-  overflow: hidden;
 
-  &:active { transform: scale(0.96); }
+  &:last-child { border-bottom: none; }
+  &:active { background: #FAFAFA; }
 }
 
-.fe-icon-circle {
-  width: 80rpx;
-  height: 80rpx;
-  min-width: 80rpx;
-  border-radius: 50%;
+.conv-result-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 4rpx;
-  box-sizing: border-box;
+  gap: 10rpx;
 }
 
-.fe-icon { font-size: 40rpx; }
-.fe-title { font-size: $font-sm; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.fe-stat { font-size: 18rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-
-.fe-new-btn {
-  padding: 6rpx 20rpx;
-  border-radius: $radius-md;
-  margin-top: 4rpx;
-  box-sizing: border-box;
+.conv-role-tag {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
   flex-shrink: 0;
 
-  .fe-new-text {
-    font-size: $font-xs;
-    font-weight: 600;
-    color: var(--text-on-ai);
-    white-space: nowrap;
-  }
+  &.user { background: #F4F4F5; color: #71717A; }
+  &.assistant { background: #18181B; color: #FFFFFF; }
 }
+
+.conv-title {
+  flex: 1;
+  font-size: 26rpx;
+  color: #18181B;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.conv-arrow {
+  flex-shrink: 0;
+  color: #D4D4D8;
+}
+
+.conv-preview {
+  font-size: 24rpx;
+  color: #71717A;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── AI 对话入口（已移除） ─── */
 </style>

@@ -7,6 +7,7 @@
  */
 
 import { useAppStore } from '@/store/index.js'
+import AgentAvatar from '@/components/common/AgentAvatar.vue'
 
 const store = useAppStore()
 
@@ -189,7 +190,7 @@ function handleActivate(agent) {
         @tap="handleActivate(agent)"
         @longpress="goEdit(agent)"
       >
-        <view class="agent-avatar">{{ agent.avatar }}</view>
+        <AgentAvatar :name="agent.name" :size="72" />
         <view class="agent-info">
           <text class="agent-name">{{ agent.name }}</text>
           <text class="agent-desc">{{ agent.description || '暂无描述' }}</text>
@@ -215,7 +216,7 @@ function handleActivate(agent) {
           class="template-card"
           @tap="goAddFromTemplate(tpl)"
         >
-          <view class="template-avatar">{{ tpl.avatar }}</view>
+          <AgentAvatar :name="tpl.name" :size="72" />
           <text class="template-name">{{ tpl.name }}</text>
           <text class="template-desc">{{ tpl.description }}</text>
         </view>

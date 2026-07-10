@@ -167,11 +167,8 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
     { re: /我在(.{2,15})(工作|上班|上学|读书)/g, cat: 'fact' },
     { re: /我(是|在做)(.{2,15})工作/g, cat: 'fact' },
     { re: /我(住|搬)在?(.{2,15})/g, cat: 'fact' },
-    // 新增：饮食/健康偏好
     { re: /(不吃|不能吃|对.{1,6}过敏)(.{2,15})/g, cat: 'preference' },
-    // 新增：作息习惯
     { re: /(早上|晚上|每天)(.{1,5})(起床|睡觉|跑步|锻炼|冥想)/g, cat: 'preference' },
-    // 新增：数字偏好
     { re: /预算(是|大概|大约)?(\d{2,6})/g, cat: 'fact' },
   ]
   prefPatterns.forEach(({ re, cat }) => {
@@ -213,6 +210,28 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
       })
     }
   })
+
+  // === 规则 4：AI 回复中的人称/关系信息 ===
+  // AI 回复常包含人物总结和关系分析，直接用于关系图谱和记忆
+  if (aiReply && aiReply.length > 20) {
+    // 人物提及 — 匹配「人物名（关系/角色）」模式
+    const nameRelPattern = /([\u4e00-\u9fa5]{1,4})[（(]([^)）]{1,12})[)）]/g
+    let match
+    while ((match = nameRelPattern.exec(aiReply)) !== null) {
+      const text = `人际关系：${match[1]} (${match[2]})`
+      if (!existingContents.has(text)) {
+        memories.push({ content: text, category: 'fact' })
+      }
+    }
+    // 性格描述
+    const traitPattern = /(性格|特质|特点是|倾向于)(.{3,20})/g
+    while ((match = traitPattern.exec(aiReply)) !== null) {
+      const text = match[0].trim()
+      if (text.length >= 5 && text.length <= 30 && !existingContents.has(text)) {
+        memories.push({ content: text, category: 'fact' })
+      }
+    }
+  }
 
   // 去重并保存
   const existing = getAllMemories()

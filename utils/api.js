@@ -2,8 +2,16 @@
  * API 错误分类 — 统一错误处理
  */
 import { buildMemoryContext } from '@/utils/memory.js'
+import { buildRelationsContext, detectMentionedRelations, getRelationById, getAllRelations } from '@/utils/relations.js'
+import { buildDecisionsContext, getAllDecisions } from '@/utils/decisions.js'
 import { logger } from './logger.js'
 import { buildProfileContext } from '@/utils/profile.js'
+import { buildVisionMessage } from '@/utils/image.js'
+import {
+  AI_PROVIDERS, getProvider, getProviderModels, getProviderDefaultModel,
+  getProviderVisionModel, supportsVision, getProviderKeys,
+  getDefaultConfig, buildProviderRequest
+} from './ai/providers.js'
 export class ApiError extends Error {
   constructor(message, type, statusCode, retryable) {
     super(message);
@@ -89,6 +97,7 @@ export function chatRequest(message, contextType, conversationId, config, histor
   const cfg = typeof config === 'string'
     ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
     : (config || getDefaultConfig())
+  
   return chatRequestWithRetry(message, conversationId, cfg, 0, history)
 }
 
@@ -130,6 +139,11 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
           }
 
           resolve(parsed)
+          
+          // === 缓存成功的简短回复 ===
+          if (parsed.reply && !parsed.reply.includes('走神了')) {
+            cacheAiResponse(message, parsed.reply)
+          }
         } else {
           const errMsg = res.data?.error?.message || res.data?.message || `HTTP ${res.statusCode}`
           logger.error(`[${providerName} API Error]`, res.statusCode, JSON.stringify(res.data))
@@ -233,6 +247,10 @@ function chatRequestWithRetryNoFormat(message, conversationId, cfg, history) {
  * 尝试从用户消息中提取简单意图，否则返回友好提示
  */
 function fallbackResponse(userMessage, errorDetail) {
+  // === 优先检查缓存 ===
+  const cached = getOfflineCacheReply(userMessage)
+  if (cached) return { ...cached, action: null, actions: [], conversation_id: '', error: errorDetail }
+
   // 尝试简单意图匹配（不依赖 AI）
   const msg = userMessage.toLowerCase()
 
@@ -341,7 +359,39 @@ function buildChatMessages(userMessage, history, cfg) {
     system += memoryContext
   }
 
+  // 注入关系图谱上下文
+  const relationsCtx = buildRelationsContext()
+  if (relationsCtx) {
+    system += relationsCtx
+  }
+
+  // 注入进行中的决策
+  const decisionsCtx = buildDecisionsContext()
+  if (decisionsCtx) {
+    system += decisionsCtx
+  }
+
+  // 检测用户消息中是否提到已知人物，注入该人物的详细信息
+  const mentioned = detectMentionedRelations(userMessage)
+  if (mentioned && mentioned.length > 0) {
+    const detailLines = mentioned.map(r => {
+      const parts = [`「${r.name}」(${r.role})`]
+      if (r.context) parts.push(`场景: ${r.context}`)
+      if (r.traits?.length) parts.push(`性格: ${r.traits.join('、')}`)
+      if (r.preferences?.length) parts.push(`偏好: ${r.preferences.join('、')}`)
+      if (r.notes) parts.push(`备注: ${r.notes}`)
+      parts.push(`亲密度: ${r.relationship_score}/10`)
+      return parts.join(' | ')
+    })
+    system += `\n\n---\n用户提到的已收录人物：\n${detailLines.join('\n')}`
+  }
+
   const messages = [{ role: 'system', content: system }]
+
+  // === 图片识别：注入图片分析指令 ===
+  if (cfg && cfg.image) {
+    messages[0].content += `\n\n## 图片识别模式\n用户上传了微信/聊天截图。你的任务是：\n1. 识别截图中的对话内容、时间、参与人\n2. 分析其中的关键信息（记账/日记/计划相关）\n3. 执行相应操作（create_diary/create_bill/create_plan/create_relation/log_interaction）\n4. reply 中简要说明你提取到了什么、做了什么\n5. 如果截图内容与记录无关，正常回复即可`
+  }
 
   // ===== 对话摘要压缩：有摘要时用摘要替换早期消息 =====
   const convSummary = cfg && cfg.convSummary ? cfg.convSummary : null
@@ -373,7 +423,13 @@ function buildChatMessages(userMessage, history, cfg) {
     truncated.forEach(msg => messages.push(msg))
   }
 
-  messages.push({ role: 'user', content: userMessage })
+  // === 当前消息（支持图片）===
+  if (cfg && cfg.image) {
+    const content = buildVisionMessage(userMessage, cfg.image, cfg.provider)
+    messages.push({ role: 'user', content })
+  } else {
+    messages.push({ role: 'user', content: userMessage })
+  }
   return messages
 }
 
@@ -526,24 +582,16 @@ function buildSystemPrompt() {
   const hour = now.getHours()
   const greeting = hour < 6 ? '深夜了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : hour < 22 ? '晚上好' : '夜深了'
 
-  const basePrompt = `你是「思迹」，一个温暖简洁的个人生活助手。用户可以跟你聊天、记账、写日记、做计划。
+  // === 动态检测扩展功能是否有数据 ===
+  let hasRelations = false, hasDecisions = false, hasSimulations = false
+  try {
+    hasRelations = JSON.parse(uni.getStorageSync('siji_relations') || '[]').filter(r => r.is_deleted !== 1).length > 0
+    hasDecisions = JSON.parse(uni.getStorageSync('siji_decisions') || '[]').filter(d => d.is_deleted !== 1).length > 0
+    hasSimulations = JSON.parse(uni.getStorageSync('siji_simulations') || '[]').filter(s => s.is_deleted !== 1).length > 0
+  } catch { /* ignore */ }
 
-当前时间：${todayStr} 星期${weekDay} ${timeStr}（昨天 ${yesterdayStr}）
-
-## 输出格式（严格遵守）
-纯 JSON，无 markdown 包裹，无 <think> 标签：
-{"reply": "回复内容", "action": {"type": "...", "payload": {}, "needConfirm": false}}
-多意图用 actions 数组：{"reply": "...", "actions": [...]}
-
-## 核心铁律
-1. reply 必须存在，闲聊用 type:"none"
-2. **reply 中说"已记录/已更新/已帮你"等操作词 → action/actions 必须非空**，禁止空谈
-3. **禁止在 reply 中写 [执行结果: xxx]**，系统会自动生成
-4. 回复简洁：操作类一句话，闲聊 1-3 句
-
-## action 类型（仅提供 payload 关键字段）
-
-日记：
+  // === 核心 action（始终注入）===
+  const coreActions = `日记：
 - create_diary: {title, content(≥30字第一人称), mood(开心/平静/难过/焦虑/愤怒/满足/疲惫/兴奋), tags:[]}
 - update_diary: {client_id, title?, content?, mood?}
 - delete_diary: {client_id} needConfirm=true
@@ -566,31 +614,53 @@ function buildSystemPrompt() {
 
 个人信息：
 - smart_update_profile: {updates:[{card,field,value}], remove:[{card,field,value}], createCard:[{id,title,icon}]}
-  固定卡片: basic(昵称/性别/生日/职业/所在地/自我介绍), lifestyle(预算/作息/爱好/饮食)
-  自定义卡片存 MBTI/血型/星座等；标量覆盖，数组追加去重
 - update_profile: {nickname?, gender?, birthday?, occupation?, location?, bio?, budget?, sleepTime?, hobbies:[], dietary:[], custom:[]}
 - get_profile: {}
 - clear_profile: {card?, field?} needConfirm=true
 - toggle_profile: {enabled:bool}
 
 通用：
-- undo_last: {}
+- undo_last: {}`
 
-## needConfirm
-- 金额≥500、所有 delete_* → true
-- update_* → false（用户可撤销）
+  // === 扩展 action（仅在相关数据存在时注入）===
+  const extActions = []
+  if (hasRelations) {
+    extActions.push(`关系图谱：
+- create_relation: {name, role(家人/朋友/同事/领导/伴侣/其他), context?, traits:[], preferences:[], notes?, relationship_score:1-10, tags:[]}
+- update_relation: {id, name?, role?, context?, traits?, preferences?, notes?, relationship_score?, tags?}
+- delete_relation: {id} needConfirm=true
+- query_relation: {keyword?}
+- log_interaction: {relation_id, scene, content, result?, emotion?}
+- query_interaction: {relation_id}`)
+  }
+  if (hasDecisions) {
+    extActions.push(`决策日志：
+- create_decision: {title, category(职业/感情/财务/生活/其他), status:"thinking", deadline?, options:[{name,pros:[],cons:[],weight:1-10}], stakeholders:[], factors:[]}
+- update_decision: {id, title?, category?, status?(thinking/decided/acted/abandoned), decision?, reasoning?, deadline?}
+- review_decision: {id, review_notes, outcome?}
+- query_decision: {status?, category?}
+- analyze_decisions: {}`)
+  }
+  if (hasSimulations) {
+    extActions.push(`情景模拟：
+- start_simulation: {mode?:"social"|"planning"|"relationship", relation_id?, relation_name?, scene, goal}
+- end_simulation: {conversation_id}`)
+  }
 
-## client_id 获取
-执行结果中 [执行结果: ... ID=xxx] 即为 client_id。上下文有 ID 直接使用，无 ID 则先 query 再操作。
+  // === 行为准则（动态）===
+  const behaviorRules = [
+    '用户透露个人信息 → 主动 smart_update_profile',
+    '用户说"改/删除/撤销" → 对应 update_*/delete_*/undo_last，不确定目标时先 query',
+    '创建计划必须含 subtasks(3-8个) + description，尽量填 deadline',
+    '日记 content 整理为用户原话的完整段落',
+    '修改操作理解错别字（如"心别"="性别"）',
+    '消息开头标记如 [¥记账] 必须按标记执行'
+  ]
+  if (hasRelations) behaviorRules.push('用户提到新人物 → 主动 create_relation')
+  if (hasDecisions) behaviorRules.push('用户提到要做重要决定 → 主动 create_decision')
+  if (hasSimulations) behaviorRules.push('用户说"模拟演练"/"练习对话"→ start_simulation')
 
-## 关键行为准则
-- 用户透露个人信息（名字/地点/爱好/饮食/MBTI/血型等）→ 主动 smart_update_profile
-- 用户说"改/删除/撤销" → 对应 update_*/delete_*/undo_last，不确定目标时先 query
-- 创建计划必须含 subtasks(3-8个) + description，尽量填 deadline
-- 日记 content 整理为用户原话的完整段落
-- 修改操作理解错别字（如"心别"="性别"）
-- 消息开头标记如 [¥记账] 必须按标记执行
-- 当前时段：${greeting}`
+  const basePrompt = `你是「思迹」，一个温暖简洁的个人生活助手。${hasRelations ? '支持管理人脉。' : ''}${hasDecisions ? '支持记录决策。' : ''}${hasSimulations ? '支持情景演练。' : ''}\n\n当前时间：${todayStr} 星期${weekDay} ${timeStr}（昨天 ${yesterdayStr}）\n\n## 输出格式（严格遵守）\n纯 JSON：{"reply":"...", "action":{"type":"...","payload":{},"needConfirm":false}}\n多意图：{"reply":"...", "actions":[...]}\n\n## 核心铁律\n1. reply 必须存在，闲聊用 type:"none"\n2. reply 说"已记录/已更新"等词 → action/actions 必须非空\n3. 回复简洁：操作类一句话，闲聊 1-3 句\n4. 禁止写 [执行结果: xxx]\n\n## action 类型\n${coreActions}${extActions.length ? '\n\n' + extActions.join('\n') : ''}\n\n## needConfirm\n- 金额≥500、所有 delete_* → true；update_* → false\n\n## client_id\n执行结果中 ID=xxx 即 client_id\n\n## 行为准则\n${behaviorRules.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n当前时段：${greeting}`
 
   const profileCtx = buildProfileContext()
   return profileCtx ? basePrompt + '\n\n' + profileCtx : basePrompt
@@ -874,6 +944,11 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
     if (conversationIdResult) result.conversation_id = conversationIdResult
     if (stopSignal?.stopped) result.stopped = true
 
+    // 空回复标记 — 由调用方（useChatEngine）决定是否重试
+    if ((!result.reply || !result.reply.trim() || result.reply.includes('走神了')) && !stopSignal?.stopped) {
+      result._emptyReply = true
+    }
+
     return result
   } catch (e) {
     logger.warn('[Stream] Real stream failed, fallback to simulated:', e.message)
@@ -932,152 +1007,49 @@ export function isOnline() {
   })
 }
 
-// ==================== AI 厂商注册表 ====================
+// ==================== 离线缓存 ====================
 
-/**
- * 支持的 AI 厂商及模型列表
- * 多数中国厂商使用 OpenAI 兼容接口格式
- */
-export const AI_PROVIDERS = {
-  deepseek: {
-    id: 'deepseek',
-    name: 'DeepSeek',
-    short: 'DS',
-    color: '#18181B',
-    models: [
-      { id: 'deepseek-v4-flash', name: 'V4 Flash', desc: '快速响应·日常对话', tag: '⚡' },
-      { id: 'deepseek-v4-pro', name: 'V4 Pro', desc: '深度推理·复杂任务', tag: '🧠' }
-    ],
-    endpoint: 'https://api.deepseek.com/v1/chat/completions',
-    keyLabel: 'DeepSeek API Key',
-    keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
-    docs: 'https://platform.deepseek.com/'
-  },
-  openai: {
-    id: 'openai',
-    name: 'OpenAI',
-    short: 'OA',
-    color: '#10A37F',
-    models: [
-      { id: 'gpt-4o', name: 'GPT-4o', desc: '高性价比·多模态', tag: '⚡' },
-      { id: 'gpt-5', name: 'GPT-5', desc: '旗舰·博士级推理', tag: '🧠' },
-      { id: 'gpt-5.5', name: 'GPT-5.5', desc: '最新旗舰·Agent级', tag: '🌟' }
-    ],
-    endpoint: 'https://api.openai.com/v1/chat/completions',
-    keyLabel: 'OpenAI API Key',
-    keyPlaceholder: 'sk-proj-...',
-    supportsJsonFormat: true,
-    docs: 'https://platform.openai.com/'
-  },
-  moonshot: {
-    id: 'moonshot',
-    name: 'Moonshot',
-    short: 'MS',
-    color: '#3F3F46',
-    models: [
-      { id: 'kimi-k2.6', name: 'Kimi K2.6', desc: '最新旗舰·256K上下文', tag: '🌟' },
-      { id: 'kimi-k2.5', name: 'Kimi K2.5', desc: '多模态·编程强', tag: '🧠' },
-      { id: 'moonshot-v1-128k', name: 'Kimi 128K', desc: '超长文本理解', tag: '⚡' }
-    ],
-    endpoint: 'https://api.moonshot.cn/v1/chat/completions',
-    keyLabel: 'Moonshot API Key',
-    keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
-    docs: 'https://platform.moonshot.cn/'
-  },
-  zhipu: {
-    id: 'zhipu',
-    name: '智谱 GLM',
-    short: 'ZG',
-    color: '#52525B',
-    models: [
-      { id: 'glm-4-flash', name: 'GLM-4 Flash', desc: '极速免费', tag: '⚡' },
-      { id: 'glm-4.7', name: 'GLM-4.7', desc: '编程专用·代码强', tag: '🧠' },
-      { id: 'glm-5.1', name: 'GLM-5.1', desc: '高速版·400T/s', tag: '⚡' },
-      { id: 'glm-5.2', name: 'GLM-5.2', desc: '最新旗舰·1M上下文', tag: '🌟' }
-    ],
-    endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-    keyLabel: '智谱 API Key',
-    keyPlaceholder: 'xxxxxxxxxxxxxxxx.xxxxxxxx',
-    supportsJsonFormat: true,
-    docs: 'https://open.bigmodel.cn/'
-  },
-  qwen: {
-    id: 'qwen',
-    name: '通义千问',
-    short: 'QW',
-    color: '#00BFFF',
-    models: [
-      { id: 'qwen-turbo', name: 'Qwen Turbo', desc: '高性价比·快速', tag: '⚡' },
-      { id: 'qwen-plus', name: 'Qwen Plus', desc: '均衡能力', tag: '🧠' },
-      { id: 'qwen3.7-plus', name: 'Qwen3.7 Plus', desc: '多模态智能体', tag: '🧠' },
-      { id: 'qwen3.7-max', name: 'Qwen3.7 Max', desc: '最新旗舰·全球第二', tag: '🌟' }
-    ],
-    endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-    keyLabel: '通义 API Key',
-    keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
-    docs: 'https://help.aliyun.com/zh/model-studio/'
-  }
-}
+const OFFLINE_CACHE_KEY = 'siji_offline_cache'
+const CACHE_MAX_AGE = 30 * 60 * 1000  // 30 分钟过期
 
-/** 获取厂商配置 */
-export function getProvider(providerId) {
-  if (AI_PROVIDERS[providerId]) return AI_PROVIDERS[providerId]
-  // 查找自定义厂商
+/** 缓存 AI 响应（基于用户消息的简短摘要作为 key） */
+export function cacheAiResponse(userMessage, reply) {
+  if (!userMessage || !reply) return
+  // 仅缓存简短查询（<50 字），长对话不缓存
+  if (userMessage.length > 50 || reply.length > 200) return
   try {
-    const custom = JSON.parse(uni.getStorageSync('siji_custom_providers') || '{}')
-    if (custom[providerId]) return custom[providerId]
-  } catch {}
-  return AI_PROVIDERS.deepseek
+    const key = userMessage.trim().substring(0, 30)
+    const cache = JSON.parse(uni.getStorageSync(OFFLINE_CACHE_KEY) || '{}')
+    cache[key] = { reply, time: Date.now() }
+    // 限制缓存条数
+    const entries = Object.entries(cache)
+    if (entries.length > 50) {
+      entries.sort((a, b) => b[1].time - a[1].time)
+      const trimmed = Object.fromEntries(entries.slice(0, 50))
+      uni.setStorageSync(OFFLINE_CACHE_KEY, JSON.stringify(trimmed))
+    } else {
+      uni.setStorageSync(OFFLINE_CACHE_KEY, JSON.stringify(cache))
+    }
+  } catch { /* ignore */ }
 }
 
-/** 获取厂商的模型列表 */
-export function getProviderModels(providerId) {
-  return getProvider(providerId).models
-}
-
-/** 获取厂商默认模型（第一个） */
-export function getProviderDefaultModel(providerId) {
-  return getProviderModels(providerId)[0]?.id || ''
-}
-
-/** 从 storage 读取所有厂商的 API Key */
-export function getProviderKeys() {
+/** 查找离线缓存的 AI 响应 */
+export function getOfflineCacheReply(userMessage) {
+  if (!userMessage) return null
   try {
-    return JSON.parse(uni.getStorageSync('siji_provider_keys') || '{}')
-  } catch { return {} }
+    const cache = JSON.parse(uni.getStorageSync(OFFLINE_CACHE_KEY) || '{}')
+    const key = userMessage.trim().substring(0, 30)
+    const entry = cache[key]
+    if (entry && (Date.now() - entry.time) < CACHE_MAX_AGE) {
+      return { reply: entry.reply + '\n\n📶 离线模式 · 数据可能不是最新', offline: true }
+    }
+  } catch { /* ignore */ }
+  return null
 }
 
-/** 获取当前默认配置（兼容旧版未选中的情况） */
-function getDefaultConfig() {
-  const provider = uni.getStorageSync('siji_ai_provider') || 'deepseek'
-  const storeModel = uni.getStorageSync('siji_ai_model') || ''
-  const model = storeModel || getProviderDefaultModel(provider)
-  const keys = getProviderKeys()
-  return { provider, model, apiKey: keys[provider] || '' }
-}
-
-/** 构建厂商请求参数（统一 OpenAPI 兼容格式） */
-function buildProviderRequest(providerId, model, messages, apiKey, temperature) {
-  const p = getProvider(providerId)
-  const data = { model, messages, temperature: temperature ?? 0.7 }
-  // Layer 1: response_format — openai/deepseek/moonshot 稳定支持；智谱/通义靠提示词约束
-  const provider = getProvider(providerId)
-  if (provider.supportsJsonFormat && providerId !== 'qwen' && providerId !== 'zhipu') {
-    data.response_format = { type: 'json_object' }
-  } else {
-    messages.push({ role: 'system', content: '请只返回纯JSON，不要任何额外文字。' })
-  }
-  return {
-    url: p.endpoint,
-    method: 'POST',
-    header: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    data,
-    timeout: 45000
-  }
+// ==================== AI 厂商注册表（已拆分至 utils/ai/providers.js）====================
+export {
+  AI_PROVIDERS, getProvider, getProviderModels, getProviderDefaultModel,
+  getProviderVisionModel, supportsVision, getProviderKeys,
+  getDefaultConfig, buildProviderRequest
 }

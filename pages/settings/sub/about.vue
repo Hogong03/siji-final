@@ -77,6 +77,17 @@ const tabs = [
           <text class="card-text">uni-app · Vue 3 · Pinia · SCSS</text>
           <text class="card-text" style="margin-top: 8rpx;">多模型 AI：DeepSeek / OpenAI / Moonshot / 智谱 / 通义</text>
         </view>
+
+        <view class="card feedback-card" @tap="uni.navigateTo({ url: '/pages/settings/sub/feedback' })">
+          <view class="fb-row">
+            <SijiIcon name="mail" size="md" color="var(--text-primary)" />
+            <view class="fb-body">
+              <text class="fb-title">体验反馈</text>
+              <text class="fb-desc">告诉我们你的想法</text>
+            </view>
+            <text class="fb-arrow">›</text>
+          </view>
+        </view>
       </view>
 
       <!-- ===== AI 对话 ===== -->
@@ -360,5 +371,45 @@ const tabs = [
 
   .ex-text { flex: 1; font-size: $font-sm; color: var(--text-primary); }
   .ex-result { font-size: $font-xs; color: var(--text-hint); flex-shrink: 0; }
+}
+
+/* 反馈卡片 */
+.feedback-card {
+  padding: $spacing-sm $spacing-md;
+  cursor: pointer;
+
+  &:active { background: var(--bg-input); }
+}
+
+.fb-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.fb-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.fb-title {
+  font-size: $font-md;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fb-desc {
+  font-size: $font-xs;
+  color: var(--text-hint);
+}
+
+.fb-arrow {
+  font-size: $font-lg;
+  color: var(--text-hint);
+  font-weight: 300;
+  flex-shrink: 0;
 }
 </style>
