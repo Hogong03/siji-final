@@ -29,7 +29,7 @@ const categoryLabels = {
 
 const categoryIcons = {
   fact: 'pin',
-  preference: '❤️',
+  preference: 'heart',
   event: 'target',
   summary: 'diary',
   other: 'tip'
