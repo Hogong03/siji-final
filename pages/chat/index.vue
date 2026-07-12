@@ -224,7 +224,7 @@ onMounted(() => {
   // 模拟模式下不显示欢迎语（initSimulation 已在 onLoad 中添加了开场白）
   // 同时检查 _pendingSimParams（switchTab 跳转时 onShow 可能在 onMounted 之后才处理）
   if (store.messages.length === 0 && !simulationMode.value && !_pendingSimParams) {
-    store.addMessage({ role: 'assistant', content: getWelcomeMessage() })
+    store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
   }
   const sysInfo = uni.getSystemInfoSync()
   statusBarHeight.value = sysInfo.statusBarHeight || 0
@@ -418,10 +418,10 @@ function handleDeleteConversation(conv) {
         store.deleteConversation(conv.id)
         if (store.conversations.length === 0) {
           store.createConversation()
-          store.addMessage({ role: 'assistant', content: getWelcomeMessage() })
+          store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
         }
         if (store.messages.length === 0) {
-          store.addMessage({ role: 'assistant', content: getWelcomeMessage() })
+          store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
         }
         uni.showToast({ title: '已删除', icon: 'none' })
         isAtBottom.value = true

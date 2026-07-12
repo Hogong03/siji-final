@@ -223,6 +223,13 @@ export function useChatEngine() {
       uni.showToast({ title: '请先在设置中配置 API Key', icon: 'none' })
       return
     }
+
+    // 首次发送时自动清除欢迎语
+    const conv = store.activeConversation
+    if (conv && conv.messages.some(m => m._isWelcome)) {
+      conv.messages = conv.messages.filter(m => !m._isWelcome)
+    }
+
     isSending.value = true
     stopSignal.value = { stopped: false }
 
