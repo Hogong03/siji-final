@@ -38,6 +38,7 @@ export function chooseAndCompress() {
       success: (res) => {
         const path = res.tempFilePaths?.[0]
         if (!path) { resolve(null); return }
+        // 全部走压缩流程，避免本地路径（blob: / file: / temp）被当作 URL 传给 AI
         compressImage(path).then(resolve).catch(() => resolve(null))
       },
       fail: (err) => {
@@ -65,7 +66,8 @@ function compressWithCanvas(path) {
     const img = new Image()
     img.onload = () => {
       let { width, height } = img
-      if (width > MAX_SIZE || height > MAX_SIZE) {
+      const needsResize = width > MAX_SIZE || height > MAX_SIZE
+      if (needsResize) {
         const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height)
         width = Math.round(width * ratio)
         height = Math.round(height * ratio)
@@ -74,25 +76,24 @@ function compressWithCanvas(path) {
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
-      if (!ctx) { resolve(null); return }
+      if (!ctx) { resolve(null); img.src = ''; return }
       ctx.drawImage(img, 0, 0, width, height)
+      // 释放 Image 对象内存
+      img.src = ''
 
+      // 渐进降质：从配置质量开始，每降10级试一次
       let base64 = ''
       for (let q = QUALITY; q >= 40; q -= 10) {
         base64 = canvas.toDataURL('image/jpeg', q / 100)
         if (base64.length * 0.75 <= MAX_FILE_SIZE || q <= 40) break
       }
 
-      canvas.toBlob((blob) => {
-        resolve({
-          base64,
-          width,
-          height,
-          size: blob ? blob.size : Math.round(base64.length * 0.75)
-        })
-      }, 'image/jpeg', 0.7)
+      // 跳过不必要的 Blob 转换——已拿到 base64，直接用 length 估大小
+      const estSize = Math.round(base64.length * 0.75)
+      canvas.width = 0; canvas.height = 0 // 释放 Canvas 内存
+      resolve({ base64, width, height, size: estSize })
     }
-    img.onerror = () => resolve(null)
+    img.onerror = () => { img.src = ''; resolve(null) }
     img.src = path
     // #endif
     // #ifndef H5
@@ -168,6 +169,13 @@ function compressWithUni(path) {
 export function buildVisionMessage(text, image, providerId) {
   if (!image || !image.base64) return text
 
+  // 安全校验：只接受 data: URL，拒绝本地路径（blob:/file:/temp:/http://localhost 等）
+  const url = image.base64
+  if (!url.startsWith('data:')) {
+    logger.warn(`[Vision] 忽略非 base64 的图片 URL: ${url.substring(0, 50)}...`)
+    return text
+  }
+
   // OpenAI vision 格式：{ type: 'image_url', image_url: { url: 'data:...' } }
   // 智谱/DeepSeek/通义均兼容此格式
   return [
@@ -175,7 +183,7 @@ export function buildVisionMessage(text, image, providerId) {
     {
       type: 'image_url',
       image_url: {
-        url: image.base64,
+        url,
         detail: (image.width || 0) > 1024 ? 'high' : 'auto'
       }
     }

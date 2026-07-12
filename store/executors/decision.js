@@ -1,4 +1,5 @@
 import { createDecision, updateDecision, getDecisionById, getAllDecisions, getDecisionsByStatus, getDecisionsByCategory, reviewDecision, analyzeDecisionPatterns } from '@/utils/decisions.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Decision 相关 executor 工厂函数
@@ -9,6 +10,7 @@ export function createDecisionExecutors(ctx) {
 
   function execCreateDecision(p) {
     const decision = createDecision(p)
+    invalidatePromptCache()
     return {
       success: true,
       message: `已创建决策记录「${decision.title}」`,
@@ -36,6 +38,7 @@ export function createDecisionExecutors(ctx) {
     const ok = updateDecision(id, updates)
     if (!ok) return { success: false, message: '决策记录不存在', detail: null }
     const updated = getDecisionById(id)
+    invalidatePromptCache()
     return {
       success: true,
       message: `已更新决策「${updated.title}」`,
@@ -48,6 +51,7 @@ export function createDecisionExecutors(ctx) {
     const id = p.id || p.decision_id
     const ok = reviewDecision(id, p.review_notes || '', p.outcome)
     if (!ok) return { success: false, message: '决策记录不存在', detail: null }
+    invalidatePromptCache()
     return {
       success: true,
       message: '复盘已保存',

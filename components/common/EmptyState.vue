@@ -69,7 +69,7 @@ const emit = defineEmits(['action'])
   margin-top: $spacing-lg;
   padding: 16rpx 48rpx;
   background: var(--color-ai);
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   transition: transform $transition-fast;
 
   &:active {

@@ -10,6 +10,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { globalSearch } from '@/utils/storage.js'
+import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
 import { searchConversations } from '@/utils/conversation-search.js'
 import { debounce } from '@/utils/debounce.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
@@ -58,7 +59,7 @@ function saveHistory(kw) {
   const h = searchHistory.value.filter(x => x !== kw)
   h.unshift(kw)
   searchHistory.value = h.slice(0, 8)
-  uni.setStorageSync('siji_search_history', JSON.stringify(searchHistory.value))
+  asyncSetStorageJSON('siji_search_history', searchHistory.value)
 }
 
 function clearHistory() {

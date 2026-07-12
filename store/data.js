@@ -119,14 +119,19 @@ export const useDataStore = defineStore('data', () => {
     if (!Array.isArray(actions) || actions.length === 0) {
       return { results: [], allSuccess: false, message: '无操作' }
     }
-    const results = actions.map(a => executeAction(a))
-    const allSuccess = results.every(r => r.success)
-    const msgs = results.filter(r => r.success && r.message !== '无需执行').map(r => r.message)
-    return {
-      results,
-      allSuccess,
-      message: msgs.join('；'),
-      detail: results.map(r => r.detail).filter(Boolean)
+    try {
+      const results = actions.map(a => executeAction(a))
+      const allSuccess = results.every(r => r.success)
+      const msgs = results.filter(r => r.success && r.message !== '无需执行').map(r => r.message)
+      return {
+        results,
+        allSuccess,
+        message: msgs.join('；'),
+        detail: results.map(r => r.detail).filter(Boolean)
+      }
+    } catch (e) {
+      logger.error('[executeActions] Fatal:', e.message)
+      return { results: [], allSuccess: false, message: `批量执行失败: ${e.message}`, detail: null }
     }
   }
 

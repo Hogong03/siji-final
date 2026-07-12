@@ -6,7 +6,8 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getProviderKeys } from '@/utils/api.js'
+import { AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getProviderKeys, supportsVision } from '@/utils/api.js'
+import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const store = useAppStore()
 
@@ -31,6 +32,18 @@ const currentKeyPlaceholder = computed(() => {
   return p?.keyPlaceholder || 'sk-...'
 })
 const needApply = computed(() => editingProvider.value !== store.aiProvider || editingModel.value !== store.aiModel)
+
+/** 检查模型是否支持图片识别 */
+function modelSupportsVision(providerId, modelId) {
+  const p = AI_PROVIDERS[providerId]
+  if (!p || !p.visionModels) return false
+  return p.visionModels.includes(modelId)
+}
+
+/** 检查厂商是否支持图片识别 */
+function providerHasVision(providerId) {
+  return supportsVision(providerId)
+}
 
 const providerKeys = ref({})
 
@@ -71,7 +84,7 @@ function loadCustomProviders() {
 }
 
 function saveCustomProviders() {
-  uni.setStorageSync('siji_custom_providers', JSON.stringify(customProviders.value))
+  asyncSetStorageJSON('siji_custom_providers', customProviders.value)
 }
 
 /* ---- 厂商选择 ---- */
@@ -102,7 +115,7 @@ function saveProviderKey() {
 function switchModel(mid) {
   editingModel.value = mid
   store.setAiModel(mid)
-  uni.setStorageSync(`siji_model_${editingProvider.value}`, mid)
+  asyncSetStorage(`siji_model_${editingProvider.value}`, mid)
   const m = currentModels.value.find(m => m.id === mid)
   uni.showToast({ title: `已切换至 ${m?.name || mid}`, icon: 'none' })
 }
@@ -161,7 +174,7 @@ function saveCustomProvider() {
   // 自动切换到新厂商
   store.setAiProvider(pid)
   store.setAiModel(model.trim())
-  uni.setStorageSync(`siji_model_${pid}`, model.trim())
+  asyncSetStorage(`siji_model_${pid}`, model.trim())
 
   showCustomForm.value = false
   expandedProvider.value = pid
@@ -274,6 +287,11 @@ async function testConnection() {
             </view>
           </view>
 
+          <!-- 图片识别提示 -->
+          <view class="vision-notice" v-if="!providerHasVision(expandedProvider)">
+            <text class="vision-notice-text">⚠ 该厂商不支持图片识别，发送图片时会提示切换</text>
+          </view>
+
           <!-- 模型选择 -->
           <view class="config-section" v-if="currentModels.length > 0">
             <text class="config-label">选择模型</text>
@@ -285,7 +303,11 @@ async function testConnection() {
                 @tap="switchModel(m.id)"
               >
                 <view class="model-detail">
-                  <text class="model-name">{{ m.name }}</text>
+                  <view class="model-name-row">
+                    <text class="model-name">{{ m.name }}</text>
+                    <text class="model-vision-badge" v-if="modelSupportsVision(expandedProvider, m.id)">📷</text>
+                    <text class="model-no-vision-badge" v-else-if="!m.custom && providerHasVision(expandedProvider)">✕图</text>
+                  </view>
                   <text class="model-desc">{{ m.desc }}</text>
                 </view>
                 <view class="model-check" v-if="editingModel === m.id">
@@ -376,439 +398,5 @@ async function testConnection() {
 </template>
 
 <style lang="scss" scoped>
-.ai-page {
-  min-height: 100vh;
-  background: var(--bg-page);
-  padding: $spacing-md;
-  box-sizing: border-box;
-}
-
-/* 厂商列表 */
-.provider-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.provider-card {
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  overflow: hidden;
-  border: 1rpx solid var(--border-color);
-  transition: all $transition-fast;
-  box-sizing: border-box;
-
-  &.expanded {
-    box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.04);
-  }
-}
-
-.provider-header {
-  display: flex;
-  align-items: center;
-  padding: $spacing-md;
-  gap: $spacing-sm;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  &:active { background: var(--bg-input); }
-}
-
-.provider-icon {
-  width: 64rpx;
-  height: 64rpx;
-  min-width: 64rpx;
-  border-radius: $radius-md;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.provider-short {
-  font-size: $font-xs;
-  font-weight: 700;
-  color: var(--text-on-ai);
-  letter-spacing: 1rpx;
-}
-
-.provider-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-  min-width: 0;
-  overflow: hidden;
-
-  .provider-name {
-    font-size: $font-md;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .provider-desc {
-    font-size: $font-xs;
-    color: var(--text-hint);
-  }
-}
-
-.provider-status {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  flex-shrink: 0;
-
-  .key-dot {
-    width: 12rpx;
-    height: 12rpx;
-    border-radius: 50%;
-    flex-shrink: 0;
-
-    &.ok { background: var(--color-plan); }
-    &.none { background: var(--border-strong); }
-  }
-  .key-label {
-    font-size: $font-xs;
-    color: var(--text-hint);
-    white-space: nowrap;
-  }
-}
-
-.provider-arrow {
-  font-size: $font-lg;
-  color: var(--text-hint);
-  font-weight: 300;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-
-  &.rotated {
-    transform: rotate(90deg);
-  }
-}
-
-/* 展开内容 */
-.provider-body {
-  padding: 0 $spacing-md $spacing-md;
-  border-top: 1rpx solid var(--border-color);
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.active-badge {
-  padding: $spacing-sm 0;
-
-  text {
-    font-size: $font-xs;
-    color: var(--color-plan);
-    font-weight: 600;
-  }
-}
-
-.config-section {
-  margin-top: $spacing-sm;
-}
-
-.config-label {
-  font-size: $font-sm;
-  color: var(--text-secondary);
-  margin-bottom: $spacing-xs;
-  display: block;
-}
-
-.config-hint {
-  font-size: $font-xs;
-  color: var(--text-hint);
-  display: block;
-  margin-bottom: $spacing-xs;
-  line-height: 1.5;
-}
-
-/* Key 输入 */
-.key-input-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  overflow: hidden;
-
-  .key-input {
-    flex: 1;
-    min-width: 0;
-    height: 64rpx;
-    padding: 0 16rpx;
-    background: var(--bg-input);
-    border-radius: $radius-sm;
-    font-size: $font-xs;
-    font-family: monospace;
-    border: 1rpx solid transparent;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
-
-  .key-action {
-    font-size: $font-xs;
-    font-weight: 600;
-    padding: 8rpx 16rpx;
-    border-radius: $radius-sm;
-    flex-shrink: 0;
-    white-space: nowrap;
-
-    &.save {
-      background: var(--bg-input);
-      color: var(--color-ai);
-    }
-    &.test {
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--color-plan);
-    }
-  }
-}
-
-/* 模型网格 */
-.model-grid {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.model-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  background: var(--bg-input);
-  border-radius: $radius-md;
-  border: 2rpx solid transparent;
-  transition: all $transition-fast;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  &:active { transform: scale(0.98); }
-
-  &.active {
-    background: var(--bg-input);
-    border-color: var(--text-primary);
-  }
-
-  &.custom .model-name {
-    color: var(--text-secondary);
-  }
-
-  .model-detail {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2rpx;
-    min-width: 0;
-    overflow: hidden;
-
-    .model-name {
-      font-size: $font-sm;
-      font-weight: 600;
-      color: var(--text-primary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .model-desc {
-      font-size: $font-xs;
-      color: var(--text-hint);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .model-check {
-    width: 36rpx;
-    height: 36rpx;
-    min-width: 36rpx;
-    border-radius: 50%;
-    background: var(--color-ai);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-sizing: border-box;
-
-    text {
-      color: var(--text-on-ai);
-      font-size: $font-sm;
-      font-weight: 700;
-    }
-  }
-}
-
-/* 删除自定义厂商 */
-.delete-provider {
-  font-size: $font-sm;
-  color: var(--color-danger);
-  padding: $spacing-xs 0;
-  display: block;
-}
-
-/* 应用按钮 */
-.apply-btn {
-  margin-top: $spacing-md;
-  padding: $spacing-sm;
-  background: var(--color-ai);
-  border-radius: $radius-md;
-  text-align: center;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  text {
-    font-size: $font-sm;
-    font-weight: 700;
-    color: var(--text-on-ai);
-    display: inline-block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-}
-
-/* 添加自定义厂商按钮 */
-.add-custom-btn {
-  margin-top: $spacing-sm;
-  padding: $spacing-md;
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  border: 1rpx dashed var(--border-strong);
-  text-align: center;
-  box-sizing: border-box;
-
-  text {
-    font-size: $font-sm;
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-
-  &:active {
-    border-color: var(--text-primary);
-  }
-}
-
-/* 自定义厂商表单 */
-.custom-form {
-  margin-top: $spacing-sm;
-  padding: $spacing-md;
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
-  box-sizing: border-box;
-}
-
-.form-title {
-  font-size: $font-md;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: $spacing-xs;
-}
-
-.form-hint {
-  font-size: $font-xs;
-  color: var(--text-hint);
-  line-height: 1.5;
-  margin-bottom: $spacing-md;
-  display: block;
-}
-
-.form-field {
-  margin-bottom: $spacing-sm;
-}
-
-.field-label {
-  font-size: $font-sm;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: $spacing-xs;
-  display: block;
-}
-
-.field-input {
-  width: 100%;
-  height: 64rpx;
-  padding: 0 $spacing-md;
-  background: var(--bg-input);
-  border-radius: $radius-sm;
-  font-size: $font-xs;
-  color: var(--text-primary);
-  border: 1rpx solid transparent;
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: var(--text-primary);
-  }
-}
-
-.form-actions {
-  display: flex;
-  gap: $spacing-sm;
-  margin-top: $spacing-md;
-}
-
-.btn-cancel {
-  flex: 1;
-  min-width: 0;
-  height: 72rpx;
-  line-height: 72rpx;
-  text-align: center;
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-size: $font-sm;
-  font-weight: 600;
-  border-radius: $radius-sm;
-  border: none;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-
-  &:active { opacity: 0.85; }
-}
-
-.btn-save {
-  flex: 1;
-  min-width: 0;
-  height: 72rpx;
-  line-height: 72rpx;
-  text-align: center;
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  font-size: $font-sm;
-  font-weight: 600;
-  border-radius: $radius-sm;
-  border: none;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-
-  &:active { opacity: 0.85; }
-}
-
-/* 说明卡 */
-.tips-card {
-  margin-top: $spacing-md;
-  padding: $spacing-md;
-  background: var(--bg-card);
-  border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
-
-  .tips-title {
-    font-size: $font-sm;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: block;
-    margin-bottom: $spacing-xs;
-  }
-  .tips-text {
-    font-size: $font-xs;
-    color: var(--text-hint);
-    display: block;
-    line-height: 1.8;
-  }
-}
+@import './ai.scss';
 </style>

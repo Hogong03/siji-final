@@ -113,71 +113,72 @@
   </view>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getDecisionById, updateDecision, deleteDecision, reviewDecision } from '@/utils/decisions.js'
 
-export default {
-  data() {
-    return {
-      decisionId: '',
-      decision: null,
-      showDecideForm: false,
-      showReviewForm: false,
-      decideForm: { decision: '', reasoning: '' },
-      reviewForm: { outcome: '', review_notes: '' }
-    }
-  },
-  onLoad(options) {
-    this.decisionId = options.id || ''
-    this.loadData()
-  },
-  onShow() { this.loadData() },
-  methods: {
-    loadData() {
-      this.decision = getDecisionById(this.decisionId)
-    },
-    statusLabel(status) {
-      const map = { thinking: '思考中', decided: '已决定', acted: '已行动', reviewed: '已复盘', abandoned: '已放弃' }
-      return map[status] || status
-    },
-    handleDecide() {
-      if (!this.decideForm.decision.trim()) {
-        uni.showToast({ title: '请输入决定', icon: 'none' })
-        return
-      }
-      updateDecision(this.decisionId, {
-        status: 'decided',
-        decision: this.decideForm.decision.trim(),
-        reasoning: this.decideForm.reasoning.trim()
-      })
-      uni.showToast({ title: '已记录', icon: 'success' })
-      this.showDecideForm = false
-      this.loadData()
-    },
-    handleReview() {
-      if (!this.reviewForm.review_notes.trim()) {
-        uni.showToast({ title: '请输入复盘', icon: 'none' })
-        return
-      }
-      reviewDecision(this.decisionId, this.reviewForm.review_notes.trim(), this.reviewForm.outcome.trim())
-      uni.showToast({ title: '复盘已保存', icon: 'success' })
-      this.showReviewForm = false
-      this.loadData()
-    },
-    handleDelete() {
-      uni.showModal({
-        title: '确认删除',
-        content: '确定要删除这条决策记录吗？',
-        success: (res) => {
-          if (res.confirm) {
-            deleteDecision(this.decisionId)
-            uni.showToast({ title: '已删除', icon: 'success' })
-            setTimeout(() => uni.navigateBack(), 800)
-          }
-        }
-      })
-    }
+const decisionId = ref('')
+const decision = ref(null)
+const showDecideForm = ref(false)
+const showReviewForm = ref(false)
+const decideForm = ref({ decision: '', reasoning: '' })
+const reviewForm = ref({ outcome: '', review_notes: '' })
+
+onLoad((options) => {
+  decisionId.value = options.id || ''
+  loadData()
+})
+
+onShow(() => { loadData() })
+
+function loadData() {
+  decision.value = getDecisionById(decisionId.value)
+}
+
+function statusLabel(status) {
+  const map = { thinking: '思考中', decided: '已决定', acted: '已行动', reviewed: '已复盘', abandoned: '已放弃' }
+  return map[status] || status
+}
+
+function handleDecide() {
+  if (!decideForm.value.decision.trim()) {
+    uni.showToast({ title: '请输入决定', icon: 'none' })
+    return
   }
+  updateDecision(decisionId.value, {
+    status: 'decided',
+    decision: decideForm.value.decision.trim(),
+    reasoning: decideForm.value.reasoning.trim()
+  })
+  uni.showToast({ title: '已记录', icon: 'success' })
+  showDecideForm.value = false
+  loadData()
+}
+
+function handleReview() {
+  if (!reviewForm.value.review_notes.trim()) {
+    uni.showToast({ title: '请输入复盘', icon: 'none' })
+    return
+  }
+  reviewDecision(decisionId.value, reviewForm.value.review_notes.trim(), reviewForm.value.outcome.trim())
+  uni.showToast({ title: '复盘已保存', icon: 'success' })
+  showReviewForm.value = false
+  loadData()
+}
+
+function handleDelete() {
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除这条决策记录吗？',
+    success: (res) => {
+      if (res.confirm) {
+        deleteDecision(decisionId.value)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        setTimeout(() => uni.navigateBack(), 800)
+      }
+    }
+  })
 }
 </script>
 

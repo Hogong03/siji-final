@@ -135,7 +135,9 @@
   </view>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats } from '@/utils/relations.js'
 
 // ─── 关系模板 ───
@@ -184,148 +186,153 @@ const RELATION_TEMPLATES = [
   }
 ]
 
-export default {
-  data() {
-    return {
-      list: [],
-      filteredList: [],
-      keyword: '',
-      stats: { total: 0, interactionCount: 0, avgScore: 0 },
-      showAddForm: false,
-      editMode: false,
-      editingId: null,
-      selectedTpl: '',
-      RELATION_TEMPLATES,
-      roles: ['同事', '领导', '朋友', '家人', '伴侣', '客户', '老师', '其他'],
-      roleIndex: 0,
-      form: {
-        name: '',
-        role: '同事',
-        context: '',
-        traitsStr: '',
-        preferencesStr: '',
-        relationship_score: 5,
-        notes: ''
-      }
-    }
-  },
-  onShow() {
-    this.loadData()
-  },
-  methods: {
-    loadData() {
-      this.list = getAllRelations()
-      this.filteredList = this.list
-      this.stats = getRelationsStats()
-    },
-    handleSearch() {
-      if (this.keyword.trim()) {
-        this.filteredList = findRelationsByName(this.keyword.trim())
-      } else {
-        this.filteredList = this.list
-      }
-    },
-    onRoleChange(e) {
-      this.roleIndex = e.detail.value
-      this.form.role = this.roles[e.detail.value]
-    },
-    onScoreChange(e) {
-      this.form.relationship_score = e.detail.value
-    },
-    handleSubmit() {
-      if (!this.form.name.trim()) {
-        uni.showToast({ title: '请输入姓名', icon: 'none' })
-        return
-      }
-      const payload = {
-        name: this.form.name.trim(),
-        role: this.form.role,
-        context: this.form.context.trim(),
-        traits: this.form.traitsStr ? this.form.traitsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        preferences: this.form.preferencesStr ? this.form.preferencesStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        relationship_score: this.form.relationship_score,
-        notes: this.form.notes.trim()
-      }
-      if (this.editMode) {
-        updateRelation(this.editingId, payload)
-        uni.showToast({ title: '已保存', icon: 'success' })
-      } else {
-        createRelation(payload)
-        uni.showToast({ title: '已收录', icon: 'success' })
-      }
-      this.showAddForm = false
-      this.editMode = false
-      this.editingId = null
-      this.resetForm()
-      this.loadData()
-    },
-    handleEdit(item) {
-      this.editMode = true
-      this.editingId = item.id
-      this.form = {
-        name: item.name || '',
-        role: item.role || '同事',
-        context: item.context || '',
-        traitsStr: (item.traits && item.traits.length) ? item.traits.join(', ') : '',
-        preferencesStr: (item.preferences && item.preferences.length) ? item.preferences.join(', ') : '',
-        relationship_score: item.relationship_score || 5,
-        notes: item.notes || ''
-      }
-      const idx = this.roles.indexOf(item.role)
-      this.roleIndex = idx >= 0 ? idx : 0
-      this.selectedTpl = ''
-      this.showAddForm = true
-    },
-    handleDelete(item) {
-      uni.showModal({
-        title: '确认删除',
-        content: `确定要删除「${item.name}」吗？此操作不可撤销。`,
-        confirmColor: '#000000',
-        success: (res) => {
-          if (res.confirm) {
-            deleteRelation(item.id)
-            uni.showToast({ title: '已删除', icon: 'success' })
-            this.loadData()
-          }
-        }
-      })
-    },
-    closeForm() {
-      this.showAddForm = false
-      this.editMode = false
-      this.editingId = null
-      this.resetForm()
-    },
-    resetForm() {
-      this.form = {
-        name: '', role: '同事', context: '', traitsStr: '', preferencesStr: '',
-        relationship_score: 5, notes: ''
-      }
-      this.roleIndex = 0
-      this.selectedTpl = ''
-    },
-    applyTemplate(tpl) {
-      this.selectedTpl = tpl.role
-      this.form.role = tpl.role
-      this.form.context = tpl.context
-      this.form.traitsStr = tpl.traits
-      this.form.preferencesStr = tpl.preferences
-      this.form.relationship_score = tpl.score
-      this.form.notes = tpl.notes
-      const idx = this.roles.indexOf(tpl.role)
-      if (idx >= 0) this.roleIndex = idx
-    },
-    goDetail(id) {
-      uni.navigateTo({ url: `/pages/settings/sub/relation-detail?id=${id}` })
-    },
-    scoreClass(score) {
-      if (score >= 8) return 'score-high'
-      if (score >= 5) return 'score-mid'
-      return 'score-low'
-    },
-    loadMore() { /* 已全部加载 */ }
+const list = ref([])
+const filteredList = ref([])
+const keyword = ref('')
+const stats = ref({ total: 0, interactionCount: 0, avgScore: 0 })
+const showAddForm = ref(false)
+const editMode = ref(false)
+const editingId = ref(null)
+const selectedTpl = ref('')
+const roles = ref(['同事', '领导', '朋友', '家人', '伴侣', '客户', '老师', '其他'])
+const roleIndex = ref(0)
+const form = ref({
+  name: '',
+  role: '同事',
+  context: '',
+  traitsStr: '',
+  preferencesStr: '',
+  relationship_score: 5,
+  notes: ''
+})
+
+onShow(() => {
+  loadData()
+})
+
+function loadData() {
+  list.value = getAllRelations()
+  filteredList.value = list.value
+  stats.value = getRelationsStats()
+}
+
+function handleSearch() {
+  if (keyword.value.trim()) {
+    filteredList.value = findRelationsByName(keyword.value.trim())
+  } else {
+    filteredList.value = list.value
   }
 }
+
+function onRoleChange(e) {
+  roleIndex.value = e.detail.value
+  form.value.role = roles.value[e.detail.value]
+}
+
+function onScoreChange(e) {
+  form.value.relationship_score = e.detail.value
+}
+
+function handleSubmit() {
+  if (!form.value.name.trim()) {
+    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    return
+  }
+  const payload = {
+    name: form.value.name.trim(),
+    role: form.value.role,
+    context: form.value.context.trim(),
+    traits: form.value.traitsStr ? form.value.traitsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    preferences: form.value.preferencesStr ? form.value.preferencesStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    relationship_score: form.value.relationship_score,
+    notes: form.value.notes.trim()
+  }
+  if (editMode.value) {
+    updateRelation(editingId.value, payload)
+    uni.showToast({ title: '已保存', icon: 'success' })
+  } else {
+    createRelation(payload)
+    uni.showToast({ title: '已收录', icon: 'success' })
+  }
+  showAddForm.value = false
+  editMode.value = false
+  editingId.value = null
+  resetForm()
+  loadData()
+}
+
+function handleEdit(item) {
+  editMode.value = true
+  editingId.value = item.id
+  form.value = {
+    name: item.name || '',
+    role: item.role || '同事',
+    context: item.context || '',
+    traitsStr: (item.traits && item.traits.length) ? item.traits.join(', ') : '',
+    preferencesStr: (item.preferences && item.preferences.length) ? item.preferences.join(', ') : '',
+    relationship_score: item.relationship_score || 5,
+    notes: item.notes || ''
+  }
+  const idx = roles.value.indexOf(item.role)
+  roleIndex.value = idx >= 0 ? idx : 0
+  selectedTpl.value = ''
+  showAddForm.value = true
+}
+
+function handleDelete(item) {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除「${item.name}」吗？此操作不可撤销。`,
+    confirmColor: '#000000',
+    success: (res) => {
+      if (res.confirm) {
+        deleteRelation(item.id)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        loadData()
+      }
+    }
+  })
+}
+
+function closeForm() {
+  showAddForm.value = false
+  editMode.value = false
+  editingId.value = null
+  resetForm()
+}
+
+function resetForm() {
+  form.value = {
+    name: '', role: '同事', context: '', traitsStr: '', preferencesStr: '',
+    relationship_score: 5, notes: ''
+  }
+  roleIndex.value = 0
+  selectedTpl.value = ''
+}
+
+function applyTemplate(tpl) {
+  selectedTpl.value = tpl.role
+  form.value.role = tpl.role
+  form.value.context = tpl.context
+  form.value.traitsStr = tpl.traits
+  form.value.preferencesStr = tpl.preferences
+  form.value.relationship_score = tpl.score
+  form.value.notes = tpl.notes
+  const idx = roles.value.indexOf(tpl.role)
+  if (idx >= 0) roleIndex.value = idx
+}
+
+function goDetail(id) {
+  uni.navigateTo({ url: `/pages/settings/sub/relation-detail?id=${id}` })
+}
+
+function scoreClass(score) {
+  if (score >= 8) return 'score-high'
+  if (score >= 5) return 'score-mid'
+  return 'score-low'
+}
+
+function loadMore() { /* 已全部加载 */ }
 </script>
 
 <style scoped>

@@ -1,4 +1,5 @@
 import { createSimulation } from '@/utils/simulation.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Simulation 相关 executor 工厂函数
@@ -15,6 +16,7 @@ export function createSimulationExecutors(ctx) {
       scene: p.scene || '日常对话',
       goal: p.goal || ''
     })
+    invalidatePromptCache()
     return {
       success: true,
       message: `已创建模拟演练：与「${sim.relation_name}」在「${sim.scene}」场景下对话`,
@@ -29,6 +31,7 @@ export function createSimulationExecutors(ctx) {
   }
 
   function execEndSimulation(p) {
+    invalidatePromptCache()
     return {
       success: true,
       message: '模拟演练已结束，请查看复盘报告',

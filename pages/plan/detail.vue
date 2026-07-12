@@ -19,7 +19,6 @@ import { ref, computed, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getPlanList, savePlan, deletePlan, getTags, getChildPlans } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
-import { enqueue } from '@/utils/sync.js'
 import { useAppStore } from '@/store/index.js'
 import { chatRequest } from '@/utils/api.js'
 import { getPlanReminder, setPlanReminder, removePlanReminder } from '@/utils/reminder.js'
@@ -311,8 +310,6 @@ async function handleSave() {
     removePlanReminder(plan.client_id)
   }
 
-  enqueue({ type: 'plan', client_id: plan.client_id, action: isNew.value ? 'create' : 'update', data: plan })
-
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => { uni.navigateBack() }, 800)
 }
@@ -324,7 +321,6 @@ function handleDelete() {
     success(res) {
       if (res.confirm) {
         deletePlan(planId.value)
-        enqueue({ type: 'plan', client_id: planId.value, action: 'delete' })
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => { uni.navigateBack() }, 800)
       }

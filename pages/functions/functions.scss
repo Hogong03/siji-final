@@ -1,0 +1,332 @@
+.functions-page {
+  height: 100vh;
+  background: #F4F4F5;
+  overflow: hidden;
+}
+
+.func-scroll {
+  height: 100%;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+/* --- 搜索栏（独立置顶）--- */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 24rpx 28rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid transparent;
+  transition: border-color 0.2s ease;
+
+  &:focus-within {
+    border-color: var(--color-ai);
+  }
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #18181B;
+  background: transparent;
+}
+
+.search-clear {
+  font-size: 28rpx;
+  color: #A1A1AA;
+  padding: 4rpx 8rpx;
+}
+
+.search-placeholder {
+  font-size: 28rpx;
+  color: #A1A1AA;
+}
+
+.search-results {
+  margin-bottom: 16rpx;
+}
+
+/* --- 分区标签 --- */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #18181B;
+  letter-spacing: 1rpx;
+  margin: 28rpx 0 16rpx 4rpx;
+  padding-left: 16rpx;
+  border-left: 4rpx solid #18181B;
+}
+
+/* --- 统一卡片列表 --- */
+.card-list {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  overflow: hidden;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.entry-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 28rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+  gap: 20rpx;
+  box-sizing: border-box;
+
+  &:last-child { border-bottom: none; }
+  &:active { background: #FAFAFA; }
+}
+
+.entry-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-icon-circle {
+  width: 72rpx;
+  height: 72rpx;
+  min-width: 72rpx;
+  border-radius: 50%;
+  background: #F4F4F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.entry-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.entry-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #18181B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-desc {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+.entry-new-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #18181B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.entry-new-text {
+  font-size: 36rpx;
+  font-weight: 400;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.entry-arrow {
+  font-size: 36rpx;
+  color: #D4D4D8;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* --- 消费分析 --- */
+.analysis-card {
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+.ac-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16rpx;
+  gap: 16rpx;
+
+  .ac-title { font-size: 28rpx; font-weight: 700; color: #18181B; }
+  .ac-link { font-size: 24rpx; color: #000000; font-weight: 500; }
+}
+
+.trend-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+  gap: 12rpx;
+  .trend-label { font-size: 22rpx; color: #A1A1AA; }
+  .trend-total { font-size: 26rpx; color: #18181B; font-weight: 600; }
+}
+
+.trend-compare {
+  font-size: 22rpx;
+  font-weight: 600;
+  &.up { color: var(--color-danger); }
+  &.down { color: var(--color-plan); }
+}
+
+.trend-chart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 120rpx;
+}
+
+.trend-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.trend-bar-bg {
+  flex: 1;
+  width: 24rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.trend-bar {
+  width: 100%;
+  border-radius: 6rpx 6rpx 2rpx 2rpx;
+  min-height: 6rpx;
+  transition: height 0.3s ease;
+}
+
+.trend-day { font-size: 18rpx; color: #A1A1AA; }
+
+.ac-divider {
+  height: 1rpx;
+  background: #F4F4F5;
+  margin: 16rpx 0;
+}
+
+.trend-section {
+  padding: 16rpx;
+  background: var(--bg-card-alt, #F8F8F8);
+  border-radius: 16rpx;
+  /* 去掉独立边框，只用圆角背景区分 */
+}
+
+.rank-section {
+  padding: 16rpx;
+  background: var(--bg-card-alt, #F8F8F8);
+  border-radius: 16rpx;
+  /* 去掉独立边框，只用圆角背景区分 */
+}
+
+.rank-title {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #71717A;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 6rpx 0;
+
+  .rank-name { width: 80rpx; min-width: 80rpx; font-size: 24rpx; color: #71717A; flex-shrink: 0; }
+  .rank-bar-wrap { flex: 1; min-width: 0; height: 10rpx; background: #F4F4F5; border-radius: 5rpx; overflow: hidden; }
+  .rank-bar { height: 100%; background: #000000; border-radius: 5rpx; transition: width 0.3s ease; }
+  .rank-amount { font-size: 24rpx; font-weight: 600; color: #18181B; width: 80rpx; min-width: 80rpx; text-align: right; flex-shrink: 0; }
+  .rank-pct { font-size: 20rpx; color: #A1A1AA; width: 50rpx; min-width: 50rpx; text-align: right; flex-shrink: 0; }
+}
+
+/* --- 对话搜索结果 --- */
+.conv-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 28rpx 28rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+  box-sizing: border-box;
+
+  &:last-child { border-bottom: none; }
+  &:active { background: #FAFAFA; }
+}
+
+.conv-result-top {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.conv-role-tag {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+
+  &.user { background: #F4F4F5; color: #71717A; }
+  &.assistant { background: #18181B; color: #FFFFFF; }
+}
+
+.conv-title {
+  flex: 1;
+  font-size: 26rpx;
+  color: #18181B;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.conv-arrow {
+  flex-shrink: 0;
+  color: #D4D4D8;
+}
+
+.conv-preview {
+  font-size: 24rpx;
+  color: #71717A;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* --- AI 对话入口（已移除）--- */

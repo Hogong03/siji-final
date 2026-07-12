@@ -14,6 +14,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getBillList, deleteBill } from '@/utils/storage.js'
+import { asyncSetStorage } from '@/utils/store-helpers.js'
 import { debounce } from '@/utils/debounce.js'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES, DANGER_COLOR } from '@/utils/categories.js'
 
@@ -236,6 +237,7 @@ function confirmDelete(bill) {
     confirmColor: DANGER_COLOR,
     success: (res) => {
       if (res.confirm) {
+        uni.vibrateShort({ type: 'light' })
         const month = bill.bill_date ? bill.bill_date.substring(0, 7) : currentMonth.value
         deleteBill(bill.client_id, month)
         swipeItem.value = null
@@ -269,7 +271,7 @@ function openBudgetSet() {
 function saveBudget() {
   const val = parseFloat(budgetInput.value) || 0
   budget.value = val
-  uni.setStorageSync(`budget_${currentMonth.value}`, String(val))
+  asyncSetStorage(`budget_${currentMonth.value}`, String(val))
   showBudgetSet.value = false
   uni.showToast({ title: '预算已设置', icon: 'success' })
 }

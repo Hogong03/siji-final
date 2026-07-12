@@ -28,6 +28,16 @@ const currentModel = computed(() => currentProvider.value.models?.find(m => m.id
 const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
 const pinStatus = computed(() => hasPin() ? '已开启' : '未开启')
 
+const modelAbbr = computed(() => {
+  const p = store.aiProvider
+  if (p === 'deepseek') return 'DS'
+  if (p === 'openai') return 'GPT'
+  if (p === 'zhipu') return 'GLM'
+  if (p === 'qwen') return 'Qwen'
+  if (p === 'moonshot') return 'Kimi'
+  return ''
+})
+
 // ─── 导航 ───
 function go(target) {
   const m = {
@@ -36,7 +46,8 @@ function go(target) {
     data: '/pages/settings/sub/data',
     privacy: '/pages/settings/sub/privacy',
     about: '/pages/settings/sub/about',
-    help: '/pages/settings/sub/help'
+    help: '/pages/settings/sub/help',
+    feedback: '/pages/settings/sub/feedback'
   }
   uni.navigateTo({ url: m[target] })
 }
@@ -48,8 +59,8 @@ function go(target) {
 
       <!-- ===== AI 配置 ===== -->
       <text class="sec-title">AI 配置</text>
-      <view class="card">
-        <view class="row ai-row" @tap="go('ai')">
+      <view class="card slide-in-left-stagger">
+        <view class="row ai-row card-press" @tap="go('ai')">
           <SijiIcon :name="PROVIDER_ICONS[store.aiProvider] || 'provider-ds'" size="lg" class="row-icon" />
           <view class="row-body">
             <text class="row-label">AI 模型</text>
@@ -57,11 +68,13 @@ function go(target) {
           </view>
           <view class="row-right">
             <view class="dot" :class="hasKey ? 'ok' : 'warn'" />
-            <text class="row-value">{{ hasKey ? '已配置' : '未配置' }}</text>
+            <text class="row-value">{{ hasKey ? modelAbbr + ' · 已配置' : '未配置' }}</text>
             <text class="row-arrow">›</text>
           </view>
         </view>
-        <view class="row" @tap="go('agent')">
+      </view>
+      <view class="card slide-in-left-stagger">
+        <view class="row card-press" @tap="go('agent')">
           <AgentAvatar :name="store.activeAgent.name" :size="64" />
           <view class="row-body">
             <text class="row-label">Agent 管理</text>
@@ -73,13 +86,13 @@ function go(target) {
 
       <!-- ===== 数据与安全 ===== -->
       <text class="sec-title">数据与安全</text>
-      <view class="card">
-        <view class="row" @tap="go('data')">
+      <view class="card slide-in-left-stagger">
+        <view class="row card-press" @tap="go('data')">
           <SijiIcon name="download" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">数据管理</text></view>
           <text class="row-arrow">›</text>
         </view>
-        <view class="row" @tap="go('privacy')">
+        <view class="row card-press" @tap="go('privacy')">
           <SijiIcon name="lock" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">应用锁</text></view>
           <text class="row-value">{{ pinStatus }}</text>
@@ -89,16 +102,21 @@ function go(target) {
 
       <!-- ===== 关于 ===== -->
       <text class="sec-title">关于</text>
-      <view class="card">
-        <view class="row" @tap="go('about')">
+      <view class="card slide-in-left-stagger">
+        <view class="row card-press" @tap="go('about')">
           <SijiIcon name="info" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">关于思迹</text></view>
           <text class="row-value">v1.2.0</text>
           <text class="row-arrow">›</text>
         </view>
-        <view class="row" @tap="go('help')">
+        <view class="row card-press" @tap="go('help')">
           <SijiIcon name="book" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">使用说明</text></view>
+          <text class="row-arrow">›</text>
+        </view>
+        <view class="row card-press" @tap="go('feedback')">
+          <SijiIcon name="mail" size="lg" class="row-icon" />
+          <view class="row-body"><text class="row-label">意见反馈</text></view>
           <text class="row-arrow">›</text>
         </view>
       </view>
@@ -114,30 +132,33 @@ function go(target) {
 
 /* ─── Section 标题 ─── */
 .sec-title {
-  display: block;
-  font-size: $font-xs;
-  font-weight: 600;
-  color: var(--text-hint);
-  letter-spacing: 2rpx;
-  text-transform: uppercase;
-  margin: $spacing-lg 0 $spacing-sm $spacing-xs;
-  &:first-child { margin-top: 0; }
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #18181B;
+  letter-spacing: 1rpx;
+  margin: 0 0 16rpx 4rpx;
+  padding-left: 16rpx;
+  border-left: 4rpx solid #18181B;
+  &:first-child { margin-top: 0; padding-top: 0; }
 }
 
 /* ─── 统一卡片 ─── */
 .card {
   background: var(--bg-card);
-  border-radius: $radius-md;
+  border-radius: 24rpx;
   overflow: hidden;
   border: 1rpx solid var(--border-color);
-  margin-bottom: $spacing-md;
+  margin-bottom: $spacing-lg;
 }
 
 /* ─── 统一行 ─── */
 .row {
   display: flex;
   align-items: center;
-  padding: $spacing-md;
+  padding: 28rpx $spacing-md;
   border-bottom: 1rpx solid var(--border-color);
   gap: $spacing-sm;
   box-sizing: border-box;
@@ -145,7 +166,7 @@ function go(target) {
   &:active { background: var(--bg-input); }
 }
 
-.ai-row { padding-top: 20rpx; padding-bottom: 20rpx; }
+.ai-row { padding-top: 24rpx; padding-bottom: 24rpx; }
 
 .row-icon { flex-shrink: 0; }
 
@@ -160,8 +181,8 @@ function go(target) {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-arrow { font-size: $font-lg; color: var(--text-hint); font-weight: 300; flex-shrink: 0; }
 
-.dot { width: 12rpx; height: 12rpx; border-radius: 50%; flex-shrink: 0;
-  &.ok { background: var(--color-plan); }
-  &.warn { background: var(--color-bill); }
+.dot { width: 16rpx; height: 16rpx; border-radius: 50%; flex-shrink: 0;
+  &.ok { background: var(--color-plan); box-shadow: 0 0 0 4rpx rgba(16, 185, 129, 0.15); }
+  &.warn { background: var(--color-bill); box-shadow: 0 0 0 4rpx rgba(245, 158, 11, 0.15); }
 }
 </style>

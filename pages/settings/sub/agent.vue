@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 /**
  * Agent 管理页 — 列表页
  *
@@ -8,6 +8,7 @@
 
 import { useAppStore } from '@/store/index.js'
 import AgentAvatar from '@/components/common/AgentAvatar.vue'
+import SijiIcon from '@/components/common/SijiIcon.vue'
 
 const store = useAppStore()
 
@@ -473,8 +474,14 @@ $spacing-lg: 32rpx;
   font-size: 26rpx;
   font-weight: 600;
   color: var(--text-primary, #000);
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
   margin-bottom: $spacing-sm;
+}
+
+.tips-icon {
+  flex-shrink: 0;
 }
 
 .tips-text {

@@ -35,6 +35,8 @@
  * 存储：siji_my_profile
  */
 
+import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
+
 const STORAGE_KEY = 'siji_my_profile'
 
 /** 固定卡片定义 */
@@ -156,7 +158,7 @@ export function getProfile() {
     // 自动迁移
     if (!data.version || data.version < 2) {
       const migrated = migrateProfile(data)
-      uni.setStorageSync(STORAGE_KEY, JSON.stringify(migrated))
+      asyncSetStorageJSON(STORAGE_KEY, migrated)
       return migrated
     }
 
@@ -179,7 +181,7 @@ export function getProfile() {
 /** 保存 profile */
 export function saveProfile(profile) {
   const data = { ...profile, updatedAt: Date.now() }
-  uni.setStorageSync(STORAGE_KEY, JSON.stringify(data))
+  asyncSetStorageJSON(STORAGE_KEY, data)
   return data
 }
 
@@ -187,7 +189,7 @@ export function saveProfile(profile) {
 export function updateProfile(partial) {
   const current = getProfile()
   const updated = { ...current, ...partial, updatedAt: Date.now() }
-  uni.setStorageSync(STORAGE_KEY, JSON.stringify(updated))
+  asyncSetStorageJSON(STORAGE_KEY, updated)
   return updated
 }
 
@@ -525,7 +527,7 @@ export function getBasicFilledCount() {
 /** 清空所有 profile 信息 */
 export function clearProfile() {
   const empty = createEmptyProfile()
-  uni.setStorageSync(STORAGE_KEY, JSON.stringify(empty))
+  asyncSetStorageJSON(STORAGE_KEY, empty)
   return empty
 }
 

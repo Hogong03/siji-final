@@ -191,6 +191,10 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
             {{ item.content ? item.content.substring(0, 120) : '' }}
           </text>
 
+          <view class="card-meta" v-if="item.content">
+            <text class="meta-text">{{ item.content.length }} 字 · 约 {{ Math.max(1, Math.ceil(item.content.length / 300)) }} 分钟</text>
+          </view>
+
           <view v-if="item.ai_summary" class="ai-badge">
             <SijiIcon name="sparkle" size="sm" class="ai-icon" />
             <text class="ai-text">AI 摘要: {{ item.ai_summary }}</text>
@@ -225,22 +229,22 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
 /* 月份切换 */
 .month-bar {
   flex-shrink: 0;
-  background: $bg-card;
-  border-bottom: 1rpx solid rgba(0,0,0,0.05);
+  padding: 12rpx 24rpx;
+  border-bottom: 1rpx solid var(--border-color);
+  background: var(--bg-card);
 
   .month-list {
     display: flex;
-    padding: $spacing-sm $spacing-md;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
   }
 
   .month-item {
     flex-shrink: 0;
     padding: 10rpx 28rpx;
     border-radius: 32rpx;
-    font-size: $font-sm;
-    color: $text-secondary;
-    background: $bg-input;
+    font-size: 26rpx;
+    color: var(--text-secondary);
+    background: var(--bg-input);
     transition: all $transition-fast;
 
     &.active {
@@ -254,12 +258,12 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
 /* 标签筛选行 */
 .tag-bar {
   flex-shrink: 0;
-  background: $bg-card;
-  border-bottom: 1rpx solid rgba(0,0,0,0.05);
+  background: var(--bg-card);
+  border-bottom: 1rpx solid var(--border-color);
+  padding: 12rpx 24rpx;
 
   .tag-list {
     display: flex;
-    padding: $spacing-xs $spacing-md;
     gap: $spacing-xs;
     align-items: center;
   }
@@ -270,14 +274,15 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
     align-items: center;
     gap: 4rpx;
     padding: 6rpx 20rpx;
-    border-radius: 32rpx;
-    font-size: $font-xs;
-    color: $text-secondary;
-    background: $bg-input;
+    border-radius: 24rpx;
+    font-size: 22rpx;
+    color: var(--text-secondary);
+    background: var(--bg-input);
     border: 1rpx solid transparent;
     transition: all $transition-fast;
 
     &.active {
+      background: var(--color-ai);
       color: var(--text-on-ai);
       font-weight: 600;
     }
@@ -297,7 +302,7 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
 
 .diary-card {
   background: $bg-card;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
   box-shadow: $shadow-sm;
@@ -337,16 +342,22 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
     overflow: hidden;
   }
 
+  .card-meta {
+    margin-top: 8rpx;
+    .meta-text { font-size: 20rpx; color: var(--text-hint); }
+  }
+
   .ai-badge {
     display: flex;
     align-items: flex-start;
     margin-top: $spacing-sm;
     padding: $spacing-xs $spacing-sm;
-    background: rgba(0, 0, 0, 0.06);
-    border-radius: $radius-sm;
+    background: var(--bg-input);
+    border-left: 3rpx solid var(--color-ai);
+    border-radius: 0 8rpx 8rpx 0;
 
     .ai-icon { font-size: $font-sm; margin-right: 8rpx; }
-    .ai-text { font-size: $font-xs; color: $accent; line-height: 1.5; }
+    .ai-text { font-size: $font-xs; color: var(--text-secondary); line-height: 1.5; }
   }
 
   .tag-row {
@@ -368,7 +379,7 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
   padding: 16rpx 48rpx;
   background: var(--color-ai);
   color: var(--text-on-ai);
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
   font-size: $font-md;
 }
 
@@ -391,7 +402,7 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
   bottom: $spacing-lg;
   width: 112rpx;
   height: 112rpx;
-  border-radius: $radius-md;
+  border-radius: 50%;
   background: var(--color-ai);
   display: flex;
   align-items: center;
@@ -401,7 +412,7 @@ const DIARY_ITEM_HEIGHT = 280  // 预估卡片高度（rpx）
   animation: fabIdle 2.5s ease-in-out infinite;
   box-shadow: $shadow-md;
 
-  &:active { transform: scale(0.9); }
+  &:active { transform: scale(0.88); }
 
   .fab-icon {
     font-size: 52rpx;

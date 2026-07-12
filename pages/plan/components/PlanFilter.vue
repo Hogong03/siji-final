@@ -49,9 +49,9 @@ const emit = defineEmits(['update:filterStatus', 'update:filterPriority', 'updat
 
 <style lang="scss" scoped>
 .filter-bar {
-	padding: $spacing-sm $spacing-md;
-	background: $bg-card;
-	border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+	padding: 12rpx 24rpx;
+	background: var(--bg-card);
+	border-bottom: 1rpx solid var(--border-color);
 }
 
 .filter-row {
@@ -63,18 +63,18 @@ const emit = defineEmits(['update:filterStatus', 'update:filterPriority', 'updat
 .ftag {
 	padding: 6rpx 20rpx;
 	border-radius: 24rpx;
-	font-size: $font-xs;
-	background: $bg-input;
-	color: $text-secondary;
+	font-size: 22rpx;
+	background: var(--bg-input);
+	color: var(--text-secondary);
 	transition: all $transition-fast;
 
 	&.sm {
-		padding: 4rpx 16rpx;
-		font-size: 20rpx;
+		padding: 6rpx 20rpx;
+		font-size: 22rpx;
 	}
 
 	&.active {
-		background: $accent;
+		background: var(--color-ai);
 		color: var(--text-on-ai);
 		font-weight: 600;
 	}

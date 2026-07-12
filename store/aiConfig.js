@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { AI_PROVIDERS, getProviderDefaultModel, getProviderModels } from '@/utils/api.js'
 import { encryptKeys, decryptKeys, encryptKey, decryptKey } from '@/utils/crypto.js'
+import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 export const useAiConfigStore = defineStore('aiConfig', () => {
   const providerKeys = ref({})       // { deepseek: 'sk-xxx', openai: 'sk-yyy' }
@@ -54,31 +55,31 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
   function setProviderKey(provider, key) {
     providerKeys.value = { ...providerKeys.value, [provider]: key }
     // 加密后存储
-    uni.setStorageSync('siji_provider_keys', encryptKeys(providerKeys.value))
+    asyncSetStorage('siji_provider_keys', encryptKeys(providerKeys.value))
     // 兼容旧版（也加密）
-    if (provider === 'deepseek') uni.setStorageSync('siji_api_key', encryptKey(key))
+    if (provider === 'deepseek') asyncSetStorage('siji_api_key', encryptKey(key))
   }
 
   function setAiProvider(provider) {
     aiProvider.value = provider
-    uni.setStorageSync('siji_ai_provider', provider)
+    asyncSetStorage('siji_ai_provider', provider)
     // 自动切到该厂商默认模型
     const defaultModel = getProviderDefaultModel(provider)
     if (defaultModel) {
       aiModel.value = defaultModel
-      uni.setStorageSync('siji_ai_model', defaultModel)
+      asyncSetStorage('siji_ai_model', defaultModel)
     }
   }
 
   function setAiModel(model) {
     aiModel.value = model
-    uni.setStorageSync('siji_ai_model', model)
+    asyncSetStorage('siji_ai_model', model)
   }
 
   function setCustomModel(provider, modelName) {
     const key = `siji_custom_model_${provider}`
     if (modelName && modelName.trim()) {
-      uni.setStorageSync(key, modelName.trim())
+      asyncSetStorage(key, modelName.trim())
     } else {
       uni.removeStorageSync(key)
     }
@@ -115,22 +116,47 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
     if (legacyKey && !providerKeys.value.deepseek) {
       providerKeys.value.deepseek = decryptKey(legacyKey)
       // 用加密格式重新存储
-      uni.setStorageSync('siji_provider_keys', encryptKeys(providerKeys.value))
-      uni.setStorageSync('siji_api_key', encryptKey(providerKeys.value.deepseek))
+      asyncSetStorage('siji_provider_keys', encryptKeys(providerKeys.value))
+      asyncSetStorage('siji_api_key', encryptKey(providerKeys.value.deepseek))
     }
 
-    aiProvider.value = uni.getStorageSync('siji_ai_provider') || 'deepseek'
+    const pRaw = uni.getStorageSync('siji_ai_provider')
+    // 旧版国外厂商（openai 等已被移除）→ 回退到 deepseek
+    if (pRaw && pRaw !== 'deepseek' && pRaw !== 'zhipu' && pRaw !== 'qwen' && pRaw !== 'moonshot') {
+      // 自定义厂商或已移除厂商一律回退
+      if (!AI_PROVIDERS[pRaw]) {
+        aiProvider.value = 'deepseek'
+        asyncSetStorage('siji_ai_provider', 'deepseek')
+      } else {
+        aiProvider.value = pRaw
+      }
+    } else {
+      aiProvider.value = pRaw || 'deepseek'
+    }
+
     const model = uni.getStorageSync('siji_ai_model')
-    if (model && model.includes('-')) {
-      // 校验存储的模型是否仍在当前厂商的模型列表中
+    // 旧版模型名映射
+    const MODEL_MIGRATION = {
+      'qwen-turbo-latest': 'qwen-turbo',
+      'qwen-plus-latest': 'qwen-plus',
+      'qwen-max-latest': 'qwen-max',
+      'glm-4.7': 'glm-4.7-flash',
+    }
+    const resolvedModel = MODEL_MIGRATION[model] || model
+
+    if (resolvedModel && resolvedModel.includes('-')) {
       const availableModels = getProviderModels(aiProvider.value)
-      const modelExists = availableModels.some(m => m.id === model)
-      aiModel.value = modelExists ? model : (availableModels[0]?.id || 'deepseek-v4-flash')
-    } else if (model === '1' || model === 1) {
+      const modelExists = availableModels.some(m => m.id === resolvedModel)
+      aiModel.value = modelExists ? resolvedModel : (availableModels[0]?.id || 'deepseek-v4-flash')
+    } else if (resolvedModel === '1' || resolvedModel === 1) {
       const models = AI_PROVIDERS[aiProvider.value]?.models || []
       aiModel.value = models[1]?.id || getProviderDefaultModel(aiProvider.value)
     } else {
       aiModel.value = getProviderDefaultModel(aiProvider.value)
+    }
+    // 迁移后的模型回写
+    if (aiModel.value !== model) {
+      asyncSetStorage('siji_ai_model', aiModel.value)
     }
   }
 

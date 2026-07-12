@@ -3,15 +3,16 @@
  * 计划模板管理页
  *
  * 功能：
- *  ① 预置模板浏览
- *  ② 一键从模板创建计划
- *  ③ AI 定制模板（描述需求 → AI 拆解子任务 → 保存为模板）
- *  ④ 自定义创建空白模板
- *  ⑤ 模板编辑/删除
+ *  ① 预置模板浏览 ② 一键从模板创建计划
+ *  ③ AI 定制模板 ④ 自定义创建空白模板 ⑤ 模板编辑/删除
+ *
+ * UI 组件：TemplateCard（卡片）, TemplateForm（自定义表单）
  */
 
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, computed, onMounted } from 'vue'
+import TemplateCard from './components/TemplateCard.vue'
+import TemplateForm from './components/TemplateForm.vue'
+import { ref, onMounted } from 'vue'
 import { getPlanTemplates, savePlanTemplate, deletePlanTemplate } from '@/utils/storage.js'
 import { useAppStore } from '@/store/index.js'
 import { chatRequest } from '@/utils/api.js'
@@ -25,31 +26,12 @@ const aiInput = ref('')
 const aiLoading = ref(false)
 const aiPreview = ref(null)
 
-// 自定义模板表单
-const customForm = ref({
-  name: '',
-  icon: '📋',
-  color: '#000000',
-  description: '',
-  priority: 2,
-  subtasks: ['']
-})
-
-const iconOptions = ['📋', '🏃', '📚', '✈️', '🎓', '🌅', '💼', '💰', '🏠', '🎮', '✨', '🎯']
-const colorOptions = ['#000000', '#10B981', '#E8A838', '#D35D5D', '#F5A623', '#3F3F46']
-const priorityOptions = [
-  { label: '普通', value: 0, color: '#999' },
-  { label: '重要', value: 1, color: '#E8A838' },
-  { label: '紧急', value: 2, color: '#D35D5D' }
-]
-
 onMounted(() => { loadTemplates() })
 
 function loadTemplates() {
   templates.value = getPlanTemplates()
 }
 
-/** 从模板创建计划 */
 function useTemplate(tpl) {
   uni.showModal({
     title: '使用模板',
@@ -66,21 +48,17 @@ function useTemplate(tpl) {
   })
 }
 
-/** AI 生成模板 */
 async function generateAI() {
   if (!aiInput.value.trim()) {
     uni.showToast({ title: '请描述你想要的计划模板', icon: 'none' })
     return
   }
-
   if (!store.hasApiKey) {
     uni.showToast({ title: '请先在设置页配置 API Key', icon: 'none' })
     return
   }
-
   aiLoading.value = true
   aiPreview.value = null
-
   try {
     const prompt = `你是计划模板生成器。用户想创建一个计划模板，请根据描述智能拆解为3-8个可执行的子任务。
 
@@ -102,12 +80,10 @@ async function generateAI() {
     const raw = result.reply || ''
     let parsed
     try { parsed = JSON.parse(raw) } catch {
-      // 尝试提取 JSON
       const m = raw.match(/\{[\s\S]*\}/)
       if (m) parsed = JSON.parse(m[0])
       else throw new Error('AI 返回格式错误')
     }
-
     aiPreview.value = {
       name: parsed.name || '自定义模板',
       icon: parsed.icon || '📋',
@@ -125,7 +101,6 @@ async function generateAI() {
   }
 }
 
-/** 保存 AI 预览为模板 */
 function saveAIPreview() {
   if (!aiPreview.value) return
   const tpl = {
@@ -150,31 +125,17 @@ function saveAIPreview() {
   uni.showToast({ title: '模板已保存', icon: 'success' })
 }
 
-/** 保存自定义模板 */
-function saveCustom() {
-  if (!customForm.value.name.trim()) {
-    uni.showToast({ title: '请输入模板名称', icon: 'none' })
-    return
-  }
-  const subtasks = customForm.value.subtasks
-    .map(s => s.trim())
-    .filter(s => s)
-    .map(s => ({ title: s }))
-
-  if (subtasks.length === 0) {
-    uni.showToast({ title: '至少添加一个子任务', icon: 'none' })
-    return
-  }
-
+/** 从 TemplateForm 的 save 事件保存模板 */
+function saveCustom(data) {
   const tpl = {
     client_id: generateEntityId('tpl'),
-    name: customForm.value.name.trim(),
-    icon: customForm.value.icon,
-    color: customForm.value.color,
-    description: customForm.value.description.trim(),
+    name: data.name,
+    icon: data.icon,
+    color: data.color,
+    description: data.description,
     plan_data: {
-      priority: customForm.value.priority,
-      subtasks
+      priority: data.priority,
+      subtasks: data.subtasks.map(s => ({ title: s }))
     },
     created_at: Date.now(),
     updated_at: Date.now(),
@@ -183,12 +144,9 @@ function saveCustom() {
   savePlanTemplate(tpl)
   loadTemplates()
   showCustom.value = false
-  // 重置表单
-  customForm.value = { name: '', icon: '📋', color: '#000000', description: '', priority: 2, subtasks: [''] }
   uni.showToast({ title: '模板已保存', icon: 'success' })
 }
 
-/** 删除模板 */
 function removeTemplate(tpl) {
   uni.showModal({
     title: '删除模板',
@@ -201,16 +159,6 @@ function removeTemplate(tpl) {
       }
     }
   })
-}
-
-function addSubtask() {
-  customForm.value.subtasks.push('')
-}
-
-function removeSubtask(idx) {
-  if (customForm.value.subtasks.length > 1) {
-    customForm.value.subtasks.splice(idx, 1)
-  }
 }
 </script>
 
@@ -238,28 +186,12 @@ function removeSubtask(idx) {
       </view>
 
       <view v-else class="tpl-grid">
-        <view
+        <TemplateCard
           v-for="tpl in templates" :key="tpl.client_id"
-          class="tpl-card"
-        >
-          <view class="tpl-header" :style="{ background: tpl.color || '#000000' }">
-            <text class="tpl-icon">{{ tpl.icon || '📋' }}</text>
-            <text class="tpl-name">{{ tpl.name }}</text>
-          </view>
-          <view class="tpl-body">
-            <text class="tpl-desc" v-if="tpl.description">{{ tpl.description }}</text>
-            <view class="tpl-subtasks">
-              <view v-for="(s, i) in (tpl.plan_data?.subtasks || [])" :key="i" class="st-item">
-                <text class="st-bullet">·</text>
-                <text class="st-title">{{ s.title || s }}</text>
-              </view>
-            </view>
-          </view>
-          <view class="tpl-footer">
-            <view class="tpl-use" @tap="useTemplate(tpl)">使用</view>
-            <view class="tpl-del" @tap="removeTemplate(tpl)">删除</view>
-          </view>
-        </view>
+          :template="tpl"
+          @use="useTemplate"
+          @delete="removeTemplate"
+        />
       </view>
 
       <view style="height: 120rpx" />
@@ -295,7 +227,8 @@ function removeSubtask(idx) {
               :class="{ loading: aiLoading }"
               @tap="!aiLoading && generateAI()"
             >
-              <template v-if="aiLoading">AI 思考中...</template> <template v-else><SijiIcon name="sparkle" size="sm" /> 生成模板</template>
+              <template v-if="aiLoading">AI 思考中...</template>
+              <template v-else><SijiIcon name="sparkle" size="sm" /> 生成模板</template>
             </view>
           </view>
         </view>
@@ -324,99 +257,12 @@ function removeSubtask(idx) {
       </view>
     </view>
 
-    <!-- 自定义模板弹窗 -->
-    <view v-if="showCustom" class="modal-mask" @tap="showCustom = false">
-      <view class="modal-content" @tap.stop>
-        <view class="modal-header">
-          <view class="modal-title"><SijiIcon name="edit" size="sm" /><text>自定义模板</text></view>
-          <text class="modal-close" @tap="showCustom = false">✕</text>
-        </view>
-
-        <scroll-view class="custom-scroll" scroll-y>
-          <!-- 名称 -->
-          <view class="form-section">
-            <text class="form-label">模板名称</text>
-            <input v-model="customForm.name" class="form-input" placeholder="如：晨间惯例" maxlength="12" />
-          </view>
-
-          <!-- 图标 -->
-          <view class="form-section">
-            <text class="form-label">图标</text>
-            <view class="icon-row">
-              <view
-                v-for="icon in iconOptions" :key="icon"
-                class="icon-pick"
-                :class="{ active: customForm.icon === icon }"
-                @tap="customForm.icon = icon"
-              >{{ icon }}</view>
-            </view>
-          </view>
-
-          <!-- 颜色 -->
-          <view class="form-section">
-            <text class="form-label">颜色</text>
-            <view class="color-row">
-              <view
-                v-for="c in colorOptions" :key="c"
-                class="color-pick"
-                :class="{ active: customForm.color === c }"
-                :style="{ background: c }"
-                @tap="customForm.color = c"
-              />
-            </view>
-          </view>
-
-          <!-- 描述 -->
-          <view class="form-section">
-            <text class="form-label">描述</text>
-            <input v-model="customForm.description" class="form-input" placeholder="模板简介" maxlength="40" />
-          </view>
-
-          <!-- 优先级 -->
-          <view class="form-section">
-            <text class="form-label">默认优先级</text>
-            <view class="prio-row">
-              <view
-                v-for="p in priorityOptions" :key="p.value"
-                class="prio-pick"
-                :class="{ active: customForm.priority === p.value }"
-                :style="customForm.priority === p.value ? { background: p.color, color: '#fff' } : { borderColor: p.color, color: p.color }"
-                @tap="customForm.priority = p.value"
-              >{{ p.label }}</view>
-            </view>
-          </view>
-
-          <!-- 子任务 -->
-          <view class="form-section">
-            <text class="form-label">子任务</text>
-            <view
-              v-for="(s, i) in customForm.subtasks" :key="i"
-              class="subtask-input-row"
-            >
-              <text class="si-num">{{ i + 1 }}</text>
-              <input
-                v-model="customForm.subtasks[i]"
-                class="si-input"
-                :placeholder="`子任务 ${i + 1}`"
-                maxlength="30"
-              />
-              <text
-                v-if="customForm.subtasks.length > 1"
-                class="si-del"
-                @tap="removeSubtask(i)"
-              >✕</text>
-            </view>
-            <view class="add-subtask" @tap="addSubtask">+ 添加子任务</view>
-          </view>
-
-          <view style="height: 120rpx" />
-        </scroll-view>
-
-        <view class="modal-footer">
-          <view class="mf-btn save" @tap="saveCustom">保存模板</view>
-        </view>
-      </view>
-    </view>
+    <!-- 自定义模板弹窗（组件） -->
+    <TemplateForm
+      :visible="showCustom"
+      @close="showCustom = false"
+      @save="saveCustom"
+    />
   </view>
 </template>
 
@@ -483,95 +329,6 @@ function removeSubtask(idx) {
   flex-direction: column;
   gap: $spacing-md;
 }
-
-.tpl-card {
-  background: $bg-card;
-  border-radius: $radius-lg;
-  overflow: hidden;
-  box-shadow: $shadow-sm;
-}
-
-.tpl-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-md;
-}
-
-.tpl-icon { font-size: 40rpx; }
-.tpl-name { font-size: $font-lg; font-weight: 700; color: var(--text-on-ai); }
-
-.tpl-body {
-  padding: $spacing-md;
-}
-
-.tpl-desc {
-  font-size: $font-sm;
-  color: $text-secondary;
-  margin-bottom: $spacing-sm;
-  display: block;
-}
-
-.tpl-subtasks {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.st-item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.st-bullet { color: $accent; font-weight: 700; }
-.st-title { font-size: $font-sm; color: $text-primary; }
-
-.tpl-footer {
-  display: flex;
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
-}
-
-.tpl-use, .tpl-del {
-  flex: 1;
-  text-align: center;
-  padding: 20rpx 0;
-  font-size: $font-sm;
-  font-weight: 600;
-}
-
-.tpl-use { color: $accent; }
-.tpl-del { color: $danger; border-left: 1rpx solid rgba(0, 0, 0, 0.05); }
-
-/* 弹窗通用 */
-.modal-mask {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-}
-
-.modal-content {
-  width: 100%;
-  max-height: 85vh;
-  background: $bg-card;
-  border-radius: 32rpx 32rpx 0 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: $spacing-md;
-  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
-}
-
-.modal-title { font-size: $font-lg; font-weight: 700; }
-.modal-close { font-size: 32rpx; color: $text-hint; padding: 8rpx; }
 
 /* AI 输入 */
 .ai-input-section { padding: $spacing-md; }
@@ -692,124 +449,33 @@ function removeSubtask(idx) {
 .pa-btn.discard { background: $bg-input; color: $text-secondary; }
 .pa-btn.confirm { background: $accent; color: var(--text-on-ai); }
 
-/* 自定义表单 */
-.custom-scroll {
-  flex: 1;
-  padding: $spacing-md;
-  max-height: 60vh;
+/* 弹窗通用 */
+.modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
 }
 
-.form-section { margin-bottom: $spacing-md; }
-
-.form-label {
-  font-size: $font-sm;
-  color: $text-secondary;
-  margin-bottom: $spacing-sm;
-  display: block;
-}
-
-.form-input {
-  font-size: $font-md;
-  padding: 16rpx $spacing-sm;
-  background: $bg-input;
-  border-radius: $radius-sm;
+.modal-content {
   width: 100%;
-}
-
-.icon-row {
+  max-height: 85vh;
+  background: $bg-card;
+  border-radius: 32rpx 32rpx 0 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
+  flex-direction: column;
 }
 
-.icon-pick {
-  width: 64rpx; height: 64rpx;
-  text-align: center;
-  line-height: 64rpx;
-  font-size: 32rpx;
-  border-radius: $radius-sm;
-  background: $bg-input;
-
-  &.active { background: $accent; }
-}
-
-.color-row {
+.modal-header {
   display: flex;
-  gap: $spacing-sm;
-}
-
-.color-pick {
-  width: 56rpx; height: 56rpx;
-  border-radius: 50%;
-  border: 4rpx solid transparent;
-
-  &.active { border-color: $text-primary; }
-}
-
-.prio-row {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.prio-pick {
-  flex: 1;
-  text-align: center;
-  padding: 12rpx 0;
-  border-radius: $radius-sm;
-  font-size: $font-sm;
-  border: 2rpx solid;
-  transition: all $transition-fast;
-}
-
-.subtask-input-row {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
-}
-
-.si-num {
-  width: 36rpx; height: 36rpx;
-  border-radius: 50%;
-  background: $bg-input;
-  font-size: $font-xs;
-  color: $text-secondary;
-  text-align: center;
-  line-height: 36rpx;
-  flex-shrink: 0;
-}
-
-.si-input {
-  flex: 1;
-  font-size: $font-sm;
-  padding: 12rpx $spacing-sm;
-  background: $bg-input;
-  border-radius: $radius-sm;
-}
-
-.si-del { font-size: 24rpx; color: $danger; padding: 8rpx; }
-
-.add-subtask {
-  font-size: $font-sm;
-  color: $accent;
-  padding: 12rpx 0;
-  text-align: center;
-  border: 2rpx dashed rgba(0, 0, 0, 0.1);
-  border-radius: $radius-sm;
-}
-
-.modal-footer {
   padding: $spacing-md;
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
 }
 
-.mf-btn.save {
-  text-align: center;
-  padding: 24rpx 0;
-  background: $accent;
-  color: var(--text-on-ai);
-  border-radius: $radius-md;
-  font-size: $font-md;
-  font-weight: 600;
-}
+.modal-title { font-size: $font-lg; font-weight: 700; }
+.modal-close { font-size: 32rpx; color: $text-hint; padding: 8rpx; }
 </style>

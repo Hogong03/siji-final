@@ -1,5 +1,6 @@
 import { saveDiary, updateIndex, getDiaryList, searchByIndex } from '@/utils/storage.js'
 import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Diary 相关 executor 工厂函数
@@ -23,6 +24,7 @@ export function createDiaryExecutors(ctx) {
     saveDiary(diary)
     updateIndex('diary', diary)
     ctx.undoStack.value.push({ type: 'diary', clientId: diary.client_id, action: 'create' })
+    invalidatePromptCache()
     return {
       success: true,
       message: '日记已保存',
@@ -82,6 +84,7 @@ export function createDiaryExecutors(ctx) {
     const fieldLabels = { title: '标题', content: '内容', mood: '心情', tags: '标签' }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
+    invalidatePromptCache()
     return {
       success: true,
       message: `已修改日记（${changedText}）`,
@@ -109,6 +112,7 @@ export function createDiaryExecutors(ctx) {
         list[idx].updated_at = Date.now()
         asyncSetStorageJSON(key, list)
         ctx._cacheCid('diary', clientId, key)
+        invalidatePromptCache()
         return {
           success: true,
           message: '已删除日记',

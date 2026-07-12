@@ -5,15 +5,18 @@
  * UI: 极简未来 - 纯黑白 + AI 单色聚焦
  * 架构: 核心逻辑抽至 composables/useChatEngine.js，本文件只处理 UI 渲染 + 交互状态
  */
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, watch, computed } from 'vue'
 import { onShow, onLoad, onHide } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
-import { AI_PROVIDERS } from '@/utils/api.js'
 import { getPlanList, getDiaryList } from '@/utils/storage.js'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import InputArea from '@/components/chat/InputArea.vue'
+import ConversationPanel from '@/components/chat/ConversationPanel.vue'
+import GuideModal from '@/components/chat/GuideModal.vue'
+import ModelSwitcher from '@/components/chat/ModelSwitcher.vue'
+import AgentSwitcher from '@/components/chat/AgentSwitcher.vue'
 import { useChatEngine } from '@/composables/useChatEngine.js'
 
 const store = useAppStore()
@@ -24,9 +27,53 @@ const inputAreaRef = ref(null)
 const {
   isSending, stopSignal, pendingAction, pendingActions, pendingReply, currentSuggestions,
   simulationMode,
-  getWelcomeMessage, handleSend: engineSend, handleStop, autoExecuteAndDisplay,
+  getWelcomeMessage, handleSend: engineSend, handleStop: engineStop, handleRetry: engineRetry, autoExecuteAndDisplay,
   handleConfirmAction, handleCancelAction, initSimulation
 } = useChatEngine()
+
+// ==================== 重试栏 ====================
+const showRetryBar = ref(false)
+const retryMessage = ref('')
+const retryImage = ref(null)
+const pendingRetryData = ref(null)
+
+// 发送完成后检测失败消息
+watch(isSending, (v, prev) => {
+  if (!v && prev && !showRetryBar.value) {
+    const lastMsg = store.messages[store.messages.length - 1]
+    if (lastMsg && lastMsg.role === 'assistant' && lastMsg.failed) {
+      for (let i = store.messages.length - 2; i >= 0; i--) {
+        if (store.messages[i].role === 'user') {
+          retryMessage.value = store.messages[i].content
+          retryImage.value = store.messages[i].image || null
+          break
+        }
+      }
+      showRetryBar.value = true
+    }
+  }
+})
+
+function handleRetrySend() {
+  showRetryBar.value = false
+  engineRetry({}, inputAreaRef, scrollToBottom, { startStreamScroll, stopStreamScroll })
+}
+
+function handleRetryWithModel() {
+  showRetryBar.value = false
+  pendingRetryData.value = { message: retryMessage.value, image: retryImage.value }
+  showModelSwitch.value = true
+}
+
+function handleRetryEdit() {
+  showRetryBar.value = false
+  // 移除失败的 assistant 消息
+  const conv = store.activeConversation
+  if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length - 1].role === 'assistant' && conv.messages[conv.messages.length - 1].failed) {
+    conv.messages.pop()
+  }
+  inputAreaRef.value?.setText(retryMessage.value)
+}
 
 const editingMessage = ref(null)
 
@@ -62,54 +109,114 @@ onShow(() => {
 })
 
 onHide(() => {
-  // 页面隐藏时清除待处理参数
+  // 页面隐藏时清除待处理参数 + 停止流式滚动
   _pendingSimParams = null
+  stopStreamScroll()
 })
 
-// ==================== 滚动控制 ====================
-const scrollTopValue = ref(0)
+// ==================== 滚动控制（方案 C：双模式） ====================
+// 模式 1：锚点定位（普通场景 — 启动/切换会话/发送/结束）
+// 模式 2：增量 scroll-top（流式输出期间 — 零 DOM 查询）
+const scrollTopValue = ref(0)       // scroll-top 绑定值（流式增量模式用）
+const scrollIntoView = ref('')      // scroll-into-view 绑定值（锚点模式用）
+const scrollWithAnim = ref(true)    // 是否带动画
 const isAtBottom = ref(true)
 const showBackToBottom = ref(false)
-const scrollContentHeight = ref(0)
-const scrollClientHeight = ref(0)
+let shouldAutoScroll = false        // 用户是否在底部（发送时拍快照）
+let isProgrammaticScroll = false    // 程序化滚动锁（忽略 handleScroll）
+let lastScrollHeight = 0            // 上次已知的内容高度（增量估算用）
+let scrollTick = 0                  // scroll-top 强制变化用递增标记
 
-function handleScroll(e) {
-  const { scrollTop, scrollHeight } = e.detail
-  savedScrollTop = scrollTop
-  const distanceFromBottom = scrollHeight - scrollTop - (scrollClientHeight.value || 0)
-  const wasAtBottom = isAtBottom.value
-  isAtBottom.value = distanceFromBottom <= 80
-  const hasScrolledEnough = scrollHeight > (scrollClientHeight.value || 0) * 1.5 && distanceFromBottom > 300
-  showBackToBottom.value = !isAtBottom.value && hasScrolledEnough
+// --- 锚点滚动（精确，用于非流式场景） ---
+function scrollToBottomAnchor(animate = true) {
+  scrollWithAnim.value = animate
+  scrollIntoView.value = ''
+  nextTick(() => {
+    scrollIntoView.value = 'chat-bottom'
+  })
 }
 
-let scrollTick = 0
-let lastScrollTime = 0
+// --- scroll-top 滚动（流式增量模式，不查 DOM） ---
+function scrollToBottomTop(estimatedHeight) {
+  scrollWithAnim.value = false
+  scrollTick++
+  scrollTopValue.value = (estimatedHeight || lastScrollHeight || 99999) + scrollTick
+}
 
+// --- 统一入口 ---
 function scrollToBottom(force = false) {
+  if (force) {
+    shouldAutoScroll = true
+    scrollToBottomAnchor(true)
+    return
+  }
+  if (!shouldAutoScroll) return
+  scrollToBottomAnchor(true)
+}
+
+// --- 流式滚动：interval 驱动，零 DOM 查询 ---
+let streamScrollTimer = null
+
+function startStreamScroll() {
+  if (streamScrollTimer) return
+  // 先查一次实际高度作为基线
+  const query = uni.createSelectorQuery()
+  query.select('#chat-scroll').scrollOffset()
+  query.exec(res => {
+    if (res && res[0]) lastScrollHeight = res[0].scrollHeight
+  })
+  // 每 150ms 增量追加 scroll-top（不查 DOM）
+  streamScrollTimer = setInterval(() => {
+    if (!shouldAutoScroll) return
+    // 增量估算：每次 +400rpx（约 2 行文字）
+    lastScrollHeight += 400
+    scrollToBottomTop(lastScrollHeight)
+  }, 150)
+}
+
+function stopStreamScroll() {
+  if (!streamScrollTimer) return
+  clearInterval(streamScrollTimer)
+  streamScrollTimer = null
+  // 结束时精确对齐一次（查 DOM 修正误差）
   nextTick(() => {
-    if (!force && !isAtBottom.value) return
-    const now = Date.now()
-    if (!force && now - lastScrollTime < 80) return
-    lastScrollTime = now
     const query = uni.createSelectorQuery()
-    query.select('#chat-scroll').boundingClientRect()
     query.select('#chat-scroll').scrollOffset()
     query.exec(res => {
-      if (res && res[0] && res[1]) {
-        scrollClientHeight.value = res[0].height
-        scrollContentHeight.value = res[1].scrollHeight
+      if (res && res[0]) {
+        lastScrollHeight = res[0].scrollHeight
         scrollTick++
-        scrollTopValue.value = res[1].scrollHeight + scrollTick
+        isProgrammaticScroll = true
+        scrollTopValue.value = res[0].scrollHeight + scrollTick
+        setTimeout(() => { isProgrammaticScroll = false }, 300)
       }
     })
   })
 }
 
+function handleScroll(e) {
+  if (isProgrammaticScroll) return
+  const { scrollTop, scrollHeight } = e.detail
+  const sh = scrollHeight || (e.target && e.target.scrollHeight) || 0
+  lastScrollHeight = sh
+  const clientH = e.target && e.target.clientHeight
+    ? e.target.clientHeight
+    : (typeof window !== 'undefined' ? window.innerHeight : (uni.getSystemInfoSync().windowHeight || 600))
+  const distanceFromBottom = sh - scrollTop - clientH
+  isAtBottom.value = distanceFromBottom <= 80
+  const hasScrolledEnough = sh > clientH * 1.5 && distanceFromBottom > 300
+  showBackToBottom.value = !isAtBottom.value && hasScrolledEnough
+  // 用户主动上滑 → 取消追底 + 停止流式滚动
+  if (shouldAutoScroll && distanceFromBottom > 150) {
+    shouldAutoScroll = false
+  }
+}
+
 function backToBottom() {
+  shouldAutoScroll = true
   isAtBottom.value = true
   showBackToBottom.value = false
-  scrollToBottom(true)
+  scrollToBottomAnchor(true)
 }
 
 onMounted(() => {
@@ -121,6 +228,10 @@ onMounted(() => {
   }
   const sysInfo = uni.getSystemInfoSync()
   statusBarHeight.value = sysInfo.statusBarHeight || 0
+  // 启动时滚到底部
+  nextTick(() => {
+    setTimeout(() => scrollToBottomAnchor(false), 50)
+  })
 })
 
 /** 发送消息 — 包装 engine 的 handleSend，注入 inputAreaRef 和 scrollToBottom */
@@ -129,8 +240,13 @@ const pendingImage = ref(null)
 function handleSend(text) {
   const message = text || inputText.value.trim()
   if (!message || isSending.value) return
+  showRetryBar.value = false
+  shouldAutoScroll = true  // 用户发送 → 强制追底
   const img = pendingImage.value
-  engineSend(message, inputAreaRef, scrollToBottom, img)
+  engineSend(message, inputAreaRef, scrollToBottom, img, {
+    startStreamScroll,
+    stopStreamScroll
+  })
   pendingImage.value = null
 }
 
@@ -189,6 +305,12 @@ function handleSuggestion(text) {
   handleSend(text)
 }
 
+/** 停止 AI 输出 — 先停流式滚动，再调 engine stop */
+function handleStop() {
+  stopStreamScroll()
+  engineStop()
+}
+
 function handleUpdateTags({ detail, tags }) {
   if (!detail || !tags) return
   let ok = false
@@ -233,8 +355,6 @@ function handleConfirmActionCard(card) {
 // ==================== UI Modal / Panel 状态 ====================
 const showGuide = ref(false)
 function showGuideModal() { showGuide.value = true }
-function closeGuide() { showGuide.value = false }
-function goToFullHelp() { showGuide.value = false; uni.navigateTo({ url: '/pages/settings/sub/help' }) }
 
 const statusBarHeight = ref(0)
 const showAgentSwitch = ref(false)
@@ -282,9 +402,12 @@ function handleNewConversation() {
 function handleSwitchConversation(id) {
   store.switchConversation(id)
   showConvList.value = false
+  shouldAutoScroll = true
   isAtBottom.value = true
   showBackToBottom.value = false
-  nextTick(() => scrollToBottom(true))
+  nextTick(() => {
+    setTimeout(() => scrollToBottomAnchor(false), 50)
+  })
 }
 
 function handleDeleteConversation(conv) {
@@ -303,7 +426,9 @@ function handleDeleteConversation(conv) {
         uni.showToast({ title: '已删除', icon: 'none' })
         isAtBottom.value = true
         showBackToBottom.value = false
-        nextTick(() => scrollToBottom(true))
+        nextTick(() => {
+          setTimeout(() => scrollToBottomAnchor(false), 50)
+        })
       }
     }
   })
@@ -321,56 +446,26 @@ function handleRenameConversation(conv) {
   })
 }
 
-function formatConvTime(ts) {
-  if (!ts) return ''
-  const d = new Date(ts)
-  const now = new Date()
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  const that = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  if (today === that) return time
-  return that.substring(5)
-}
-
 function toggleAgentSwitch() { showAgentSwitch.value = !showAgentSwitch.value }
-function quickSwitchAgent(agentId) {
-  store.setActiveAgent(agentId)
-  showAgentSwitch.value = false
-  const a = store.agents.find(a => a.id === agentId)
-  uni.showToast({ title: `已切换至 ${a?.name}`, icon: 'none' })
-}
-function goToAgentConfig() { showAgentSwitch.value = false; uni.navigateTo({ url: '/pages/settings/sub/agent' }) }
-
-const switchableProviders = computed(() => {
-  const customRaw = uni.getStorageSync('siji_custom_providers')
-  let custom = {}
-  try { custom = customRaw ? JSON.parse(customRaw) : {} } catch {}
-  const all = { ...AI_PROVIDERS, ...custom }
-  return Object.values(all).filter(p => store.providerKeys[p.id])
-})
-const switchableModels = computed(() => store.getAvailableModels(store.aiProvider))
-
 function toggleModelSwitch() { showModelSwitch.value = !showModelSwitch.value }
-function quickSwitchProvider(pid) { store.setAiProvider(pid) }
-function quickSwitchModel(mid) {
-  store.setAiModel(mid)
-  showModelSwitch.value = false
-  uni.showToast({ title: '已切换模型', icon: 'none' })
-}
-function goToAiConfig() { showModelSwitch.value = false; uni.navigateTo({ url: '/pages/settings/sub/ai' }) }
 
-// ==================== onShow: 同步标签 + 恢复滚动位置 ====================
+// 换模型重试：ModelSwitcher 关闭后触发 retry
+watch(showModelSwitch, (v, prev) => {
+  if (!v && prev && pendingRetryData.value) {
+    pendingRetryData.value = null
+    engineRetry({}, inputAreaRef, scrollToBottom, { startStreamScroll, stopStreamScroll })
+  }
+})
+
+// ==================== onShow: 同步标签 + 滚到底部 ====================
 let savedScrollTop = 0
 
 onShow(() => {
   syncAllMessageTags()
-  // 恢复上次滚动位置（不强制滚到底部）
-  if (savedScrollTop > 0) {
+  // 返回页面时滚到底部（不恢复旧位置 — 内容可能已变化）
+  if (!isSending.value) {
     nextTick(() => {
-      setTimeout(() => {
-        scrollTick++
-        scrollTopValue.value = savedScrollTop + scrollTick
-      }, 100)
+      setTimeout(() => scrollToBottomAnchor(false), 100)
     })
   }
 })
@@ -447,7 +542,15 @@ function syncAllMessageTags() {
     </view>
 
     <!-- 消息列表 -->
-    <scroll-view id="chat-scroll" class="chat-scroll" scroll-y :scroll-with-animation="true" :scroll-top="scrollTopValue" @scroll="handleScroll">
+    <scroll-view 
+      id="chat-scroll" 
+      class="chat-scroll" 
+      scroll-y 
+      :scroll-with-animation="scrollWithAnim" 
+      :scroll-top="scrollTopValue" 
+      :scroll-into-view="scrollIntoView"
+      @scroll="handleScroll"
+    >
       <view class="messages-list">
         <MessageBubble
           v-for="(msg, i) in store.messages" :key="i"
@@ -482,911 +585,51 @@ function syncAllMessageTags() {
       </view>
     </view>
 
+    <!-- 重试栏 -->
+    <view v-if="showRetryBar && !isSending" class="retry-bar">
+      <text class="retry-bar-title">AI 走神了，要不要再试一次？</text>
+      <view class="retry-bar-actions">
+        <view class="retry-btn retry-btn-primary" @tap="handleRetrySend">
+          <SijiIcon name="refresh" size="sm" />
+          <text>重新发送</text>
+        </view>
+        <view class="retry-btn retry-btn-secondary" @tap="handleRetryWithModel">
+          <SijiIcon name="settings" size="sm" />
+          <text>换模型</text>
+        </view>
+        <view class="retry-btn retry-btn-secondary" @tap="handleRetryEdit">
+          <SijiIcon name="edit" size="sm" />
+          <text>编辑</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 输入区 -->
     <InputArea ref="inputAreaRef" v-model="inputText" :disabled="isSending" :is-sending="isSending" @send="handleSend" @stop="handleStop" @image-selected="onImageSelected" @image-cleared="onImageCleared" />
 
     <!-- AI 使用说明 Modal -->
-    <view v-if="showGuide" class="modal-mask" @tap="closeGuide">
-      <view class="modal-container" @tap.stop>
-        <view class="modal-header">
-          <text class="modal-title">使用说明</text>
-          <view class="modal-close" @tap="closeGuide"><SijiIcon name="close" size="md" /></view>
-        </view>
-        <scroll-view class="modal-body" scroll-y>
-          <view class="guide-section">
-            <text class="guide-section-title">说话示例</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag bill">记账</text>
-            <text class="gi-text">"午饭花了35" → 自动记账</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag diary">日记</text>
-            <text class="gi-text">"今天心情不错" → 自动写日记</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag plan">计划</text>
-            <text class="gi-text">"下周完成报告" → 自动建计划</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag multi">复合</text>
-            <text class="gi-text">"买咖啡15,顺便定健身计划" → 同时执行</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag query">查询</text>
-            <text class="gi-text">"这个月花了多少" → 查账单</text>
-          </view>
-          <view class="guide-item">
-            <text class="gi-tag undo">撤销</text>
-            <text class="gi-text">"撤销刚才的操作" → 回退</text>
-          </view>
-          <view class="guide-section">
-            <text class="guide-section-title">小贴士</text>
-          </view>
-          <view class="guide-tip">
-            <text>· 快捷短语点击追加文本,不会覆盖已输入内容</text>
-          </view>
-          <view class="guide-tip">
-            <text>· 点击记账/日记/计划按钮插入标签,可多次插入</text>
-          </view>
-          <view class="guide-tip">
-            <text>· 金额 ≥ 500 元需确认,防误操作</text>
-          </view>
-          <view class="guide-tip">
-            <text>· 执行结果可编辑,点击「查看 →」跳转详情</text>
-          </view>
-          <view class="guide-more" @tap="goToFullHelp">
-            <text>查看完整使用说明 ›</text>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
+    <GuideModal :show="showGuide" @close="showGuide = false" />
 
     <!-- 模型快速切换 Modal -->
-    <view v-if="showModelSwitch" class="modal-mask" @tap="toggleModelSwitch">
-      <view class="modal-container model-switch-container" @tap.stop>
-        <view class="modal-header">
-          <text class="modal-title">切换模型</text>
-          <view class="modal-close" @tap="toggleModelSwitch"><SijiIcon name="close" size="md" /></view>
-        </view>
-        <scroll-view class="modal-body" scroll-y>
-          <text class="switch-section-label">厂商</text>
-          <view class="switch-provider-grid">
-            <view
-              v-for="p in switchableProviders" :key="p.id"
-              class="switch-provider-item"
-              :class="{ active: store.aiProvider === p.id }"
-              @tap="quickSwitchProvider(p.id)"
-            >
-              <text class="switch-provider-name">{{ p.name }}</text>
-            </view>
-          </view>
-          <text class="switch-section-label" v-if="switchableProviders.length === 0">未配置任何 API Key</text>
-          <view class="switch-empty" v-if="switchableProviders.length === 0">
-            <text class="switch-empty-text">请在设置中配置至少一个厂商的 API Key</text>
-            <view class="switch-empty-btn" @tap="goToAiConfig">
-              <text>去配置</text>
-            </view>
-          </view>
-          <template v-if="switchableProviders.length > 0">
-            <text class="switch-section-label">模型</text>
-            <view class="switch-model-list">
-              <view
-                v-for="m in switchableModels" :key="m.id"
-                class="switch-model-item"
-                :class="{ active: store.aiModel === m.id }"
-                @tap="quickSwitchModel(m.id)"
-              >
-                <view class="switch-model-info">
-                  <text class="switch-model-name">{{ m.name }}</text>
-                  <text class="switch-model-desc">{{ m.desc }}</text>
-                </view>
-                <SijiIcon name="check" size="sm" class="switch-model-check" v-if="store.aiModel === m.id" />
-              </view>
-            </view>
-            <view class="switch-config-btn" @tap="goToAiConfig">
-              <SijiIcon name="settings" size="sm" class="switch-config-icon" />
-              <text>高级配置</text>
-            </view>
-          </template>
-        </scroll-view>
-      </view>
-    </view>
+    <ModelSwitcher :show="showModelSwitch" @close="showModelSwitch = false" />
 
     <!-- Agent 快速切换 Modal -->
-    <view v-if="showAgentSwitch" class="modal-mask" @tap="toggleAgentSwitch">
-      <view class="modal-container model-switch-container" @tap.stop>
-        <view class="modal-header">
-          <text class="modal-title">切换 Agent</text>
-          <view class="modal-close" @tap="toggleAgentSwitch"><SijiIcon name="close" size="md" /></view>
-        </view>
-        <scroll-view class="modal-body" scroll-y>
-          <view class="switch-model-list">
-            <view
-              v-for="a in store.agents" :key="a.id"
-              class="switch-model-item"
-              :class="{ active: store.activeAgentId === a.id }"
-              @tap="quickSwitchAgent(a.id)"
-            >
-              <view class="switch-model-info switch-agent-info">
-                <AgentAvatar :name="a.name" size="56" />
-                <view class="switch-agent-text">
-                  <text class="switch-model-name">{{ a.name }}</text>
-                  <text class="switch-model-desc">{{ a.description || '自定义 Agent' }}</text>
-                </view>
-              </view>
-              <SijiIcon name="check" size="sm" class="switch-model-check" v-if="store.activeAgentId === a.id" />
-            </view>
-          </view>
-          <view class="switch-config-btn" @tap="goToAgentConfig">
-            <SijiIcon name="settings" size="sm" class="switch-config-icon" /><text>管理 Agent</text>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
+    <AgentSwitcher :show="showAgentSwitch" @close="showAgentSwitch = false" />
 
     <!-- 会话列表抽屉 -->
-    <view v-if="showConvList" class="conv-mask" @tap="toggleConvList">
-      <view class="conv-drawer" @tap.stop>
-        <view class="conv-drawer-header">
-          <text class="conv-drawer-title">对话列表</text>
-        </view>
-        <scroll-view class="conv-list-scroll" scroll-y>
-          <view
-            v-for="conv in sortedConversations" :key="conv.id"
-            class="conv-item"
-            :class="{ active: conv.id === store.activeConversationId }"
-            @tap="handleSwitchConversation(conv.id)"
-            @longpress="handleDeleteConversation(conv)"
-          >
-            <view class="conv-item-info">
-              <view class="conv-item-title-row">
-                <text class="conv-item-title">{{ conv.title }}</text>
-              </view>
-              <text class="conv-item-time">{{ formatConvTime(conv.updatedAt) }}</text>
-            </view>
-            <view class="conv-item-actions">
-              <view class="conv-item-rename" @tap.stop="handleRenameConversation(conv)"><SijiIcon name="edit" size="sm" /></view>
-              <text class="conv-item-msgs">{{ conv.messages.length }} 条</text>
-            </view>
-          </view>
-          <view v-if="sortedConversations.length === 0" class="conv-empty">
-            <text class="conv-empty-text">暂无对话</text>
-          </view>
-          <view class="conv-new-divider" @tap="handleNewConversation">
-            <view class="conv-divider-line" />
-            <text class="conv-new-divider-text">新对话</text>
-            <view class="conv-divider-line" />
-          </view>
-          <view class="conv-shortcuts">
-            <view class="conv-shortcut-item" @tap="uni.navigateTo({ url: '/pages/settings/sub/profile' })">
-              <SijiIcon name="user" size="md" class="conv-shortcut-icon" />
-              <text class="conv-shortcut-text">我的信息</text>
-            </view>
-            <view class="conv-shortcut-item" @tap="uni.navigateTo({ url: '/pages/settings/sub/ai' })">
-              <SijiIcon name="settings" size="md" class="conv-shortcut-icon" />
-              <text class="conv-shortcut-text">AI 配置</text>
-            </view>
-          </view>
-          <view class="conv-bottom-spacer" />
-        </scroll-view>
-      </view>
-    </view>
+    <ConversationPanel
+      :show="showConvList"
+      :conversations="sortedConversations"
+      :active-id="store.activeConversationId"
+      @close="toggleConvList"
+      @switch="handleSwitchConversation"
+      @delete="handleDeleteConversation"
+      @rename="handleRenameConversation"
+      @new="handleNewConversation"
+    />
   </view>
 </template>
 
 <style lang="scss" scoped>
-.chat-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: var(--bg-card);
-  position: relative;
-  overflow: hidden;
-}
-
-.custom-nav {
-  position: relative;
-  z-index: 1;
-  background: var(--bg-card);
-  border-bottom: 1rpx solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.sim-banner {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12rpx 24rpx;
-  background: var(--accent, #000000);
-  flex-shrink: 0;
-}
-.sim-banner-left { display: flex; align-items: center; gap: 8rpx; }
-.sim-banner-text { font-size: 24rpx; color: var(--bg-card, #FFFFFF); font-weight: 500; }
-.sim-banner-hint { font-size: 22rpx; color: rgba(255,255,255,0.6); }
-
-.nav-content {
-  display: flex;
-  align-items: center;
-  height: 88rpx;
-  padding: 0 $spacing-md;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.nav-title {
-  font-size: 36rpx;
-  font-weight: 800;
-  color: var(--color-ai);
-  letter-spacing: 1rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-subtitle {
-  font-size: $font-xs;
-  color: var(--text-hint);
-  margin-left: $spacing-sm;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex-shrink: 1;
-  min-width: 0;
-}
-
-.nav-badge {
-  margin-left: auto;
-  max-width: 45%;
-  overflow: hidden;
-  flex-shrink: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  background: var(--bg-input);
-  padding: 4rpx 16rpx 4rpx 4rpx;
-  border-radius: 24rpx;
-  border: 1rpx solid var(--border-color);
-
-  .badge-text {
-    font-size: $font-xs;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-}
-
-.nav-menu-btn {
-  margin-right: $spacing-sm;
-  width: 56rpx;
-  height: 56rpx;
-  min-width: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-sizing: border-box;
-
-  .menu-icon {
-    font-size: 32rpx;
-    color: var(--text-primary);
-  }
-
-  &:active {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-}
-
-.nav-guide-btn {
-  margin-left: $spacing-sm;
-  width: 56rpx;
-  height: 56rpx;
-  min-width: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--bg-input);
-  flex-shrink: 0;
-  box-sizing: border-box;
-
-  .guide-icon {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--text-secondary);
-  }
-
-  &:active {
-    background: var(--border-color);
-    transform: scale(0.92);
-  }
-}
-
-.chat-scroll {
-  flex: 1;
-  overflow-y: auto;
-  position: relative;
-  z-index: 1;
-}
-
-.back-to-bottom {
-  position: absolute;
-  right: 24rpx;
-  bottom: 240rpx;
-  width: 56rpx;
-  height: 56rpx;
-  border-radius: 100%;
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: $shadow-sm;
-  z-index: 5;
-  opacity: 0;
-  animation: bbFadeIn 0.3s ease 0.3s forwards;
-  transition: all 0.15s;
-
-  &:active {
-    transform: scale(0.9);
-    background: var(--bg-input);
-  }
-}
-
-@keyframes bbFadeIn {
-  from { opacity: 0; transform: translateY(8rpx); }
-  to { opacity: 0.6; transform: translateY(0); }
-}
-
-.messages-list {
-  padding: $spacing-md 0;
-}
-
-.modal-mask {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-container {
-  width: 86%;
-  max-width: 640rpx;
-  max-height: 72vh;
-  background: var(--bg-card);
-  border-radius: 16rpx;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-md $spacing-lg;
-  border-bottom: 1rpx solid var(--border-color);
-  flex-shrink: 0;
-  box-sizing: border-box;
-
-  .modal-title {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--color-ai);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-  }
-  .modal-close {
-    font-size: 36rpx;
-    color: var(--text-hint);
-    padding: 0 8rpx;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-}
-
-.modal-body {
-  padding: $spacing-md $spacing-lg;
-  flex: 1;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
-.guide-section {
-  margin-top: $spacing-sm;
-  margin-bottom: 4rpx;
-
-  .guide-section-title {
-    font-size: $font-xs;
-    font-weight: 700;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1rpx;
-  }
-
-  &:first-child { margin-top: 0; }
-}
-
-.guide-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-xs 0;
-  border-bottom: 1rpx solid var(--bg-input);
-
-  &:last-of-type { border-bottom: none; }
-
-  .gi-tag {
-    flex-shrink: 0;
-    font-size: 20rpx;
-    font-weight: 600;
-    padding: 4rpx 14rpx;
-    border-radius: 4rpx;
-    min-width: 56rpx;
-    text-align: center;
-
-    &.bill { background: var(--bg-input); color: var(--color-bill); }
-    &.diary { background: var(--bg-input); color: var(--color-warning); }
-    &.plan { background: var(--bg-input); color: var(--color-plan); }
-    &.multi { background: var(--bg-input); color: var(--text-primary); }
-    &.query { background: var(--bg-input); color: var(--color-info); }
-    &.undo { background: var(--bg-input); color: var(--color-danger); }
-  }
-
-  .gi-text {
-    flex: 1;
-    font-size: $font-xs;
-    color: var(--text-strong);
-    line-height: 1.6;
-  }
-}
-
-.guide-tip {
-  padding: 6rpx 0;
-
-  text {
-    font-size: $font-xs;
-    color: var(--text-secondary);
-    line-height: 1.7;
-  }
-}
-
-.guide-more {
-  margin-top: $spacing-sm;
-  padding: $spacing-xs $spacing-sm;
-  text-align: center;
-  border-radius: 8rpx;
-  background: var(--bg-input);
-
-  text {
-    font-size: $font-xs;
-    color: var(--color-ai);
-    font-weight: 600;
-  }
-}
-
-.model-switch-container {
-  max-height: 68vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.switch-section-label {
-  font-size: $font-xs;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1rpx;
-  display: block;
-  margin: $spacing-sm 0 $spacing-xs;
-}
-
-.switch-provider-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-xs;
-  overflow: hidden;
-}
-
-.switch-provider-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $radius-sm;
-  background: var(--bg-input);
-  border: 2rpx solid transparent;
-  min-width: 100rpx;
-  max-width: calc(50% - #{$spacing-xs} / 2);
-  box-sizing: border-box;
-  overflow: hidden;
-
-  &:active { transform: scale(0.95); }
-
-  &.active {
-    border-color: var(--color-ai);
-    background: var(--bg-card);
-  }
-
-  .switch-provider-name {
-    font-size: $font-xs;
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-}
-
-.switch-model-list {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.switch-model-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-sm;
-  border-radius: $radius-sm;
-  background: var(--bg-input);
-  border: 2rpx solid transparent;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  &:active { transform: scale(0.98); }
-
-  &.active {
-    border-color: var(--color-ai);
-    background: var(--bg-card);
-  }
-
-  .switch-model-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2rpx;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .switch-agent-info {
-    flex-direction: row;
-    align-items: center;
-    gap: 16rpx;
-  }
-
-  .switch-agent-text {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2rpx;
-    min-width: 0;
-    overflow: hidden;
-
-    .switch-model-name {
-      font-size: $font-sm;
-      font-weight: 600;
-      color: var(--text-primary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .switch-model-desc {
-      font-size: $font-xs;
-      color: var(--text-secondary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .switch-model-check {
-    font-size: $font-md;
-    font-weight: 700;
-    color: var(--color-ai);
-    flex-shrink: 0;
-  }
-}
-
-.switch-config-btn {
-  margin-top: $spacing-md;
-  padding: $spacing-sm;
-  text-align: center;
-  border-radius: $radius-sm;
-  background: var(--bg-input);
-  box-sizing: border-box;
-  overflow: hidden;
-
-  text {
-    font-size: $font-xs;
-    color: var(--color-ai);
-    font-weight: 600;
-    display: inline-block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-}
-
-.switch-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-md;
-  padding: $spacing-lg 0;
-
-  .switch-empty-text {
-    font-size: $font-xs;
-    color: var(--text-secondary);
-  }
-
-  .switch-empty-btn {
-    padding: $spacing-xs $spacing-lg;
-    background: var(--color-ai);
-    border-radius: $radius-sm;
-
-    text {
-      font-size: $font-xs;
-      color: var(--bg-card);
-      font-weight: 600;
-    }
-  }
-}
-
-.conv-mask {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 999;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.conv-drawer {
-  width: 100%;
-  height: 70vh;
-  background: var(--bg-card);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-  border-radius: $radius-xl $radius-xl 0 0;
-  animation: sheetSlideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes sheetSlideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.conv-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: $spacing-md;
-  border-bottom: 1rpx solid var(--border-color);
-  flex-shrink: 0;
-  box-sizing: border-box;
-  position: relative;
-
-  .conv-drawer-title {
-    font-size: $font-lg;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-}
-
-/* 底部 Sheet 拖拽指示器 */
-.conv-drawer-header::before {
-  content: '';
-  position: absolute;
-  top: -16rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 64rpx;
-  height: 8rpx;
-  border-radius: 4rpx;
-  background: var(--text-hint);
-  opacity: 0.3;
-}
-
-.conv-new-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-lg;
-  margin-top: $spacing-sm;
-  box-sizing: border-box;
-
-  .conv-divider-line {
-    flex: 1;
-    height: 1rpx;
-    border-top: 2rpx dashed var(--border-color);
-  }
-
-  .conv-new-divider-text {
-    font-size: $font-sm;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    padding: 0 $spacing-xs;
-  }
-
-  &:active .conv-new-divider-text {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-}
-
-.conv-list-scroll {
-  flex: 1;
-  overflow: hidden;
-}
-
-.conv-item {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-md;
-  border-bottom: 1rpx solid var(--border-color);
-  box-sizing: border-box;
-  overflow: hidden;
-
-  &:active { background: var(--bg-input); }
-  &.active {
-    background: var(--bg-input);
-    border-left: 6rpx solid #000000;
-  }
-}
-
-.conv-item-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.conv-item-title-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.conv-item-actions {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  flex-shrink: 0;
-}
-
-.conv-item-rename {
-  font-size: 32rpx;
-  color: var(--text-hint, #999);
-  padding: 4rpx 8rpx;
-
-  &:active { color: var(--text-primary); }
-}
-
-.conv-item-title {
-  font-size: $font-md;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.conv-item-time {
-  font-size: $font-xs;
-  color: var(--text-hint, #999);
-}
-
-.conv-item-msgs {
-  font-size: $font-xs;
-  color: var(--text-hint, #999);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.conv-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-lg 0;
-
-  .conv-empty-text {
-    font-size: $font-sm;
-    color: var(--text-hint, #999);
-  }
-}
-
-.conv-bottom-spacer {
-  height: 60rpx;
-  flex-shrink: 0;
-}
-
-.conv-shortcuts {
-  display: flex;
-  gap: 24rpx;
-  padding: 16rpx 24rpx;
-  margin-top: 8rpx;
-}
-.conv-shortcut-item {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  padding: 20rpx 0;
-  background: var(--bg-card);
-  border-radius: 16rpx;
-  border: 1rpx solid var(--border-color);
-  box-sizing: border-box;
-}
-.conv-shortcut-item:active {
-  opacity: 0.6;
-}
-.conv-shortcut-icon {
-  font-size: 28rpx;
-}
-.conv-shortcut-text {
-  font-size: 24rpx;
-  color: var(--text-secondary);
-}
-
-.suggestions-bar {
-  display: flex;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-md;
-  flex-shrink: 0;
-  overflow-x: auto;
-  white-space: nowrap;
-  background: var(--bg-card);
-  border-top: 1rpx solid var(--border-color);
-}
-
-.suggestion-chip {
-  flex-shrink: 0;
-  padding: 10rpx 24rpx;
-  border-radius: 24rpx;
-  background: var(--bg-input);
-  font-size: $font-xs;
-  color: var(--text-primary);
-  border: 1rpx solid var(--border-color);
-  transition: opacity 0.2s;
-
-  &:active {
-    opacity: 0.6;
-  }
-}
+@import './chat.scss';
 </style>

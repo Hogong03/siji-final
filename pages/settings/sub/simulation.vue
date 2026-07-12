@@ -115,178 +115,183 @@
   </view>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getAllRelations } from '@/utils/relations.js'
 import { getAllSimulations, createSimulation, deleteSimulation, SIM_MODES } from '@/utils/simulation.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 
-export default {
-  components: { SijiIcon },
-  data() {
-    return {
-      modes: [
-        { ...SIM_MODES.social },
-        { ...SIM_MODES.planning },
-        { ...SIM_MODES.relationship }
-      ],
-      selectedMode: '',
-      relations: [],
-      simulations: [],
-      relationIdx: -1,
-      activeFilter: 'all',
-      expandedId: '',
-      form: {
-        relation_id: '',
-        relation_name: '',
-        scene: '',
-        goal: ''
-      }
-    }
-  },
-  computed: {
-    currentMode() {
-      const m = this.modes.find(x => x.id === this.selectedMode)
-      return m || this.modes[0]
-    },
-    canStart() {
-      if (!this.selectedMode) return false
-      if (this.currentMode.needsRelation && !this.form.relation_name.trim()) return false
-      return this.form.scene.trim().length > 0
-    },
-    modeStats() {
-      const stats = { social: 0, planning: 0, relationship: 0 }
-      this.simulations.forEach(s => {
-        const m = s.mode || 'social'
-        if (stats[m] !== undefined) stats[m]++
-      })
-      return stats
-    },
-    filterTabs() {
-      return [
-        { id: 'all', label: '全部', count: this.simulations.length },
-        { id: 'social', label: '社交', count: this.modeStats.social },
-        { id: 'planning', label: '规划', count: this.modeStats.planning },
-        { id: 'relationship', label: '关系', count: this.modeStats.relationship }
-      ]
-    },
-    filteredSims() {
-      if (this.activeFilter === 'all') return this.simulations
-      return this.simulations.filter(s => (s.mode || 'social') === this.activeFilter)
-    }
-  },
-  onLoad(options) {
-    if (options && options.mode && SIM_MODES[options.mode]) {
-      this.selectedMode = options.mode
-    }
-    if (options && options.relation_id) {
-      this.form.relation_id = options.relation_id
-      this.form.relation_name = options.name ? decodeURIComponent(options.name) : ''
-    }
-    this.loadData()
-  },
-  onShow() {
-    this.loadData()
-  },
-  methods: {
-    loadData() {
-      this.relations = getAllRelations()
-      this.simulations = getAllSimulations()
-      if (this.form.relation_id) {
-        const idx = this.relations.findIndex(r => r.id === this.form.relation_id)
-        if (idx >= 0) {
-          this.relationIdx = idx
-          this.form.relation_name = this.relations[idx].name
-        }
-      }
-    },
-    selectMode(modeId) {
-      this.selectedMode = modeId
-      if (!SIM_MODES[modeId].needsRelation) {
-        this.form.relation_id = ''
-        this.form.relation_name = ''
-        this.relationIdx = -1
-      }
-    },
-    selectRelation(i) {
-      this.relationIdx = i
-      const r = this.relations[i]
-      this.form.relation_id = r.id
-      this.form.relation_name = r.name
-    },
-    getModeTitle(mode) {
-      return (SIM_MODES[mode || 'social'] || {}).title || '社交沙盘'
-    },
-    formatTime(ts) {
-      const d = new Date(ts)
-      return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-    },
-    startSimulation() {
-      if (!this.canStart) {
-        uni.showToast({ title: '请填写场景和人物', icon: 'none' })
-        return
-      }
-      const sim = createSimulation({
-        mode: this.selectedMode,
-        relationId: this.form.relation_id,
-        relationName: this.form.relation_name.trim(),
-        scene: this.form.scene.trim(),
-        goal: this.form.goal.trim()
-      })
-      const simParams = {
-        simulation: sim.id,
-        mode: this.selectedMode,
-        name: sim.relation_name,
-        scene: sim.scene,
-        relation_id: this.form.relation_id || '',
-        goal: this.form.goal.trim() || ''
-      }
-      uni.$emit('init-simulation', simParams)
-      uni.switchTab({ url: '/pages/chat/index' })
-    },
-    resumeSim(sim) {
-      if (sim.status === 'active') {
-        // 继续进行中的演练
-        const simParams = {
-          simulation: sim.id,
-          mode: sim.mode || 'social',
-          name: sim.relation_name,
-          scene: sim.scene,
-          relation_id: sim.relation_id || '',
-          goal: sim.goal || '',
-          resume: true
-        }
-        uni.$emit('init-simulation', simParams)
-        uni.switchTab({ url: '/pages/chat/index' })
-      } else {
-        // 已完成的演练 — 展开复盘报告
-        this.expandReport(sim)
-      }
-    },
-    expandReport(sim) {
-      if (this.expandedId === sim.id) {
-        this.expandedId = ''
-      } else {
-        this.expandedId = sim.id
-      }
-    },
-    deleteSim(sim) {
-      uni.showModal({
-        title: '确认删除',
-        content: `确定删除「${sim.relation_name}」的演练记录？关联的对话内容也将一并删除。`,
-        confirmColor: '#EF4444',
-        success: (res) => {
-          if (res.confirm) {
-            deleteSimulation(sim.id)
-            uni.showToast({ title: '已删除', icon: 'none' })
-            this.simulations = getAllSimulations()
-            if (this.expandedId === sim.id) {
-              this.expandedId = ''
-            }
-          }
-        }
-      })
+const modes = ref([
+  { ...SIM_MODES.social },
+  { ...SIM_MODES.planning },
+  { ...SIM_MODES.relationship }
+])
+const selectedMode = ref('')
+const relations = ref([])
+const simulations = ref([])
+const relationIdx = ref(-1)
+const activeFilter = ref('all')
+const expandedId = ref('')
+const form = ref({
+  relation_id: '',
+  relation_name: '',
+  scene: '',
+  goal: ''
+})
+
+const currentMode = computed(() => {
+  const m = modes.value.find(x => x.id === selectedMode.value)
+  return m || modes.value[0]
+})
+
+const canStart = computed(() => {
+  if (!selectedMode.value) return false
+  if (currentMode.value.needsRelation && !form.value.relation_name.trim()) return false
+  return form.value.scene.trim().length > 0
+})
+
+const modeStats = computed(() => {
+  const stats = { social: 0, planning: 0, relationship: 0 }
+  simulations.value.forEach(s => {
+    const m = s.mode || 'social'
+    if (stats[m] !== undefined) stats[m]++
+  })
+  return stats
+})
+
+const filterTabs = computed(() => {
+  return [
+    { id: 'all', label: '全部', count: simulations.value.length },
+    { id: 'social', label: '社交', count: modeStats.value.social },
+    { id: 'planning', label: '规划', count: modeStats.value.planning },
+    { id: 'relationship', label: '关系', count: modeStats.value.relationship }
+  ]
+})
+
+const filteredSims = computed(() => {
+  if (activeFilter.value === 'all') return simulations.value
+  return simulations.value.filter(s => (s.mode || 'social') === activeFilter.value)
+})
+
+onLoad((options) => {
+  if (options && options.mode && SIM_MODES[options.mode]) {
+    selectedMode.value = options.mode
+  }
+  if (options && options.relation_id) {
+    form.value.relation_id = options.relation_id
+    form.value.relation_name = options.name ? decodeURIComponent(options.name) : ''
+  }
+  loadData()
+})
+
+onShow(() => {
+  loadData()
+})
+
+function loadData() {
+  relations.value = getAllRelations()
+  simulations.value = getAllSimulations()
+  if (form.value.relation_id) {
+    const idx = relations.value.findIndex(r => r.id === form.value.relation_id)
+    if (idx >= 0) {
+      relationIdx.value = idx
+      form.value.relation_name = relations.value[idx].name
     }
   }
+}
+
+function selectMode(modeId) {
+  selectedMode.value = modeId
+  if (!SIM_MODES[modeId].needsRelation) {
+    form.value.relation_id = ''
+    form.value.relation_name = ''
+    relationIdx.value = -1
+  }
+}
+
+function selectRelation(i) {
+  relationIdx.value = i
+  const r = relations.value[i]
+  form.value.relation_id = r.id
+  form.value.relation_name = r.name
+}
+
+function getModeTitle(mode) {
+  return (SIM_MODES[mode || 'social'] || {}).title || '社交沙盘'
+}
+
+function formatTime(ts) {
+  const d = new Date(ts)
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function startSimulation() {
+  if (!canStart.value) {
+    uni.showToast({ title: '请填写场景和人物', icon: 'none' })
+    return
+  }
+  const sim = createSimulation({
+    mode: selectedMode.value,
+    relationId: form.value.relation_id,
+    relationName: form.value.relation_name.trim(),
+    scene: form.value.scene.trim(),
+    goal: form.value.goal.trim()
+  })
+  const simParams = {
+    simulation: sim.id,
+    mode: selectedMode.value,
+    name: sim.relation_name,
+    scene: sim.scene,
+    relation_id: form.value.relation_id || '',
+    goal: form.value.goal.trim() || ''
+  }
+  uni.$emit('init-simulation', simParams)
+  uni.switchTab({ url: '/pages/chat/index' })
+}
+
+function resumeSim(sim) {
+  if (sim.status === 'active') {
+    const simParams = {
+      simulation: sim.id,
+      mode: sim.mode || 'social',
+      name: sim.relation_name,
+      scene: sim.scene,
+      relation_id: sim.relation_id || '',
+      goal: sim.goal || '',
+      resume: true
+    }
+    uni.$emit('init-simulation', simParams)
+    uni.switchTab({ url: '/pages/chat/index' })
+  } else {
+    expandReport(sim)
+  }
+}
+
+function expandReport(sim) {
+  if (expandedId.value === sim.id) {
+    expandedId.value = ''
+  } else {
+    expandedId.value = sim.id
+  }
+}
+
+function deleteSim(sim) {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定删除「${sim.relation_name}」的演练记录？关联的对话内容也将一并删除。`,
+    confirmColor: '#EF4444',
+    success: (res) => {
+      if (res.confirm) {
+        deleteSimulation(sim.id)
+        uni.showToast({ title: '已删除', icon: 'none' })
+        simulations.value = getAllSimulations()
+        if (expandedId.value === sim.id) {
+          expandedId.value = ''
+        }
+      }
+    }
+  })
 }
 </script>
 

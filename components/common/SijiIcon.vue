@@ -64,7 +64,12 @@ const sizePx = computed(() => {
 })
 
 // App 端 PNG 路径
-const iconSrc = computed(() => `/static/icons/${props.name}.png`)
+const iconSrc = computed(() => {
+  try {
+    return plus.io.convertLocalFileSystemURL(`_www/static/icons/${props.name}.png`)
+  } catch {}
+  return `/static/icons/${props.name}.png`
+})
 
 const containerStyle = computed(() => ({
   width: sizeRpx.value,
@@ -280,10 +285,10 @@ const containerStyle = computed(() => ({
         <circle cx="15.5" cy="11" r="1.5" fill="currentColor"/>
       </template>
       <template v-else-if="name === 'camera'">
-        <rect x="3" y="7" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="12" cy="14.5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="12" cy="14.5" r="1.5" fill="currentColor"/>
-        <path d="M8 4.5l1.8-2.5h4.4L16 4.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <rect x="3" y="7" width="18" height="15" rx="3" fill="none" stroke="#000" stroke-width="1.5"/>
+        <circle cx="12" cy="14.5" r="4" fill="none" stroke="#000" stroke-width="1.5"/>
+        <circle cx="12" cy="14.5" r="1.5" fill="#000"/>
+        <path d="M8 4.5l1.8-2.5h4.4L16 4.5" stroke="#000" stroke-width="1.2" fill="none" stroke-linecap="round"/>
       </template>
       <template v-else-if="name === 'x'">
         <path d="M18 6 6 18M6 6l12 12"/>

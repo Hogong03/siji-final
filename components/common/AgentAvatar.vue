@@ -50,7 +50,7 @@ const sizePx = computed(() => {
 <template>
   <view class="agent-avatar" :style="{ width: sizeRpx, height: sizeRpx }">
     <!-- #ifdef H5 -->
-    <svg :width="sizePx" :height="sizePx" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg :width="sizePx" :height="sizePx" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#000">
       <!-- 机器人（思迹助手）-->
       <template v-if="type === 'robot'">
         <rect x="12" y="14" width="24" height="22" rx="5"/>

@@ -23,6 +23,22 @@ const emit = defineEmits([
 
 const localForm = ref({})
 
+/* 双击检测 */
+let lastTapTime = 0
+function onCardTap() {
+  const now = Date.now()
+  if (now - lastTapTime < 350) {
+    lastTapTime = 0
+    emit('start-edit')
+  } else {
+    lastTapTime = now
+  }
+}
+
+function onEditConfirm() {
+  emit('save-edit', localForm.value)
+}
+
 function initEditForm(detail) {
   if (!detail) { localForm.value = {}; return }
   if (detail.type === 'bill') {
@@ -233,7 +249,12 @@ function tagColor(name) {
       <text class="exec-edit" @tap="$emit('start-edit')">编辑</text>
       <text class="exec-arrow" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
     </view>
-    <view class="exec-body">
+    <!-- 编辑提示条 -->
+    <view class="dbl-tap-hint" v-if="!isEditing">
+      <text class="dth-text">双击卡片编辑</text>
+    </view>
+
+    <view class="exec-body" @tap="onCardTap">
       <!-- 日记 -->
       <template v-if="message.execResult.detail?.type === 'diary'">
         <text class="exec-title">{{ message.execResult.detail.title }}</text>
@@ -336,7 +357,7 @@ function tagColor(name) {
     <template v-if="message.execResult.detail?.type === 'bill'">
       <view class="edit-field">
         <text class="edit-label">金额</text>
-        <input v-model="localForm.amount" type="digit" class="edit-input" placeholder="金额" />
+        <input v-model="localForm.amount" type="digit" class="edit-input" placeholder="金额" @confirm="onEditConfirm" />
       </view>
       <view class="edit-field">
         <text class="edit-label">分类</text>
@@ -348,7 +369,7 @@ function tagColor(name) {
     <template v-else-if="message.execResult.detail?.type === 'diary'">
       <view class="edit-field">
         <text class="edit-label">标题</text>
-        <input v-model="localForm.title" class="edit-input" placeholder="标题" />
+        <input v-model="localForm.title" class="edit-input" placeholder="标题" @confirm="onEditConfirm" />
       </view>
       <view class="edit-field">
         <text class="edit-label">心情</text>
@@ -360,7 +381,7 @@ function tagColor(name) {
     <template v-else-if="message.execResult.detail?.type === 'plan'">
       <view class="edit-field">
         <text class="edit-label">标题</text>
-        <input v-model="localForm.title" class="edit-input" placeholder="计划标题" />
+        <input v-model="localForm.title" class="edit-input" placeholder="计划标题" @confirm="onEditConfirm" />
       </view>
     </template>
     <view class="edit-actions">
@@ -416,6 +437,9 @@ function tagColor(name) {
 
 <style scoped lang="scss">
 /* 执行结果卡片样式 — 从 MessageBubble 迁移 */
+.dbl-tap-hint { text-align: center; padding: 4rpx 0; }
+.dth-text { font-size: 20rpx; color: var(--text-hint); opacity: 0.5; }
+
 .exec-header {
   display: flex; align-items: center; gap: 12rpx;
   padding: 16rpx 20rpx 8rpx;

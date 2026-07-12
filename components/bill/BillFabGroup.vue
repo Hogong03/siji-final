@@ -40,8 +40,8 @@ function goAdd(type) {
 }
 
 @keyframes fabIdle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4rpx); }
+  0%, 100% { transform: translateY(0); opacity: 1; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08); }
+  50% { transform: translateY(-2rpx); opacity: 0.88; box-shadow: 0 4rpx 18rpx rgba(0, 0, 0, 0.14); }
 }
 
 .fab {
@@ -54,9 +54,9 @@ function goAdd(type) {
   justify-content: center;
   box-shadow: $shadow-lg;
   transition: transform $transition-fast;
-  animation: fabIdle 2.5s ease-in-out infinite;
+  animation: fabIdle 3s ease-in-out infinite;
 
-  &:active { transform: scale(0.92); }
+  &:active { transform: scale(0.88); }
 
   &.fab-expense {
     background: var(--color-ai);

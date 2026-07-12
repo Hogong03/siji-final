@@ -258,6 +258,7 @@ function getRawInteractions() {
 
 function persistRelations(list) {
   try {
+    // 关系数据量小（<100 条），用同步写入确保读后即写一致性
     uni.setStorageSync(RELATIONS_KEY, JSON.stringify(list))
   } catch { /* ignore */ }
 }

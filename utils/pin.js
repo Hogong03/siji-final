@@ -7,6 +7,8 @@
  * - 5 次错误锁定 30 秒
  */
 
+import { asyncSetStorage } from '@/utils/store-helpers.js'
+
 const PIN_KEY = 'siji_pin'
 const PIN_FAIL_KEY = 'siji_pin_fail'
 const PIN_LOCK_KEY = 'siji_pin_lock_until'
@@ -39,12 +41,12 @@ export function verifyPin(input) {
 
   // 验证失败
   const failCount = (uni.getStorageSync(PIN_FAIL_KEY) || 0) + 1
-  uni.setStorageSync(PIN_FAIL_KEY, String(failCount))
+  asyncSetStorage(PIN_FAIL_KEY, String(failCount))
 
   if (failCount >= 5) {
     // 锁定 30 秒
     const lockUntil = Date.now() + 30000
-    uni.setStorageSync(PIN_LOCK_KEY, String(lockUntil))
+    asyncSetStorage(PIN_LOCK_KEY, String(lockUntil))
     uni.removeStorageSync(PIN_FAIL_KEY)
     return { success: false, locked: true, remain: 30 }
   }
@@ -55,7 +57,7 @@ export function verifyPin(input) {
 /** 设置 PIN */
 export function setPin(pin) {
   if (!pin || pin.length < 4) return false
-  uni.setStorageSync(PIN_KEY, pin)
+  asyncSetStorage(PIN_KEY, pin)
   return true
 }
 

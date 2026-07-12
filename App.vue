@@ -4,8 +4,6 @@ import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { logger } from '@/utils/logger.js'
 import { onErrorCaptured } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { trySync } from '@/utils/sync.js'
-import { post, isOnline } from '@/utils/api.js'
 import { rebuildIndex, ensureDefaultTemplates, getPlanList } from '@/utils/storage.js'
 import { initReminder, startReminderChecker, checkAllReminders } from '@/utils/reminder.js'
 
@@ -58,9 +56,16 @@ onLaunch(() => {
     // 防止截屏（仅 Android 支持）
     if (plus.os.name === 'Android') {
       const Activity = plus.android.runtimeMainActivity()
-      const FLAG_SECURE = plus.android.importClass('android.view.WindowManager$LayoutParams').FLAG_SECURE
-      Activity.getWindow().setFlags(FLAG_SECURE, FLAG_SECURE)
-      logger.log('[思迹] Anti-screenshot enabled (Android)')
+      const win = Activity.getWindow()
+      if (win) {
+        const FLAG_SECURE = plus.android.importClass('android.view.WindowManager$LayoutParams').FLAG_SECURE
+        if (typeof win.addFlags === 'function') {
+          win.addFlags(FLAG_SECURE)
+        } else if (typeof win.setFlags === 'function') {
+          win.setFlags(FLAG_SECURE, FLAG_SECURE)
+        }
+        logger.log('[思迹] Anti-screenshot enabled (Android)')
+      }
     }
   } catch (e) {
     logger.warn('[思迹] Anti-screenshot failed:', e.message)
@@ -68,11 +73,8 @@ onLaunch(() => {
   // #endif
 })
 
-onShow(async () => {
+onShow(() => {
   logger.log('[思迹] Show')
-    // 刷新同步队列状态
-  store.refreshSyncState()
-
   // H5 端提前请求通知权限
   // #ifdef H5
   try {
@@ -83,21 +85,7 @@ onShow(async () => {
   // #endif
 
   // 检查计划提醒（从后台回到前台时立即检查）
-  try {
-    // initReminder 可能在 onLaunch 的延迟回调中尚未执行，安全跳过
-    checkAllReminders()
-  } catch (e) { /* ignore */ }
-
-  // 有网时尝试后台同步
-  const online = await isOnline()
-  store.setOnline(online)
-  if (online && store.syncQueueLength > 0) {
-    logger.log('[思迹] Auto sync, queue:', store.syncQueueLength)
-    const result = await trySync(post)
-    if (result.synced > 0) {
-      store.refreshSyncState()
-    }
-  }
+  try { checkAllReminders() } catch (e) { /* ignore */ }
 })
 
 onHide(() => {

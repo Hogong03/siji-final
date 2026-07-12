@@ -101,10 +101,10 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
       <view class="msg-row" :class="message.role">
         <!-- 操作按钮组（用户消息在左侧，AI消息在右侧） -->
         <view class="bubble-actions" :class="message.role">
-          <view class="bubble-action-btn" @tap.stop="copyContent">
+          <view class="bubble-action-btn btn-tactile" @tap.stop="copyContent">
             <SijiIcon name="copy" size="xs" color="var(--text-secondary)" />
           </view>
-          <view v-if="message.role === 'user'" class="bubble-action-btn" @tap.stop="$emit('edit-own', message.content)">
+          <view v-if="message.role === 'user'" class="bubble-action-btn btn-tactile" @tap.stop="$emit('edit-own', message.content)">
             <SijiIcon name="edit" size="xs" color="var(--text-secondary)" />
           </view>
         </view>
@@ -178,7 +178,7 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 .bubble-wrapper {
   display: flex;
   flex-direction: column;
-  margin-bottom: $spacing-md;
+  margin-bottom: $spacing-lg;
   padding: 0 $spacing-md;
   animation: bubbleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 
@@ -374,9 +374,9 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
   padding: 14rpx 0;
   border-radius: 8rpx;
   font-size: $font-sm;
-  transition: transform 0.15s ease;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 
-  &:active { transform: scale(0.96); }
+  &:active { transform: scale(0.94); }
 
   &.cancel {
     background: var(--bg-input);

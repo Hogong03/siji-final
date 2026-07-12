@@ -1,29 +1,16 @@
 <script setup>
 /**
- * 数据同步与导出 — 设置子页面
+ * 数据管理 — 设置子页面
+ * 同步功能已移除，仅保留导出/索引/清除
  */
 
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { trySync, getQueueLength } from '@/utils/sync.js'
-import { post } from '@/utils/api.js'
 import { exportJson, exportCsv, rebuildIndex } from '@/utils/storage.js'
+import { asyncSetStorage } from '@/utils/store-helpers.js'
 
 const store = useAppStore()
-const syncQueueLen = ref(0)
-
-onMounted(() => {
-  syncQueueLen.value = getQueueLength()
-})
-
-async function manualSync() {
-  uni.showLoading({ title: '同步中...' })
-  const result = await trySync(post)
-  uni.hideLoading()
-  syncQueueLen.value = getQueueLength()
-  uni.showToast({ title: result.synced > 0 ? `已同步 ${result.synced} 条` : '没有待同步数据', icon: 'none' })
-}
 
 function doExport() {
   uni.showActionSheet({
@@ -39,7 +26,7 @@ function exportJsonFile() {
   try {
     const json = exportJson()
     const d = JSON.parse(json)
-    uni.setStorageSync('siji_export_json', json)
+    asyncSetStorage('siji_export_json', json)
     uni.showToast({ title: `已导出: 日记${d.diaries.length} 账单${d.bills.length} 计划${d.plans.length}`, icon: 'success' })
   } catch (e) { uni.showToast({ title: e.message, icon: 'none' }) }
 }
@@ -47,7 +34,7 @@ function exportJsonFile() {
 function exportCsvFile(type) {
   const csv = exportCsv(type)
   if (!csv) return uni.showToast({ title: '无数据', icon: 'none' })
-  uni.setStorageSync(`siji_export_${type}_csv`, csv)
+  asyncSetStorage(`siji_export_${type}_csv`, csv)
   uni.showToast({ title: `${({diary:'日记',bill:'账单',plan:'计划'})[type]} CSV 已导出`, icon: 'success' })
 }
 
@@ -78,16 +65,6 @@ function clearAll() {
 
 <template>
   <view class="sub-page">
-    <!-- 同步状态 -->
-    <view class="card">
-      <view class="card-title"><SijiIcon name="sync" size="sm" class="title-icon" /><text>同步状态</text></view>
-      <view class="sync-row">
-        <text class="sync-label">待同步队列</text>
-        <text class="sync-value" :class="{ active: syncQueueLen > 0 }">{{ syncQueueLen }} 条</text>
-      </view>
-      <view class="btn-primary" @tap="manualSync">立即同步</view>
-    </view>
-
     <!-- 数据导出 -->
     <view class="card">
       <view class="card-title"><SijiIcon name="export" size="sm" class="title-icon" /><text>数据导出</text></view>
@@ -134,12 +111,6 @@ function clearAll() {
 
 .danger-card { border: 1rpx solid rgba(231, 76, 60, 0.2); }
 .danger-title { color: $danger !important; }
-
-.sync-row {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: $spacing-sm;
-  .sync-label { font-size: $font-sm; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sync-value { font-size: $font-md; font-weight: 700; color: var(--text-hint); &.active { color: var(--color-plan); } flex-shrink: 0; margin-left: $spacing-sm; }
-}
 
 .btn-primary {
   width: 100%; padding: 20rpx 0; text-align: center; border-radius: $radius-md;

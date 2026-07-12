@@ -15,6 +15,7 @@
 
 import { chatRequest } from '@/utils/api.js'
 import { logger } from './logger.js'
+import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const STORAGE_KEY = 'siji_long_term_memory'
 const MAX_MEMORIES = 100 // 最多保存 100 条
@@ -158,6 +159,10 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
 
   const memories = []
 
+  // 预加载已有记忆，用于后续去重判断
+  const existing = getAllMemories()
+  const existingContents = new Set(existing.map(m => m.content))
+
   // === 规则 1：用户自述偏好 ===
   const prefPatterns = [
     { re: /我(喜欢|爱吃|爱喝|偏好|习惯)(.{2,20})/g, cat: 'preference' },
@@ -234,9 +239,6 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
   }
 
   // 去重并保存
-  const existing = getAllMemories()
-  const existingContents = new Set(existing.map(m => m.content))
-
   memories.forEach(m => {
     if (!existingContents.has(m.content)) {
       addMemory(m.content, m.category)
@@ -288,7 +290,7 @@ export function isMemoryEnabled() {
 
 /** 切换记忆开关 */
 export function setMemoryEnabled(enabled) {
-  uni.setStorageSync('siji_memory_enabled', enabled ? 'true' : 'false')
+  asyncSetStorage('siji_memory_enabled', enabled ? 'true' : 'false')
 }
 
 /** 持久化 + 过期清理 */
@@ -303,6 +305,6 @@ function persist(memories) {
     return true
   })
   try {
-    uni.setStorageSync(STORAGE_KEY, JSON.stringify(cleaned))
+    asyncSetStorageJSON(STORAGE_KEY, cleaned)
   } catch { /* ignore */ }
 }

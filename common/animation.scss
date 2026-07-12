@@ -1,0 +1,82 @@
+/**
+ * animation.scss — 思迹 2.0 微动效系统
+ *
+ * 四类动效：
+ *  - 交错入场 (staggered fade-in-up)
+ *  - 列表滑入 (slide-in-left)
+ *  - 按钮弹性反馈 (tactile scale)
+ *  - 数字闪烁 (number flash)
+ */
+
+/* ==================== 交错入场 ==================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24rpx); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+
+/* 容器加 .card-list-stagger，子项自动交错 */
+.card-list-stagger > * {
+  animation: fadeInUp 0.35s ease both;
+}
+.card-list-stagger > *:nth-child(1) { animation-delay: 0.00s; }
+.card-list-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.card-list-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.card-list-stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.card-list-stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.card-list-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.card-list-stagger > *:nth-child(7) { animation-delay: 0.36s; }
+.card-list-stagger > *:nth-child(8) { animation-delay: 0.42s; }
+
+/* ==================== 从左滑入 ==================== */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20rpx); }
+  to   { opacity: 1; transform: translateX(0);      }
+}
+.slide-in-left { animation: slideInLeft 0.3s ease both; }
+
+.slide-in-left-stagger > * {
+  animation: slideInLeft 0.28s ease both;
+}
+.slide-in-left-stagger > *:nth-child(1)  { animation-delay: 0.00s; }
+.slide-in-left-stagger > *:nth-child(2)  { animation-delay: 0.05s; }
+.slide-in-left-stagger > *:nth-child(3)  { animation-delay: 0.10s; }
+.slide-in-left-stagger > *:nth-child(4)  { animation-delay: 0.15s; }
+.slide-in-left-stagger > *:nth-child(5)  { animation-delay: 0.20s; }
+.slide-in-left-stagger > *:nth-child(6)  { animation-delay: 0.25s; }
+.slide-in-left-stagger > *:nth-child(7)  { animation-delay: 0.30s; }
+.slide-in-left-stagger > *:nth-child(8)  { animation-delay: 0.35s; }
+
+/* ==================== 按钮弹性反馈 ==================== */
+.btn-tactile {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-tactile:active {
+  transform: scale(0.92);
+}
+
+/* 卡片按压反馈 */
+.card-press {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.card-press:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* ==================== 圆形按钮脉动 ==================== */
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1);   }
+  50%      { transform: scale(1.04); }
+}
+.pulse-subtle {
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+/* ==================== 数字闪烁 ==================== */
+@keyframes numberFlash {
+  0%   { opacity: 0.5; transform: translateY(4rpx); }
+  100% { opacity: 1;   transform: translateY(0);     }
+}
+.number-animate {
+  animation: numberFlash 0.25s ease both;
+}

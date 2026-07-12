@@ -7,8 +7,14 @@
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed, nextTick } from 'vue'
-import { isVoiceSupport, startRecord, stopRecord } from '@/utils/voice.js'
 import { chooseAndCompress } from '@/utils/image.js'
+
+const cameraIconSrc = computed(() => {
+  try {
+    return plus.io.convertLocalFileSystemURL('_www/static/icons/camera.png')
+  } catch {}
+  return '/static/icons/camera.png'
+})
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -28,51 +34,6 @@ function onInput(e) {
   text.value = e.detail?.value ?? ''
   // #endif
   emit('update:modelValue', text.value)
-}
-
-// ─── 语音 ───
-const voiceSupported = isVoiceSupport()
-const isRecording = ref(false)
-const voiceText = ref('')
-const voiceStatus = ref('')
-const voiceDuration = ref(0)
-const longPressTimer = ref(null)
-
-function onLongPressStart() {
-  if (!voiceSupported || isRecording.value) return
-  longPressTimer.value = setTimeout(() => {
-    startVoiceRecord()
-  }, 500)
-}
-
-function onLongPressEnd() {
-  if (longPressTimer.value) { clearTimeout(longPressTimer.value); longPressTimer.value = null }
-  if (isRecording.value) { stopVoiceRecord() }
-}
-
-async function startVoiceRecord() {
-  // #ifdef H5
-  try { if (!navigator?.mediaDevices?.getUserMedia) { uni.showToast({ title: '需真机测试语音功能', icon: 'none', duration: 2000 }); return } } catch {}
-  // #endif
-  isRecording.value = true; voiceStatus.value = 'connecting'; voiceDuration.value = 0; voiceText.value = ''
-  try {
-    await startRecord({
-      onTextChange(t) { voiceText.value = t },
-      onStatusChange(s) { voiceStatus.value = s },
-      onDuration(ms) { voiceDuration.value = ms },
-      onError() { voiceStatus.value = '' }
-    })
-  } catch { isRecording.value = false; voiceStatus.value = '' }
-}
-
-async function stopVoiceRecord() {
-  try { await stopRecord() } catch {}
-  isRecording.value = false; voiceStatus.value = ''
-  if (voiceText.value.trim()) {
-    text.value = (text.value + voiceText.value).trim()
-    emit('update:modelValue', text.value)
-  }
-  voiceText.value = ''
 }
 
 // ─── 图片 ───
@@ -100,18 +61,6 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 <template>
   <view class="input-area safe-area-bottom">
-    <!-- 录音浮层（长按输入框触发，点击浮层结束） -->
-    <view v-if="isRecording" class="voice-overlay" @tap="stopVoiceRecord">
-      <view class="voice-overlay-inner">
-        <view class="voice-wave">
-          <view v-for="i in 5" :key="i" class="voice-wave-bar" :style="{ animationDelay: (i * 0.12) + 's' }" />
-        </view>
-        <text class="voice-overlay-time">{{ String(Math.floor(voiceDuration / 60000)).padStart(2, '0') }}:{{ String(Math.floor(voiceDuration / 1000) % 60).padStart(2, '0') }}</text>
-        <text v-if="voiceText" class="voice-overlay-result">{{ voiceText }}</text>
-        <text class="voice-overlay-hint">点击结束</text>
-      </view>
-    </view>
-
     <!-- 图片预览 -->
     <view v-if="selectedImage" class="img-preview">
       <image :src="selectedImage.base64" mode="aspectFill" class="img-preview-thumb" />
@@ -122,14 +71,14 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
     <!-- 输入行 -->
     <view class="input-row">
       <view class="side-btn" @tap="pickImage">
-        <SijiIcon name="camera" size="lg" />
+        <image :src="cameraIconSrc" mode="aspectFit" style="width:36rpx;height:36rpx" />
       </view>
 
-      <view class="input-wrap" @touchstart="onLongPressStart" @touchend="onLongPressEnd" @touchcancel="onLongPressEnd">
+      <view class="input-wrap">
         <textarea
           class="text-input"
           :value="text"
-          placeholder="说点什么...（长按语音）"
+          placeholder="说点什么..."
           :auto-height="true"
           :maxlength="-1"
           :show-confirm-bar="false"
@@ -159,29 +108,6 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   padding: $spacing-sm $spacing-md;
   padding-bottom: calc($spacing-sm + env(safe-area-inset-bottom));
 }
-
-/* ─── 录音浮层 ─── */
-.voice-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-}
-.voice-overlay-inner {
-  display: flex; flex-direction: column; align-items: center; gap: 24rpx; padding: 60rpx;
-}
-.voice-wave { display: flex; gap: 12rpx; height: 120rpx; align-items: center; }
-.voice-wave-bar {
-  width: 8rpx; height: 60rpx; background: #fff; border-radius: 4rpx;
-  animation: vw 0.8s ease-in-out infinite alternate;
-}
-.voice-wave-bar:nth-child(1) { animation-duration: 0.6s; }
-.voice-wave-bar:nth-child(2) { animation-duration: 0.8s; }
-.voice-wave-bar:nth-child(3) { animation-duration: 1.0s; }
-.voice-wave-bar:nth-child(4) { animation-duration: 0.7s; }
-.voice-wave-bar:nth-child(5) { animation-duration: 0.9s; }
-@keyframes vw { 0% { height: 20rpx; opacity: .4; } 100% { height: 100rpx; opacity: 1; } }
-.voice-overlay-time { font-size: $font-md; color: #fff; font-weight: 600; }
-.voice-overlay-result { font-size: $font-sm; color: rgba(255,255,255,.8); max-width: 600rpx; text-align: center; }
-.voice-overlay-hint { font-size: $font-xs; color: rgba(255,255,255,.4); }
 
 /* ─── 图片预览 ─── */
 .img-preview {

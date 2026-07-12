@@ -57,6 +57,7 @@ const emit = defineEmits(['billTap', 'edit', 'delete', 'touchStart', 'touchMove'
 .bill-scroll {
   flex: 1;
   padding: 0 $spacing-md;
+  background: var(--bg-page);
 }
 
 .empty-state {

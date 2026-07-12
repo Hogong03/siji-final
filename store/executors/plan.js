@@ -1,5 +1,6 @@
 import { savePlan, getPlanList, updateIndex, savePlanTemplate } from '@/utils/storage.js'
 import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Plan 相关 executor 工厂函数
@@ -37,6 +38,7 @@ export function createPlanExecutors(ctx) {
     savePlan(plan)
     updateIndex('plan', plan)
     ctx.undoStack.value.push({ type: 'plan', clientId: plan.client_id, action: 'create' })
+    invalidatePromptCache()
     return {
       success: true,
       message: plan.parent_id ? '子计划已创建' : '计划已创建',
@@ -93,6 +95,7 @@ export function createPlanExecutors(ctx) {
     }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
+    invalidatePromptCache()
     return {
       success: true,
       message: changedText ? `已更新计划（${changedText}）` : '计划已更新',
@@ -132,6 +135,7 @@ export function createPlanExecutors(ctx) {
     savePlan(plan)
 
     const doneCount = plan.subtasks.filter(s => s.done).length
+    invalidatePromptCache()
     return {
       success: true,
       message: `子任务「${subtask.title}」已标记为${p.done ? '完成' : '未完成'}`,
@@ -159,6 +163,7 @@ export function createPlanExecutors(ctx) {
     rawList[idx].is_deleted = 1
     rawList[idx].updated_at = Date.now()
     asyncSetStorageJSON('plan_all', rawList)
+    invalidatePromptCache()
     return {
       success: true,
       message: '已删除计划',
@@ -200,6 +205,7 @@ export function createPlanExecutors(ctx) {
       is_deleted: 0
     }
     savePlanTemplate(tpl)
+    invalidatePromptCache()
     return {
       success: true,
       message: `模板「${tpl.name}」已保存`,

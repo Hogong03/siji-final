@@ -137,132 +137,137 @@
   </view>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getRelationById, getInteractions, logInteraction, deleteRelation, updateRelation } from '@/utils/relations.js'
 
-export default {
-  data() {
-    return {
-      relationId: '',
-      relation: null,
-      interactions: [],
-      showInteractionForm: false,
-      interactionForm: { scene: '', content: '', result: '', emotion: '' },
-      showEditForm: false,
-      roleOptions: ['家人', '朋友', '同事', '上级', '下属', '客户', '导师', '同学', '伴侣', '其他'],
-      editForm: {
-        name: '',
-        role: '',
-        roleIndex: 0,
-        context: '',
-        traitsStr: '',
-        preferencesStr: '',
-        relationship_score: 5,
-        notes: ''
-      }
-    }
-  },
-  onLoad(options) {
-    this.relationId = options.id || ''
-    this.loadData()
-  },
-  onShow() {
-    this.loadData()
-  },
-  methods: {
-    loadData() {
-      this.relation = getRelationById(this.relationId)
-      if (this.relation) {
-        this.interactions = getInteractions(this.relationId)
-      }
-    },
-    formatDate(ts) {
-      if (!ts) return ''
-      const d = new Date(ts)
-      return `${d.getMonth() + 1}/${d.getDate()}`
-    },
-    handleLogInteraction() {
-      if (!this.interactionForm.content.trim()) {
-        uni.showToast({ title: '请输入内容', icon: 'none' })
-        return
-      }
-      logInteraction({
-        relation_id: this.relationId,
-        relation_name: this.relation.name,
-        scene: this.interactionForm.scene || '日常',
-        content: this.interactionForm.content,
-        result: this.interactionForm.result,
-        emotion: this.interactionForm.emotion
-      })
-      uni.showToast({ title: '已记录', icon: 'success' })
-      this.showInteractionForm = false
-      this.interactionForm = { scene: '', content: '', result: '', emotion: '' }
-      this.loadData()
-    },
-    openEditForm() {
-      const r = this.relation
-      this.editForm = {
-        name: r.name || '',
-        role: r.role || '',
-        roleIndex: Math.max(0, this.roleOptions.indexOf(r.role)),
-        context: r.context || '',
-        traitsStr: (r.traits || []).join(','),
-        preferencesStr: (r.preferences || []).join(','),
-        relationship_score: r.relationship_score || 5,
-        notes: r.notes || ''
-      }
-      this.showEditForm = true
-    },
-    onRoleChange(e) {
-      const idx = e.detail.value
-      this.editForm.roleIndex = idx
-      this.editForm.role = this.roleOptions[idx]
-    },
-    onScoreChange(e) {
-      this.editForm.relationship_score = e.detail.value
-    },
-    handleEdit() {
-      if (!this.editForm.name.trim()) {
-        uni.showToast({ title: '请输入姓名', icon: 'none' })
-        return
-      }
-      const updates = {
-        name: this.editForm.name.trim(),
-        role: this.editForm.role,
-        context: this.editForm.context.trim(),
-        traits: this.editForm.traitsStr
-          ? this.editForm.traitsStr.split(',').map(s => s.trim()).filter(Boolean)
-          : [],
-        preferences: this.editForm.preferencesStr
-          ? this.editForm.preferencesStr.split(',').map(s => s.trim()).filter(Boolean)
-          : [],
-        relationship_score: this.editForm.relationship_score,
-        notes: this.editForm.notes.trim()
-      }
-      updateRelation(this.relationId, updates)
-      uni.showToast({ title: '已保存', icon: 'success' })
-      this.showEditForm = false
-      this.loadData()
-    },
-    startSimulation() {
-      uni.navigateTo({
-        url: `/pages/settings/sub/simulation?relation_id=${this.relationId}&name=${encodeURIComponent(this.relation.name)}`
-      })
-    },
-    handleDelete() {
-      uni.showModal({
-        title: '确认删除',
-        content: `确定要从关系图谱中移除「${this.relation.name}」吗？`,
-        success: (res) => {
-          if (res.confirm) {
-            deleteRelation(this.relationId)
-            uni.showToast({ title: '已删除', icon: 'success' })
-            setTimeout(() => uni.navigateBack(), 800)
-          }
-        }
-      })
-    }
+const relationId = ref('')
+const relation = ref(null)
+const interactions = ref([])
+const showInteractionForm = ref(false)
+const interactionForm = ref({ scene: '', content: '', result: '', emotion: '' })
+const showEditForm = ref(false)
+const roleOptions = ref(['家人', '朋友', '同事', '上级', '下属', '客户', '导师', '同学', '伴侣', '其他'])
+const editForm = ref({
+  name: '',
+  role: '',
+  roleIndex: 0,
+  context: '',
+  traitsStr: '',
+  preferencesStr: '',
+  relationship_score: 5,
+  notes: ''
+})
+
+onLoad((options) => {
+  relationId.value = options.id || ''
+  loadData()
+})
+
+onShow(() => {
+  loadData()
+})
+
+function loadData() {
+  relation.value = getRelationById(relationId.value)
+  if (relation.value) {
+    interactions.value = getInteractions(relationId.value)
   }
+}
+
+function formatDate(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function handleLogInteraction() {
+  if (!interactionForm.value.content.trim()) {
+    uni.showToast({ title: '请输入内容', icon: 'none' })
+    return
+  }
+  logInteraction({
+    relation_id: relationId.value,
+    relation_name: relation.value.name,
+    scene: interactionForm.value.scene || '日常',
+    content: interactionForm.value.content,
+    result: interactionForm.value.result,
+    emotion: interactionForm.value.emotion
+  })
+  uni.showToast({ title: '已记录', icon: 'success' })
+  showInteractionForm.value = false
+  interactionForm.value = { scene: '', content: '', result: '', emotion: '' }
+  loadData()
+}
+
+function openEditForm() {
+  const r = relation.value
+  editForm.value = {
+    name: r.name || '',
+    role: r.role || '',
+    roleIndex: Math.max(0, roleOptions.value.indexOf(r.role)),
+    context: r.context || '',
+    traitsStr: (r.traits || []).join(','),
+    preferencesStr: (r.preferences || []).join(','),
+    relationship_score: r.relationship_score || 5,
+    notes: r.notes || ''
+  }
+  showEditForm.value = true
+}
+
+function onRoleChange(e) {
+  const idx = e.detail.value
+  editForm.value.roleIndex = idx
+  editForm.value.role = roleOptions.value[idx]
+}
+
+function onScoreChange(e) {
+  editForm.value.relationship_score = e.detail.value
+}
+
+function handleEdit() {
+  if (!editForm.value.name.trim()) {
+    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    return
+  }
+  const updates = {
+    name: editForm.value.name.trim(),
+    role: editForm.value.role,
+    context: editForm.value.context.trim(),
+    traits: editForm.value.traitsStr
+      ? editForm.value.traitsStr.split(',').map(s => s.trim()).filter(Boolean)
+      : [],
+    preferences: editForm.value.preferencesStr
+      ? editForm.value.preferencesStr.split(',').map(s => s.trim()).filter(Boolean)
+      : [],
+    relationship_score: editForm.value.relationship_score,
+    notes: editForm.value.notes.trim()
+  }
+  updateRelation(relationId.value, updates)
+  uni.showToast({ title: '已保存', icon: 'success' })
+  showEditForm.value = false
+  loadData()
+}
+
+function startSimulation() {
+  uni.navigateTo({
+    url: `/pages/settings/sub/simulation?relation_id=${relationId.value}&name=${encodeURIComponent(relation.value.name)}`
+  })
+}
+
+function handleDelete() {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要从关系图谱中移除「${relation.value.name}」吗？`,
+    success: (res) => {
+      if (res.confirm) {
+        deleteRelation(relationId.value)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        setTimeout(() => uni.navigateBack(), 800)
+      }
+    }
+  })
 }
 </script>
 

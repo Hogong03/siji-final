@@ -5,7 +5,7 @@
  * 仅做配置查询，不做业务逻辑
  */
 
-/** 厂商/模型注册表 */
+/** 厂商/模型注册表（仅国内厂商，国外需自定义） */
 export const AI_PROVIDERS = {
   deepseek: {
     id: 'deepseek',
@@ -13,47 +13,15 @@ export const AI_PROVIDERS = {
     short: 'DS',
     color: '#18181B',
     models: [
-      { id: 'deepseek-v4-flash', name: 'V4 Flash', desc: '快速响应·日常对话', tag: '⚡' },
-      { id: 'deepseek-v4-pro', name: 'V4 Pro', desc: '深度推理·复杂任务', tag: '🧠' }
+      { id: 'deepseek-v4-flash', name: 'V4 Flash', desc: '快速响应·日常对话', tag: '⚡', vision: true },
+      { id: 'deepseek-v4-pro', name: 'V4 Pro', desc: '深度推理·复杂任务', tag: '🧠', vision: false }
     ],
+    visionModels: ['deepseek-v4-flash'],
     endpoint: 'https://api.deepseek.com/v1/chat/completions',
     keyLabel: 'DeepSeek API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
     supportsJsonFormat: true,
     docs: 'https://platform.deepseek.com/'
-  },
-  openai: {
-    id: 'openai',
-    name: 'OpenAI',
-    short: 'OA',
-    color: '#10A37F',
-    models: [
-      { id: 'gpt-4o', name: 'GPT-4o', desc: '高性价比·多模态', tag: '⚡' },
-      { id: 'gpt-5', name: 'GPT-5', desc: '旗舰·博士级推理', tag: '🧠' },
-      { id: 'gpt-5.5', name: 'GPT-5.5', desc: '最新旗舰·Agent级', tag: '🌟' }
-    ],
-    visionModels: ['gpt-4o'],
-    endpoint: 'https://api.openai.com/v1/chat/completions',
-    keyLabel: 'OpenAI API Key',
-    keyPlaceholder: 'sk-proj-...',
-    supportsJsonFormat: true,
-    docs: 'https://platform.openai.com/'
-  },
-  moonshot: {
-    id: 'moonshot',
-    name: 'Moonshot',
-    short: 'MS',
-    color: '#3F3F46',
-    models: [
-      { id: 'kimi-k2.6', name: 'Kimi K2.6', desc: '最新旗舰·256K上下文', tag: '🌟' },
-      { id: 'kimi-k2.5', name: 'Kimi K2.5', desc: '多模态·编程强', tag: '🧠' },
-      { id: 'moonshot-v1-128k', name: 'Kimi 128K', desc: '超长文本理解', tag: '⚡' }
-    ],
-    endpoint: 'https://api.moonshot.cn/v1/chat/completions',
-    keyLabel: 'Moonshot API Key',
-    keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
-    docs: 'https://platform.moonshot.cn/'
   },
   zhipu: {
     id: 'zhipu',
@@ -61,12 +29,12 @@ export const AI_PROVIDERS = {
     short: 'ZG',
     color: '#52525B',
     models: [
-      { id: 'glm-4-flash', name: 'GLM-4 Flash', desc: '极速免费', tag: '⚡' },
-      { id: 'glm-4.7', name: 'GLM-4.7', desc: '编程专用·代码强', tag: '🧠' },
-      { id: 'glm-5.1', name: 'GLM-5.1', desc: '高速版·400T/s', tag: '⚡' },
-      { id: 'glm-5.2', name: 'GLM-5.2', desc: '最新旗舰·1M上下文', tag: '🌟' }
+      { id: 'glm-4-flash', name: 'GLM-4 Flash', desc: '极速免费·对话', tag: '⚡', vision: false },
+      { id: 'glm-4.7-flash', name: 'GLM-4.7 Flash', desc: '编程专用·代码强', tag: '🧠', vision: false },
+      { id: 'glm-5.1', name: 'GLM-5.1', desc: '高速版·400T/s', tag: '⚡', vision: false },
+      { id: 'glm-5.2', name: 'GLM-5.2', desc: '最新旗舰·1M上下文', tag: '🌟', vision: false }
     ],
-    visionModels: ['glm-4-flash'],
+    visionModels: ['glm-4v-flash'],
     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
     keyLabel: '智谱 API Key',
     keyPlaceholder: 'xxxxxxxxxxxxxxxx.xxxxxxxx',
@@ -79,10 +47,10 @@ export const AI_PROVIDERS = {
     short: 'QW',
     color: '#00BFFF',
     models: [
-      { id: 'qwen-turbo', name: 'Qwen Turbo', desc: '高性价比·快速', tag: '⚡' },
-      { id: 'qwen-plus', name: 'Qwen Plus', desc: '均衡能力', tag: '🧠' },
-      { id: 'qwen3.7-plus', name: 'Qwen3.7 Plus', desc: '多模态智能体', tag: '🧠' },
-      { id: 'qwen3.7-max', name: 'Qwen3.7 Max', desc: '最新旗舰·全球第二', tag: '🌟' }
+      { id: 'qwen-turbo', name: 'Qwen Turbo', desc: '高性价比·快速响应', tag: '⚡', vision: false },
+      { id: 'qwen-plus', name: 'Qwen Plus', desc: '均衡能力·中量任务', tag: '🧠', vision: false },
+      { id: 'qwen-max', name: 'Qwen Max', desc: '最强旗舰·复杂推理', tag: '🌟', vision: false },
+      { id: 'qwen-long', name: 'Qwen Long', desc: '超长文本·百万上下文', tag: '📚', vision: false }
     ],
     visionModels: ['qwen-vl-plus', 'qwen-vl-max'],
     endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
@@ -90,6 +58,23 @@ export const AI_PROVIDERS = {
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
     supportsJsonFormat: true,
     docs: 'https://help.aliyun.com/zh/model-studio/'
+  },
+  moonshot: {
+    id: 'moonshot',
+    name: 'Moonshot',
+    short: 'MS',
+    color: '#3F3F46',
+    models: [
+      { id: 'kimi-k2.7-code', name: 'Kimi K2.7 Code', desc: '编程旗舰·智能体', tag: '🌟', vision: true },
+      { id: 'kimi-k2.6', name: 'Kimi K2.6', desc: '原生多模态·256K', tag: '🧠', vision: true },
+      { id: 'kimi-k2.5', name: 'Kimi K2.5', desc: '多模态·编程强', tag: '⚡', vision: true }
+    ],
+    visionModels: ['kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5'],
+    endpoint: 'https://api.moonshot.cn/v1/chat/completions',
+    keyLabel: 'Moonshot API Key',
+    keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
+    supportsJsonFormat: true,
+    docs: 'https://platform.moonshot.cn/'
   }
 }
 
@@ -141,8 +126,6 @@ export function buildProviderRequest(providerId, model, messages, apiKey, temper
   const provider = getProvider(providerId)
   if (provider.supportsJsonFormat && providerId !== 'qwen' && providerId !== 'zhipu') {
     data.response_format = { type: 'json_object' }
-  } else {
-    messages.push({ role: 'system', content: '请只返回纯JSON，不要任何额外文字。' })
   }
   return {
     url: p.endpoint,

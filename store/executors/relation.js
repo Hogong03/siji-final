@@ -1,4 +1,5 @@
 import { createRelation, updateRelation, deleteRelation, getAllRelations, findRelationsByName, logInteraction, getInteractions } from '@/utils/relations.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Relation 相关 executor 工厂函数
@@ -9,6 +10,7 @@ export function createRelationExecutors(ctx) {
 
   function execCreateRelation(p) {
     const relation = createRelation(p)
+    invalidatePromptCache()
     return {
       success: true,
       message: `已收录「${relation.name}」到关系图谱`,
@@ -34,6 +36,7 @@ export function createRelationExecutors(ctx) {
     const ok = updateRelation(id, updates)
     if (!ok) return { success: false, message: '关系卡片不存在', detail: null }
     const updated = getAllRelations().find(r => r.id === id)
+    invalidatePromptCache()
     return {
       success: true,
       message: `已更新「${updated.name}」的信息`,
@@ -48,6 +51,7 @@ export function createRelationExecutors(ctx) {
     const target = all.find(r => r.id === id)
     if (!target) return { success: false, message: '关系卡片不存在', detail: null }
     deleteRelation(id)
+    invalidatePromptCache()
     return {
       success: true,
       message: `已从关系图谱中移除「${target.name}」`,
@@ -85,6 +89,7 @@ export function createRelationExecutors(ctx) {
       result: p.result || '',
       emotion: p.emotion || ''
     })
+    invalidatePromptCache()
     return {
       success: true,
       message: `已记录与「${relation.name}」的互动`,

@@ -11,6 +11,8 @@
  * 或通过 localStorage 'siji_debug' = '1' 强制开启。
  */
 
+import { asyncSetStorage } from '@/utils/store-helpers.js'
+
 const _readDebug = () => {
   try {
     return uni.getStorageSync('siji_debug') === '1' ||
@@ -25,7 +27,7 @@ let _debug = _readDebug()
 /** 运行时切换调试模式 */
 export function setDebug(on) {
   _debug = !!on
-  try { uni.setStorageSync('siji_debug', _debug ? '1' : '0') } catch {}
+  try { asyncSetStorage('siji_debug', _debug ? '1' : '0') } catch {}
 }
 
 export const logger = {

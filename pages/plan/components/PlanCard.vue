@@ -97,10 +97,14 @@ function formatEst(ds) {
 		@tap="emit('go-detail', item.client_id)">
 		<view class="card-top">
 			<view class="card-left">
-				<view class="title-row">
+      <view class="title-row">
 					<view class="priority-dot"
 						:style="{ background: priorityColors[item.priority] || '#999' }" />
 					<text class="card-title">{{ item.title }}</text>
+					<view class="mini-progress" v-if="subProgress(item)">
+						<view class="mini-bar" :style="{ width: subProgress(item).pct + '%' }" />
+						<text class="mini-pct">{{ subProgress(item).pct }}%</text>
+					</view>
 				</view>
 				<text class="card-desc" v-if="item.description">
 					{{ item.description.substring(0, 80) }}
@@ -203,6 +207,31 @@ function formatEst(ds) {
 	font-size: $font-lg;
 	font-weight: 700;
 	color: $text-primary;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mini-progress {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+	flex-shrink: 0;
+}
+
+.mini-bar {
+	width: 60rpx;
+	height: 4rpx;
+	background: var(--color-plan);
+	border-radius: 2rpx;
+}
+
+.mini-pct {
+	font-size: 18rpx;
+	color: var(--text-hint);
+	font-weight: 600;
 }
 
 .card-desc {

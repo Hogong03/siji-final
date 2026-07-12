@@ -99,175 +99,177 @@
   </view>
 </template>
 
-<script>
+<script setup>
+import { ref, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import {
   getAllDecisions, getDecisionsByStatus, createDecision, getDecisionStats, getPendingReviews,
   updateDecision, deleteDecision
 } from '@/utils/decisions.js'
 
-export default {
-  data() {
-    return {
-      tabs: [
-        { label: '全部', value: 'all' },
-        { label: '思考中', value: 'thinking' },
-        { label: '已决定', value: 'decided' },
-        { label: '已复盘', value: 'reviewed' }
-      ],
-      currentTab: 'all',
-      allList: [],
-      filteredList: [],
-      stats: {},
-      showAddForm: false,
-      editMode: false,
-      editingId: null,
-      categories: ['职业', '感情', '财务', '生活', '其他'],
-      catIndex: 0,
-      form: {
-        title: '',
-        category: '职业',
-        deadline: '',
-        optionsStr: '',
-        stakeholdersStr: '',
-        factorsStr: '',
-        emotion: ''
-      }
-    }
-  },
-  onShow() {
-    this.loadData()
-  },
-  watch: {
-    currentTab() { this.applyFilter() }
-  },
-  methods: {
-    loadData() {
-      this.allList = getAllDecisions()
-      this.stats = getDecisionStats()
-      this.applyFilter()
-    },
-    applyFilter() {
-      if (this.currentTab === 'all') {
-        this.filteredList = this.allList
-      } else {
-        this.filteredList = this.allList.filter(d => d.status === this.currentTab)
-      }
-    },
-    getCount(tabValue) {
-      if (tabValue === 'all') return this.allList.length
-      return this.allList.filter(d => d.status === tabValue).length
-    },
-    statusLabel(status) {
-      const map = { thinking: '思考中', decided: '已决定', acted: '已行动', reviewed: '已复盘', abandoned: '已放弃' }
-      return map[status] || status
-    },
-    formatTime(ts) {
-      const d = new Date(ts)
-      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
-    },
-    onCatChange(e) {
-      this.catIndex = e.detail.value
-      this.form.category = this.categories[e.detail.value]
-    },
-    openAddForm() {
-      this.editMode = false
-      this.editingId = null
-      this.resetForm()
-      this.showAddForm = true
-    },
-    handleAdd() {
-      if (!this.form.title.trim()) {
-        uni.showToast({ title: '请输入决策标题', icon: 'none' })
-        return
-      }
-      const options = this.form.optionsStr
-        ? this.form.optionsStr.split('\n').map(s => s.trim()).filter(Boolean).map(name => ({ name, pros: [], cons: [], weight: 5 }))
-        : []
-      createDecision({
-        title: this.form.title.trim(),
-        category: this.form.category,
-        deadline: this.form.deadline.trim(),
-        options,
-        stakeholders: this.form.stakeholdersStr ? this.form.stakeholdersStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        factors: this.form.factorsStr ? this.form.factorsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        emotion: this.form.emotion.trim()
-      })
-      uni.showToast({ title: '已创建', icon: 'success' })
-      this.showAddForm = false
-      this.resetForm()
-      this.loadData()
-    },
-    handleEdit(item) {
-      this.editMode = true
-      this.editingId = item.id
-      // 预填数据
-      this.form.title = item.title || ''
-      this.form.category = item.category || '职业'
-      this.form.deadline = item.deadline || ''
-      // options 数组每项的 name 提取，用换行符 join
-      this.form.optionsStr = (item.options && item.options.length > 0)
-        ? item.options.map(opt => opt.name).join('\n')
-        : ''
-      // stakeholders 用逗号 join
-      this.form.stakeholdersStr = (item.stakeholders && item.stakeholders.length > 0)
-        ? item.stakeholders.join('，')
-        : ''
-      // factors 用逗号 join
-      this.form.factorsStr = (item.factors && item.factors.length > 0)
-        ? item.factors.join('，')
-        : ''
-      this.form.emotion = item.emotion || ''
-      // 设置 catIndex
-      const idx = this.categories.indexOf(this.form.category)
-      this.catIndex = idx >= 0 ? idx : 0
-      this.showAddForm = true
-    },
-    handleSave() {
-      if (!this.form.title.trim()) {
-        uni.showToast({ title: '请输入决策标题', icon: 'none' })
-        return
-      }
-      const options = this.form.optionsStr
-        ? this.form.optionsStr.split('\n').map(s => s.trim()).filter(Boolean).map(name => ({ name, pros: [], cons: [], weight: 5 }))
-        : []
-      updateDecision(this.editingId, {
-        title: this.form.title.trim(),
-        category: this.form.category,
-        deadline: this.form.deadline.trim(),
-        options,
-        stakeholders: this.form.stakeholdersStr ? this.form.stakeholdersStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        factors: this.form.factorsStr ? this.form.factorsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
-        emotion: this.form.emotion.trim()
-      })
-      uni.showToast({ title: '已保存', icon: 'success' })
-      this.showAddForm = false
-      this.editMode = false
-      this.editingId = null
-      this.resetForm()
-      this.loadData()
-    },
-    handleDelete(item) {
-      uni.showModal({
-        title: '确认删除',
-        content: `确定要删除「${item.title}」吗？此操作不可撤销。`,
-        confirmColor: '#000000',
-        success: (res) => {
-          if (res.confirm) {
-            deleteDecision(item.id)
-            uni.showToast({ title: '已删除', icon: 'success' })
-            this.loadData()
-          }
-        }
-      })
-    },
-    resetForm() {
-      this.form = { title: '', category: '职业', deadline: '', optionsStr: '', stakeholdersStr: '', factorsStr: '', emotion: '' }
-      this.catIndex = 0
-    },
-    goDetail(id) {
-      uni.navigateTo({ url: `/pages/settings/sub/decision-detail?id=${id}` })
-    }
+const tabs = ref([
+  { label: '全部', value: 'all' },
+  { label: '思考中', value: 'thinking' },
+  { label: '已决定', value: 'decided' },
+  { label: '已复盘', value: 'reviewed' }
+])
+const currentTab = ref('all')
+const allList = ref([])
+const filteredList = ref([])
+const stats = ref({})
+const showAddForm = ref(false)
+const editMode = ref(false)
+const editingId = ref(null)
+const categories = ref(['职业', '感情', '财务', '生活', '其他'])
+const catIndex = ref(0)
+const form = ref({
+  title: '',
+  category: '职业',
+  deadline: '',
+  optionsStr: '',
+  stakeholdersStr: '',
+  factorsStr: '',
+  emotion: ''
+})
+
+onShow(() => {
+  loadData()
+})
+
+watch(currentTab, () => { applyFilter() })
+
+function loadData() {
+  allList.value = getAllDecisions()
+  stats.value = getDecisionStats()
+  applyFilter()
+}
+
+function applyFilter() {
+  if (currentTab.value === 'all') {
+    filteredList.value = allList.value
+  } else {
+    filteredList.value = allList.value.filter(d => d.status === currentTab.value)
   }
+}
+
+function getCount(tabValue) {
+  if (tabValue === 'all') return allList.value.length
+  return allList.value.filter(d => d.status === tabValue).length
+}
+
+function statusLabel(status) {
+  const map = { thinking: '思考中', decided: '已决定', acted: '已行动', reviewed: '已复盘', abandoned: '已放弃' }
+  return map[status] || status
+}
+
+function formatTime(ts) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function onCatChange(e) {
+  catIndex.value = e.detail.value
+  form.value.category = categories.value[e.detail.value]
+}
+
+function openAddForm() {
+  editMode.value = false
+  editingId.value = null
+  resetForm()
+  showAddForm.value = true
+}
+
+function handleAdd() {
+  if (!form.value.title.trim()) {
+    uni.showToast({ title: '请输入决策标题', icon: 'none' })
+    return
+  }
+  const options = form.value.optionsStr
+    ? form.value.optionsStr.split('\n').map(s => s.trim()).filter(Boolean).map(name => ({ name, pros: [], cons: [], weight: 5 }))
+    : []
+  createDecision({
+    title: form.value.title.trim(),
+    category: form.value.category,
+    deadline: form.value.deadline.trim(),
+    options,
+    stakeholders: form.value.stakeholdersStr ? form.value.stakeholdersStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    factors: form.value.factorsStr ? form.value.factorsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    emotion: form.value.emotion.trim()
+  })
+  uni.showToast({ title: '已创建', icon: 'success' })
+  showAddForm.value = false
+  resetForm()
+  loadData()
+}
+
+function handleEdit(item) {
+  editMode.value = true
+  editingId.value = item.id
+  form.value.title = item.title || ''
+  form.value.category = item.category || '职业'
+  form.value.deadline = item.deadline || ''
+  form.value.optionsStr = (item.options && item.options.length > 0)
+    ? item.options.map(opt => opt.name).join('\n')
+    : ''
+  form.value.stakeholdersStr = (item.stakeholders && item.stakeholders.length > 0)
+    ? item.stakeholders.join('，')
+    : ''
+  form.value.factorsStr = (item.factors && item.factors.length > 0)
+    ? item.factors.join('，')
+    : ''
+  form.value.emotion = item.emotion || ''
+  const idx = categories.value.indexOf(form.value.category)
+  catIndex.value = idx >= 0 ? idx : 0
+  showAddForm.value = true
+}
+
+function handleSave() {
+  if (!form.value.title.trim()) {
+    uni.showToast({ title: '请输入决策标题', icon: 'none' })
+    return
+  }
+  const options = form.value.optionsStr
+    ? form.value.optionsStr.split('\n').map(s => s.trim()).filter(Boolean).map(name => ({ name, pros: [], cons: [], weight: 5 }))
+    : []
+  updateDecision(editingId.value, {
+    title: form.value.title.trim(),
+    category: form.value.category,
+    deadline: form.value.deadline.trim(),
+    options,
+    stakeholders: form.value.stakeholdersStr ? form.value.stakeholdersStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    factors: form.value.factorsStr ? form.value.factorsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+    emotion: form.value.emotion.trim()
+  })
+  uni.showToast({ title: '已保存', icon: 'success' })
+  showAddForm.value = false
+  editMode.value = false
+  editingId.value = null
+  resetForm()
+  loadData()
+}
+
+function handleDelete(item) {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除「${item.title}」吗？此操作不可撤销。`,
+    confirmColor: '#000000',
+    success: (res) => {
+      if (res.confirm) {
+        deleteDecision(item.id)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        loadData()
+      }
+    }
+  })
+}
+
+function resetForm() {
+  form.value = { title: '', category: '职业', deadline: '', optionsStr: '', stakeholdersStr: '', factorsStr: '', emotion: '' }
+  catIndex.value = 0
+}
+
+function goDetail(id) {
+  uni.navigateTo({ url: `/pages/settings/sub/decision-detail?id=${id}` })
 }
 </script>
 

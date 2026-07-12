@@ -12,7 +12,6 @@ import { logger } from '@/utils/logger.js'
 import { useDeviceStore } from './device.js'
 import { useAiConfigStore } from './aiConfig.js'
 import { useChatStore } from './chat.js'
-import { useThemeStore } from './theme.js'
 import { useDataStore } from './data.js'
 import { useAgentStore } from './agent.js'
 
@@ -20,14 +19,12 @@ export const useAppStore = defineStore('app', () => {
   const device = useDeviceStore()
   const aiConfig = useAiConfigStore()
   const chat = useChatStore()
-  const theme = useThemeStore()
   const data = useDataStore()
   const agent = useAgentStore()
 
   // 解构响应式状态（保持 ref/computed 的响应性）
   const {
-    deviceId, registered,
-    syncQueueLength, lastSyncTime, isOnline,
+    deviceId, registered, isOnline,
   } = storeToRefs(device)
 
   const {
@@ -41,10 +38,6 @@ export const useAppStore = defineStore('app', () => {
   } = storeToRefs(chat)
 
   const {
-    themeMode, resolvedTheme,
-  } = storeToRefs(theme)
-
-  const {
     agents, activeAgentId, activeAgent, customAgents, agentCount,
   } = storeToRefs(agent)
 
@@ -55,7 +48,6 @@ export const useAppStore = defineStore('app', () => {
   function restoreCriticalFromStorage() {
     device.setDeviceId()
     aiConfig.restoreFromStorage()
-    theme.restoreFromStorage()
     chat.restoreHistory()
     // 如果没有会话，自动创建一个
     if (chat.conversations.length === 0) {
@@ -68,7 +60,6 @@ export const useAppStore = defineStore('app', () => {
    */
   function restoreNonCriticalFromStorage() {
     agent.restoreFromStorage()
-    device.refreshSyncState()
     logger.log('[思迹] Non-critical storage restored')
   }
 
@@ -82,12 +73,9 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     // ==================== 设备 & 注册 ====================
-    deviceId, registered,
-    syncQueueLength, lastSyncTime, isOnline,
+    deviceId, registered, isOnline,
     setDeviceId: device.setDeviceId,
     setRegistered: device.setRegistered,
-    refreshSyncState: device.refreshSyncState,
-    setSyncQueueLength: device.setSyncQueueLength,
     setOnline: device.setOnline,
 
     // ==================== AI 配置 ====================
@@ -115,11 +103,6 @@ export const useAppStore = defineStore('app', () => {
     clearMessages: chat.clearMessages,
     persistHistory: chat.persistHistory,
     restoreHistory: chat.restoreHistory,
-
-    // ==================== 主题 ====================
-    themeMode, resolvedTheme,
-    setTheme: theme.setTheme,
-    onThemeChanged: theme.onThemeChanged,
 
     // ==================== Agent ====================
     agents, activeAgentId, activeAgent, customAgents, agentCount,

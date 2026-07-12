@@ -52,7 +52,6 @@ function onSearchInput(e) {
 
     <!-- 搜索框 -->
     <view class="search-box">
-      <text class="search-icon-text">🔍</text>
       <input
         class="search-input"
         type="text"
@@ -67,8 +66,9 @@ function onSearchInput(e) {
 
 <style lang="scss" scoped>
 .filter-section {
-  padding: 0 $spacing-md;
-  margin-bottom: $spacing-xs;
+  padding: 12rpx 24rpx;
+  background: var(--bg-card);
+  border-bottom: 1rpx solid var(--border-color);
 }
 
 .type-filter {
@@ -79,11 +79,11 @@ function onSearchInput(e) {
   .type-btn {
     flex: 1;
     text-align: center;
-    padding: 10rpx 0;
-    border-radius: $radius-sm;
-    font-size: $font-xs;
-    background: $bg-card;
-    color: $text-secondary;
+    padding: 6rpx 20rpx;
+    border-radius: 24rpx;
+    font-size: 22rpx;
+    background: var(--bg-input);
+    color: var(--text-secondary);
 
     &.active {
       background: var(--color-ai);
@@ -105,11 +105,11 @@ function onSearchInput(e) {
 
 .cat-tag {
   flex-shrink: 0;
-  padding: 6rpx 18rpx;
-  border-radius: 32rpx;
-  font-size: 20rpx;
-  background: $bg-card;
-  color: $text-secondary;
+  padding: 6rpx 20rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  background: var(--bg-input);
+  color: var(--text-secondary);
   white-space: nowrap;
 
   &.active {
@@ -121,25 +121,20 @@ function onSearchInput(e) {
 .search-box {
   display: flex;
   align-items: center;
-  background: $bg-card;
+  background: var(--bg-input);
   border-radius: $radius-round;
   padding: 8rpx $spacing-md;
   margin-bottom: $spacing-xs;
 
-  .search-icon-text {
-    font-size: $font-sm;
-    margin-right: $spacing-xs;
-  }
-
   .search-input {
     flex: 1;
     font-size: $font-sm;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   .search-clear {
     font-size: $font-sm;
-    color: $text-hint;
+    color: var(--text-hint);
     padding: 0 8rpx;
   }
 }

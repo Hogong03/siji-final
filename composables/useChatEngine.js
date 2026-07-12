@@ -1,12 +1,12 @@
 /**
- * useChatEngine — 聊天核心逻辑 composable
+ * useChatEngine - 聊天核心逻辑 composable
  *
  * 从 chat/index.vue 抽取的 AI 调用、执行、摘要、兜底逻辑
  * 页面只需关注 UI 渲染和事件路由
  */
 import { ref, nextTick } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { chatRequest, chatRequestStream, generateConversationSummary, isOnline, getProvider, getProviderVisionModel, supportsVision } from '@/utils/api.js'
+import { chatRequest, chatRequestStream, generateConversationSummary, generateConversationTitle, isOnline, getProvider, getProviderVisionModel, supportsVision } from '@/utils/api.js'
 import { autoExtractMemory, aiSummarizeConversation, isMemoryEnabled } from '@/utils/memory.js'
 import { logger } from '@/utils/logger.js'
 import { getRelationById } from '@/utils/relations.js'
@@ -22,10 +22,10 @@ export function useChatEngine() {
   const currentSuggestions = ref([])
   const simulationMode = ref(null)  // { simId, relationName, scene, goal } 或 null
 
-  /** 初始化模拟模式（从页面 onLoad / onShow 事件传入） */
+  /** 初始化模拟模式(从页面 onLoad / onShow 事件传入) */
   function initSimulation(params) {
     if (!params || !params.simulation) return false
-    // 防御：确保会话列表已初始化（不创建新对话，仅确保 store 就绪）
+    // 防御:确保会话列表已初始化(不创建新对话,仅确保 store 就绪)
     if (!store.conversations) return false
     const mode = params.mode || 'social'
     const modeConfig = SIM_MODES[mode] || SIM_MODES.social
@@ -40,7 +40,7 @@ export function useChatEngine() {
       goal: params.goal
     })
 
-    // resume 模式：尝试切换到原会话
+    // resume 模式:尝试切换到原会话
     if (params.resume) {
       const simRecord = getSimulationById(params.simulation)
       if (simRecord?.conversation_id) {
@@ -50,7 +50,7 @@ export function useChatEngine() {
         }
       }
     } else {
-      // 新演练：始终创建全新独立会话，标题带模式名
+      // 新演练:始终创建全新独立会话,标题带模式名
       // 清理 onMounted 可能创建的仅含欢迎语的空会话
       const currentConv = store.activeConversation
       if (currentConv && currentConv.messages.length === 1 && currentConv.messages[0].role === 'assistant' && !currentConv.messages[0].execResult) {
@@ -63,7 +63,7 @@ export function useChatEngine() {
       updateSimulation(params.simulation, { conversation_id: newConv.id })
     }
 
-    // 自动切换到该模式对应的 Agent，并记录原 Agent 以供结束后恢复
+    // 自动切换到该模式对应的 Agent,并记录原 Agent 以供结束后恢复
     let previousAgentId = null
     if (modeConfig.agentId && store.activeAgentId !== modeConfig.agentId) {
       previousAgentId = store.activeAgentId
@@ -83,15 +83,15 @@ export function useChatEngine() {
       previousAgentId: previousAgentId
     }
 
-    // resume 模式不重复添加开场白（会话历史已有）
+    // resume 模式不重复添加开场白(会话历史已有)
     if (!params.resume) {
       let openingMsg = ''
       if (mode === 'planning') {
-        openingMsg = `规划推演开始\n\n场景：${simulationMode.value.scene}\n${simulationMode.value.goal ? '目标：' + simulationMode.value.goal : ''}\n\n我会逐步引导你拆解目标、识别风险、制定时间线。说「结束推演」或「出方案」可随时生成完整规划方案。`
+        openingMsg = `规划推演开始\n\n场景:${simulationMode.value.scene}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n我会逐步引导你拆解目标、识别风险、制定时间线。说「结束推演」或「出方案」可随时生成完整规划方案。`
       } else if (mode === 'relationship') {
-        openingMsg = `关系处理模拟开始\n\n场景：${simulationMode.value.scene}\n对方：${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标：' + simulationMode.value.goal : ''}\n\n我会扮演对方与你进行沟通演练。说「结束演练」或「复盘」可随时查看复盘报告。`
+        openingMsg = `关系处理模拟开始\n\n场景:${simulationMode.value.scene}\n对方:${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n我会扮演对方与你进行沟通演练。说「结束演练」或「复盘」可随时查看复盘报告。`
       } else {
-        openingMsg = `模拟演练开始\n\n场景：${simulationMode.value.scene}\n对方：${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标：' + simulationMode.value.goal : ''}\n\n说「结束演练」或「复盘」可随时查看复盘报告。`
+        openingMsg = `模拟演练开始\n\n场景:${simulationMode.value.scene}\n对方:${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n说「结束演练」或「复盘」可随时查看复盘报告。`
       }
       store.addMessage({
         role: 'assistant',
@@ -128,19 +128,19 @@ export function useChatEngine() {
       if (diaries.length > 0) tips.push(`本月写了 ${diaries.length} 篇日记`)
     } catch { /* ignore */ }
 
-    let msg = `${greeting}，我是思迹。`
+    let msg = `${greeting},我是思迹。`
     if (tips.length > 0) msg += `\n${tips.join(' · ')}`
-    msg += '\n\n跟我说什么都行，我可以帮你：'
-    msg += '\n¥ 记账 — "午饭花了35"'
-    msg += '\n✎ 日记 — "今天心情不错"'
-    msg += '\n✓ 计划 — "下周完成报告"'
-    msg += '\n✎ 改 — "把那笔餐费改成30""计划截止改到周五"'
-    msg += '\n? 查 — "这个月花了多少"'
-    msg += '\n\n也能一句话同时做几件事，或者直接跟我聊天。'
+    msg += '\n\n跟我说什么都行,我可以帮你:'
+    msg += '\n¥ 记账 - "午饭花了35"'
+    msg += '\n✎ 日记 - "今天心情不错"'
+    msg += '\n✓ 计划 - "下周完成报告"'
+    msg += '\n✎ 改 - "把那笔餐费改成30""计划截止改到周五"'
+    msg += '\n? 查 - "这个月花了多少"'
+    msg += '\n\n也能一句话同时做几件事,或者直接跟我聊天。'
     return msg
   }
 
-  /** 构建聊天历史（含执行结果摘要） */
+  /** 构建聊天历史(含执行结果摘要) */
   function buildChatHistory() {
     let chatHistory = store.messages
       .filter(m => {
@@ -190,7 +190,7 @@ export function useChatEngine() {
             if (d.type === 'plan') return `计划《${d.title}》(ID=${d.id})`
             return r.message || ''
           }).filter(Boolean)
-          if (summaries.length > 0) content += `\n[执行结果: ${summaries.join('；')}]`
+          if (summaries.length > 0) content += `\n[执行结果: ${summaries.join(';')}]`
         }
         return { role: m.role, content }
       })
@@ -198,28 +198,24 @@ export function useChatEngine() {
     return chatHistory
   }
 
-  /** AI 自动生成对话标题（异步，不阻塞） */
-  async function generateConversationTitle(conv) {
-    const recentMsgs = (conv.messages || []).slice(-6)
-      .filter(m => m.role === 'user')
-      .map(m => m.content)
-      .slice(0, 4)
-    if (recentMsgs.length === 0) return
+  /** AI 自动生成对话标题(异步,不阻塞,使用 cheapest model) */
+  async function autoGenerateTitle(conv) {
+    if (!conv || !conv.id) return
+    // 取首条用户消息
+    const firstUser = (conv.messages || []).find(m => m.role === 'user')
+    if (!firstUser) return
 
-    const prompt = `根据以下用户消息，生成一个简洁的对话标题（5-10字，不要引号）：
-${recentMsgs.join('\n')}`
     try {
-      const cfg = { provider: store.aiProvider, model: store.aiModel, apiKey: store.providerKeys[store.aiProvider] || '', temperature: 0.3 }
-      const result = await chatRequest(prompt, null, null, cfg, null)
-      const title = (result?.reply || '').replace(/[""'']/g, '').trim().substring(0, 12)
-      if (title && title.length >= 2 && conv.id) {
+      const cfg = { provider: store.aiProvider, apiKey: store.providerKeys[store.aiProvider] || '' }
+      const title = await generateConversationTitle(firstUser.content, cfg)
+      if (title && conv.id) {
         store.renameConversation(conv.id, title)
       }
-    } catch { /* ignore */ }
+    } catch { /* AI 调用失败/超时 → 保持默认标题 */ }
   }
 
   /** 发送消息 */
-  async function handleSend(text, inputAreaRef, scrollToBottom, imageData) {
+  async function handleSend(text, inputAreaRef, scrollToBottom, imageData, scrollHelpers) {
     const message = text || ''
     if (!message || isSending.value) return
     currentSuggestions.value = []
@@ -229,6 +225,10 @@ ${recentMsgs.join('\n')}`
     }
     isSending.value = true
     stopSignal.value = { stopped: false }
+
+    // 滚动辅助函数(方案 C 双模式)
+    const startStream = scrollHelpers?.startStreamScroll
+    const stopStream = scrollHelpers?.stopStreamScroll
 
     const chatHistory = buildChatHistory()
 
@@ -264,25 +264,37 @@ ${recentMsgs.join('\n')}`
         image: imageData || null
       }
 
-      // === 图片识别：自动切换到视觉模型 ===
+      // 模型合法性校验:切换厂商后旧模型名可能不存在于新厂商
+      const providerModels = getProvider(cfg.provider).models
+      const modelExists = providerModels?.some(m => m.id === cfg.model)
+      if (!modelExists) {
+        cfg.model = providerModels[0]?.id || cfg.model
+        store.aiModel = cfg.model
+      }
+
+      // === 图片识别:自动切换到视觉模型 ===
       if (imageData && !supportsVision(cfg.provider)) {
-        // 当前厂商不支持视觉 → 不传图片，添加提示
+        // 当前厂商不支持视觉 → 不传图片,提示用户
         delete cfg.image
-        store.updateLastMessage({ content: '当前 AI 厂商不支持图片识别，请切换到 OpenAI / 智谱 / 通义后重试。', loading: false })
+        const p = getProvider(cfg.provider)
+        store.updateLastMessage({ content: `「${p.name}」不支持图片识别。请切到 DeepSeek(V4 Flash)、Moonshot(K2.5/2.6/2.7)、智谱 GLM(GLM-4V Flash)或通义千问(Qwen VL)后重试。`, loading: false })
         isSending.value = false
         return
       }
       if (imageData && !getProvider(cfg.provider).visionModels?.includes(cfg.model)) {
         // 当前模型不支持视觉 → 自动切换到该厂商的视觉模型
         const visionModel = getProviderVisionModel(cfg.provider)
-        if (visionModel) cfg.model = visionModel
+        if (visionModel) {
+          logger.info(`[Vision] Auto-switch model: ${cfg.model} → ${visionModel}`)
+          cfg.model = visionModel
+        }
       }
 
-      // 检测结束演练信号（三种模式统一处理）
+      // 检测结束演练信号(三种模式统一处理)
       if (simulationMode.value && /结束演练|复盘|结束模拟|结束推演|出方案/.test(message)) {
-        let reportPrompt = '请根据以上对话，生成复盘报告。'
+        let reportPrompt = '请根据以上对话,生成复盘报告。'
         if (simulationMode.value.mode === 'planning') {
-          reportPrompt = '请根据以上对话，生成完整的规划方案。按规划方案格式输出。'
+          reportPrompt = '请根据以上对话,生成完整的规划方案。按规划方案格式输出。'
         }
         const simId = simulationMode.value.simId
         const reportResult = await chatRequest(
@@ -308,12 +320,14 @@ ${recentMsgs.join('\n')}`
       }
 
       let streamedText = ''
+      // 启动流式滚动 interval
+      if (startStream) startStream()
       let result = await chatRequestStream(
         message, store.conversationId, cfg,
         (chunk) => {
           streamedText += chunk
           store.updateLastMessage({ content: streamedText, loading: true })
-          scrollToBottom()
+          // 不再逐 chunk 调 scrollToBottom - 由 startStreamScroll 的 interval 驱动
         },
         chatHistory
       )
@@ -328,26 +342,25 @@ ${recentMsgs.join('\n')}`
           ? message
           : message.replace(/^\[[^\]]+\]\s*/g, '').trim().substring(0, 100)
         logger.warn(`[Stream Empty Retry] ${streamRetry}/${MAX_STREAM_RETRIES}, re-sending...`)
-        // 清空已显示的内容，显示重试提示
+        // 清空已显示的内容,显示重试提示
         streamedText = ''
         store.updateLastMessage({ content: '正在重新思考...', loading: true })
         await new Promise(r => setTimeout(r, 600))
-        // 重新发送（精简消息）
+        // 重新发送(精简消息)
         result = await chatRequestStream(
           simplifiedMsg, store.conversationId, cfg,
           (chunk) => {
             streamedText += chunk
             store.updateLastMessage({ content: streamedText, loading: true })
-            scrollToBottom()
+            // 同样不逐 chunk 滚动
           },
           chatHistory
         )
       }
 
-      // 如果重试后仍然为空，清除“正在重新思考”提示
+      // 如果重试后仍然为空，标记失败状态，弹出重试栏
       if (result._emptyReply && !streamedText) {
-        store.updateLastMessage({ content: '抱歉，我没能理解，能换个方式说说吗？', loading: false })
-        isSending.value = false
+        store.updateLastMessage({ content: 'AI 走神了，要不要再试一次？', loading: false, failed: true })
         return
       }
 
@@ -377,19 +390,24 @@ ${recentMsgs.join('\n')}`
       }
       if (result.conversation_id) store.setConversationId(result.conversation_id)
 
-      // 长期记忆（needConfirm 路径跳过，由 handleConfirmAction 处理）
+      // 长期记忆(needConfirm 路径跳过,由 handleConfirmAction 处理)
       if (isMemoryEnabled() && !needConfirm) {
         try {
           const lastMsg = store.messages[store.messages.length - 1]
           autoExtractMemory(message, reply, lastMsg?.execResult)
           const conv = store.activeConversation
-          if (conv && conv.messages.length > 0 && conv.messages.length % 15 === 0) {
-            aiSummarizeConversation(conv.messages, {
+          // 累计未摘要消息 ≥ 15 条时触发,不再依赖 % 15(短对话也会触发)
+          const unsavedCount = conv ? conv.messages.length - (conv.summaryIndex || 0) : 0
+          if (conv && unsavedCount >= 15) {
+            const result = await aiSummarizeConversation(conv.messages, {
               provider: store.aiProvider,
               model: store.aiModel,
               apiKey: store.providerKeys[store.aiProvider] || '',
               systemPrompt: agentSystemPrompt
             })
+            if (result) {
+              conv.summaryIndex = conv.messages.length
+            }
           }
         } catch (e) {
           logger.warn('记忆提取失败', e)
@@ -399,31 +417,81 @@ ${recentMsgs.join('\n')}`
       store.persistHistory()
       triggerSummaryIfNeeded()
 
-      // === AI 自动生成对话标题 ===
+      // === AI 自动生成对话标题(仅首次完整交互,不阻塞用户)===
       try {
         const conv = store.activeConversation
+        // 默认标题:"对话" 或 "新对话2/3/..."
         const isDefaultTitle = conv && /^(对话|新对话)\d*$/.test(conv.title || '')
-        const userMsgs = conv?.messages?.filter(m => m.role === 'user')?.length || 0
-        if (isDefaultTitle && userMsgs >= 3 && userMsgs <= 6) {
-          generateConversationTitle(conv).catch(() => {})
+        // 首次交换完成时:welcome(assistant) + user + assistant = 3 条消息
+        if (isDefaultTitle && conv.messages.length === 3) {
+          autoGenerateTitle(conv).catch(() => {})
         }
       } catch { /* ignore */ }
     } catch (e) {
       logger.error('handleSend error', e)
+      const msg = e.message || ''
+      const isKeyError = msg.includes('API Key') || msg.includes('Access denied') || msg.includes('access_denied') || msg.includes('401') || msg.includes('403')
       store.updateLastMessage({
-        content: e.message?.includes('API Key')
-          ? `${e.message}。请到设置页检查 AI 配置。`
-          : `请求失败: ${e.message || '未知错误'}。请重试。`,
-        loading: false
+        content: isKeyError
+          ? `${msg}。请到设置页检查 AI 配置（厂商/模型/Key 权限）。`
+          : `请求失败: ${msg || '未知错误'}。`,
+        loading: false,
+        failed: true
       })
     } finally {
       isSending.value = false
       stopSignal.value = null
+      if (stopStream) stopStream()
       scrollToBottom()
     }
   }
 
-  /** 停止 AI 输出 */
+  /** 重试上一次发送（支持换模型 / 编辑消息） */
+  async function handleRetry(options = {}, inputAreaRef, scrollToBottom, scrollHelpers) {
+    // 找到上一条 user 消息
+    const msgs = store.messages
+    let lastUserMsg = null
+    let lastUserIdx = -1
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === 'user') { lastUserMsg = msgs[i]; lastUserIdx = i; break }
+    }
+    if (!lastUserMsg) return
+
+    const message = options.message || lastUserMsg.content
+    const imageData = options.image || lastUserMsg.image || null
+
+    // 前置检查：换了模型后是否有有效 Key
+    const prevProvider = store.aiProvider
+    const prevModel = store.aiModel
+    if (options.provider) store.setAiProvider(options.provider)
+    if (options.model) store.setAiModel(options.model)
+    if (!store.hasApiKey) {
+      // 恢复原设置
+      if (options.provider) store.setAiProvider(prevProvider)
+      if (options.model) store.setAiModel(prevModel)
+      uni.showToast({ title: '当前模型未配置 API Key，请先配置', icon: 'none' })
+      return
+    }
+
+    // 删除失败的 assistant 消息和原 user 消息（重新发送）
+    const conv = store.activeConversation
+    if (conv && conv.messages.length > 0) {
+      // 删除最后一条 assistant（失败的）
+      if (conv.messages[conv.messages.length - 1].role === 'assistant') {
+        conv.messages.pop()
+      }
+      // 删除原 user 消息
+      if (lastUserIdx >= 0 && conv.messages[lastUserIdx] && conv.messages[lastUserIdx].role === 'user') {
+        conv.messages.splice(lastUserIdx, 1)
+      }
+    }
+
+    // 重新发送
+    await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers)
+
+    // 如果换了模型且没成功，恢复原模型（避免设置被污染）
+    // 注意：不恢复 — 用户主动选的模型应该保持
+  }
   function handleStop() {
     if (stopSignal.value) stopSignal.value.stopped = true
     const lastMsg = store.messages[store.messages.length - 1]
@@ -496,7 +564,7 @@ ${recentMsgs.join('\n')}`
       if (m) updates.push({ card: 'custom', cardTitle: '血型', field: '血型', value: m[1] + '型' })
       m = userMessage.match(/(?:预算|月预算|每月预算)(?:是|大概|大约)?(\d{2,6})/)
       if (m) updates.push({ card: 'lifestyle', field: 'budget', value: Number(m[1]) })
-      m = userMessage.match(/(?:睡觉|休息|作息)(?:时间)?(?:是|大概|大约)?(\d{1,2})[点:：](\d{0,2})/)
+      m = userMessage.match(/(?:睡觉|休息|作息)(?:时间)?(?:是|大概|大约)?(\d{1,2})[点::](\d{0,2})/)
       if (m) updates.push({ card: 'lifestyle', field: 'sleepTime', value: m[2] ? `${m[1]}:${m[2]}` : `${m[1]}:00` })
       if (updates.length > 0) {
         return { type: 'smart_update_profile', payload: { updates, suggestions: [] }, needConfirm: false }
@@ -623,7 +691,7 @@ ${recentMsgs.join('\n')}`
         execResult
       })
     }
-    // === 确认操作后提取长期记忆（主流程 needConfirm 路径漏掉了此调用）===
+    // === 确认操作后提取长期记忆(主流程 needConfirm 路径漏掉了此调用)===
     if (execResult?.success && isMemoryEnabled()) {
       try {
         autoExtractMemory(pendingReply.value, pendingReply.value, execResult)
@@ -645,7 +713,7 @@ ${recentMsgs.join('\n')}`
   return {
     isSending, stopSignal, pendingAction, pendingActions, pendingReply, currentSuggestions,
     simulationMode,
-    getWelcomeMessage, handleSend, handleStop, autoExecuteAndDisplay,
+    getWelcomeMessage, handleSend, handleStop, handleRetry, autoExecuteAndDisplay,
     handleConfirmAction, handleCancelAction, initSimulation
   }
 }

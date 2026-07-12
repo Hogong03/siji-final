@@ -9,6 +9,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const STORAGE_KEY = 'siji_agents'
 const ACTIVE_KEY = 'siji_active_agent'
@@ -170,7 +171,7 @@ export const useAgentStore = defineStore('agent', () => {
     agents.value = agents.value.filter(a => a.id !== agentId)
     if (activeAgentId.value === agentId) {
       activeAgentId.value = 'siji'
-      uni.setStorageSync(ACTIVE_KEY, 'siji')
+      asyncSetStorage(ACTIVE_KEY, 'siji')
     }
     persist()
     return true
@@ -180,14 +181,14 @@ export const useAgentStore = defineStore('agent', () => {
   function setActiveAgent(agentId) {
     if (agents.value.find(a => a.id === agentId)) {
       activeAgentId.value = agentId
-      uni.setStorageSync(ACTIVE_KEY, agentId)
+      asyncSetStorage(ACTIVE_KEY, agentId)
     }
   }
 
   /** 持久化 */
   function persist() {
     const custom = agents.value.filter(a => !a.builtin)
-    uni.setStorageSync(STORAGE_KEY, JSON.stringify(custom))
+    asyncSetStorageJSON(STORAGE_KEY, custom)
   }
 
   /** 从 Storage 恢复 */

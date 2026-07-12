@@ -11,7 +11,6 @@ import { logger } from '@/utils/logger.js'
 import { onLoad } from '@dcloudio/uni-app'
 import { getDiaryById, saveDiary, deleteDiary, getDiaryList, getUsedTags, addCustomTag, getTags } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
-import { enqueue } from '@/utils/sync.js'
 import { useAppStore } from '@/store/index.js'
 
 const store = useAppStore()
@@ -174,7 +173,6 @@ async function handleSave() {
   logger.log('[日记保存] tags:', JSON.stringify(diary.tags), 'created_at:', diary.created_at, 'isNew:', isNew.value)
   saveDiary(diary)
   logger.log('[日记保存] 完成, client_id:', diary.client_id)
-  enqueue({ type: 'diary', client_id: diary.client_id, action: isNew.value ? 'create' : 'update', data: diary })
 
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => { uni.navigateBack() }, 800)
@@ -187,7 +185,6 @@ function handleDelete() {
     success(res) {
       if (res.confirm) {
         deleteDiary(diaryId.value, month.value)
-        enqueue({ type: 'diary', client_id: diaryId.value, action: 'delete' })
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => { uni.navigateBack() }, 800)
       }

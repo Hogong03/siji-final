@@ -1,4 +1,5 @@
 import { getProfile, saveProfile, clearProfile, setProfileEnabled, smartUpdateProfile, clearCardField } from '@/utils/profile.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Profile 相关 executor 工厂函数
@@ -55,11 +56,13 @@ export function createProfileExecutors(ctx) {
       return { success: true, message: '没有新信息需要更新', detail: { type: 'profile', skipped: true } }
     }
 
+    invalidatePromptCache()
     return smartUpdateProfile({ updates, createCard })
   }
 
   /** 智能更新 profile — AI 驱动的结构化操作 */
   function execSmartUpdateProfile(p) {
+    invalidatePromptCache()
     return smartUpdateProfile(p)
   }
 
@@ -98,6 +101,7 @@ export function createProfileExecutors(ctx) {
     if (p.card && p.field) {
       // 清空指定卡片的指定字段
       clearCardField(p.card, p.field)
+      invalidatePromptCache()
       return { success: true, message: `已清空「${p.field}」`, detail: { type: 'profile', clearedField: p.field } }
     }
     if (p.card) {
@@ -110,15 +114,18 @@ export function createProfileExecutors(ctx) {
         }
         saveProfile(profile)
       }
+      invalidatePromptCache()
       return { success: true, message: `已清空「${card?.title || p.card}」`, detail: { type: 'profile', clearedCard: p.card } }
     }
     clearProfile()
+    invalidatePromptCache()
     return { success: true, message: '已清空所有个人信息', detail: { type: 'profile', cleared: true } }
   }
 
   function execToggleProfile(p) {
     const enabled = !!p.enabled
     setProfileEnabled(enabled)
+    invalidatePromptCache()
     return {
       success: true,
       message: enabled ? '已开启个人信息功能' : '已关闭个人信息功能',

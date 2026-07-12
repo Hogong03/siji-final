@@ -1,6 +1,7 @@
 import { saveBill, getBillList, getDiaryList, getPlanList, searchByIndex, updateIndex } from '@/utils/storage.js'
 import { asyncSetStorageJSON, formatDateStr, normalizeDateStr } from '@/utils/store-helpers.js'
 import { logger } from '@/utils/logger.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
  * Bill 相关 executor 工厂函数
@@ -35,6 +36,7 @@ export function createBillExecutors(ctx) {
     saveBill(bill)
     updateIndex('bill', bill)
     ctx.undoStack.value.push({ type: 'bill', clientId: bill.client_id, action: 'create', month: bill.bill_date.substring(0, 7) })
+    invalidatePromptCache()
     const sign = bill.type === 'expense' ? '-' : '+'
     return {
       success: true,
@@ -105,6 +107,7 @@ export function createBillExecutors(ctx) {
     const fieldLabels = { amount: '金额', category: '分类', note: '备注', type: '类型', bill_date: '日期' }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
+    invalidatePromptCache()
     return {
       success: true,
       message: `已修改账单（${changedText}）`,
@@ -136,6 +139,7 @@ export function createBillExecutors(ctx) {
         list[idx].updated_at = Date.now()
         asyncSetStorageJSON(key, list)
         ctx._cacheCid('bill', clientId, key)
+        invalidatePromptCache()
         return {
           success: true,
           message: '已删除账单',

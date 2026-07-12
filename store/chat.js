@@ -9,6 +9,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { generateConversationId } from '@/utils/uuid.js'
+import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const CONV_STORAGE_KEY = 'siji_conversations'
 const ACTIVE_CONV_KEY = 'siji_active_conversation'
@@ -205,15 +206,15 @@ export const useChatStore = defineStore('chat', () => {
     })
 
     try {
-      uni.setStorageSync(CONV_STORAGE_KEY, JSON.stringify(slim))
-      uni.setStorageSync('siji_last_chat_time', String(Date.now()))
+      asyncSetStorageJSON(CONV_STORAGE_KEY, slim)
+      asyncSetStorage('siji_last_chat_time', String(Date.now()))
     } catch (e) { /* ignore */ }
   }
 
   /** 持久化活跃会话 ID */
   function persistActiveId() {
     try {
-      uni.setStorageSync(ACTIVE_CONV_KEY, activeConversationId.value)
+      asyncSetStorage(ACTIVE_CONV_KEY, activeConversationId.value)
     } catch (e) { /* ignore */ }
   }
 

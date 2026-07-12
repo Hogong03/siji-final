@@ -76,9 +76,11 @@ defineProps({
 }
 
 .ov-title {
-	font-size: $font-lg;
+	font-size: 28rpx;
 	font-weight: 700;
 	color: var(--text-primary);
+	padding-left: 16rpx;
+	border-left: 4rpx solid #18181B;
 }
 
 .ov-stats {

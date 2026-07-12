@@ -34,8 +34,9 @@ function onMonthTap(key) {
 <style lang="scss" scoped>
 .month-bar {
   flex-shrink: 0;
-  padding: 0 $spacing-md;
-  margin-bottom: $spacing-xs;
+  padding: 12rpx 24rpx;
+  border-bottom: 1rpx solid var(--border-color);
+  background: var(--bg-card);
 
   .month-list {
     display: flex;
@@ -44,11 +45,11 @@ function onMonthTap(key) {
 
   .month-item {
     flex-shrink: 0;
-    padding: 8rpx 24rpx;
+    padding: 10rpx 28rpx;
     border-radius: 32rpx;
-    font-size: $font-sm;
-    background: $bg-card;
-    color: $text-secondary;
+    font-size: 26rpx;
+    background: var(--bg-input);
+    color: var(--text-secondary);
 
     &.active {
       background: var(--color-ai);

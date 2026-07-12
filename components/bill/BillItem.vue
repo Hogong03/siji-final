@@ -49,9 +49,11 @@ function onTouchEnd() {
     <!-- 右侧操作按钮 -->
     <view class="swipe-actions" v-if="isOpen">
       <view class="swipe-btn edit-btn" @tap.stop="onEdit">
+        <text class="sb-icon">✎</text>
         <text class="sb-text">编辑</text>
       </view>
       <view class="swipe-btn delete-btn" @tap.stop="onDelete">
+        <text class="sb-icon">×</text>
         <text class="sb-text">删除</text>
       </view>
     </view>
@@ -78,6 +80,7 @@ function onTouchEnd() {
             {{ (item.type === 'income' || item.type === 1) ? '+' : '-' }}¥{{ (item.amount || 0).toFixed(2) }}
           </text>
           <text class="bill-time" v-if="item.created_at">{{ new Date(item.created_at).toTimeString().substring(0, 5) }}</text>
+          <text class="bill-date" v-if="item.bill_date">{{ String(item.bill_date).substring(5).replace('-', '/') }}</text>
         </view>
       </view>
     </view>
@@ -89,7 +92,7 @@ function onTouchEnd() {
   position: relative;
   overflow: hidden;
   margin-bottom: 2rpx;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
 }
 
 .swipe-actions {
@@ -104,6 +107,7 @@ function onTouchEnd() {
 .swipe-btn {
   width: 140rpx;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 
@@ -113,6 +117,12 @@ function onTouchEnd() {
 
   &.delete-btn {
     background: var(--color-red);
+  }
+
+  .sb-icon {
+    color: var(--text-on-ai);
+    font-size: 28rpx;
+    margin-bottom: 2rpx;
   }
 
   .sb-text {
@@ -127,7 +137,7 @@ function onTouchEnd() {
   z-index: 2;
   transition: transform 0.25s ease;
   background: $bg-card;
-  border-radius: $radius-md;
+  border-radius: $radius-lg;
 
   &:active { background: $bg-input; }
 }
@@ -182,6 +192,8 @@ function onTouchEnd() {
   .bill-amount {
     font-size: $font-lg;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: 'tnum';
 
     &.expense { color: $danger; }
     &.income { color: $success; }
@@ -191,6 +203,16 @@ function onTouchEnd() {
     font-size: 18rpx;
     color: $text-hint;
     display: block;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: 'tnum';
+  }
+
+  .bill-date {
+    font-size: 18rpx;
+    color: $text-hint;
+    display: block;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: 'tnum';
   }
 }
 </style>
