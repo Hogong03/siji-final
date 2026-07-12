@@ -157,10 +157,10 @@ export const useChatStore = defineStore('chat', () => {
 
   /** 持久化所有会话 */
   function persistConversations() {
-    // 精简每个会话的消息（动态截断 10-30 条 / 8000 字符预算）
-    const MAX_CHARS = 8000
-    const MIN_KEEP = 10
-    const MAX_KEEP = 30
+    // 精简每个会话的消息（动态截断 20-500 条 / 200000 字符预算）
+    const MAX_CHARS = 200000
+    const MIN_KEEP = 20
+    const MAX_KEEP = 500
 
     const slim = conversations.value.map(conv => {
       const filtered = conv.messages.filter(m => {

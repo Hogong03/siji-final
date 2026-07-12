@@ -6,7 +6,7 @@
  * AI 自动识别意图，去掉冗余的快捷标签按钮和 segment 系统
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { chooseAndCompress } from '@/utils/image.js'
 
 const props = defineProps({

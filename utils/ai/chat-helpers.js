@@ -80,9 +80,9 @@ export function buildChatMessages(userMessage, history, cfg) {
     const recentHistory = history.slice(summaryIndex)
     recentHistory.forEach(msg => messages.push(msg))
   } else if (history && history.length > 0) {
-    const MAX_HISTORY_TOKENS = 4000
-    const MIN_KEEP = 6
-    const MAX_KEEP = 12
+    const MAX_HISTORY_TOKENS = 8000
+    const MIN_KEEP = 10
+    const MAX_KEEP = 20
     const truncated = []
     let tokenEstimate = 0
     for (let i = history.length - 1; i >= 0; i--) {
