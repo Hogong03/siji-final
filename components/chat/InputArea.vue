@@ -6,15 +6,10 @@
  * AI 自动识别意图，去掉冗余的快捷标签按钮和 segment 系统
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, computed, nextTick } from 'vue'
+import { ref, nextTick } from 'vue'
 import { chooseAndCompress } from '@/utils/image.js'
 
-const cameraIconSrc = computed(() => {
-  try {
-    return plus.io.convertLocalFileSystemURL('_www/static/icons/camera.png')
-  } catch {}
-  return '/static/icons/camera.png'
-})
+const cameraIconSrc = '/static/icons/camera.png'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
