@@ -9,8 +9,6 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, nextTick } from 'vue'
 import { chooseAndCompress } from '@/utils/image.js'
 
-const cameraIconSrc = '/static/icons/camera.png'
-
 const props = defineProps({
   modelValue: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
@@ -66,7 +64,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
     <!-- 输入行 -->
     <view class="input-row">
       <view class="side-btn" @tap="pickImage">
-        <image :src="cameraIconSrc" mode="aspectFit" style="width:36rpx;height:36rpx" />
+        <text class="side-btn" @tap="pickImage" :style="{ opacity: imageLoading ? 0.4 : 1, fontSize: '36rpx', lineHeight: '36rpx' }">◉</text>
       </view>
 
       <view class="input-wrap">
