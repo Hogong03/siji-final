@@ -1,4 +1,5 @@
 import { createSimulation } from '@/utils/simulation.js'
+import { getRelationById } from '@/utils/relations.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**

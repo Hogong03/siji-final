@@ -280,7 +280,7 @@ function deleteSim(sim) {
   uni.showModal({
     title: '确认删除',
     content: `确定删除「${sim.relation_name}」的演练记录？关联的对话内容也将一并删除。`,
-    confirmColor: '#EF4444',
+    confirmColor: 'var(--color-danger)',
     success: (res) => {
       if (res.confirm) {
         deleteSimulation(sim.id)
@@ -295,129 +295,6 @@ function deleteSim(sim) {
 }
 </script>
 
-<style scoped>
-.page { min-height: 100vh; background: var(--bg-page, #F4F4F5); padding: 24rpx; box-sizing: border-box; }
-
-.header { padding: 32rpx 0 24rpx; }
-.header-title { font-size: 40rpx; font-weight: 700; color: var(--text-primary, #18181B); display: block; }
-.header-desc { font-size: 26rpx; color: var(--text-secondary, #71717A); margin-top: 12rpx; display: block; }
-
-/* 模式列表 */
-.mode-list { display: flex; flex-direction: column; gap: 16rpx; margin-bottom: 24rpx; }
-.mode-card {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--bg-card, #FFFFFF); border-radius: 20rpx; padding: 28rpx 24rpx;
-  border: 2rpx solid transparent;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-.mode-card.active { border-color: var(--accent, #000000); }
-.mode-card-left { display: flex; align-items: center; gap: 20rpx; flex: 1; min-width: 0; }
-.mode-card-info { flex: 1; min-width: 0; }
-.mode-title { font-size: 30rpx; font-weight: 700; color: var(--text-primary, #18181B); display: block; }
-.mode-desc { font-size: 24rpx; color: var(--text-secondary, #71717A); margin-top: 6rpx; display: block; }
-.mode-meta { display: flex; align-items: center; gap: 8rpx; margin-top: 10rpx; }
-.agent-label { font-size: 22rpx; color: var(--text-tertiary, #A1A1AA); }
-.mode-count { font-size: 22rpx; color: var(--text-tertiary, #A1A1AA); }
-
-.mode-radio {
-  width: 36rpx; height: 36rpx; border-radius: 50%;
-  border: 4rpx solid var(--border-color, #E4E4E7);
-  flex-shrink: 0;
-}
-.mode-radio.on {
-  border-color: var(--accent, #000000);
-  background: var(--accent, #000000);
-  position: relative;
-}
-.mode-radio.on::after {
-  content: ''; position: absolute;
-  left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 14rpx; height: 14rpx; border-radius: 50%;
-  background: var(--bg-card, #FFFFFF);
-}
-
-/* 配置表单 */
-.config-section {
-  background: var(--bg-card, #FFFFFF); border-radius: 20rpx; padding: 28rpx;
-  margin-bottom: 24rpx; box-sizing: border-box;
-}
-.section-title { font-size: 28rpx; font-weight: 600; color: var(--text-primary, #18181B); display: block; margin-bottom: 20rpx; }
-
-.form-item { margin-bottom: 24rpx; }
-.form-label { font-size: 26rpx; color: var(--text-secondary, #71717A); display: block; margin-bottom: 10rpx; }
-.form-input {
-  width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: var(--bg-input, #F4F4F5); border-radius: 14rpx;
-  font-size: 28rpx; color: var(--text-primary, #18181B); line-height: 80rpx;
-  box-sizing: border-box;
-}
-.form-textarea {
-  width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: var(--bg-input, #F4F4F5); border-radius: 14rpx;
-  font-size: 28rpx; color: var(--text-primary, #18181B);
-  box-sizing: border-box;
-}
-
-/* 关系人物 chip 选择 */
-.relation-picker {
-  display: flex; flex-wrap: wrap; gap: 12rpx; margin-bottom: 12rpx;
-}
-.relation-chip {
-  font-size: 26rpx; padding: 10rpx 24rpx; border-radius: 20rpx;
-  background: var(--bg-input, #F4F4F5); color: var(--text-secondary, #71717A);
-  border: 2rpx solid transparent;
-}
-.relation-chip.on {
-  background: var(--accent, #000000); color: var(--bg-card, #FFFFFF);
-}
-
-/* 开始按钮 */
-.btn-start {
-  width: 100%; height: 96rpx; border-radius: 16rpx;
-  background: var(--accent, #000000); display: flex; align-items: center; justify-content: center;
-  margin-top: 20rpx;
-}
-.btn-start.disabled { opacity: 0.3; }
-.btn-text { font-size: 32rpx; font-weight: 600; color: var(--bg-card, #FFFFFF); }
-
-/* 历史 */
-.history-section { margin-top: 8rpx; }
-.history-header { display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx; }
-.history-count { font-size: 24rpx; color: var(--text-tertiary, #A1A1AA); }
-
-.filter-tabs { display: flex; gap: 12rpx; margin-bottom: 16rpx; flex-wrap: wrap; }
-.filter-tab {
-  font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 12rpx;
-  background: var(--bg-input, #F4F4F5); color: var(--text-secondary, #71717A);
-}
-.filter-tab.on { background: var(--accent, #000000); color: var(--bg-card, #FFFFFF); }
-
-.sim-card {
-  background: var(--bg-card, #FFFFFF); border-radius: 16rpx; padding: 24rpx;
-  margin-bottom: 12rpx;
-}
-.sim-top { display: flex; justify-content: space-between; align-items: center; }
-.sim-left { display: flex; flex-direction: column; gap: 4rpx; }
-.sim-mode-tag { font-size: 22rpx; color: var(--text-tertiary, #A1A1AA); }
-.sim-name { font-size: 30rpx; font-weight: 600; color: var(--text-primary, #18181B); }
-.sim-status-wrap { display: flex; align-items: center; gap: 8rpx; }
-.sim-status { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }
-.sim-status.completed { background: var(--bg-input, #F4F4F5); color: var(--text-secondary, #71717A); }
-.sim-status.active { background: var(--accent, #000000); color: var(--bg-card, #FFFFFF); }
-.sim-arrow { opacity: 0.4; }
-.sim-scene { font-size: 26rpx; color: var(--text-primary, #18181B); margin-top: 10rpx; display: block; }
-.sim-goal { font-size: 24rpx; color: var(--text-secondary, #71717A); margin-top: 4rpx; display: block; }
-.sim-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 8rpx; }
-.sim-time { font-size: 22rpx; color: var(--text-tertiary, #A1A1AA); }
-.sim-bottom-right { display: flex; align-items: center; gap: 24rpx; }
-.sim-report-btn { font-size: 24rpx; color: var(--accent, #000000); font-weight: 500; }
-.sim-delete-btn { font-size: 22rpx; color: #EF4444; }
-.sim-report {
-  margin-top: 12rpx; padding: 20rpx; background: var(--bg-input, #F4F4F5);
-  border-radius: 12rpx; border-left: 6rpx solid var(--accent, #000000);
-}
-.sim-report-text { font-size: 26rpx; color: var(--text-primary, #18181B); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
-.empty-hint { padding: 40rpx 0; text-align: center; }
-.empty-hint text { font-size: 26rpx; color: var(--text-tertiary, #A1A1AA); }
+<style scoped lang="scss">
+@import './simulation.scss';
 </style>

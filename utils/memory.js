@@ -16,6 +16,7 @@
 import { chatRequest } from '@/utils/api.js'
 import { logger } from './logger.js'
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
+import { buildProfileContext } from './profileContext.js'
 
 const STORAGE_KEY = 'siji_long_term_memory'
 const MAX_MEMORIES = 100 // 最多保存 100 条
@@ -108,8 +109,22 @@ export function getMemoryStats() {
 }
 
 /**
+ * 改动5：从画像上下文中提取关键词，用于过滤冗余记忆
+ * 避免"用户偏好咖啡"同时出现在画像 dietary 字段和记忆 preference 分类中
+ */
+function extractProfileKeywords(profileCtx) {
+  if (!profileCtx) return []
+  const keywords = []
+  // 提取画像中所有字段值（简化匹配：>= 2 字的连续中文/英文片段）
+  const matches = profileCtx.match(/[\u4e00-\u9fa5]{2,}|[a-zA-Z]{3,}/g)
+  if (matches) keywords.push(...matches)
+  return keywords
+}
+
+/**
  * 构建记忆摘要文本（注入系统提示词）
  * 按分类分组，最多取最近 30 条
+ * 改动5：过滤已在画像中存在的记忆，减少 token 冗余
  */
 export function buildMemoryContext() {
   const enabled = uni.getStorageSync('siji_memory_enabled')
@@ -118,7 +133,24 @@ export function buildMemoryContext() {
   const all = getAllMemories()
   if (all.length === 0) return ''
 
-  const recent = all.slice(0, 30)
+  let recent = all.slice(0, 30)
+
+  // 改动5：过滤已在画像中存在的记忆
+  const profileCtx = buildProfileContext()
+  if (profileCtx) {
+    const profileKeywords = extractProfileKeywords(profileCtx)
+    if (profileKeywords.length > 0) {
+      recent = recent.filter(m => {
+        // 只过滤 fact 和 preference 类（事件和摘要不过滤）
+        if (m.category !== 'fact' && m.category !== 'preference') return true
+        // 如果记忆内容包含画像关键词中的任意一个（>= 2 字），认为冗余
+        return !profileKeywords.some(kw => kw.length >= 2 && m.content.includes(kw))
+      })
+    }
+  }
+
+  if (recent.length === 0) return ''
+
   const grouped = {}
   recent.forEach(m => {
     const cat = m.category || 'other'
@@ -163,30 +195,14 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
   const existing = getAllMemories()
   const existingContents = new Set(existing.map(m => m.content))
 
-  // === 规则 1：用户自述偏好 ===
-  const prefPatterns = [
-    { re: /我(喜欢|爱吃|爱喝|偏好|习惯)(.{2,20})/g, cat: 'preference' },
-    { re: /我(讨厌|不喜欢|不爱|反感)(.{2,20})/g, cat: 'preference' },
-    { re: /我(通常|一般|总是|经常)(.{2,20})/g, cat: 'preference' },
-    { re: /我的(名字|姓名|昵称)叫?(.{2,10})/g, cat: 'fact' },
-    { re: /我在(.{2,15})(工作|上班|上学|读书)/g, cat: 'fact' },
-    { re: /我(是|在做)(.{2,15})工作/g, cat: 'fact' },
-    { re: /我(住|搬)在?(.{2,15})/g, cat: 'fact' },
-    { re: /(不吃|不能吃|对.{1,6}过敏)(.{2,15})/g, cat: 'preference' },
-    { re: /(早上|晚上|每天)(.{1,5})(起床|睡觉|跑步|锻炼|冥想)/g, cat: 'preference' },
-    { re: /预算(是|大概|大约)?(\d{2,6})/g, cat: 'fact' },
-  ]
-  prefPatterns.forEach(({ re, cat }) => {
-    let match
-    while ((match = re.exec(userMessage)) !== null) {
-      const text = match[0].trim()
-      if (text.length >= 4 && text.length <= 40) {
-        memories.push({ content: text, category: cat })
-      }
-    }
-  })
+  // === 改动1：偏好/事实提取已移交 profile smart_update，此处只保留事件/摘要 ===
+  // 原 10 条正则（prefPatterns）删除：
+  //   - "我喜欢X"/"我讨厌X"/"我通常X" → profile.dietary/hobbies/occupation
+  //   - "我叫X"/"我在X工作"/"我住在X" → profile.nickname/occupation/location
+  //   - "不吃X"/"预算X" → profile.dietary/budget
+  // 这些信息由 AI 通过 smart_update_profile action 结构化更新，不再用正则提取
 
-  // === 规则 2：执行结果记忆 ===
+  // === 规则 2：执行结果记忆（保留，属于事件类） ===
   if (execResult && execResult.success && execResult.detail) {
     const d = execResult.detail
     if (d.type === 'bill' && d.amount) {
@@ -202,41 +218,26 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
     }
   }
 
-  // === 规则 3：重要关键词触发 ===
+  // === 规则 3：重要关键词触发（改动6：增加情绪宣泄排除） ===
+  const EMOTION_NOISE = /太|好烦|气死|受不了|崩溃|烦透|郁卒|恶心|想哭|绝望/
   const importantKeywords = ['生日', '纪念日', '结婚', '搬家', '换工作', '入职', '离职', '考试', '面试', '旅行', '出差']
   importantKeywords.forEach(kw => {
     if (userMessage.includes(kw)) {
-      // 提取包含关键词的句子
       const sentences = userMessage.split(/[。！？\n]/)
       sentences.forEach(s => {
         if (s.includes(kw) && s.length >= 3 && s.length <= 50) {
+          // 改动6：排除情绪宣泄句式 — "好烦要去面试"不提取
+          if (EMOTION_NOISE.test(s)) return
           memories.push({ content: s.trim(), category: 'event' })
         }
       })
     }
   })
 
-  // === 规则 4：AI 回复中的人称/关系信息 ===
-  // AI 回复常包含人物总结和关系分析，直接用于关系图谱和记忆
-  if (aiReply && aiReply.length > 20) {
-    // 人物提及 — 匹配「人物名（关系/角色）」模式
-    const nameRelPattern = /([\u4e00-\u9fa5]{1,4})[（(]([^)）]{1,12})[)）]/g
-    let match
-    while ((match = nameRelPattern.exec(aiReply)) !== null) {
-      const text = `人际关系：${match[1]} (${match[2]})`
-      if (!existingContents.has(text)) {
-        memories.push({ content: text, category: 'fact' })
-      }
-    }
-    // 性格描述
-    const traitPattern = /(性格|特质|特点是|倾向于)(.{3,20})/g
-    while ((match = traitPattern.exec(aiReply)) !== null) {
-      const text = match[0].trim()
-      if (text.length >= 5 && text.length <= 30 && !existingContents.has(text)) {
-        memories.push({ content: text, category: 'fact' })
-      }
-    }
-  }
+  // === 改动1：规则4 人物/性格提取删除 ===
+  // 原规则4从 AI 回复中提取「人际关系：张三（同事）」「性格特点是INFP」
+  // 这些信息应由 AI 通过 create_relation / smart_update_profile action 结构化更新
+  // 正则提取准确率低且与关系图谱/画像功能重叠，已删除
 
   // 去重并保存
   memories.forEach(m => {

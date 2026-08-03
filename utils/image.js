@@ -189,3 +189,114 @@ export function buildVisionMessage(text, image, providerId) {
     }
   ]
 }
+
+/**
+ * 将 base64 图片保存到本地文件系统
+ * @param {string} base64 - data:image/...;base64,... 格式
+ * @returns {Promise<string|null>} 保存后的本地路径，失败返回 null
+ */
+export function saveImageToLocal(base64) {
+  return new Promise((resolve) => {
+    if (!base64 || !base64.startsWith('data:')) { resolve(null); return }
+
+    // 从 data URL 提取 mime 和纯 base64
+    const match = base64.match(/^data:(image\/(\w+));base64,(.+)$/)
+    if (!match) { resolve(null); return }
+    const ext = match[2] === 'jpeg' ? 'jpg' : match[2]
+    const pureBase64 = match[3]
+
+    // #ifdef H5
+    // H5：转 Blob → 下载链接（浏览器保存）
+    try {
+      const bytes = atob(pureBase64)
+      const arr = new Uint8Array(bytes.length)
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+      const blob = new Blob([arr], { type: `image/${match[2]}` })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `siji_${Date.now()}.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      resolve(url)
+    } catch (e) {
+      logger.error('H5 saveImage failed', e)
+      resolve(null)
+    }
+    // #endif
+
+    // #ifdef APP-PLUS
+    // App：写文件到 _doc/siji_images/
+    try {
+      const dir = '_doc/siji_images/'
+      const filename = `img_${Date.now()}.${ext}`
+      plus.io.resolveLocalFileSystemURL(dir, (dirEntry) => {
+        dirEntry.getFile(filename, { create: true }, (fileEntry) => {
+          fileEntry.createWriter((writer) => {
+            writer.onwriteend = () => resolve(fileEntry.fullPath)
+            writer.onerror = () => resolve(null)
+            // 写入 base64 数据
+            const bytes = atob(pureBase64)
+            const arr = new Uint8Array(bytes.length)
+            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+            const blob = new Blob([arr], { type: `image/${match[2]}` })
+            writer.write(blob)
+          }, () => resolve(null))
+        }, () => resolve(null))
+      }, () => {
+        // 目录不存在，先创建
+        plus.io.resolveLocalFileSystemURL('_doc', (docEntry) => {
+          docEntry.getDirectory('siji_images', { create: true }, (newDirEntry) => {
+            newDirEntry.getFile(filename, { create: true }, (fileEntry) => {
+              fileEntry.createWriter((writer) => {
+                writer.onwriteend = () => resolve(fileEntry.fullPath)
+                writer.onerror = () => resolve(null)
+                const bytes = atob(pureBase64)
+                const arr = new Uint8Array(bytes.length)
+                for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+                const blob = new Blob([arr], { type: `image/${match[2]}` })
+                writer.write(blob)
+              }, () => resolve(null))
+            }, () => resolve(null))
+          }, () => resolve(null))
+        }, () => resolve(null))
+      })
+    } catch (e) {
+      logger.error('App saveImage failed', e)
+      resolve(null)
+    }
+    // #endif
+
+    // #ifdef MP-WEIXIN
+    // 小程序：写文件到本地
+    try {
+      const fs = wx.getFileSystemManager()
+      const filePath = `${wx.env.USER_DATA_PATH}/siji_${Date.now()}.${ext}`
+      fs.writeFileSync(filePath, pureBase64, 'base64')
+      resolve(filePath)
+    } catch (e) {
+      logger.error('MP saveImage failed', e)
+      resolve(null)
+    }
+    // #endif
+
+    // #ifndef H5 || APP-PLUS || MP-WEIXIN
+    resolve(null)
+    // #endif
+  })
+}
+
+/**
+ * 预览图片（全屏查看）
+ * @param {string[]} urls - 图片 URL/base64 数组
+ * @param {number} [current=0] - 当前索引
+ */
+export function previewImage(urls, current = 0) {
+  uni.previewImage({
+    urls: urls,
+    current: urls[current] || urls[0],
+    fail: (e) => logger.warn('previewImage failed', e)
+  })
+}

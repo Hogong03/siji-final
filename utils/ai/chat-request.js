@@ -5,11 +5,28 @@
  * 循环依赖解耦：buildChatMessages 等已提取至 chat-helpers.js
  */
 
-import { getDefaultConfig, getProvider, getProviderKeys, buildProviderRequest } from './providers.js'
+import { getDefaultConfig, getProvider, getProviderDefaultModel, buildProviderRequest } from './providers.js'
 import { parseAiResponse } from './response-parser.js'
 import { buildChatMessages, getRecentHistory, cacheAiResponse, getOfflineCacheReply, ApiError } from './chat-helpers.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
 import { logger } from '../logger.js'
+import { checkRateLimit, recordRequest } from './rate-limiter.js'
+
+// P0-4: setTimeout timer 管理 — 页面卸载时统一清除
+const _timers = new Set()
+function _trackedTimeout(fn, delay) {
+  const id = setTimeout(() => {
+    _timers.delete(id)
+    fn()
+  }, delay)
+  _timers.add(id)
+  return id
+}
+/** 清除所有待执行的 retry timer — 供页面卸载时调用 */
+export function clearAllChatTimers() {
+  _timers.forEach(id => clearTimeout(id))
+  _timers.clear()
+}
 
 // ==================== 公开入口 ====================
 
@@ -20,12 +37,12 @@ import { logger } from '../logger.js'
  * @param {object} cfg - { provider, apiKey } 可选，用于获取 API Key
  * @returns {Promise<string>} 生成的标题文本
  */
-export function chatRequest(message, contextType, conversationId, config, history) {
+export function chatRequest(message, contextType, conversationId, config, history, _skipRateLimit = false) {
   const cfg = typeof config === 'string'
     ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
     : (config || getDefaultConfig())
 
-  return chatRequestWithRetry(message, conversationId, cfg, 0, history)
+  return chatRequestWithRetry(message, conversationId, cfg, _skipRateLimit ? 1 : 0, history)
 }
 
 // ==================== 重试逻辑 ====================
@@ -37,9 +54,18 @@ export function chatRequest(message, contextType, conversationId, config, histor
 function chatRequestWithRetry(message, conversationId, cfg, retryCount, history) {
   const maxRetries = 2
   const providerName = getProvider(cfg.provider).name
-  const apiKey = cfg.apiKey || getProviderKeys()[cfg.provider] || uni.getStorageSync('siji_api_key') || ''
+  const apiKey = cfg.apiKey || uni.getStorageSync('siji_api_key') || ''
 
   return new Promise((resolve, reject) => {
+    // 限流检查（重试请求跳过限流）
+    if (retryCount === 0) {
+      const { allowed, reason } = checkRateLimit()
+      if (!allowed) {
+        reject(new ApiError(reason, 429))
+        return
+      }
+      recordRequest()
+    }
     const chatHistory = history || getRecentHistory()
     const messages = buildChatMessages(message, chatHistory, cfg)
     const reqOpts = buildProviderRequest(cfg.provider, cfg.model, messages, apiKey, cfg.temperature)
@@ -52,13 +78,13 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
           const parsed = parseAiResponse(raw, conversationId)
 
           // 空回复自动重试 — 模型偶发返回空内容
-          if (!parsed.reply || !parsed.reply.trim() || parsed.reply.includes('走神了')) {
+          if (!parsed.reply || !parsed.reply.trim() || parsed._isFallback) {
             if (retryCount < maxRetries) {
               const simplifiedMsg = retryCount === 0
                 ? message
                 : message.replace(/^\[[^\]]+\]\s*/g, '').trim().substring(0, 100)
               logger.warn(`[${providerName} Empty Reply] Auto retry ${retryCount + 1}/${maxRetries}`)
-              setTimeout(() => {
+              _trackedTimeout(() => {
                 chatRequestWithRetry(simplifiedMsg, conversationId, cfg, retryCount + 1, chatHistory)
                   .then(resolve).catch(reject)
               }, 1000)
@@ -68,7 +94,7 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
 
           resolve(parsed)
 
-          if (parsed.reply && !parsed.reply.includes('走神了')) {
+          if (parsed.reply && !parsed._isFallback) {
             cacheAiResponse(message, parsed.reply)
           }
         } else {
@@ -79,7 +105,7 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
             const retryAfter = res.header?.['Retry-After'] || res.header?.['retry-after']
             const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, retryCount) * 1500
             logger.warn(`[${providerName} Retry] ${res.statusCode}, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`)
-            setTimeout(() => {
+            _trackedTimeout(() => {
               chatRequestWithRetry(message, conversationId, cfg, retryCount + 1, chatHistory)
                 .then(resolve).catch(reject)
             }, delay)
@@ -94,7 +120,7 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
           if (res.statusCode === 400) {
             if (retryCount < maxRetries) {
               logger.warn(`[${providerName} 400] Retry without response_format`)
-              setTimeout(() => {
+              _trackedTimeout(() => {
                 chatRequestWithRetryNoFormat(message, conversationId, cfg, chatHistory)
                   .then(resolve).catch(reject)
               }, 1000)
@@ -113,7 +139,7 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
         if (retryCount < maxRetries) {
           const delay = Math.pow(2, retryCount) * 1500
           logger.warn(`[${providerName} Retry] Network error, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`)
-          setTimeout(() => {
+          _trackedTimeout(() => {
             chatRequestWithRetry(message, conversationId, cfg, retryCount + 1, chatHistory)
               .then(resolve).catch(reject)
           }, delay)
@@ -132,7 +158,7 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
  */
 function chatRequestWithRetryNoFormat(message, conversationId, cfg, history) {
   const providerName = getProvider(cfg.provider).name
-  const apiKey = cfg.apiKey || getProviderKeys()[cfg.provider] || ''
+  const apiKey = cfg.apiKey || ''
   const chatHistory = history || getRecentHistory()
   const messages = buildChatMessages(message, chatHistory, cfg)
   const provider = getProvider(cfg.provider)
@@ -224,7 +250,7 @@ function fallbackResponse(userMessage, errorDetail) {
 
   if (/心情|日记|记录|今天|开心|难过|累/.test(userMessage)) {
     return {
-      reply: `🌐 离线模式：我现在无法处理你的消息。\n你可以直接在「功能」页手动写日记，等网络恢复后再通过对话记录。`,
+      reply: `🌐 离线模式：我现在无法处理你的消息。\n你可以直接在「功能」页手动写记录，等网络恢复后再通过对话记录。`,
       action: null, actions: [], suggestions: [],
       conversation_id: '',
       offline: true, error: errorDetail
@@ -267,7 +293,7 @@ export async function generateConversationTitle(firstUserMessage, cfg) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${cfg.apiKey}`
       },
-      data: { model: 'deepseek-chat', messages, temperature: 0.1, max_tokens: 20 },
+      data: { model: getProviderDefaultModel(cfg.provider) || 'deepseek-v4-flash', messages, temperature: 0.1, max_tokens: 20 },
       timeout: 5000,
       success(res) {
         clearTimeout(timer)

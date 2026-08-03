@@ -1,0 +1,53 @@
+// chat-mixins.scss — 思迹 Chat 页公共 mixin
+// 从 chat.scss 高频重复声明中抽取
+
+// Flex 布局快捷方式
+@mixin flex-row {
+  display: flex;
+  align-items: center;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 圆形按钮
+@mixin circular-btn($size: 56rpx) {
+  width: $size;
+  height: $size;
+  min-width: $size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.88);
+    opacity: 0.8;
+  }
+}
+
+// 文本截断
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 卡片基础
+@mixin card-base {
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: 16rpx;
+  box-sizing: border-box;
+}

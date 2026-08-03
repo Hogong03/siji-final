@@ -22,15 +22,15 @@ defineProps({
 				<text class="ov-label">总计划</text>
 			</view>
 			<view class="ov-item">
-				<text class="ov-num ov-num-active">{{ stats.active }}</text>
+				<text class="ov-num active">{{ stats.active }}</text>
 				<text class="ov-label">进行中</text>
 			</view>
 			<view class="ov-item">
-				<text class="ov-num ov-num-done">{{ stats.completed }}</text>
+				<text class="ov-num done">{{ stats.completed }}</text>
 				<text class="ov-label">已完成</text>
 			</view>
 			<view class="ov-item">
-				<text class="ov-num" :class="{ 'ov-num-danger': stats.overdue > 0 }">{{ stats.overdue }}</text>
+				<text class="ov-num" :class="{ danger: stats.overdue > 0 }">{{ stats.overdue }}</text>
 				<text class="ov-label">已过期</text>
 			</view>
 		</view>
@@ -58,28 +58,26 @@ defineProps({
 	</view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .overview-card {
-	margin: $spacing-md;
-	padding: $spacing-lg $spacing-md;
-	background: var(--bg-card);
-	border-radius: $radius-lg;
-	color: var(--text-primary);
-	box-shadow: $shadow-sm;
+	margin: 12rpx 20rpx;
+	padding: 24rpx 20rpx;
+	background: #FFFFFF;
+	border-radius: 16rpx;
 }
 
 .ov-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: $spacing-md;
+	margin-bottom: 16rpx;
 }
 
 .ov-title {
 	font-size: 28rpx;
 	font-weight: 700;
-	color: var(--text-primary);
-	padding-left: 16rpx;
+	color: #18181B;
+	padding-left: 12rpx;
 	border-left: 4rpx solid #18181B;
 }
 
@@ -91,21 +89,22 @@ defineProps({
 	font-size: 48rpx;
 	font-weight: 800;
 	line-height: 1;
-	color: var(--text-primary);
+	color: #18181B;
 	letter-spacing: -1rpx;
+	font-variant-numeric: tabular-nums;
 }
 
 .ov-rate-label {
-	font-size: $font-xs;
-	color: var(--text-hint);
+	font-size: 22rpx;
+	color: #71717A;
 }
 
 .ov-grid {
 	display: flex;
 	justify-content: space-between;
-	margin-bottom: $spacing-md;
-	padding-top: $spacing-sm;
-	border-top: 1rpx solid var(--border-color);
+	margin-bottom: 16rpx;
+	padding-top: 12rpx;
+	border-top: 1rpx solid #E4E4E7;
 }
 
 .ov-item {
@@ -114,27 +113,20 @@ defineProps({
 }
 
 .ov-num {
-	font-size: $font-xl;
+	font-size: 36rpx;
 	font-weight: 800;
 	display: block;
-	color: var(--text-primary);
-}
+	color: #18181B;
+	font-variant-numeric: tabular-nums;
 
-.ov-num-active {
-	color: var(--color-amber);
-}
-
-.ov-num-done {
-	color: var(--color-plan);
-}
-
-.ov-num-danger {
-	color: var(--color-red);
+	&.active { color: #18181B; }
+	&.done { color: #52525B; }
+	&.danger { color: #EF4444; }
 }
 
 .ov-label {
-	font-size: $font-xs;
-	color: var(--text-hint);
+	font-size: 20rpx;
+	color: #71717A;
 }
 
 /* 优先级分布条 */
@@ -144,7 +136,7 @@ defineProps({
 	border-radius: 4rpx;
 	overflow: hidden;
 	margin-bottom: 6rpx;
-	background: var(--bg-input);
+	background: #E4E4E7;
 }
 
 .pb-segment {
@@ -158,42 +150,58 @@ defineProps({
 
 .pb-label {
 	font-size: 20rpx;
-	color: var(--text-hint);
 }
 
 /* 子任务进度摘要 */
 .subtask-summary {
 	display: flex;
 	align-items: center;
-	gap: $spacing-sm;
-	margin-top: $spacing-sm;
-	padding-top: $spacing-sm;
-	border-top: 1rpx solid var(--border-color);
+	gap: 12rpx;
+	margin-top: 12rpx;
+	padding-top: 12rpx;
+	border-top: 1rpx solid #E4E4E7;
 }
 
 .st-text {
-	font-size: $font-xs;
-	color: var(--text-hint);
+	font-size: 22rpx;
+	color: #71717A;
 }
 
 .st-bar-wrap {
 	flex: 1;
 	height: 6rpx;
-	background: var(--bg-input);
+	background: #E4E4E7;
 	border-radius: 3rpx;
 	overflow: hidden;
 }
 
 .st-bar {
 	height: 100%;
-	background: var(--color-plan);
+	background: #18181B;
 	border-radius: 3rpx;
 	transition: width 0.3s;
 }
 
 .st-count {
-	font-size: $font-xs;
+	font-size: 22rpx;
 	font-weight: 600;
-	color: var(--text-secondary);
+	color: #52525B;
+	font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-color-scheme: dark) {
+	.overview-card { background: #27272A; }
+	.ov-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+	.ov-rate { color: #FAFAFA; }
+	.ov-rate-label { color: #71717A; }
+	.ov-grid { border-top-color: #3F3F46; }
+	.ov-num { color: #FAFAFA; &.done { color: #A1A1AA; } &.danger { color: #EF4444; } }
+	.ov-label { color: #71717A; }
+	.priority-bar { background: #3F3F46; }
+	.subtask-summary { border-top-color: #3F3F46; }
+	.st-text { color: #71717A; }
+	.st-bar-wrap { background: #3F3F46; }
+	.st-bar { background: #FAFAFA; }
+	.st-count { color: #D4D4D8; }
 }
 </style>

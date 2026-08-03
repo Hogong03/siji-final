@@ -171,7 +171,7 @@ function confirm() {
   flex: 1;
   text-align: center;
   padding: 14rpx 0;
-  background: $bg-input;
+  background: $bg-btn-secondary;
   border-radius: $radius-md;
   font-size: $font-sm;
   color: $text-secondary;
@@ -189,7 +189,7 @@ function confirm() {
 .dp-pick-text {
   font-size: $font-md;
   font-weight: 600;
-  color: var(--color-ai);
+  color: #000000;
 }
 
 .dp-actions {
@@ -205,13 +205,13 @@ function confirm() {
     font-weight: 600;
 
     &.cancel {
-      background: $bg-input;
+      background: $bg-btn-secondary;
       color: $text-secondary;
     }
 
     &.confirm {
-      background: var(--color-ai);
-      color: var(--text-on-ai);
+      background: #000000;
+      color: #FFFFFF;
     }
   }
 }

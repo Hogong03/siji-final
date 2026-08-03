@@ -135,11 +135,17 @@ function onTouchEnd() {
 .swipe-content {
   position: relative;
   z-index: 2;
-  transition: transform 0.25s ease;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.15s ease,
+              background-color 0.15s ease;
   background: $bg-card;
   border-radius: $radius-lg;
 
-  &:active { background: $bg-input; }
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.92;
+    background: $bg-input;
+  }
 }
 
 .bill-item {

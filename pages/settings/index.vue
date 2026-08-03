@@ -1,6 +1,6 @@
 <script setup>
 /**
- * 设置页 v3 — 精简版
+ * 设置页 v3 - 精简版
  *
  * 只保留设置类功能，非设置功能移至功能页
  */
@@ -11,22 +11,24 @@ import { computed } from 'vue'
 import { useAppStore } from '@/store/index.js'
 import { AI_PROVIDERS } from '@/utils/api.js'
 import { hasPin } from '@/utils/pin.js'
+import { getVersion } from '@/utils/version-check.js'
 
 const store = useAppStore()
 
 // ─── 厂商图标映射 ───
 const PROVIDER_ICONS = {
-  deepseek: 'provider-ds',
-  openai: 'provider-oa',
-  moonshot: 'provider-ms',
-  zhipu: 'provider-zg',
-  qwen: 'provider-qw'
+  deepseek: 'ds',
+  openai: 'oa',
+  moonshot: 'ms',
+  zhipu: 'zg',
+  qwen: 'qw'
 }
 
 const currentProvider = computed(() => AI_PROVIDERS[store.aiProvider] || AI_PROVIDERS.deepseek)
 const currentModel = computed(() => currentProvider.value.models?.find(m => m.id === store.aiModel))
 const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
 const pinStatus = computed(() => hasPin() ? '已开启' : '未开启')
+const appVersion = computed(() => 'v' + getVersion())
 
 const modelAbbr = computed(() => {
   const p = store.aiProvider
@@ -45,9 +47,9 @@ function go(target) {
     agent: '/pages/settings/sub/agent',
     data: '/pages/settings/sub/data',
     privacy: '/pages/settings/sub/privacy',
+    feedback: '/pages/settings/sub/feedback-list',
     about: '/pages/settings/sub/about',
-    help: '/pages/settings/sub/help',
-    feedback: '/pages/settings/sub/feedback'
+    version: '/pages/settings/sub/version-history',
   }
   uni.navigateTo({ url: m[target] })
 }
@@ -59,9 +61,13 @@ function go(target) {
 
       <!-- ===== AI 配置 ===== -->
       <text class="sec-title">AI 配置</text>
-      <view class="card slide-in-left-stagger">
+      <view class="card card-ai-section slide-in-left-stagger">
         <view class="row ai-row card-press" @tap="go('ai')">
-          <SijiIcon :name="PROVIDER_ICONS[store.aiProvider] || 'provider-ds'" size="lg" class="row-icon" />
+          <image
+            :src="`/static/icons/provider-${PROVIDER_ICONS[store.aiProvider] || 'ds'}.png`"
+            mode="aspectFit"
+            class="row-provider-logo"
+          />
           <view class="row-body">
             <text class="row-label">AI 模型</text>
             <text class="row-desc">{{ currentProvider.name }} · {{ currentModel?.name || store.aiModel }}</text>
@@ -75,10 +81,10 @@ function go(target) {
       </view>
       <view class="card slide-in-left-stagger">
         <view class="row card-press" @tap="go('agent')">
-          <AgentAvatar :name="store.activeAgent.name" :size="64" />
+          <AgentAvatar :name="store.activeAgent.name" :icon="store.activeAgent.icon" :size="64" />
           <view class="row-body">
             <text class="row-label">Agent 管理</text>
-            <text class="row-desc">{{ store.activeAgent.name }}{{ store.agents.length > 1 ? ' · 共 ' + store.agents.length + ' 个' : '' }}</text>
+            <text class="row-desc">{{ store.activeAgent.name }}{{ store.agents.length > 1 ? ' · 共' + store.agents.length + '个' : '' }}</text>
           </view>
           <text class="row-arrow">›</text>
         </view>
@@ -106,17 +112,17 @@ function go(target) {
         <view class="row card-press" @tap="go('about')">
           <SijiIcon name="info" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">关于思迹</text></view>
-          <text class="row-value">v1.2.0</text>
+          <text class="row-value">{{ appVersion }}</text>
           <text class="row-arrow">›</text>
         </view>
-        <view class="row card-press" @tap="go('help')">
-          <SijiIcon name="book" size="lg" class="row-icon" />
-          <view class="row-body"><text class="row-label">使用说明</text></view>
+        <view class="row card-press" @tap="go('version')">
+          <SijiIcon name="info" size="lg" class="row-icon" />
+          <view class="row-body"><text class="row-label">版本历史</text></view>
           <text class="row-arrow">›</text>
         </view>
         <view class="row card-press" @tap="go('feedback')">
           <SijiIcon name="mail" size="lg" class="row-icon" />
-          <view class="row-body"><text class="row-label">意见反馈</text></view>
+          <view class="row-body"><text class="row-label">体验反馈</text></view>
           <text class="row-arrow">›</text>
         </view>
       </view>
@@ -137,11 +143,11 @@ function go(target) {
   gap: 12rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: #18181B;
+  color: var(--text-primary);
   letter-spacing: 1rpx;
   margin: 0 0 16rpx 4rpx;
   padding-left: 16rpx;
-  border-left: 4rpx solid #18181B;
+  border-left: 4rpx solid var(--text-primary);
   &:first-child { margin-top: 0; padding-top: 0; }
 }
 
@@ -159,14 +165,27 @@ function go(target) {
   display: flex;
   align-items: center;
   padding: 28rpx $spacing-md;
-  border-bottom: 1rpx solid var(--border-color);
+  border-bottom: 1rpx solid var(--bg-input);
   gap: $spacing-sm;
   box-sizing: border-box;
   &:last-child { border-bottom: none; }
   &:active { background: var(--bg-input); }
 }
 
-.ai-row { padding-top: 24rpx; padding-bottom: 24rpx; }
+.ai-row { padding-top: 32rpx; padding-bottom: 32rpx; }
+
+/* AI 配置区顶部黑条 */
+.card-ai-section {
+  border-top: 3rpx solid var(--color-ai);
+}
+
+/* 厂商 logo 替代 SijiIcon */
+.row-provider-logo {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 10rpx;
+  flex-shrink: 0;
+}
 
 .row-icon { flex-shrink: 0; }
 
@@ -182,7 +201,7 @@ function go(target) {
 .row-arrow { font-size: $font-lg; color: var(--text-hint); font-weight: 300; flex-shrink: 0; }
 
 .dot { width: 16rpx; height: 16rpx; border-radius: 50%; flex-shrink: 0;
-  &.ok { background: var(--color-plan); box-shadow: 0 0 0 4rpx rgba(16, 185, 129, 0.15); }
-  &.warn { background: var(--color-bill); box-shadow: 0 0 0 4rpx rgba(245, 158, 11, 0.15); }
+  &.ok { background: var(--color-plan); box-shadow: 0 0 0 6rpx rgba(16, 185, 129, 0.12); }
+  &.warn { background: var(--color-bill); box-shadow: 0 0 0 6rpx rgba(245, 158, 11, 0.12); }
 }
 </style>

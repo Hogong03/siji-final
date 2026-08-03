@@ -252,7 +252,7 @@ function handleSave() {
   line-height: 64rpx;
   font-size: 32rpx;
   border-radius: $radius-sm;
-  background: $bg-input;
+  background: $bg-btn-secondary;
 
   &.active { background: $accent; }
 }
@@ -295,7 +295,7 @@ function handleSave() {
 .si-num {
   width: 36rpx; height: 36rpx;
   border-radius: 50%;
-  background: $bg-input;
+  background: $bg-btn-secondary;
   font-size: $font-xs;
   color: $text-secondary;
   text-align: center;
@@ -331,9 +331,10 @@ function handleSave() {
   text-align: center;
   padding: 24rpx 0;
   background: $accent;
-  color: var(--text-on-ai);
+  color: #FFFFFF;
   border-radius: $radius-md;
   font-size: $font-md;
   font-weight: 600;
 }
+
 </style>

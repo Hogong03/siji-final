@@ -1,16 +1,31 @@
 /**
  * useChatEngine - 聊天核心逻辑 composable
- *
- * 从 chat/index.vue 抽取的 AI 调用、执行、摘要、兜底逻辑
- * 页面只需关注 UI 渲染和事件路由
+ * 拆分: chatHistoryBuilder / streamRetry / autoExecutor / stream-parser / useChatActions / useWelcomeMessage / useSimulationManager
  */
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { chatRequest, chatRequestStream, generateConversationSummary, generateConversationTitle, isOnline, getProvider, getProviderVisionModel, supportsVision } from '@/utils/api.js'
+import { chatRequestStream, getProvider } from '@/utils/api.js'
 import { autoExtractMemory, aiSummarizeConversation, isMemoryEnabled } from '@/utils/memory.js'
 import { logger } from '@/utils/logger.js'
-import { getRelationById } from '@/utils/relations.js'
-import { generateSimPromptByMode, saveReport as saveSimulationReport, updateSimulation, getSimulationById, SIM_MODES } from '@/utils/simulation.js'
+import { useSimulationManager } from '@/composables/useSimulationManager.js'
+import { buildChatHistory } from '@/utils/ai/chatHistoryBuilder.js'
+import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
+import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
+import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
+import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
+import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
+import {
+  autoGenerateTitle,
+  triggerSummaryIfNeeded as _triggerSummary,
+  saveImageAsync,
+  validateModel,
+  checkVisionSupport,
+  checkOfflineAndHint,
+  retryLastMessage,
+  stopStreaming,
+  handleConfirmAction as _handleConfirmAction,
+  handleCancelAction as _handleCancelAction
+} from '@/composables/useChatActions.js'
 
 export function useChatEngine() {
   const store = useAppStore()
@@ -20,199 +35,9 @@ export function useChatEngine() {
   const pendingActions = ref([])
   const pendingReply = ref('')
   const currentSuggestions = ref([])
-  const simulationMode = ref(null)  // { simId, relationName, scene, goal } 或 null
 
-  /** 初始化模拟模式(从页面 onLoad / onShow 事件传入) */
-  function initSimulation(params) {
-    if (!params || !params.simulation) return false
-    // 防御:确保会话列表已初始化(不创建新对话,仅确保 store 就绪)
-    if (!store.conversations) return false
-    const mode = params.mode || 'social'
-    const modeConfig = SIM_MODES[mode] || SIM_MODES.social
-    const relation = params.relation_id ? getRelationById(params.relation_id) : null
-    const relationData = relation || { name: params.name || '模拟对象', traits: [], preferences: [], relationship_score: 5 }
-
-    // 根据模式生成对应的系统提示词
-    const prompt = generateSimPromptByMode(mode, {
-      relation: relationData,
-      name: params.name,
-      scene: params.scene,
-      goal: params.goal
-    })
-
-    // resume 模式:尝试切换到原会话
-    if (params.resume) {
-      const simRecord = getSimulationById(params.simulation)
-      if (simRecord?.conversation_id) {
-        const targetConv = store.conversations.find(c => c.id === simRecord.conversation_id)
-        if (targetConv) {
-          store.switchConversation(simRecord.conversation_id)
-        }
-      }
-    } else {
-      // 新演练:始终创建全新独立会话,标题带模式名
-      // 清理 onMounted 可能创建的仅含欢迎语的空会话
-      const currentConv = store.activeConversation
-      if (currentConv && currentConv.messages.length === 1 && currentConv.messages[0].role === 'assistant' && !currentConv.messages[0].execResult) {
-        store.deleteConversation(currentConv.id)
-      }
-      const modeTitle = modeConfig.title || '模拟演练'
-      const convTitle = `${modeTitle}·${params.name || params.scene?.slice(0, 6) || '演练'}`
-      const newConv = store.createConversation(convTitle)
-      // 将会话 ID 关联到模拟记录
-      updateSimulation(params.simulation, { conversation_id: newConv.id })
-    }
-
-    // 自动切换到该模式对应的 Agent,并记录原 Agent 以供结束后恢复
-    let previousAgentId = null
-    if (modeConfig.agentId && store.activeAgentId !== modeConfig.agentId) {
-      previousAgentId = store.activeAgentId
-      store.setActiveAgent(modeConfig.agentId)
-      if (store.activeAgentId !== modeConfig.agentId) {
-        previousAgentId = null
-      }
-    }
-
-    simulationMode.value = {
-      simId: params.simulation,
-      mode: mode,
-      relationName: params.name || relation?.name || (mode === 'planning' ? '规划师' : '模拟对象'),
-      scene: params.scene || '日常对话',
-      goal: params.goal || '',
-      systemPrompt: prompt,
-      previousAgentId: previousAgentId
-    }
-
-    // resume 模式不重复添加开场白(会话历史已有)
-    if (!params.resume) {
-      let openingMsg = ''
-      if (mode === 'planning') {
-        openingMsg = `规划推演开始\n\n场景:${simulationMode.value.scene}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n我会逐步引导你拆解目标、识别风险、制定时间线。说「结束推演」或「出方案」可随时生成完整规划方案。`
-      } else if (mode === 'relationship') {
-        openingMsg = `关系处理模拟开始\n\n场景:${simulationMode.value.scene}\n对方:${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n我会扮演对方与你进行沟通演练。说「结束演练」或「复盘」可随时查看复盘报告。`
-      } else {
-        openingMsg = `模拟演练开始\n\n场景:${simulationMode.value.scene}\n对方:${simulationMode.value.relationName}\n${simulationMode.value.goal ? '目标:' + simulationMode.value.goal : ''}\n\n说「结束演练」或「复盘」可随时查看复盘报告。`
-      }
-      store.addMessage({
-        role: 'assistant',
-        content: openingMsg,
-        aiReply: openingMsg
-      })
-    }
-    return true
-  }
-
-  /** 生成智能欢迎语 */
-  function getWelcomeMessage() {
-    const now = new Date()
-    const hour = now.getHours()
-    let greeting = '你好'
-    if (hour < 6) greeting = '夜深了'
-    else if (hour < 11) greeting = '早上好'
-    else if (hour < 14) greeting = '中午好'
-    else if (hour < 18) greeting = '下午好'
-    else if (hour < 22) greeting = '晚上好'
-    else greeting = '夜深了'
-
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    let tips = []
-    try {
-      const bills = JSON.parse(uni.getStorageSync(`bill_${month}`) || '[]').filter(b => b.is_deleted !== 1)
-      const expense = bills.filter(b => b.type === 'expense').reduce((s, b) => s + b.amount, 0)
-      if (expense > 0) tips.push(`本月已支出 ¥${expense.toFixed(0)}`)
-
-      const plans = JSON.parse(uni.getStorageSync('plan_all') || '[]').filter(p => p.is_deleted !== 1 && p.status === 1)
-      if (plans.length > 0) tips.push(`${plans.length} 个计划进行中`)
-
-      const diaries = JSON.parse(uni.getStorageSync(`diary_${month}`) || '[]').filter(d => d.is_deleted !== 1)
-      if (diaries.length > 0) tips.push(`本月写了 ${diaries.length} 篇日记`)
-    } catch { /* ignore */ }
-
-    let msg = `${greeting},我是思迹。`
-    if (tips.length > 0) msg += `\n${tips.join(' · ')}`
-    msg += '\n\n跟我说什么都行,我可以帮你:'
-    msg += '\n¥ 记账 - "午饭花了35"'
-    msg += '\n✎ 日记 - "今天心情不错"'
-    msg += '\n✓ 计划 - "下周完成报告"'
-    msg += '\n✎ 改 - "把那笔餐费改成30""计划截止改到周五"'
-    msg += '\n? 查 - "这个月花了多少"'
-    msg += '\n\n也能一句话同时做几件事,或者直接跟我聊天。'
-    return msg
-  }
-
-  /** 构建聊天历史(含执行结果摘要) */
-  function buildChatHistory() {
-    let chatHistory = store.messages
-      .filter(m => {
-        if (m.role === 'user') return m.content && m.content.trim()
-        if (m.role === 'assistant') return !m.loading && (m.aiReply || m.content)
-        return false
-      })
-      .slice(-15)
-      .map(m => {
-        let content = m.aiReply || m.content
-        if (m.role === 'assistant' && m.execResult) {
-          const er = m.execResult
-          if (er.success && er.detail) {
-            const d = er.detail
-            if (d.type === 'bill') {
-              content += `\n[执行结果: 已记账 ${d.billType === 'expense' ? '-' : '+'}¥${d.amount} ${d.category} ${d.bill_date} ID=${d.id}]`
-            } else if (d.type === 'diary') {
-              content += `\n[执行结果: 已保存日记《${d.title}》心情:${d.mood} ID=${d.id}]`
-            } else if (d.type === 'plan') {
-              content += `\n[执行结果: ${er.message} ID=${d.id}]`
-            } else if (d.type === 'query_bill' || d.type === 'query_diary' || d.type === 'query_plan' || d.type === 'query_stat') {
-              if (d.items && d.items.length > 0) {
-                const itemIds = d.items.slice(0, 10).map(item => {
-                  if (d.type === 'query_bill') return `${item.category}¥${item.amount}(ID=${item.client_id})`
-                  if (d.type === 'query_diary') return `《${item.title}》(ID=${item.client_id})`
-                  if (d.type === 'query_plan') return `《${item.title}》(ID=${item.client_id})`
-                  return ''
-                }).filter(Boolean)
-                content += `\n[执行结果: ${er.message} 包含: ${itemIds.join(', ')}]`
-              } else {
-                content += `\n[执行结果: ${er.message}]`
-              }
-            } else if (d.deleted) {
-              content += `\n[执行结果: ${er.message}]`
-            } else if (d.updatedFields && d.updatedFields.length > 0) {
-              content += `\n[执行结果: ${er.message} ID=${d.id}]`
-            }
-          } else if (er.success && er.message && er.message !== '无需执行') {
-            content += `\n[执行结果: ${er.message}]`
-          }
-        }
-        if (m.role === 'assistant' && m.execResults && m.execResults.length > 0) {
-          const summaries = m.execResults.map(r => {
-            const d = r.detail || r
-            if (d.type === 'bill') return `记账${d.billType === 'expense' ? '-' : '+'}¥${d.amount}(ID=${d.id})`
-            if (d.type === 'diary') return `日记《${d.title}》(ID=${d.id})`
-            if (d.type === 'plan') return `计划《${d.title}》(ID=${d.id})`
-            return r.message || ''
-          }).filter(Boolean)
-          if (summaries.length > 0) content += `\n[执行结果: ${summaries.join(';')}]`
-        }
-        return { role: m.role, content }
-      })
-    if (chatHistory.length === 0) chatHistory = null
-    return chatHistory
-  }
-
-  /** AI 自动生成对话标题(异步,不阻塞,使用 cheapest model) */
-  async function autoGenerateTitle(conv) {
-    if (!conv || !conv.id) return
-    // 取首条用户消息
-    const firstUser = (conv.messages || []).find(m => m.role === 'user')
-    if (!firstUser) return
-
-    try {
-      const cfg = { provider: store.aiProvider, apiKey: store.providerKeys[store.aiProvider] || '' }
-      const title = await generateConversationTitle(firstUser.content, cfg)
-      if (title && conv.id) {
-        store.renameConversation(conv.id, title)
-      }
-    } catch { /* AI 调用失败/超时 → 保持默认标题 */ }
-  }
+  const { simulationMode, initSimulation, handleSimulationEnd } = useSimulationManager()
+  const { getWelcomeMessage } = useWelcomeMessage()
 
   /** 发送消息 */
   async function handleSend(text, inputAreaRef, scrollToBottom, imageData, scrollHelpers) {
@@ -233,11 +58,15 @@ export function useChatEngine() {
     isSending.value = true
     stopSignal.value = { stopped: false }
 
-    // 滚动辅助函数(方案 C 双模式)
     const startStream = scrollHelpers?.startStreamScroll
     const stopStream = scrollHelpers?.stopStreamScroll
+    const chatHistory = buildChatHistory(store.messages)
 
-    const chatHistory = buildChatHistory()
+    // 图片保存（异步，不阻塞发送）
+    if (imageData?.base64) {
+      const targetConvId = conv?.id || store.activeConversation?.id
+      saveImageAsync(imageData, store, targetConvId)
+    }
 
     store.addMessage({ role: 'user', content: message, image: imageData || undefined })
     inputAreaRef?.value?.reset()
@@ -245,15 +74,23 @@ export function useChatEngine() {
     store.addMessage({ role: 'assistant', content: '', loading: true })
     scrollToBottom()
 
-    const online = await isOnline()
-    if (!online) {
-      store.updateLastMessage({ content: '当前无网络连接,请联网后重试。', loading: false })
+    // 离线检测
+    const offlineHint = await checkOfflineAndHint(message, store)
+    if (offlineHint) {
+      store.updateLastMessage({ content: offlineHint, loading: false })
       isSending.value = false
       return
     }
 
+    // 流式渲染状态（提前声明，finally 块需要访问）
+    let streamedText = ''
+    let lastDisplayed = ''
+    let displayQueue = ''
+    let rafId = null
+    const raf = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (fn) => setTimeout(fn, 16)
+    const caf = typeof cancelAnimationFrame !== 'undefined' ? cancelAnimationFrame : (id) => clearTimeout(id)
+
     try {
-      // 模拟模式使用专属系统提示词
       const agentSystemPrompt = simulationMode.value
         ? simulationMode.value.systemPrompt
         : store.getAgentSystemPrompt(store.activeAgentId)
@@ -271,104 +108,115 @@ export function useChatEngine() {
         image: imageData || null
       }
 
-      // 模型合法性校验:切换厂商后旧模型名可能不存在于新厂商
-      const providerModels = getProvider(cfg.provider).models
-      const modelExists = providerModels?.some(m => m.id === cfg.model)
-      if (!modelExists) {
-        cfg.model = providerModels[0]?.id || cfg.model
-        store.aiModel = cfg.model
-      }
+      validateModel(cfg, store)
 
-      // === 图片识别:自动切换到视觉模型 ===
-      if (imageData && !supportsVision(cfg.provider)) {
-        // 当前厂商不支持视觉 → 不传图片,提示用户
-        delete cfg.image
-        const p = getProvider(cfg.provider)
-        store.updateLastMessage({ content: `「${p.name}」不支持图片识别。请切到 DeepSeek(V4 Flash)、Moonshot(K2.5/2.6/2.7)、智谱 GLM(GLM-4V Flash)或通义千问(Qwen VL)后重试。`, loading: false })
+      // 图片识别:模型不支持时提前退出
+      const visionError = checkVisionSupport(imageData, cfg, store)
+      if (visionError) {
+        store.updateLastMessage({ content: visionError, loading: false })
         isSending.value = false
         return
       }
-      if (imageData && !getProvider(cfg.provider).visionModels?.includes(cfg.model)) {
-        // 当前模型不支持视觉 → 自动切换到该厂商的视觉模型
-        const visionModel = getProviderVisionModel(cfg.provider)
-        if (visionModel) {
-          logger.info(`[Vision] Auto-switch model: ${cfg.model} → ${visionModel}`)
-          cfg.model = visionModel
-        }
-      }
 
-      // 检测结束演练信号(三种模式统一处理)
-      if (simulationMode.value && /结束演练|复盘|结束模拟|结束推演|出方案/.test(message)) {
-        let reportPrompt = '请根据以上对话,生成复盘报告。'
-        if (simulationMode.value.mode === 'planning') {
-          reportPrompt = '请根据以上对话,生成完整的规划方案。按规划方案格式输出。'
-        }
-        const simId = simulationMode.value.simId
-        const reportResult = await chatRequest(
-          reportPrompt, null, store.conversationId,
-          cfg, chatHistory
-        )
-        if (reportResult?.reply) {
-          saveSimulationReport(simId, reportResult.reply)
-          store.updateLastMessage({
-            content: reportResult.reply,
-            aiReply: reportResult.reply,
-            loading: false
-          })
-        }
-        // 恢复模拟前使用的 Agent
-        const prevAgentId = simulationMode.value.previousAgentId
-        simulationMode.value = null
-        if (prevAgentId && store.activeAgentId !== prevAgentId) {
-          store.setActiveAgent(prevAgentId)
+      // 检测结束演练信号
+      const simEnd = await handleSimulationEnd(message, cfg, chatHistory)
+      if (simEnd) {
+        if (simEnd.reply) {
+          saveSimulationReport(simEnd.simId, simEnd.reply)
+          store.updateLastMessage({ content: simEnd.reply, aiReply: simEnd.reply, loading: false })
         }
         isSending.value = false
         return
       }
 
-      let streamedText = ''
-      // 启动流式滚动 interval
+      // === 流式请求 + 空回复重试 ===
+      resetStreamParser()
       if (startStream) startStream()
-      let result = await chatRequestStream(
-        message, store.conversationId, cfg,
-        (chunk) => {
-          streamedText += chunk
-          store.updateLastMessage({ content: streamedText, loading: true })
-          // 不再逐 chunk 调 scrollToBottom - 由 startStreamScroll 的 interval 驱动
-        },
-        chatHistory
-      )
 
-      // === 流式空回复重试 ===
-      // chatRequestRealStream 返回 _emptyReply 标记时表示空回复
-      const MAX_STREAM_RETRIES = 2
-      let streamRetry = 0
-      while (result._emptyReply && streamRetry < MAX_STREAM_RETRIES && !stopSignal.value.stopped) {
-        streamRetry++
-        const simplifiedMsg = streamRetry === 1
-          ? message
-          : message.replace(/^\[[^\]]+\]\s*/g, '').trim().substring(0, 100)
-        logger.warn(`[Stream Empty Retry] ${streamRetry}/${MAX_STREAM_RETRIES}, re-sending...`)
-        // 清空已显示的内容,显示重试提示
-        streamedText = ''
-        store.updateLastMessage({ content: '正在重新思考...', loading: true })
-        await new Promise(r => setTimeout(r, 600))
-        // 重新发送(精简消息)
-        result = await chatRequestStream(
-          simplifiedMsg, store.conversationId, cfg,
+      // 逐字推送函数 — 用 rAF 节流，每帧推一个字符组
+      function pumpDisplay() {
+        if (!displayQueue) { rafId = null; return }
+        // 每帧推送 1-3 个字符（模拟打字机效果）
+        const n = displayQueue.length > 200 ? 3 : displayQueue.length > 50 ? 2 : 1
+        lastDisplayed += displayQueue.slice(0, n)
+        displayQueue = displayQueue.slice(n)
+        store.updateLastMessage({ content: lastDisplayed, loading: true })
+        if (displayQueue) {
+          rafId = raf(pumpDisplay)
+        } else {
+          rafId = null
+        }
+      }
+
+      // 整体超时保护：90s
+      const overallTimeout = 90000
+      let overallTimedOut = false
+      const overallTimer = setTimeout(() => {
+        overallTimedOut = true
+        logger.warn('[ChatEngine] Overall timeout (90s), forcing abort')
+        if (stopSignal.value) stopSignal.value.stopped = true
+      }, overallTimeout)
+
+      const { result, streamedText: retryText } = await retryStreamWithBackoff(
+        (msg) => chatRequestStream(
+          msg || message, store.conversationId, cfg,
           (chunk) => {
             streamedText += chunk
-            store.updateLastMessage({ content: streamedText, loading: true })
-            // 同样不逐 chunk 滚动
+            // 每次 chunk 到达都尝试提取
+            const displayText = extractReplyFromStream(streamedText)
+            // 把新增部分加入队列
+            if (displayText.length > lastDisplayed.length) {
+              displayQueue += displayText.slice(lastDisplayed.length)
+              if (!rafId) rafId = raf(pumpDisplay)
+            }
           },
           chatHistory
-        )
+        ),
+        message,
+        store.updateLastMessage,
+        stopSignal.value,
+        () => {  // onRetry — 重置流式状态
+          streamedText = ''
+          lastDisplayed = ''
+          displayQueue = ''
+          if (rafId) { caf(rafId); rafId = null }
+        }
+      )
+      clearTimeout(overallTimer)
+
+      // 最后刷新 — 把剩余队列全部推出
+      if (rafId) { caf(rafId); rafId = null }
+      const finalText = extractReplyFromStream(streamedText)
+      lastDisplayed = finalText
+      store.updateLastMessage({ content: finalText, loading: true })
+      if (retryText) streamedText = retryText
+
+      // 整体超时强制中止
+      if (overallTimedOut && (!streamedText || result._emptyReply)) {
+        store.updateLastMessage({
+          content: 'AI 响应超时，可能网络不稳定或服务繁忙。',
+          loading: false, failed: true
+        })
+        isSending.value = false
+        return
       }
 
-      // 如果重试后仍然为空，标记失败状态，弹出重试栏
-      if (result._emptyReply && !streamedText) {
-        store.updateLastMessage({ content: 'AI 走神了，要不要再试一次？', loading: false, failed: true })
+      // 空回复失败处理
+      if (result._emptyReply && !streamedText && !result._aborted) {
+        const isTimeout = result._timeout
+        store.updateLastMessage({
+          content: isTimeout
+            ? 'AI 响应超时，可能网络不稳定或服务繁忙。'
+            : 'AI 走神了，要不要再试一次？',
+          loading: false, failed: true
+        })
+        isSending.value = false
         return
+      }
+
+      // 强制覆盖流式过程中的原始 JSON 文本
+      if (result.reply && result.reply.trim()) {
+        store.updateLastMessage({ content: result.reply, loading: true })
       }
 
       const reply = result.reply || streamedText || '(AI 未返回有效响应)'
@@ -392,60 +240,51 @@ export function useChatEngine() {
         pendingReply.value = reply
         currentSuggestions.value = []
       } else {
-        autoExecuteAndDisplay(result, reply, message)
+        autoExecuteAndDisplay(store, result, reply, message)
         currentSuggestions.value = result.suggestions || []
       }
       if (result.conversation_id) store.setConversationId(result.conversation_id)
 
-      // 长期记忆(needConfirm 路径跳过,由 handleConfirmAction 处理)
+      // 长期记忆
       if (isMemoryEnabled() && !needConfirm) {
         try {
           const lastMsg = store.messages[store.messages.length - 1]
           autoExtractMemory(message, reply, lastMsg?.execResult)
           const conv = store.activeConversation
-          // 累计未摘要消息 ≥ 15 条时触发,不再依赖 % 15(短对话也会触发)
           const unsavedCount = conv ? conv.messages.length - (conv.summaryIndex || 0) : 0
           if (conv && unsavedCount >= 15) {
-            const result = await aiSummarizeConversation(conv.messages, {
-              provider: store.aiProvider,
-              model: store.aiModel,
-              apiKey: store.providerKeys[store.aiProvider] || '',
-              systemPrompt: agentSystemPrompt
+            await aiSummarizeConversation(conv.messages, {
+              provider: store.aiProvider, model: store.aiModel,
+              apiKey: store.providerKeys[store.aiProvider] || '', systemPrompt: agentSystemPrompt
             })
-            if (result) {
-              conv.summaryIndex = conv.messages.length
-            }
+            if (result) conv.summaryIndex = conv.messages.length
           }
-        } catch (e) {
-          logger.warn('记忆提取失败', e)
-        }
+        } catch (e) { logger.warn('记忆提取失败', e) }
       }
 
       store.persistHistory()
-      triggerSummaryIfNeeded()
+      _triggerSummary(store)
 
-      // === AI 自动生成对话标题(仅首次完整交互,不阻塞用户)===
+      // AI 自动生成对话标题
       try {
         const conv = store.activeConversation
-        // 默认标题:"对话" 或 "新对话2/3/..."
         const isDefaultTitle = conv && /^(对话|新对话)\d*$/.test(conv.title || '')
-        // 首次交换完成时:welcome(assistant) + user + assistant = 3 条消息
         if (isDefaultTitle && conv.messages.length === 3) {
-          autoGenerateTitle(conv).catch(() => {})
+          autoGenerateTitle(conv, store).catch(() => {})
         }
       } catch { /* ignore */ }
     } catch (e) {
       logger.error('handleSend error', e)
       const msg = e.message || ''
-      const isKeyError = msg.includes('API Key') || msg.includes('Access denied') || msg.includes('access_denied') || msg.includes('401') || msg.includes('403')
+      const isKeyError = msg.includes('API Key') || msg.includes('Access denied') || msg.includes('401') || msg.includes('403')
       store.updateLastMessage({
         content: isKeyError
           ? `${msg}。请到设置页检查 AI 配置（厂商/模型/Key 权限）。`
           : `请求失败: ${msg || '未知错误'}。`,
-        loading: false,
-        failed: true
+        loading: false, failed: true
       })
     } finally {
+      if (rafId) { caf(rafId); rafId = null }
       isSending.value = false
       stopSignal.value = null
       if (stopStream) stopStream()
@@ -453,274 +292,29 @@ export function useChatEngine() {
     }
   }
 
-  /** 重试上一次发送（支持换模型 / 编辑消息） */
-  async function handleRetry(options = {}, inputAreaRef, scrollToBottom, scrollHelpers) {
-    // 找到上一条 user 消息
-    const msgs = store.messages
-    let lastUserMsg = null
-    let lastUserIdx = -1
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].role === 'user') { lastUserMsg = msgs[i]; lastUserIdx = i; break }
-    }
-    if (!lastUserMsg) return
+  /** 重试上一次发送 */
+  const handleRetry = (options = {}, inputAreaRef, scrollToBottom, scrollHelpers) =>
+    retryLastMessage(store, handleSend, options, inputAreaRef, scrollToBottom, scrollHelpers)
 
-    const message = options.message || lastUserMsg.content
-    const imageData = options.image || lastUserMsg.image || null
-
-    // 前置检查：换了模型后是否有有效 Key
-    const prevProvider = store.aiProvider
-    const prevModel = store.aiModel
-    if (options.provider) store.setAiProvider(options.provider)
-    if (options.model) store.setAiModel(options.model)
-    if (!store.hasApiKey) {
-      // 恢复原设置
-      if (options.provider) store.setAiProvider(prevProvider)
-      if (options.model) store.setAiModel(prevModel)
-      uni.showToast({ title: '当前模型未配置 API Key，请先配置', icon: 'none' })
-      return
-    }
-
-    // 删除失败的 assistant 消息和原 user 消息（重新发送）
-    const conv = store.activeConversation
-    if (conv && conv.messages.length > 0) {
-      // 删除最后一条 assistant（失败的）
-      if (conv.messages[conv.messages.length - 1].role === 'assistant') {
-        conv.messages.pop()
-      }
-      // 删除原 user 消息
-      if (lastUserIdx >= 0 && conv.messages[lastUserIdx] && conv.messages[lastUserIdx].role === 'user') {
-        conv.messages.splice(lastUserIdx, 1)
-      }
-    }
-
-    // 重新发送
-    await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers)
-
-    // 如果换了模型且没成功，恢复原模型（避免设置被污染）
-    // 注意：不恢复 — 用户主动选的模型应该保持
-  }
   function handleStop() {
-    if (stopSignal.value) stopSignal.value.stopped = true
-    const lastMsg = store.messages[store.messages.length - 1]
-    if (lastMsg && lastMsg.loading) {
-      const partialText = lastMsg.content || ''
-      store.updateLastMessage({
-        content: partialText + (partialText ? '\n\n' : '') + '▌已停止',
-        loading: false
-      })
-    }
+    stopStreaming(store, stopSignal)
     isSending.value = false
-    stopSignal.value = null
-  }
-
-  /** 异步触发对话摘要压缩 */
-  function triggerSummaryIfNeeded() {
-    const conv = store.activeConversation
-    if (!conv || conv.messages.length < 15) return
-    if (conv.summary && conv.summaryIndex >= conv.messages.length - 8) return
-    const toSummarize = conv.messages.slice(0, -6)
-    if (toSummarize.length < 8) return
-    generateConversationSummary(
-      toSummarize.map(m => ({ role: m.role, content: m.content, aiReply: m.aiReply })),
-      { provider: store.aiProvider, model: store.aiModel, apiKey: store.providerKeys[store.aiProvider] || '' }
-    ).then(summary => {
-      if (summary) store.updateConversationSummary(conv.id, summary, toSummarize.length)
-    }).catch(() => {})
-  }
-
-  /** 前端兜底提取 */
-  function extractFallbackAction(userMessage, aiReply) {
-    const reply = aiReply || ''
-    const profileKeywords = /名字|叫|姓名|性别|男|女|生日|出生|职业|工作|在哪|住在|城市|爱好|喜欢|喜欢吃|不吃|过敏|预算|作息|睡觉|MBTI|血型|星座/
-    if (profileKeywords.test(userMessage) && /记下|更新|帮|已/.test(reply)) {
-      const updates = []
-      let m = userMessage.match(/我(?:叫|名字(?:是|叫)?|姓名(?:是)?)\s*([\u4e00-\u9fa5a-zA-Z]{2,10})/)
-      if (m) updates.push({ card: 'basic', field: 'nickname', value: m[1] })
-      if (/我是?(?:个|名)?(?:女生|女孩|女的|女)/.test(userMessage) || userMessage.includes('我是女')) {
-        updates.push({ card: 'basic', field: 'gender', value: '女' })
-      } else if (/我是?(?:个|名)?(?:男生|男孩|男的|男)/.test(userMessage) || userMessage.includes('我是男')) {
-        updates.push({ card: 'basic', field: 'gender', value: '男' })
-      }
-      m = userMessage.match(/生日(?:是)?(\d{4})年?(\d{1,2})月?(\d{1,2})日?/)
-      if (m) updates.push({ card: 'basic', field: 'birthday', value: `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` })
-      m = userMessage.match(/我(?:是|做|干)(?:一名|一个)?([\u4e00-\u9fa5]{2,8})(?:的|工作|职业)/)
-      if (m) updates.push({ card: 'basic', field: 'occupation', value: m[1] })
-      m = userMessage.match(/我(?:是|在)(?:一名|一个)?(?:程序员|设计师|老师|医生|学生|工程师|产品经理|运营|销售|会计|律师|护士|厨师|司机|摄影师|作家|画家|音乐家)/)
-      if (m) {
-        const occ = userMessage.match(/(?:程序员|设计师|老师|医生|学生|工程师|产品经理|运营|销售|会计|律师|护士|厨师|司机|摄影师|作家|画家|音乐家)/)[0]
-        updates.push({ card: 'basic', field: 'occupation', value: occ })
-      }
-      m = userMessage.match(/我(?:在|住在|位于|来自)([\u4e00-\u9fa5]{2,6})(?:市|省|区|县)?/)
-      if (m) updates.push({ card: 'basic', field: 'location', value: m[1] })
-      m = userMessage.match(/我(?:喜欢|爱|的爱好是|爱好是)([\u4e00-\u9fa5a-zA-Z0-9]{1,10})/)
-      if (m) updates.push({ card: 'lifestyle', field: 'hobbies', value: m[1] })
-      m = userMessage.match(/我(?:喜欢吃|爱吃|喜欢吃|不|不吃)([\u4e00-\u9fa5]{1,8})/)
-      if (m) {
-        const isNeg = /不吃|不爱/.test(userMessage)
-        if (!isNeg) updates.push({ card: 'lifestyle', field: 'dietary', value: m[1] })
-      }
-      m = userMessage.match(/(?:MBTI|mbti)(?:是)?\s*([A-Z]{4})/)
-      if (m) updates.push({ card: 'custom', cardTitle: '性格特征', field: 'MBTI', value: m[1] })
-      m = userMessage.match(/我是\s*([A-Z]{4})/)
-      if (m && ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'].includes(m[1])) {
-        updates.push({ card: 'custom', cardTitle: '性格特征', field: 'MBTI', value: m[1] })
-      }
-      m = userMessage.match(/(?:星座是|我是)(白羊座|金牛座|双子座|巨蟹座|狮子座|处女座|天秤座|天蝎座|射手座|摩羯座|水瓶座|双鱼座)/)
-      if (m) updates.push({ card: 'custom', cardTitle: '星座', field: '星座', value: m[1] })
-      m = userMessage.match(/血型(?:是)?(A|B|AB|O)型?/)
-      if (m) updates.push({ card: 'custom', cardTitle: '血型', field: '血型', value: m[1] + '型' })
-      m = userMessage.match(/(?:预算|月预算|每月预算)(?:是|大概|大约)?(\d{2,6})/)
-      if (m) updates.push({ card: 'lifestyle', field: 'budget', value: Number(m[1]) })
-      m = userMessage.match(/(?:睡觉|休息|作息)(?:时间)?(?:是|大概|大约)?(\d{1,2})[点::](\d{0,2})/)
-      if (m) updates.push({ card: 'lifestyle', field: 'sleepTime', value: m[2] ? `${m[1]}:${m[2]}` : `${m[1]}:00` })
-      if (updates.length > 0) {
-        return { type: 'smart_update_profile', payload: { updates, suggestions: [] }, needConfirm: false }
-      }
-    }
-
-    // 记账
-    const billKeywords = /花了|消费|买了|付了|收入|收到|转了|开销/
-    if (billKeywords.test(userMessage) && /记/.test(reply)) {
-      let m = userMessage.match(/(\d+(?:\.\d+)?)\s*[元块]/) || userMessage.match(/(\d+(?:\.\d+)?)$/)
-      if (m) {
-        return { type: 'addRecord', payload: { type: 'bill', billType: 'expense', amount: parseFloat(m[1]), category: '其他', note: '' }, needConfirm: false }
-      }
-    }
-    // 日记
-    if (/日记|心情|今天/.test(userMessage) && /已.*记|已.*写|已.*保存/.test(reply)) {
-      return { type: 'addRecord', payload: { type: 'diary', title: '今日日记', content: userMessage, mood: '一般' }, needConfirm: false }
-    }
-    return null
-  }
-
-  /** 自动执行并显示结果 */
-  function autoExecuteAndDisplay(result, reply, userMessage) {
-    let execResults = []
-    let displayContent = reply
-
-    if (result.actions && result.actions.length > 1) {
-      const multiResult = store.executeActions(result.actions)
-      execResults = multiResult.results || []
-      if (multiResult.allSuccess) {
-        displayContent += `\n\n${multiResult.message}`
-      } else {
-        const successMsgs = execResults.filter(r => r.success).map(r => r.message)
-        const failMsgs = execResults.filter(r => !r.success && r.message !== '无需执行').map(r => r.message)
-        if (successMsgs.length > 0) displayContent += `\n\n${successMsgs.join(';')}`
-        if (failMsgs.length > 0) displayContent += `\n\n${failMsgs.join(';')}`
-      }
-      store.updateLastMessage({
-        content: displayContent, loading: false,
-        aiReply: reply,
-        actionCard: execResults.find(r => r.success && r.detail) ? {
-          type: 'multi', payload: execResults.filter(r => r.success && r.detail).map(r => r.detail)
-        } : null,
-        execResult: { success: multiResult.allSuccess, message: multiResult.message, detail: execResults[0]?.detail },
-        execResults: execResults.filter(r => r.success && r.detail)
-      })
-      return
-    }
-
-    const effectiveAction = (result.actions && result.actions.length === 1)
-      ? result.actions[0] : result.action
-    let execResult = null
-    if (effectiveAction) execResult = store.executeAction(effectiveAction)
-    if (execResult && execResult.success) {
-      const msg = execResult.message || ''
-      const replyHasIt = msg && (reply || '').includes(msg)
-      if (msg && msg !== '无需执行' && !replyHasIt) displayContent += `\n\n${msg}`
-    } else if (execResult && !execResult.success && execResult.message !== '无需执行') {
-      displayContent += `\n\n${execResult.message}`
-    }
-
-    // 防误导检测 + 前端兜底
-    const isQueryAction = execResult?.detail?.type?.startsWith('query_')
-    const hasExecuted = execResult && execResult.success
-    const isNotEnabled = execResult?.detail?.notEnabled
-    if (!hasExecuted && !isQueryAction && !isNotEnabled) {
-      const actionClaimRegex = /已记|已保存|已创建|已修改|已删除|记了一笔|帮你记|已帮|账单已|日记已|计划已|已为你|已添加|已生成|已更新|记下了|帮你想|帮你把/
-      if (actionClaimRegex.test(reply || '')) {
-        const fallbackAction = extractFallbackAction(userMessage || '', reply || '')
-        if (fallbackAction) {
-          logger.warn('前端兜底执行', fallbackAction.type)
-          const fbResult = store.executeAction(fallbackAction)
-          if (fbResult && fbResult.success) {
-            execResult = fbResult
-            const msg = fbResult.message || ''
-            if (msg && msg !== '无需执行') displayContent = reply + `\n\n${msg}`
-            const noCardTypes = ['undo_last', 'get_profile', 'clear_profile', 'toggle_profile']
-            const showCard = !noCardTypes.includes(fallbackAction.type) &&
-              !fallbackAction.type.startsWith('query_') && execResult?.detail && !execResult.detail.deleted
-            store.updateLastMessage({
-              content: displayContent, loading: false, aiReply: reply,
-              actionCard: showCard ? { type: fallbackAction.type, payload: execResult.detail } : null,
-              execResult
-            })
-            return
-          }
-        }
-        displayContent += '\n\n⚠️ 该操作未实际执行(AI 未返回有效指令),请重新描述你的需求'
-        logger.warn('AI 声称已操作但未返回 action', JSON.stringify(result))
-      }
-    }
-
-    const cardType = effectiveAction?.type
-    const noCardTypes = ['undo_last', 'get_profile', 'clear_profile', 'toggle_profile']
-    const showCard = execResult && execResult.success && execResult.detail &&
-      !execResult.detail.deleted && !cardType?.startsWith('query_') && !noCardTypes.includes(cardType)
-
-    store.updateLastMessage({
-      content: displayContent, loading: false, aiReply: reply,
-      actionCard: showCard ? { type: effectiveAction.type, payload: execResult.detail } : null,
-      execResult
-    })
   }
 
   /** 确认待执行操作 */
   function handleConfirmAction() {
-    let execResult = null
-    if (pendingActions.value.length > 1) {
-      const multiResult = store.executeActions(pendingActions.value)
-      let content = pendingReply.value + `\n\n${multiResult.message}`
-      execResult = { success: multiResult.allSuccess, message: multiResult.message, detail: multiResult.detail?.[0] }
-      store.updateLastMessage({
-        content, pendingAction: null, pendingActions: [],
-        aiReply: pendingReply.value,
-        execResult,
-        execResults: multiResult.results.filter(r => r.success && r.detail)
-      })
-    } else if (pendingAction.value) {
-      execResult = store.executeAction(pendingAction.value)
-      let content = pendingReply.value + `\n\n${execResult.message}`
-      store.updateLastMessage({
-        content, pendingAction: null, aiReply: pendingReply.value,
-        actionCard: execResult.success ? { type: pendingAction.value.type, payload: execResult.detail } : null,
-        execResult
-      })
-    }
-    // === 确认操作后提取长期记忆(主流程 needConfirm 路径漏掉了此调用)===
-    if (execResult?.success && isMemoryEnabled()) {
-      try {
-        autoExtractMemory(pendingReply.value, pendingReply.value, execResult)
-      } catch { /* ignore */ }
-    }
-    pendingAction.value = null
-    pendingActions.value = []
-    pendingReply.value = ''
+    _handleConfirmAction(store, pendingAction, pendingActions, pendingReply)
   }
 
   /** 取消待执行操作 */
   function handleCancelAction() {
-    store.updateLastMessage({ content: pendingReply.value + '\n\n已取消', pendingAction: null, pendingActions: [] })
-    pendingAction.value = null
-    pendingActions.value = []
-    pendingReply.value = ''
+    _handleCancelAction(store, pendingAction, pendingActions, pendingReply)
   }
 
   return {
     isSending, stopSignal, pendingAction, pendingActions, pendingReply, currentSuggestions,
     simulationMode,
-    getWelcomeMessage, handleSend, handleStop, handleRetry, autoExecuteAndDisplay,
+    getWelcomeMessage, handleSend, handleStop, handleRetry,
     handleConfirmAction, handleCancelAction, initSimulation
   }
 }

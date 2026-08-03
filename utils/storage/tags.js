@@ -3,6 +3,7 @@
  *
  * 存储策略：按类型分片 → storage key: siji_tags_diary / siji_tags_plan
  * 支持全局标签注册表 + 从真实数据中提取使用中的标签
+ * 标签可关联分类（category 字段）
  */
 
 import { getRawList } from './helpers.js'
@@ -17,7 +18,7 @@ const tagColors = [
 /**
  * 获取全局标签注册表
  * @param {'diary'|'plan'} type
- * @returns {Array<{name:string, color:string, count:number}>}
+ * @returns {Array<{name:string, color:string, category?:string}>}
  */
 export function getTags(type) {
   const key = `siji_tags_${type}`
@@ -72,6 +73,10 @@ export function getUsedTags(type) {
   const registryMap = {}
   registry.forEach(r => { registryMap[r.name] = r.color || tagColors[0] })
 
+  // 分类映射（从注册表读取）
+  const catMap = {}
+  registry.forEach(r => { if (r.category) catMap[r.name] = r.category })
+
   const usedColors = new Set(Object.values(registryMap))
   let colorIdx = 0
 
@@ -80,7 +85,6 @@ export function getUsedTags(type) {
   const result = [...allNames].sort((a, b) => (tagMap[b] || 0) - (tagMap[a] || 0)).map(name => {
     let color = registryMap[name]
     if (!color) {
-      // 分配未使用过的颜色
       while (usedColors.has(tagColors[colorIdx % tagColors.length])) {
         colorIdx++
         if (colorIdx > tagColors.length * 2) break
@@ -89,25 +93,25 @@ export function getUsedTags(type) {
       usedColors.add(color)
       colorIdx++
     }
-    return { name, color, count: tagMap[name] || 0 }
+    return { name, color, count: tagMap[name] || 0, category: catMap[name] || '' }
   })
 
   return result
 }
 
-/** 添加自定义标签到注册表 */
-export function addCustomTag(type, tagName, color) {
+/** 添加自定义标签到注册表（可指定分类） */
+export function addCustomTag(type, tagName, color, category) {
   const tags = getTags(type)
   const exists = tags.find(t => t.name === tagName)
   if (exists) {
     if (color) exists.color = color
+    if (category) exists.category = category
     setTags(type, tags)
     return exists
   }
-  // 分配颜色
   const usedColors = new Set(tags.map(t => t.color))
   const c = color || tagColors.find(c => !usedColors.has(c)) || tagColors[tags.length % tagColors.length]
-  const newTag = { name: tagName, color: c }
+  const newTag = { name: tagName, color: c, category: category || '' }
   tags.push(newTag)
   setTags(type, tags)
   return newTag

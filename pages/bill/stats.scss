@@ -1,0 +1,334 @@
+/* bill/stats.vue — 账单统计页样式 */
+
+.stats-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F4F4F5;
+}
+
+/* 月份头部 */
+.month-header {
+  padding: 20rpx 24rpx 12rpx;
+  background: #FFFFFF;
+
+  .month-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #18181B;
+    display: block;
+  }
+
+  .month-sub {
+    font-size: 22rpx;
+    color: #A1A1AA;
+    display: block;
+    margin-top: 4rpx;
+  }
+}
+
+/* 模式切换 */
+.mode-switch {
+  display: flex;
+  background: #FFFFFF;
+  padding: 0 24rpx 12rpx;
+  gap: 8rpx;
+
+  .mode-btn {
+    padding: 8rpx 32rpx;
+    border-radius: 20rpx;
+    font-size: 24rpx;
+    background: #F4F4F5;
+    color: #71717A;
+
+    &.active {
+      background: #18181B;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+  }
+}
+
+.stats-scroll { flex: 1; padding: 12rpx 20rpx; }
+
+/* 总览 */
+.overview-section { margin-bottom: 12rpx; }
+
+.overview-row {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.overview-card {
+  flex: 1;
+  padding: 16rpx 12rpx;
+  border-radius: 12rpx;
+
+  &.expense-card { background: #FFFFFF; }
+  &.income-card { background: #FFFFFF; }
+  &.balance-card { background: #FFFFFF; }
+  &.avg-card { background: #FFFFFF; }
+
+  .ov-label { font-size: 20rpx; color: #A1A1AA; display: block; }
+  .ov-value {
+    font-size: 32rpx; font-weight: 800; display: block; margin-top: 4rpx;
+    font-variant-numeric: tabular-nums;
+    &.positive { color: #18181B; }
+    &.negative { color: #EF4444; }
+  }
+  .ov-sub {
+    font-size: 18rpx; display: block; margin-top: 4rpx;
+    &.up { color: #EF4444; }
+    &.down { color: #52525B; }
+  }
+}
+
+/* 消费洞察 */
+.insights-card {
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+
+  .insights-title {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #18181B;
+    display: block;
+    margin-bottom: 8rpx;
+  }
+
+  .insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6rpx;
+    padding: 4rpx 0;
+
+    .insight-dot {
+      color: #71717A;
+      font-weight: 700;
+    }
+
+    .insight-text {
+      font-size: 22rpx;
+      color: #52525B;
+      flex: 1;
+    }
+  }
+}
+
+/* 图表卡片 */
+.chart-card {
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.chart-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #18181B;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+/* 范围切换 */
+.range-switch {
+  display: flex;
+  background: #F4F4F5;
+  border-radius: 8rpx;
+  padding: 4rpx;
+
+  .range-btn {
+    font-size: 18rpx;
+    padding: 4rpx 16rpx;
+    border-radius: 8rpx;
+    color: #71717A;
+    transition: all 0.15s ease;
+
+    &.active {
+      background: #18181B;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+  }
+}
+
+/* 趋势合计 */
+.trend-summary {
+  display: flex;
+  gap: 24rpx;
+  margin-bottom: 12rpx;
+  padding: 4rpx 0;
+
+  .ts-item { display: flex; align-items: center; gap: 6rpx; }
+  .ts-dot { width: 10rpx; height: 10rpx; border-radius: 50%; }
+  .ts-label { font-size: 20rpx; color: #71717A; }
+  .ts-value { font-size: 24rpx; font-weight: 700; color: #18181B; font-variant-numeric: tabular-nums; }
+}
+
+/* Top 5 */
+.top5-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.top5-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 0;
+  border-bottom: 1rpx solid #E4E4E7;
+  &:last-child { border-bottom: none; }
+
+  .top5-rank {
+    width: 32rpx;
+    height: 32rpx;
+    border-radius: 50%;
+    background: #F4F4F5;
+    color: #52525B;
+    font-size: 20rpx;
+    font-weight: 700;
+    text-align: center;
+    line-height: 32rpx;
+    flex-shrink: 0;
+  }
+
+  .top5-body {
+    flex: 1;
+    .top5-cat { font-size: 24rpx; color: #18181B; font-weight: 600; }
+    .top5-date { font-size: 20rpx; color: #A1A1AA; margin-left: 8rpx; }
+  }
+
+  .top5-amount {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #18181B;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* 分类图表行 */
+.cat-chart-row {
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+}
+
+.ring-section {
+  flex-shrink: 0;
+  width: 240rpx;
+}
+
+/* 图例 */
+.legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+}
+
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4rpx 0;
+}
+
+.legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+
+  .legend-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
+  .legend-name { font-size: 22rpx; color: #18181B; }
+}
+
+.legend-right {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+
+  .legend-amount { font-size: 22rpx; color: #52525B; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .legend-pct { font-size: 20rpx; color: #A1A1AA; width: 50rpx; text-align: right; }
+}
+
+/* 分类趋势 */
+.cat-trend-scroll { white-space: nowrap; margin-bottom: 12rpx; }
+.cat-trend-list { display: inline-flex; gap: 8rpx; }
+.cat-trend-chip {
+  flex-shrink: 0;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  font-size: 20rpx;
+  background: #F4F4F5;
+  color: #52525B;
+  white-space: nowrap;
+  &.active { background: #18181B; color: #FFFFFF; }
+}
+
+.cat-trend-title {
+  font-size: 22rpx;
+  color: #52525B;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.no-data {
+  text-align: center;
+  padding: 24rpx;
+  color: #A1A1AA;
+  font-size: 22rpx;
+}
+
+/* ═══ 深色模式 ═══ */
+@media (prefers-color-scheme: dark) {
+  .stats-page { background: #18181B; }
+  .month-header { background: #27272A; }
+  .month-title { color: #FAFAFA; }
+  .month-sub { color: #71717A; }
+  .mode-switch { background: #27272A; }
+  .mode-btn { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+
+  .overview-card { background: #27272A; }
+  .ov-label { color: #71717A; }
+  .ov-value { &.positive { color: #FAFAFA; } }
+  .ov-sub { &.up { color: #EF4444; } &.down { color: #A1A1AA; } }
+
+  .insights-card { background: #27272A; }
+  .insights-title { color: #FAFAFA; }
+  .insight-dot { color: #71717A; }
+  .insight-text { color: #D4D4D8; }
+
+  .chart-card { background: #27272A; }
+  .chart-title { color: #FAFAFA; }
+
+  .range-switch { background: #3F3F46; }
+  .range-btn { color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+
+  .ts-label { color: #71717A; }
+  .ts-value { color: #FAFAFA; }
+
+  .top5-row { border-bottom-color: #3F3F46; }
+  .top5-rank { background: #3F3F46; color: #D4D4D8; }
+  .top5-cat { color: #FAFAFA; }
+  .top5-date { color: #71717A; }
+  .top5-amount { color: #FAFAFA; }
+
+  .legend-name { color: #FAFAFA; }
+  .legend-amount { color: #D4D4D8; }
+
+  .cat-trend-chip { background: #3F3F46; color: #D4D4D8; &.active { background: #FAFAFA; color: #18181B; } }
+  .cat-trend-title { color: #D4D4D8; }
+  .no-data { color: #71717A; }
+}

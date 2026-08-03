@@ -1,27 +1,14 @@
 <script setup>
-/**
- * TemplateCard - 单个模板卡片展示组件
- *
- * Props:
- *   template    - 模板对象 { name, icon, color, description, plan_data: { subtasks } }
- *   showActions - 是否显示操作按钮（默认 true）
- *
- * Emits:
- *   use    - 用户点击「使用」
- *   delete - 用户点击「删除」
- */
-
 defineProps({
   template: { type: Object, required: true },
   showActions: { type: Boolean, default: true }
 })
-
 defineEmits(['use', 'delete'])
 </script>
 
 <template>
   <view class="tpl-card">
-    <view class="tpl-header" :style="{ background: template.color || '#000000' }">
+    <view class="tpl-header" :style="{ background: template.color || '#18181B' }">
       <text class="tpl-icon">{{ template.icon || '📋' }}</text>
       <text class="tpl-name">{{ template.name }}</text>
     </view>
@@ -41,39 +28,38 @@ defineEmits(['use', 'delete'])
   </view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .tpl-card {
-  background: $bg-card;
-  border-radius: $radius-lg;
+  background: #FFFFFF;
+  border-radius: 12rpx;
   overflow: hidden;
-  box-shadow: $shadow-sm;
 }
 
 .tpl-header {
   display: flex;
   align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-md;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
 }
 
-.tpl-icon { font-size: 40rpx; }
-.tpl-name { font-size: $font-lg; font-weight: 700; color: var(--text-on-ai); }
+.tpl-icon { font-size: 36rpx; }
+.tpl-name { font-size: 30rpx; font-weight: 700; color: #FFFFFF; }
 
 .tpl-body {
-  padding: $spacing-md;
+  padding: 16rpx 20rpx;
 }
 
 .tpl-desc {
-  font-size: $font-sm;
-  color: $text-secondary;
-  margin-bottom: $spacing-sm;
+  font-size: 24rpx;
+  color: #71717A;
+  margin-bottom: 8rpx;
   display: block;
 }
 
 .tpl-subtasks {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 6rpx;
 }
 
 .st-item {
@@ -82,22 +68,33 @@ defineEmits(['use', 'delete'])
   gap: 8rpx;
 }
 
-.st-bullet { color: $accent; font-weight: 700; }
-.st-title { font-size: $font-sm; color: $text-primary; }
+.st-bullet { color: #18181B; font-weight: 700; }
+.st-title { font-size: 24rpx; color: #18181B; }
 
 .tpl-footer {
   display: flex;
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+  border-top: 1rpx solid #E4E4E7;
 }
 
 .tpl-use, .tpl-del {
   flex: 1;
   text-align: center;
-  padding: 20rpx 0;
-  font-size: $font-sm;
+  padding: 16rpx 0;
+  font-size: 26rpx;
   font-weight: 600;
 }
 
-.tpl-use { color: $accent; }
-.tpl-del { color: $danger; border-left: 1rpx solid rgba(0, 0, 0, 0.05); }
+.tpl-use { color: #18181B; }
+.tpl-del { color: #EF4444; border-left: 1rpx solid #E4E4E7; }
+
+@media (prefers-color-scheme: dark) {
+  .tpl-card { background: #27272A; }
+  .tpl-name { color: #FFFFFF; }
+  .tpl-desc { color: #A1A1AA; }
+  .st-bullet { color: #FAFAFA; }
+  .st-title { color: #FAFAFA; }
+  .tpl-footer { border-top-color: #3F3F46; }
+  .tpl-use { color: #FAFAFA; }
+  .tpl-del { color: #EF4444; border-left-color: #3F3F46; }
+}
 </style>

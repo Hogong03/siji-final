@@ -57,9 +57,9 @@ const statusDist = computed(() => {
   const pending = all.filter(p => p.status === 0).length
   const total = active + completed + pending
   return [
-    { label: '进行中', count: active, color: '#000000', pct: total > 0 ? Math.round(active / total * 100) : 0 },
-    { label: '已完成', count: completed, color: '#10B981', pct: total > 0 ? Math.round(completed / total * 100) : 0 },
-    { label: '待开始', count: pending, color: '#999', pct: total > 0 ? Math.round(pending / total * 100) : 0 }
+    { label: '进行中', count: active, color: '#18181B', pct: total > 0 ? Math.round(active / total * 100) : 0 },
+    { label: '已完成', count: completed, color: '#52525B', pct: total > 0 ? Math.round(completed / total * 100) : 0 },
+    { label: '待开始', count: pending, color: '#A1A1AA', pct: total > 0 ? Math.round(pending / total * 100) : 0 }
   ]
 })
 
@@ -127,8 +127,8 @@ const priorityCompletion = computed(() => {
   <view class="stats-page">
     <scroll-view class="stats-scroll" scroll-y>
       <!-- ① 总览 -->
-      <view class="card gradient-card">
-        <text class="card-title white">计划总览</text>
+      <view class="card overview-card">
+        <text class="card-title">计划总览</text>
         <view class="overview-grid">
           <view class="og-item">
             <text class="og-num">{{ overview.total }}</text>
@@ -200,7 +200,7 @@ const priorityCompletion = computed(() => {
           type="bar"
           :data="trendData.map(d => ({ label: d.label, values: [d.created, d.done] }))"
           :group-mode="true"
-          :colors="['#000000', '#10B981']"
+          :colors="['#18181B', '#A1A1AA']"
           :height="160"
         />
         <view class="trend-legend">
@@ -243,7 +243,7 @@ const priorityCompletion = computed(() => {
             type="gauge"
             :value="subtaskStats.rate"
             label="子任务"
-            :colors="['#000000']"
+            :colors="['#18181B']"
             :height="200"
           />
           <view class="gauge-info">
@@ -275,217 +275,5 @@ const priorityCompletion = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.stats-page {
-  height: 100vh;
-  background: $bg-page;
-}
-
-.stats-scroll {
-  height: 100vh;
-  padding: $spacing-md;
-}
-
-.card {
-  background: $bg-card;
-  border-radius: $radius-lg;
-  padding: $spacing-md;
-  margin-bottom: $spacing-md;
-  box-shadow: $shadow-sm;
-}
-
-.card-title {
-  font-size: $font-md;
-  font-weight: 700;
-  color: $text-primary;
-  margin-bottom: $spacing-md;
-  display: block;
-
-  &.white { color: var(--text-on-ai); }
-}
-
-.gradient-card {
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  box-shadow: 0 4rpx 20rpx rgba(16, 185, 129, 0.2);
-}
-
-/* 总览 */
-.overview-grid {
-  display: flex;
-  justify-content: space-between;
-}
-
-.og-item { text-align: center; flex: 1; }
-
-.og-num {
-  font-size: 48rpx;
-  font-weight: 800;
-  display: block;
-  color: var(--text-on-ai);
-}
-
-.og-label {
-  font-size: $font-xs;
-  opacity: 0.8;
-  color: var(--text-on-ai);
-}
-
-/* 图表+图例并排 */
-.chart-with-legend {
-  display: flex;
-  gap: $spacing-md;
-  align-items: center;
-}
-
-.ring-side {
-  flex-shrink: 0;
-  width: 200rpx;
-}
-
-.legend-side {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.mini-legend {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.mini-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
-.mini-label { font-size: $font-sm; color: $text-primary; min-width: 60rpx; }
-.mini-val { font-size: $font-xs; color: $text-secondary; }
-
-/* 仪表盘行 */
-.gauge-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.gauge-info {
-  text-align: center;
-}
-
-/* 分布（保留用于优先级完成率） */
-.dist-list { display: flex; flex-direction: column; gap: $spacing-sm; }
-
-.dist-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.dist-left {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  width: 100rpx;
-}
-
-.dist-dot { width: 16rpx; height: 16rpx; border-radius: 50%; }
-.dist-label { font-size: $font-sm; color: $text-primary; }
-
-.dist-bar-wrap {
-  flex: 1;
-  height: 16rpx;
-  background: $bg-input;
-  border-radius: 8rpx;
-  overflow: hidden;
-}
-
-.dist-bar { height: 100%; border-radius: 8rpx; transition: width 0.3s; }
-
-.dist-count { font-size: $font-xs; color: $text-secondary; min-width: 120rpx; text-align: right; }
-
-/* 趋势图（已改用 Canvas） */
-.trend-chart { display: none; }
-.trend-bars { display: none; }
-.trend-col { display: none; }
-.trend-bar { display: none; }
-.trend-labels { display: none; }
-.trend-l { display: none; }
-
-.trend-legend {
-  display: flex;
-  gap: $spacing-md;
-  justify-content: center;
-  margin-top: $spacing-sm;
-}
-
-.legend-item { display: flex; align-items: center; gap: 6rpx; }
-
-.legend-dot {
-  width: 16rpx; height: 16rpx; border-radius: 4rpx;
-
-  &.created { background: var(--color-ai); }
-  &.done { background: var(--color-plan); }
-}
-
-.legend-text { font-size: $font-xs; color: $text-secondary; }
-
-/* 完成速度 */
-.speed-grid {
-  display: flex;
-  justify-content: space-between;
-}
-
-.sp-item { text-align: center; flex: 1; }
-
-.sp-num {
-  font-size: 40rpx;
-  font-weight: 800;
-  color: var(--color-ai);
-  display: block;
-}
-
-.sp-label { font-size: $font-xs; color: $text-secondary; }
-
-.empty-block { padding: 40rpx 0; text-align: center; }
-.empty-text { font-size: $font-sm; color: $text-hint; }
-
-/* 子任务环形（已改用 Canvas gauge） */
-.subtask-ring { display: none; }
-.ring-wrap { display: none; }
-.ring-outer { display: none; }
-.ring-fill { display: none; }
-.ring-inner { display: none; }
-.ring-num { display: none; }
-.ring-info { display: none; }
-.ri-text { font-size: $font-sm; color: $text-secondary; }
-
-/* 优先级完成率 */
-.pc-list { display: flex; flex-direction: column; gap: $spacing-sm; }
-
-.pc-row {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-}
-
-.pc-left {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  width: 100rpx;
-}
-
-.pc-dot { width: 16rpx; height: 16rpx; border-radius: 50%; }
-.pc-label { font-size: $font-sm; color: $text-primary; }
-
-.pc-bar-wrap {
-  flex: 1;
-  height: 16rpx;
-  background: $bg-input;
-  border-radius: 8rpx;
-  overflow: hidden;
-}
-
-.pc-bar { height: 100%; border-radius: 8rpx; transition: width 0.3s; }
-
-.pc-text { font-size: $font-xs; color: $text-secondary; min-width: 140rpx; text-align: right; }
+@import './stats.scss';
 </style>

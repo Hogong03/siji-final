@@ -50,8 +50,8 @@ export function ensureDefaultTemplates() {
       client_id: 'tpl_fitness', name: '健身计划', icon: '🏃', color: '#E8A838',
       description: '每周运动4次，逐步提升体能',
       plan_data: { priority: 2, subtasks: [
-        { title: '周一：有氧30分钟' }, { title: '周三：力量训练40分钟' },
-        { title: '周五：有氧+核心30分钟' }, { title: '周日：拉伸放松20分钟' }
+        { title: '周一：有氧40分钟' }, { title: '周三：力量训练40分钟' },
+        { title: '周五：有氧+核心30分钟' }, { title: '周日：拉伸放松30分钟' }
       ]},
       created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
     },

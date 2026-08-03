@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 /**
  * 应用锁 — 设置子页面
  */
@@ -97,7 +97,7 @@ function submit() {
 <style lang="scss" scoped>
 .sub-page {
   min-height: 100vh;
-  background: var(--bg-page);
+  background: var(--bg-card-alt);
   padding: $spacing-md;
 }
 
@@ -116,9 +116,9 @@ function submit() {
   .status-badge {
     padding: 8rpx 20rpx; border-radius: 20rpx; font-size: $font-xs; font-weight: 600;
     color: var(--text-hint);
-    &.on { color: var(--color-plan); background: rgba(16,185,129,0.1); }
+    &.on { color: var(--color-plan); background: var(--color-plan-bg); }
   }
-  .action-btn { font-size: $font-sm; color: var(--color-ai); font-weight: 600; }
+  .action-btn { font-size: $font-sm; color: var(--text-primary); font-weight: 600; }
 }
 
 /* PIN Dialog */
@@ -146,7 +146,7 @@ function submit() {
   .pin-key {
     width: calc(33.33% - 12rpx); height: 80rpx; margin: 6rpx;
     display: flex; align-items: center; justify-content: center;
-    background: var(--bg-input); border-radius: $radius-md;
+    background: var(--bg-btn-secondary); border-radius: $radius-md;
     font-size: $font-lg; font-weight: 600; color: var(--text-primary);
     box-sizing: border-box;
     &:active { background: rgba(99,102,241,0.15); transform: scale(0.95); }
@@ -156,6 +156,7 @@ function submit() {
 .pin-actions {
   display: flex; gap: $spacing-lg; margin-top: $spacing-md;
   .pin-cancel { font-size: $font-sm; color: var(--text-secondary); padding: $spacing-xs $spacing-md; }
-  .pin-confirm { font-size: $font-sm; color: var(--color-ai); font-weight: 700; padding: $spacing-xs $spacing-md; }
+  .pin-confirm { font-size: $font-sm; color: var(--text-primary); font-weight: 700; padding: $spacing-xs $spacing-md; }
 }
+
 </style>

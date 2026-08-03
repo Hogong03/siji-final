@@ -15,7 +15,7 @@ import { chatRequest, generateConversationTitle } from './ai/chat-request.js'
 import { chatRequestStream } from './ai/chat-stream.js'
 import {
   AI_PROVIDERS, getProvider, getProviderModels, getProviderDefaultModel,
-  getProviderVisionModel, supportsVision, getProviderKeys,
+  getProviderVisionModel, supportsVision, getProviderKeys, getConfiguredProviderIds,
   getDefaultConfig, buildProviderRequest
 } from './ai/providers.js'
 import { parseAiResponse } from './ai/response-parser.js'
@@ -107,7 +107,7 @@ export async function generateConversationSummary(messages, cfg) {
 
   try {
     const result = await chatRequest(
-      '用2-3句话总结以上对话：用户做了什么操作（记账/日记/计划，保留ID）、说了哪些个人信息、有哪些重要上下文。只输出总结不要JSON。',
+      '用2-3句话总结以上对话：用户做了什么操作（记账/记录/计划，保留ID）、说了哪些个人信息、有哪些重要上下文。只输出总结不要JSON。',
       null, null,
       { ...cfg, temperature: 0.2 },
       []  // 空历史，只做总结
@@ -146,7 +146,7 @@ export function isOnline() {
 
 export {
   AI_PROVIDERS, getProvider, getProviderModels, getProviderDefaultModel,
-  getProviderVisionModel, supportsVision, getProviderKeys,
+  getProviderVisionModel, supportsVision, getProviderKeys, getConfiguredProviderIds,
   getDefaultConfig, buildProviderRequest,
   chatRequest, chatRequestStream, generateConversationTitle
 }

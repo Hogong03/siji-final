@@ -283,7 +283,7 @@ function handleDelete(item) {
   uni.showModal({
     title: '确认删除',
     content: `确定要删除「${item.name}」吗？此操作不可撤销。`,
-    confirmColor: '#000000',
+    confirmColor: 'var(--color-ai)',
     success: (res) => {
       if (res.confirm) {
         deleteRelation(item.id)
@@ -335,129 +335,6 @@ function scoreClass(score) {
 function loadMore() { /* 已全部加载 */ }
 </script>
 
-<style scoped>
-.page { min-height: 100vh; background: #F4F4F5; }
-
-.stats-bar {
-  display: flex; justify-content: space-around;
-  padding: 32rpx 24rpx; background: #FFFFFF;
-  border-bottom: 1rpx solid #E4E4E7;
-}
-.stat-item { display: flex; flex-direction: column; align-items: center; }
-.stat-num { font-size: 40rpx; font-weight: 700; color: #000000; }
-.stat-label { font-size: 24rpx; color: #71717A; margin-top: 4rpx; }
-
-.search-bar { padding: 20rpx 24rpx; background: #FFFFFF; }
-.search-input {
-  width: 100%; height: 72rpx; padding: 0 24rpx;
-  background: #F4F4F5; border-radius: 36rpx;
-  font-size: 28rpx; color: #18181B;
-}
-
-.list-area { height: calc(100vh - 320rpx); padding: 16rpx 24rpx; }
-
-.empty { display: flex; flex-direction: column; align-items: center; padding-top: 200rpx; }
-.empty-icon { font-size: 80rpx; margin-bottom: 24rpx; }
-.empty-text { font-size: 32rpx; color: #71717A; }
-.empty-hint { font-size: 26rpx; color: #A1A1AA; margin-top: 8rpx; }
-
-.relation-card {
-  background: #FFFFFF; border-radius: 24rpx; padding: 28rpx;
-  margin-bottom: 16rpx;
-}
-.card-header { display: flex; align-items: center; }
-.avatar {
-  width: 72rpx; height: 72rpx; border-radius: 50%;
-  background: #18181B; color: #FFFFFF;
-  font-size: 32rpx; font-weight: 600;
-  display: flex; align-items: center; justify-content: center;
-}
-.info { flex: 1; margin-left: 20rpx; }
-.name { font-size: 32rpx; font-weight: 600; color: #18181B; display: block; }
-.role { font-size: 26rpx; color: #71717A; margin-top: 4rpx; }
-.score-badge {
-  width: 48rpx; height: 48rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26rpx; font-weight: 700;
-}
-.score-high { background: #000000; color: #FFFFFF; }
-.score-mid { background: #E4E4E7; color: #3F3F46; }
-.score-low { background: #F4F4F5; color: #A1A1AA; }
-
-.card-context { font-size: 26rpx; color: #52525B; margin-top: 16rpx; }
-.card-tags { display: flex; flex-wrap: wrap; margin-top: 12rpx; gap: 8rpx; }
-.tag {
-  font-size: 22rpx; padding: 4rpx 16rpx;
-  background: #F4F4F5; color: #52525B; border-radius: 8rpx;
-}
-
-.card-actions {
-  display: flex; justify-content: flex-end; gap: 24rpx;
-  margin-top: 16rpx; padding-top: 16rpx;
-  border-top: 1rpx solid #F4F4F5;
-}
-.action-btn {
-  display: flex; align-items: center; gap: 6rpx;
-  padding: 8rpx 20rpx; border-radius: 12rpx;
-  background: #F4F4F5;
-}
-.action-icon { font-size: 24rpx; }
-.action-text { font-size: 24rpx; color: #52525B; }
-
-.fab {
-  position: fixed; right: 40rpx; bottom: 80rpx;
-  width: 96rpx; height: 96rpx; border-radius: 50%;
-  background: #000000; color: #FFFFFF;
-  font-size: 56rpx; line-height: 96rpx; text-align: center;
-  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.2);
-}
-
-.modal-mask {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  display: flex; align-items: flex-end; z-index: 1000;
-}
-.modal-content {
-  width: 100%; max-height: 80vh; overflow-y: auto;
-  background: #FFFFFF; border-radius: 32rpx 32rpx 0 0;
-  padding: 40rpx 32rpx;
-}
-.modal-title { font-size: 36rpx; font-weight: 700; color: #18181B; display: block; margin-bottom: 32rpx; }
-.form-item { margin-bottom: 24rpx; }
-.form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
-.form-input {
-  width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: #F4F4F5; border-radius: 16rpx;
-  font-size: 28rpx; color: #18181B; line-height: 80rpx;
-}
-.form-textarea {
-  width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: #F4F4F5; border-radius: 16rpx;
-  font-size: 28rpx; color: #18181B;
-}
-.modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
-.btn-cancel, .btn-confirm {
-  flex: 1; height: 88rpx; border-radius: 16rpx;
-  font-size: 30rpx; font-weight: 600; border: none;
-}
-.btn-cancel { background: #F4F4F5; color: #71717A; }
-.btn-confirm { background: #000000; color: #FFFFFF; }
-
-/* 模板快选 */
-.tpl-section { margin-bottom: 32rpx; }
-.tpl-title { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 16rpx; }
-.tpl-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
-.tpl-card {
-  width: calc(33.33% - 12rpx);
-  padding: 20rpx 12rpx;
-  background: #F4F4F5; border-radius: 16rpx;
-  border: 2rpx solid transparent;
-  display: flex; flex-direction: column; align-items: center; gap: 6rpx;
-  box-sizing: border-box;
-}
-.tpl-card.active { border-color: #000000; background: #FFFFFF; }
-.tpl-icon-wrap { width: 56rpx; height: 56rpx; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; }
-.tpl-card.active .tpl-icon-wrap { background: #000000; }
-.tpl-icon { font-size: 28rpx; }
-.tpl-name { font-size: 24rpx; font-weight: 600; color: #18181B; }
-.tpl-hint { font-size: 20rpx; color: #A1A1AA; }
+<style scoped lang="scss">
+@import './relations.scss';
 </style>

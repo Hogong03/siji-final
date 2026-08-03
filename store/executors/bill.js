@@ -210,7 +210,7 @@ export function createBillExecutors(ctx) {
 
     return {
       success: true,
-      message: `${month} 概览：支出¥${totalExpense.toFixed(0)} 收入¥${totalIncome.toFixed(0)} ${bills.length}笔账单，${diaries.length}篇日记，${activePlans.length}个进行中计划`,
+      message: `${month} 概览：支出¥${totalExpense.toFixed(0)} 收入¥${totalIncome.toFixed(0)} ${bills.length}笔账单，${diaries.length}篇记录，${activePlans.length}个进行中计划`,
       detail: {
         type: 'query_stat', month,
         billCount: bills.length, diaryCount: diaries.length,

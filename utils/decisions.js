@@ -237,6 +237,30 @@ export function buildDecisionsContext() {
 }
 
 /**
+ * 改动3：检测用户消息是否与现有决策相关
+ * 当用户聊到与某条决策标题/选项匹配的话题时，返回相关决策供 AI 主动关联
+ * @param {string} userMessage - 用户消息
+ * @returns {Array} 匹配到的决策（最多 2 条）
+ */
+export function detectRelatedDecisions(userMessage) {
+  if (!userMessage || userMessage.length < 4) return []
+  const thinking = getDecisionsByStatus('thinking')
+  const decided = getDecisionsByStatus('decided')
+  const all = [...thinking, ...decided]
+  if (all.length === 0) return []
+
+  return all.filter(d => {
+    // 标题匹配（标题 >= 2 字才匹配，避免单字误匹配）
+    if (d.title && d.title.length >= 2 && userMessage.includes(d.title)) return true
+    // 选项名匹配（选项名 >= 2 字）
+    if (d.options) {
+      return d.options.some(o => o.name && o.name.length >= 2 && userMessage.includes(o.name))
+    }
+    return false
+  }).slice(0, 2)
+}
+
+/**
  * 获取决策统计
  */
 export function getDecisionStats() {

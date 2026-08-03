@@ -6,7 +6,7 @@
  * AI 自动识别意图，去掉冗余的快捷标签按钮和 segment 系统
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { chooseAndCompress } from '@/utils/image.js'
 
 const props = defineProps({
@@ -15,6 +15,20 @@ const props = defineProps({
   isSending: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue', 'send', 'stop', 'image-selected', 'image-cleared'])
+
+// ─── 快捷指令 ───
+const showShortcuts = ref(false)
+const shortcuts = [
+  { icon: 'bill', label: '记账', text: '帮我记一笔' },
+  { icon: 'diary', label: '记录', text: '写个记录' },
+  { icon: 'plan', label: '计划', text: '建个计划' },
+  { icon: 'search', label: '查询', text: '帮我查一下' }
+]
+function applyShortcut(s) {
+  text.value = s.text
+  emit('update:modelValue', s.text)
+  showShortcuts.value = false
+}
 
 // ─── 文本输入 ───
 const text = ref('')
@@ -27,6 +41,7 @@ function onInput(e) {
   text.value = e.detail?.value ?? ''
   // #endif
   emit('update:modelValue', text.value)
+  onInputDraft()
 }
 
 // ─── 图片 ───
@@ -44,9 +59,32 @@ const canSend = computed(() => !props.disabled && (text.value.trim() || selected
 
 function handleSend() {
   if (!canSend.value) return
-  emit('send', text.value.trim() || '请识别并分析这张截图')
+  const msg = text.value.trim()
+  if (msg.length > 2000) {
+    uni.showToast({ title: '单条消息不能超过2000字', icon: 'none' })
+    return
+  }
+  emit('send', msg || '请识别并分析这张截图')
 }
-function reset() { text.value = ''; selectedImage.value = null; emit('update:modelValue', '') }
+function reset() { text.value = ''; selectedImage.value = null; emit('update:modelValue', ''); saveDraft('') }
+
+// ─── 草稿自动保存 ───
+const DRAFT_KEY = 'siji_chat_draft'
+function saveDraft(v) { try { uni.setStorageSync(DRAFT_KEY, v) } catch (e) {} }
+function loadDraft() {
+  try {
+    const d = uni.getStorageSync(DRAFT_KEY)
+    if (d) { text.value = d; emit('update:modelValue', d) }
+  } catch (e) {}
+}
+loadDraft()
+
+// 输入时防保存草稿
+let draftTimer = null
+function onInputDraft() {
+  if (draftTimer) clearTimeout(draftTimer)
+  draftTimer = setTimeout(() => saveDraft(text.value), 1000)
+}
 
 defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: () => { selectedImage.value = null } })
 function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
@@ -54,6 +92,18 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 <template>
   <view class="input-area safe-area-bottom">
+    <!-- 快捷指令面板 -->
+    <view v-if="showShortcuts" class="shortcut-panel">
+      <view
+        v-for="s in shortcuts" :key="s.label"
+        class="shortcut-item"
+        @tap="applyShortcut(s)"
+      >
+        <SijiIcon :name="s.icon" size="sm" color="var(--text-secondary)" />
+        <text class="shortcut-label">{{ s.label }}</text>
+      </view>
+    </view>
+
     <!-- 图片预览 -->
     <view v-if="selectedImage" class="img-preview">
       <image :src="selectedImage.base64" mode="aspectFill" class="img-preview-thumb" />
@@ -63,8 +113,12 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
     <!-- 输入行 -->
     <view class="input-row">
+      <view class="side-btn" @tap="showShortcuts = !showShortcuts">
+        <text class="shortcut-toggle">+</text>
+      </view>
+
       <view class="side-btn" @tap="pickImage">
-        <text class="side-btn" @tap="pickImage" :style="{ opacity: imageLoading ? 0.4 : 1, fontSize: '36rpx', lineHeight: '36rpx' }">◉</text>
+        <SijiIcon name="image" size="sm" color="var(--text-secondary)" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
       </view>
 
       <view class="input-wrap">
@@ -73,7 +127,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
           :value="text"
           placeholder="说点什么..."
           :auto-height="true"
-          :maxlength="-1"
+          :maxlength="2000"
           :show-confirm-bar="false"
           :adjust-position="true"
           :cursor-spacing="20"
@@ -96,11 +150,26 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 <style lang="scss" scoped>
 .input-area {
-  background: var(--bg-card);
-  border-top: 1rpx solid var(--border-color);
+  background: #F4F4F5;
+  border-top: 1rpx solid #D4D4D8;
   padding: $spacing-sm $spacing-md;
   padding-bottom: calc($spacing-sm + env(safe-area-inset-bottom));
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.shortcut-panel {
+  display: flex; gap: $spacing-sm; padding: 12rpx 16rpx;
+  background: #E4E4E7; border-radius: 16rpx; margin-bottom: $spacing-sm;
+  border: 1rpx solid #D4D4D8;
+}
+.shortcut-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx;
+  padding: 12rpx 8rpx; border-radius: 12rpx; background: #D4D4D8;
+  transition: transform 0.12s;
+  &:active { transform: scale(0.92); background: #C4C4C8; }
+}
+.shortcut-label { font-size: 22rpx; color: var(--text-secondary); }
+.shortcut-toggle { font-size: 36rpx; color: var(--text-secondary); font-weight: 300; line-height: 1; }
 
 /* ─── 图片预览 ─── */
 .img-preview {
@@ -118,16 +187,23 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 .input-row { display: flex; align-items: flex-end; gap: $spacing-sm; }
 
 .side-btn {
-  width: 72rpx; height: 72rpx; border-radius: 50%; background: var(--bg-input);
+  width: 48rpx; height: 48rpx; border-radius: 50%; background: #E4E4E7; border: 1rpx solid #D4D4D8;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  &:active { transform: scale(.92); }
+  margin-bottom: 12rpx;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s;
+  &:active { transform: scale(0.9); background: #D4D4D8; }
 }
 
 .input-wrap {
   flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
-  background: var(--bg-input); border-radius: 36rpx; border: 1rpx solid var(--border-color);
+  background: #D4D4D8; border-radius: 36rpx; border: 1rpx solid #C4C4C8;
   display: flex; align-items: center; overflow-y: auto;
-  &:focus-within { border-color: var(--text-primary); }
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  &:focus-within {
+    border-color: #000000;
+    background: #E4E4E7;
+    box-shadow: 0 0 0 4rpx rgba(0, 0, 0, 0.1);
+  }
 }
 .text-input {
   width: 100%; font-size: $font-md; line-height: 1.5; color: var(--text-primary);
@@ -139,10 +215,38 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   display: flex; align-items: center; justify-content: center; transition: all .2s;
 }
 .send-btn {
-  background: var(--border-strong); opacity: .5;
-  &.active { background: var(--color-ai); opacity: 1; &:active { transform: scale(.92); } }
+  background: #A1A1AA; opacity: .5;
+  &.active {
+    background: #000000; opacity: 1;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+    &:active { transform: scale(1.05); }
+  }
 }
-.send-icon { color: var(--bg-card); font-size: 36rpx; font-weight: 700; }
+.send-icon { color: #FFFFFF; font-size: 36rpx; font-weight: 700; }
 .stop-btn { background: var(--text-primary); &:active { transform: scale(.9); } }
 .stop-icon { color: var(--bg-card); font-size: 28rpx; }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .side-btn {
+    background: #27272A; border-color: #3F3F46;
+    &:active { background: #3F3F46; }
+  }
+  .input-wrap {
+    background: #27272A; border-color: #3F3F46;
+    &:focus-within {
+      border-color: #FAFAFA;
+      background: #18181B;
+      box-shadow: 0 0 0 4rpx rgba(250, 250, 250, 0.1);
+    }
+  }
+  .send-btn {
+    background: #3F3F46; opacity: .6;
+    &.active {
+      background: #FAFAFA; opacity: 1;
+      box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+    }
+  }
+  .send-icon { color: #000000; }
+}
 </style>

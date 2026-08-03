@@ -1,6 +1,4 @@
 <script setup>
-import SijiIcon from '@/components/common/SijiIcon.vue'
-
 const props = defineProps({
 	filterStatus: { type: Number, default: -1 },
 	filterPriority: { type: Number, default: -1 },
@@ -21,25 +19,13 @@ const emit = defineEmits(['update:filterStatus', 'update:filterPriority', 'updat
 		</view>
 		<view class="filter-row">
 			<view class="ftag sm" :class="{ active: filterPriority === -1 }" @tap="emit('update:filterPriority', -1)">全部优先级</view>
-			<view class="ftag sm" :class="{ active: filterPriority === 2, 'ftag-danger': true }"
-				@tap="emit('update:filterPriority', 2)">
-				<SijiIcon name="fire" size="xs" class="ftag-icon" /><text>紧急</text>
-			</view>
-			<view class="ftag sm" :class="{ active: filterPriority === 1, 'ftag-warn': true }"
-				@tap="emit('update:filterPriority', 1)">
-				<SijiIcon name="star" size="xs" class="ftag-icon" /><text>重要</text>
-			</view>
+			<view class="ftag sm danger" :class="{ active: filterPriority === 2 }" @tap="emit('update:filterPriority', 2)">🔥 紧急</view>
+			<view class="ftag sm warn" :class="{ active: filterPriority === 1 }" @tap="emit('update:filterPriority', 1)">⭐ 重要</view>
 			<view class="ftag sm" :class="{ active: filterPriority === 0 }" @tap="emit('update:filterPriority', 0)">普通</view>
 		</view>
-
-		<!-- 标签筛选 -->
 		<view class="filter-row" v-if="filterTags.length > 0">
-			<view class="ftag sm" :class="{ active: filterTag === '' }" @tap="emit('update:filterTag', '')">
-				<SijiIcon name="tag" size="xs" class="ftag-icon" />
-				<text>全部</text>
-			</view>
+			<view class="ftag sm" :class="{ active: filterTag === '' }" @tap="emit('update:filterTag', '')">全部标签</view>
 			<view v-for="t in filterTags" :key="t.name" class="ftag sm" :class="{ active: filterTag === t.name }"
-				:style="filterTag === t.name ? { background: t.color, borderColor: t.color, color: '#fff' } : {}"
 				@tap="emit('update:filterTag', filterTag === t.name ? '' : t.name)">
 				{{ t.name }} {{ t.count }}
 			</view>
@@ -47,44 +33,60 @@ const emit = defineEmits(['update:filterStatus', 'update:filterPriority', 'updat
 	</view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .filter-bar {
-	padding: 12rpx 24rpx;
-	background: var(--bg-card);
-	border-bottom: 1rpx solid var(--border-color);
+	padding: 10rpx 20rpx 12rpx;
+	background: #FFFFFF;
+	border-bottom: 1rpx solid #E4E4E7;
 }
 
 .filter-row {
 	display: flex;
-	gap: $spacing-xs;
-	margin-bottom: $spacing-xs;
+	gap: 8rpx;
+	margin-bottom: 8rpx;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 .ftag {
-	padding: 6rpx 20rpx;
-	border-radius: 24rpx;
+	flex-shrink: 0;
+	padding: 8rpx 20rpx;
+	border-radius: 20rpx;
 	font-size: 22rpx;
-	background: var(--bg-input);
-	color: var(--text-secondary);
-	transition: all $transition-fast;
+	background: #F4F4F5;
+	color: #52525B;
+	white-space: nowrap;
+	transition: all 0.15s ease;
 
 	&.sm {
-		padding: 6rpx 20rpx;
-		font-size: 22rpx;
+		padding: 6rpx 16rpx;
+		font-size: 20rpx;
 	}
 
 	&.active {
-		background: var(--color-ai);
-		color: var(--text-on-ai);
+		background: #18181B;
+		color: #FFFFFF;
 		font-weight: 600;
 	}
 
-	&.ftag-danger.active {
-		background: var(--color-red);
+	/* 紧急 — 红色系 */
+	&.danger.active {
+		background: #EF4444;
+		color: #FFFFFF;
 	}
 
-	&.ftag-warn.active {
-		background: var(--color-amber);
+	/* 重要 — 琥珀色系 */
+	&.warn.active {
+		background: #E8A838;
+		color: #FFFFFF;
 	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.filter-bar { background: #27272A; border-bottom-color: #3F3F46; }
+	.ftag { background: #3F3F46; color: #D4D4D8; }
+	.ftag.active { background: #FAFAFA; color: #18181B; }
+	.ftag.danger.active { background: #EF4444; color: #FFFFFF; }
+	.ftag.warn.active { background: #E8A838; color: #FFFFFF; }
 }
 </style>

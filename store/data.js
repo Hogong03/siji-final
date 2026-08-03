@@ -49,7 +49,7 @@ export const useDataStore = defineStore('data', () => {
 
   // ==================== 创建各领域 executor ====================
   const ctx = { undoStack, cidCache, generateEntityId, _cacheCid, _findStorageKeyByCid, logger }
-  const { execCreateDiary, execUpdateDiary, execDeleteDiary, execQueryDiary } = createDiaryExecutors(ctx)
+  const { execCreateDiary, execUpdateDiary, execDeleteDiary, execQueryDiary, execSummarizeDiaries, execQueryCombined } = createDiaryExecutors(ctx)
   const { execCreateBill, execUpdateBill, execDeleteBill, execQueryBill, execQueryStat } = createBillExecutors(ctx)
   const { execCreatePlan, execUpdatePlan, execUpdatePlanSubtask, execDeletePlan, execQueryPlan, execCreatePlanTemplate } = createPlanExecutors(ctx)
   const { execUpdateProfile, execSmartUpdateProfile, execGetProfile, execClearProfile, execToggleProfile } = createProfileExecutors(ctx)
@@ -83,6 +83,8 @@ export const useDataStore = defineStore('data', () => {
         case 'delete_diary':       return execDeleteDiary(p)
         case 'create_plan_template': return execCreatePlanTemplate(p)
         case 'query_diary':        return execQueryDiary(p)
+        case 'summarize_diaries':   return execSummarizeDiaries(p)
+        case 'query_combined':      return execQueryCombined(p)
         case 'query_bill':         return execQueryBill(p)
         case 'query_plan':         return execQueryPlan(p)
         case 'query_stat':         return execQueryStat(p)
@@ -152,7 +154,7 @@ export const useDataStore = defineStore('data', () => {
         rawList[idx].is_deleted = 1
         rawList[idx].updated_at = Date.now()
         asyncSetStorageJSON(`diary_${month}`, rawList)
-        return { success: true, message: '已撤销日记', detail: { type: 'undo', originalType: 'diary' } }
+        return { success: true, message: '已撤销记录', detail: { type: 'undo', originalType: 'diary' } }
       }
     } else if (last.type === 'bill') {
       const month = last.month

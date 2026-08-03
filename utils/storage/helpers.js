@@ -21,7 +21,7 @@ export function getMonthFromDate(ts) {
 }
 
 /** 从日期字符串提取 YYYY-MM（容错版）
- *  合法输入：YYYY-MM-DD / YYYY-MM / YYYY/MM/DD / ISO 带时间
+ *  合法输入：YYYY-MM-DD / YYYY-MM / YYYY/MM/DD / ISO 带时区
  *  非法输入（"今天"/"昨天"/空串/乱码）→ fallback 到当前月，避免存到错误 key
  */
 export function getMonthFromDateStr(dateStr) {

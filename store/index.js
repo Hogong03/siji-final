@@ -6,9 +6,9 @@
  *
  * 关键：使用 storeToRefs 保持响应性，方法直接透传
  */
-import { defineStore } from 'pinia'
-import { storeToRefs } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { logger } from '@/utils/logger.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { useDeviceStore } from './device.js'
 import { useAiConfigStore } from './aiConfig.js'
 import { useChatStore } from './chat.js'
@@ -53,6 +53,14 @@ export const useAppStore = defineStore('app', () => {
     if (chat.conversations.length === 0) {
       chat.createConversation()
     }
+    // 监听网络恢复，自动消费离线队列
+    if (typeof uni !== 'undefined' && uni.onNetworkStatusChange) {
+      uni.onNetworkStatusChange((res) => {
+        if (res.isConnected) {
+          consumeOfflineQueue()
+        }
+      })
+    }
   }
 
   /**
@@ -60,7 +68,50 @@ export const useAppStore = defineStore('app', () => {
    */
   function restoreNonCriticalFromStorage() {
     agent.restoreFromStorage()
+    // 消费离线队列 — fallback.js 写入但无消费逻辑，此处补上
+    consumeOfflineQueue()
     logger.log('[思迹] Non-critical storage restored')
+  }
+
+  /**
+   * 消费离线队列 — 网络恢复后将离线暂存的操作同步执行
+   * 队列格式：[{ type: 'bill', data: {...} }]
+   */
+  function consumeOfflineQueue() {
+    try {
+      const queueRaw = uni.getStorageSync('siji_offline_queue')
+      if (!queueRaw) return
+      const queue = JSON.parse(queueRaw)
+      if (!Array.isArray(queue) || queue.length === 0) return
+
+      logger.info(`[Offline Queue] 消费 ${queue.length} 条离线操作`)
+      const remaining = []
+      for (const item of queue) {
+        if (item.type === 'bill' && item.data) {
+          // 直接写入存储（不走 executeAction 避免触发 UI 更新）
+          const bill = item.data
+          const monthKey = bill.bill_date ? `bill_${bill.bill_date.substring(0, 7)}` : `bill_${new Date().toISOString().substring(0, 7)}`
+          const bills = JSON.parse(uni.getStorageSync(monthKey) || '[]')
+          bills.push(bill)
+          uni.setStorageSync(monthKey, JSON.stringify(bills))
+          logger.info(`[Offline Queue] 已同步离线账单: ${bill.category} ¥${bill.amount}`)
+        } else {
+          // 未知类型保留在队列中
+          remaining.push(item)
+        }
+      }
+
+      if (remaining.length > 0) {
+        uni.setStorageSync('siji_offline_queue', JSON.stringify(remaining))
+      } else {
+        uni.removeStorageSync('siji_offline_queue')
+      }
+
+      // 失效 prompt 缓存（数据已变更）
+      invalidatePromptCache()
+    } catch (e) {
+      logger.warn('[Offline Queue] 消费失败:', e.message)
+    }
   }
 
   /**
@@ -103,6 +154,7 @@ export const useAppStore = defineStore('app', () => {
     clearMessages: chat.clearMessages,
     persistHistory: chat.persistHistory,
     restoreHistory: chat.restoreHistory,
+    flushPersist: chat.flushPersist,
 
     // ==================== Agent ====================
     agents, activeAgentId, activeAgent, customAgents, agentCount,

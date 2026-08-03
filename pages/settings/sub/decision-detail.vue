@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view v-if="decision" class="detail-content">
       <!-- 头部 -->
@@ -117,6 +117,7 @@
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getDecisionById, updateDecision, deleteDecision, reviewDecision } from '@/utils/decisions.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const decisionId = ref('')
 const decision = ref(null)
@@ -175,7 +176,7 @@ function handleDelete() {
       if (res.confirm) {
         deleteDecision(decisionId.value)
         uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => uni.navigateBack(), 800)
+        setTimeout(() => safeNavigateBack(), 800)
       }
     }
   })
@@ -183,58 +184,58 @@ function handleDelete() {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: #F4F4F5; }
+.page { min-height: 100vh; background: var(--bg-page); }
 .detail-content { padding: 24rpx; }
 
 .hero {
-  background: #FFFFFF; border-radius: 24rpx; padding: 32rpx; margin-bottom: 16rpx;
+  background: var(--bg-card); border-radius: 24rpx; padding: 32rpx; margin-bottom: 16rpx;
 }
-.hero-title { font-size: 36rpx; font-weight: 700; color: #18181B; display: block; }
+.hero-title { font-size: 36rpx; font-weight: 700; color: var(--text-primary); display: block; }
 .hero-meta { display: flex; align-items: center; gap: 16rpx; margin-top: 16rpx; }
-.meta-category { font-size: 24rpx; color: #71717A; }
+.meta-category { font-size: 24rpx; color: var(--text-secondary); }
 .status-badge { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }
-.status-thinking { background: #FEF3C7; color: #92400E; }
-.status-decided { background: #DBEAFE; color: #1E40AF; }
-.status-acted { background: #D1FAE5; color: #065F46; }
-.status-reviewed { background: #F4F4F5; color: #52525B; }
-.status-abandoned { background: #FEE2E2; color: #991B1B; }
-.hero-deadline, .hero-emotion { font-size: 26rpx; color: #71717A; margin-top: 12rpx; display: block; }
+.status-thinking { background: var(--color-bill-light); color: var(--color-bill-text); }
+.status-decided { background: var(--color-info-light); color: var(--color-info-text); }
+.status-acted { background: var(--color-plan-light); color: var(--color-plan-text); }
+.status-reviewed { background: var(--bg-btn-secondary); color: var(--text-mid); }
+.status-abandoned { background: var(--color-danger-light); color: var(--color-danger-text); }
+.hero-deadline, .hero-emotion { font-size: 26rpx; color: var(--text-secondary); margin-top: 12rpx; display: block; }
 
 .section {
-  background: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx;
+  background: var(--bg-card); border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx;
 }
-.section-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
+.section-title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
 
-.option-item { padding: 20rpx 0; border-bottom: 1rpx solid #F4F4F5; }
+.option-item { padding: 20rpx 0; border-bottom: 1rpx solid var(--border-color); }
 .option-item:last-child { border-bottom: none; }
 .option-header { display: flex; align-items: center; }
-.option-name { font-size: 28rpx; font-weight: 600; color: #18181B; flex: 1; }
-.weight-bar { width: 160rpx; height: 8rpx; background: #F4F4F5; border-radius: 4rpx; margin: 0 16rpx; }
-.weight-fill { height: 100%; background: #000000; border-radius: 4rpx; }
-.weight-num { font-size: 24rpx; color: #71717A; width: 32rpx; text-align: right; }
+.option-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); flex: 1; }
+.weight-bar { width: 160rpx; height: 8rpx; background: var(--bg-input); border-radius: 4rpx; margin: 0 16rpx; }
+.weight-fill { height: 100%; background: var(--color-ai); border-radius: 4rpx; }
+.weight-num { font-size: 24rpx; color: var(--text-secondary); width: 32rpx; text-align: right; }
 .pros-cons { margin-top: 8rpx; }
-.pc-label { font-size: 24rpx; color: #71717A; }
-.pc-text { font-size: 24rpx; color: #3F3F46; }
+.pc-label { font-size: 24rpx; color: var(--text-secondary); }
+.pc-text { font-size: 24rpx; color: var(--text-strong); }
 
 .tag-wrap { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
-.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #F4F4F5; color: #3F3F46; border-radius: 12rpx; }
-.tag-alt { background: #FAFAFA; color: #52525B; }
+.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: var(--bg-btn-secondary); color: var(--text-strong); border-radius: 12rpx; }
+.tag-alt { background: var(--bg-card-alt); color: var(--text-mid); }
 
-.section-decision { background: #FAFAFA; }
-.decision-text { font-size: 32rpx; font-weight: 600; color: #18181B; margin-top: 16rpx; display: block; }
-.decision-reasoning { font-size: 26rpx; color: #52525B; margin-top: 12rpx; line-height: 1.6; }
+.section-decision { background: var(--bg-card-alt); }
+.decision-text { font-size: 32rpx; font-weight: 600; color: var(--text-primary); margin-top: 16rpx; display: block; }
+.decision-reasoning { font-size: 26rpx; color: var(--text-mid); margin-top: 12rpx; line-height: 1.6; }
 
-.section-review { background: #FEFCE8; }
-.review-text { font-size: 28rpx; color: #3F3F46; margin-top: 16rpx; line-height: 1.6; }
+.section-review { background: var(--color-review-bg); }
+.review-text { font-size: 28rpx; color: var(--text-strong); margin-top: 16rpx; line-height: 1.6; }
 
 .actions { display: flex; gap: 24rpx; margin-top: 24rpx; }
 .btn-action {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
-  background: #18181B; color: #FFFFFF;
+  background: var(--color-ai); color: var(--bg-card);
 }
-.btn-danger { background: #FEE2E2; color: #DC2626; }
+.btn-danger { background: var(--color-danger-light); color: var(--color-danger); }
 
-.empty { display: flex; justify-content: center; padding-top: 200rpx; color: #A1A1AA; }
+.empty { display: flex; justify-content: center; padding-top: 200rpx; color: var(--text-hint); }
 
 .modal-mask {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -242,23 +243,24 @@ function handleDelete() {
 }
 .modal-content {
   width: 100%; max-height: 80vh; overflow-y: auto;
-  background: #FFFFFF; border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx;
+  background: var(--bg-card); border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx;
 }
-.modal-title { font-size: 36rpx; font-weight: 700; color: #18181B; display: block; margin-bottom: 32rpx; }
+.modal-title { font-size: 36rpx; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 32rpx; }
 .form-item { margin-bottom: 24rpx; }
-.form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
+.form-label { font-size: 26rpx; color: var(--text-secondary); display: block; margin-bottom: 8rpx; }
 .form-input {
   width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx; color: #18181B;
+  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx; color: var(--text-primary);
 }
 .form-textarea {
   width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx;
+  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx;
 }
 .modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: #F4F4F5; color: #71717A; }
-.btn-confirm { background: #000000; color: #FFFFFF; }
+.btn-cancel { background: var(--bg-btn-secondary); color: var(--text-secondary); }
+.btn-confirm { background: var(--color-ai); color: var(--bg-card); }
+
 </style>

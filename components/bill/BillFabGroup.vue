@@ -59,26 +59,37 @@ function goAdd(type) {
   &:active { transform: scale(0.88); }
 
   &.fab-expense {
-    background: var(--color-ai);
+    background: #000000;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.12);
   }
 
   &.fab-income {
-    background: var(--text-strong);
+    background: #3F3F46;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
   }
 
   .fab-icon {
     font-size: 32rpx;
-    color: var(--text-on-ai);
+    color: #FFFFFF;
     font-weight: 300;
     line-height: 1;
   }
 
   .fab-label {
     font-size: 18rpx;
-    color: var(--text-on-ai);
+    color: #FFFFFF;
     margin-top: 2rpx;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .fab-btn.fab-expense {
+    background: #FAFAFA;
+    .fab-icon, .fab-label { color: #18181B; }
+  }
+  .fab-btn.fab-income {
+    background: #A1A1AA;
+    .fab-icon, .fab-label { color: #18181B; }
   }
 }
 </style>

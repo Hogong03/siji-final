@@ -5,6 +5,8 @@
  * 仅做配置查询，不做业务逻辑
  */
 
+import { decryptKeys } from '@/utils/crypto.js'
+
 /** 厂商/模型注册表（仅国内厂商，国外需自定义） */
 export const AI_PROVIDERS = {
   deepseek: {
@@ -20,7 +22,7 @@ export const AI_PROVIDERS = {
     endpoint: 'https://api.deepseek.com/v1/chat/completions',
     keyLabel: 'DeepSeek API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
+    supportsResponseFormat: true,
     docs: 'https://platform.deepseek.com/'
   },
   zhipu: {
@@ -38,7 +40,7 @@ export const AI_PROVIDERS = {
     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
     keyLabel: '智谱 API Key',
     keyPlaceholder: 'xxxxxxxxxxxxxxxx.xxxxxxxx',
-    supportsJsonFormat: true,
+    supportsResponseFormat: false,  // zhipu 部分模型 json_object 行为不稳定，靠 prompt 约束
     docs: 'https://open.bigmodel.cn/'
   },
   qwen: {
@@ -56,7 +58,7 @@ export const AI_PROVIDERS = {
     endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
     keyLabel: '通义 API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
+    supportsResponseFormat: false,  // qwen 部分模型 json_object 行为不稳定，靠 prompt 约束
     docs: 'https://help.aliyun.com/zh/model-studio/'
   },
   moonshot: {
@@ -73,9 +75,25 @@ export const AI_PROVIDERS = {
     endpoint: 'https://api.moonshot.cn/v1/chat/completions',
     keyLabel: 'Moonshot API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
-    supportsJsonFormat: true,
+    supportsResponseFormat: true,
     docs: 'https://platform.moonshot.cn/'
   }
+}
+
+export function getConfiguredProviderIds() {
+  try {
+    const raw = uni.getStorageSync('siji_provider_keys')
+    if (!raw) return []
+    const keys = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return Object.keys(keys).filter(id => keys[id])
+  } catch {
+    return []
+  }
+}
+
+/** 获取已解密的厂商 API Key 映射 { providerId: apiKey } */
+export function getProviderKeys() {
+  return decryptKeys(uni.getStorageSync('siji_provider_keys') || '{}')
 }
 
 /** 获取厂商配置（含自定义） */
@@ -106,29 +124,24 @@ export function supportsVision(providerId) {
   return !!(getProvider(providerId).visionModels?.length)
 }
 
-export function getProviderKeys() {
-  try {
-    return JSON.parse(uni.getStorageSync('siji_provider_keys') || '{}')
-  } catch { return {} }
-}
-
 export function getDefaultConfig() {
   const provider = uni.getStorageSync('siji_ai_provider') || 'deepseek'
   const storeModel = uni.getStorageSync('siji_ai_model') || ''
   const model = storeModel || getProviderDefaultModel(provider)
   const keys = getProviderKeys()
-  return { provider, model, apiKey: keys[provider] || '' }
+  const apiKey = keys[provider] || ''
+  return { provider, model, apiKey }
 }
 
 export function buildProviderRequest(providerId, model, messages, apiKey, temperature) {
-  const p = getProvider(providerId)
-  const data = { model, messages, temperature: temperature ?? 0.7 }
   const provider = getProvider(providerId)
-  if (provider.supportsJsonFormat && providerId !== 'qwen' && providerId !== 'zhipu') {
+  const data = { model, messages, temperature: temperature ?? 0.7 }
+  // P1-1: 重命名 + 按真值标记，不再硬编码 exclude
+  if (provider.supportsResponseFormat) {
     data.response_format = { type: 'json_object' }
   }
   return {
-    url: p.endpoint,
+    url: provider.endpoint,
     method: 'POST',
     header: {
       'Content-Type': 'application/json',

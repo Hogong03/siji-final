@@ -6,11 +6,12 @@
  *   3. simulatedStream — 逐字模拟流式（兼容非 H5 环境）
  */
 
-import { getProvider, getProviderKeys, getDefaultConfig } from './providers.js'
+import { getProvider, getDefaultConfig } from './providers.js'
 import { parseAiResponse } from './response-parser.js'
 import { buildChatMessages, getRecentHistory } from './chat-helpers.js'
 import { chatRequest as chatRequestNonStream } from './chat-request.js'
 import { logger } from '../logger.js'
+import { checkRateLimit, recordRequest } from './rate-limiter.js'
 
 // ==================== 公开入口 ====================
 
@@ -27,6 +28,13 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
   const cfg = typeof config === 'string'
     ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
     : (config || getDefaultConfig())
+
+  // 限流检查
+  const { allowed, reason } = checkRateLimit()
+  if (!allowed) {
+    return Promise.reject(new Error(reason))
+  }
+  recordRequest()
 
   // H5 环境优先使用真实 SSE 流式
   // #ifdef H5
@@ -47,20 +55,23 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
  */
 async function chatRequestRealStream(message, conversationId, cfg, onChunk, history) {
   const provider = getProvider(cfg.provider)
-  const apiKey = cfg.apiKey || getProviderKeys()[cfg.provider] || ''
+  const apiKey = cfg.apiKey || ''
   const chatHistory = history || getRecentHistory()
   const messages = buildChatMessages(message, chatHistory, cfg)
   const stopSignal = cfg.stopSignal || null  // { stopped: false } 引用，外部可设置为 true 终止输出
 
   const body = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true }
   // 仅 OpenAI 官方模型稳定支持 response_format，其他厂商靠系统提示词约束
-  if (provider.supportsJsonFormat && cfg.provider !== 'qwen' && cfg.provider !== 'zhipu') {
+  if (provider.supportsResponseFormat) {
     body.response_format = { type: 'json_object' }
   }
 
-  // 流式超时保护：60 秒无任何响应则中止
+  // 流式超时保护：30 秒无任何响应则中止（原来 60s 太长，用户等不住）
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 60000)
+  const timeoutId = setTimeout(() => controller.abort(), 30000)
+  // 超时计数器：如果 30s 内没有任何 chunk 到达，认为连接已死
+  let firstChunkReceived = false
+  let staleTimer = null
   // 如果外部提供了 stopSignal，也监听中止
   let stopCheckId = null
   if (stopSignal) {
@@ -99,6 +110,14 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
     let conversationIdResult = ''
     let chunkCount = 0
 
+    // 收到响应头后启动 stale 计时器：如果 30s 内没有任何 chunk，中止
+    staleTimer = setTimeout(() => {
+      if (!firstChunkReceived) {
+        logger.warn('[Stream] No chunk received in 30s, aborting')
+        controller.abort()
+      }
+    }, 30000)
+
     while (true) {
       if (stopSignal?.stopped) break
       const { done, value } = await reader.read()
@@ -124,6 +143,10 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
           if (delta) {
             fullContent += delta
             chunkCount++
+            if (!firstChunkReceived) {
+              firstChunkReceived = true
+              if (staleTimer) { clearTimeout(staleTimer); staleTimer = null }
+            }
             if (onChunk) onChunk(delta)
           }
           // 检测 API 错误返回（非标准 SSE 流）
@@ -162,19 +185,20 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
     if (conversationIdResult) result.conversation_id = conversationIdResult
     if (stopSignal?.stopped) result.stopped = true
 
-    // 空回复标记 — 由调用方（useChatEngine）决定是否重试
-    if ((!result.reply || !result.reply.trim() || result.reply.includes('走神了')) && !stopSignal?.stopped) {
+    // 空回复标记 — 仅以 reply 是否为空判定，不使用关键词启发（避免误伤正常回复）
+    if ((!result.reply || !result.reply.trim()) && !stopSignal?.stopped) {
       result._emptyReply = true
     }
 
     return result
   } catch (e) {
     clearTimeout(timeoutId)
+    if (staleTimer) clearTimeout(staleTimer)
     if (stopCheckId) clearInterval(stopCheckId)
     // 超时中止
     if (e.name === 'AbortError') {
       logger.warn('[Stream] Request aborted (timeout or user stop)')
-      return { reply: '', _emptyReply: true, _aborted: true }
+      return { reply: '', _emptyReply: true, _aborted: true, _timeout: !firstChunkReceived }
     }
     // API 参数错误（如无效 model/endpoint）→ 直接抛出，不浪费重试
     if (e.message && (e.message.includes('API error') || e.message.includes('InternalError'))) {
@@ -184,6 +208,7 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
     return simulatedStream(message, conversationId, cfg, onChunk)
   } finally {
     clearTimeout(timeoutId)
+    if (staleTimer) clearTimeout(staleTimer)
     if (stopCheckId) clearInterval(stopCheckId)
   }
 }
@@ -194,8 +219,10 @@ async function chatRequestRealStream(message, conversationId, cfg, onChunk, hist
  * 模拟流式输出 — 逐字推送（加速版）
  */
 async function simulatedStream(message, conversationId, cfg, onChunk, history) {
+  const stopSignal = cfg.stopSignal || null
   try {
-    const result = await chatRequestNonStream(message, null, conversationId, cfg, history)
+    // 跳过限流：chatRequestStream 入口已经检查过
+    const result = await chatRequestNonStream(message, null, conversationId, cfg, history, true)
     const reply = result.reply || ''
 
     if (result.offline) {
@@ -208,18 +235,23 @@ async function simulatedStream(message, conversationId, cfg, onChunk, history) {
     }
 
     if (onChunk && reply) {
-      // 按词组推送（每 2-3 个字一组），更自然
       const chars = reply.split('')
+      const baseGroup = reply.length > 150 ? 12 : 5
       let i = 0
       while (i < chars.length) {
-        const groupSize = Math.min(3, chars.length - i)
+        // P1-8: stopSignal 检查 — 用户点停止时中断模拟流式
+        if (stopSignal?.stopped) break
+        const groupSize = Math.min(baseGroup + Math.floor(Math.random() * 4), chars.length - i)
         const chunk = chars.slice(i, i + groupSize).join('')
         onChunk(chunk)
         i += groupSize
-        // 标点符号后稍长停顿，模拟思考节奏
         const lastChar = chars[i - 1]
-        const delay = /[。，！？、；：\n]/.test(lastChar) ? 30 : 6
+        const delay = /[。！？\n]/.test(lastChar) ? 40 : /[，、；：]/.test(lastChar) ? 25 : 8
         await new Promise(r => setTimeout(r, delay))
+      }
+      if (stopSignal?.stopped) {
+        result._aborted = true
+        result.reply = reply.substring(0, i)
       }
     }
 

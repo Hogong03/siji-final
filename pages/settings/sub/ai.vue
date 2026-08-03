@@ -6,10 +6,24 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getProviderKeys, supportsVision } from '@/utils/api.js'
+import { AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getConfiguredProviderIds, supportsVision } from '@/utils/api.js'
+// getApiKey 已废弃 — 直接从 store.providerKeys 读取（已由 crypto.js 解密）
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const store = useAppStore()
+
+/* ---- 厂商 Logo 路径映射 ---- */
+const PROVIDER_LOGO_MAP = {
+  deepseek: 'ds',
+  zhipu: 'zg',
+  qwen: 'qw',
+  moonshot: 'ms',
+  openai: 'oa'
+}
+function getProviderLogo(pid) {
+  const suffix = PROVIDER_LOGO_MAP[pid] || 'oa'
+  return `/static/icons/provider-${suffix}.png`
+}
 
 /* ---- 编辑状态 ---- */
 const editingProvider = ref(store.aiProvider)
@@ -18,6 +32,7 @@ const editingModel = ref(store.aiModel)
 const testingKey = ref(false)
 const expandedProvider = ref(null)
 const customModelInput = ref('')
+const showVisionWarn = ref(false)
 
 const currentModels = computed(() => store.getAvailableModels(editingProvider.value))
 const currentProviderName = computed(() => {
@@ -66,8 +81,10 @@ const allProviders = computed(() => {
 const providerList = computed(() => Object.values(allProviders.value))
 
 onMounted(() => {
-  providerKeys.value = getProviderKeys()
-  editingKey.value = providerKeys.value[store.aiProvider] || ''
+  const ids = getConfiguredProviderIds()
+  // 直接从 store 读取已解密的 providerKeys
+  providerKeys.value = { ...store.providerKeys }
+  editingKey.value = store.providerKeys[store.aiProvider] || ''
   editingModel.value = store.aiModel
   expandedProvider.value = store.aiProvider
   customModelInput.value = store.getCustomModel(store.aiProvider)
@@ -95,7 +112,7 @@ function selectProvider(pid) {
   }
   expandedProvider.value = pid
   editingProvider.value = pid
-  editingKey.value = providerKeys.value[pid] || ''
+  editingKey.value = store.providerKeys[pid] || ''
   const storedModel = uni.getStorageSync(`siji_model_${pid}`)
   const available = allProviders.value[pid]?.models || []
   const storedValid = storedModel && available.some(m => m.id === storedModel)
@@ -153,7 +170,7 @@ function saveCustomProvider() {
     id: pid,
     name: name.trim(),
     short: name.trim().slice(0, 2).toUpperCase(),
-    color: '#18181B',
+    color: 'var(--text-primary)',
     models: [{ id: model.trim(), name: model.trim(), desc: '自定义模型', tag: '' }],
     endpoint: endpoint.trim(),
     keyLabel: `${name.trim()} API Key`,
@@ -250,9 +267,11 @@ async function testConnection() {
       >
         <!-- 厂商头部 -->
         <view class="provider-header" @tap="selectProvider(p.id)">
-          <view class="provider-icon" :style="{ background: p.color }">
-            <text class="provider-short">{{ p.short }}</text>
-          </view>
+          <image
+            :src="getProviderLogo(p.id)"
+            mode="aspectFit"
+            class="provider-logo"
+          />
           <view class="provider-info">
             <text class="provider-name">{{ p.name }}</text>
             <text class="provider-desc">{{ p.models.map(m => m.name).join(' / ') }}{{ store.getCustomModel(p.id) ? ' / 自定义' : '' }}</text>
@@ -288,8 +307,9 @@ async function testConnection() {
           </view>
 
           <!-- 图片识别提示 -->
-          <view class="vision-notice" v-if="!providerHasVision(expandedProvider)">
-            <text class="vision-notice-text">⚠ 该厂商不支持图片识别，发送图片时会提示切换</text>
+          <view class="vision-notice" v-if="!providerHasVision(expandedProvider)" @tap="showVisionWarn = !showVisionWarn">
+            <text class="vision-notice-icon">⚠</text>
+            <text v-if="showVisionWarn" class="vision-notice-text">该厂商不支持图片识别，发送图片时会提示切换</text>
           </view>
 
           <!-- 模型选择 -->
@@ -306,7 +326,7 @@ async function testConnection() {
                   <view class="model-name-row">
                     <text class="model-name">{{ m.name }}</text>
                     <text class="model-vision-badge" v-if="modelSupportsVision(expandedProvider, m.id)">📷</text>
-                    <text class="model-no-vision-badge" v-else-if="!m.custom && providerHasVision(expandedProvider)">✕图</text>
+                    <text class="model-no-vision-badge" v-else-if="!m.custom && providerHasVision(expandedProvider)">无图</text>
                   </view>
                   <text class="model-desc">{{ m.desc }}</text>
                 </view>

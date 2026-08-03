@@ -108,9 +108,38 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
   /** 从 Storage 恢复 AI 配置（兼容旧版数据迁移） */
   function restoreFromStorage() {
     try {
-      // 解密读取
+      // 解密读取（crypto.js 格式：enc: 前缀）
       providerKeys.value = decryptKeys(uni.getStorageSync('siji_provider_keys') || '{}')
     } catch { providerKeys.value = {} }
+    // 迁移 api-key-store.js 旧格式（纯 Base64，无 enc: 前缀，用不同 salt）
+    // 检测：值是合法 Base64 但不是 enc: 开头，且不是明文 key（不以 sk- 开头）
+    let needsReencrypt = false
+    for (const [pid, val] of Object.entries(providerKeys.value)) {
+      if (val && !val.startsWith('enc:') && !val.startsWith('sk-') && /^[A-Za-z0-9+/=]+$/.test(val)) {
+        // 旧格式：用 api-key-store.js 的 salt 解密
+        const OLD_SALT = 'siji_2024_salt_key'
+        try {
+          // #ifdef H5
+          const decoded = decodeURIComponent(escape(atob(val)))
+          // #endif
+          // #ifndef H5
+          const buf = uni.base64ToArrayBuffer(val)
+          const decoded = String.fromCharCode(...new Uint8Array(buf))
+          // #endif
+          const plain = decoded.split('').map((c, i) =>
+            String.fromCharCode(c.charCodeAt(0) ^ OLD_SALT.charCodeAt(i % OLD_SALT.length))
+          ).join('')
+          if (plain && plain.startsWith('sk-')) {
+            providerKeys.value[pid] = plain
+            needsReencrypt = true
+          }
+        } catch {}
+      }
+    }
+    if (needsReencrypt) {
+      asyncSetStorage('siji_provider_keys', encryptKeys(providerKeys.value))
+      console.log('[aiConfig] 旧格式 Key 已迁移为 crypto.js 格式')
+    }
     // 兼容旧版明文数据迁移
     const legacyKey = uni.getStorageSync('siji_api_key')
     if (legacyKey && !providerKeys.value.deepseek) {

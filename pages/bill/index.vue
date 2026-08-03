@@ -1,92 +1,102 @@
 <script setup>
 /**
- * 账单列表页 — 增强版
+ * 账单列表页 — 5.0 统一工具栏版
  *
- * 功能：
- *  ① 月度概览（收支/结余/预算进度）
- *  ② 月份切换 + 类型筛选 + 分类筛选
- *  ③ 按日期分组的账单列表
- *  ④ 搜索备注关键词
- *  ⑤ 左滑删除、点击编辑
- *  ⑥ 快速记账浮动按钮
- *  ⑦ 预算设置入口
+ * 结构：概览卡片 → 工具栏(搜索+时间+类型+回收站) → 内容 → FAB
+ * 搜索+时间+类型+分类 四维 AND 筛选，支持跨月搜索
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getBillList, deleteBill } from '@/utils/storage.js'
+import { getBillList, deleteBill, getMonthlyBudget, setMonthlyBudget, getCategoryBudgets } from '@/utils/storage.js'
 import { asyncSetStorage } from '@/utils/store-helpers.js'
-import { debounce } from '@/utils/debounce.js'
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES, DANGER_COLOR } from '@/utils/categories.js'
-
-import BillStats from '@/components/bill/BillStats.vue'
-import BillMonthBar from '@/components/bill/BillMonthBar.vue'
-import BillFilterBar from '@/components/bill/BillFilterBar.vue'
-import BillList from '@/components/bill/BillList.vue'
-import BillFabGroup from '@/components/bill/BillFabGroup.vue'
-import BillBottomBar from '@/components/bill/BillBottomBar.vue'
-import BillBudgetModal from '@/components/bill/BillBudgetModal.vue'
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES, getCategoryInfo, DANGER_COLOR } from '@/utils/categories.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 // ==================== 数据 ====================
-const bills = ref([])
+const allBills = ref([])
 const currentMonth = ref('')
 const filterType = ref(-1)    // -1=全部 0=支出 1=收入
-const filterCategory = ref('') // ''=全部分类
-const searchText = ref('')
-const loading = ref(false)
-const budget = ref(0)          // 月度预算
+const filterCategory = ref('')
+const searchKeyword = ref('')
+const showTimePicker = ref(false)
+const showCatPicker = ref(false)
 const showBudgetSet = ref(false)
 const budgetInput = ref('')
+const budget = ref(0)
+const catBudgets = ref({})
 
-// 月份列表（动态扩展，初始 6 个月）
+// 月份列表（12个月 + 全部时间）
 const monthList = ref([])
 const months = computed(() => monthList.value)
 
 function initMonths() {
-  const list = []
+  const list = [{ key: 'all', label: '全部时间' }]
   const now = new Date()
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    list.push({ key, label: `${d.getMonth() + 1}月`, year: d.getFullYear() })
+    list.push({ key, label: `${d.getFullYear()}年${d.getMonth() + 1}月` })
   }
   monthList.value = list
 }
 
-function loadMoreMonths() {
-  const list = monthList.value
-  const last = list[list.length - 1]
-  if (!last) return
-  const d = new Date(last.year, parseInt(last.key.split('-')[1]) - 2, 1)
-  for (let i = 0; i < 6; i++) {
-    const dd = new Date(d.getFullYear(), d.getMonth() - i, 1)
-    const key = `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}`
-    if (!list.find(m => m.key === key)) {
-      list.push({ key, label: `${dd.getMonth() + 1}月`, year: dd.getFullYear() })
-    }
-  }
-}
+const currentMonthLabel = computed(() => {
+  const m = months.value.find(m => m.key === currentMonth.value)
+  return m ? m.label : ''
+})
 
-// ==================== 分类体系 ====================
 const currentCategories = computed(() => {
   if (filterType.value === 0) return EXPENSE_CATEGORIES
   if (filterType.value === 1) return INCOME_CATEGORIES
   return ALL_CATEGORIES
 })
 
-// ==================== 筛选 & 统计 ====================
+// ==================== 加载数据 ====================
+function loadBills() {
+  if (currentMonth.value === 'all') {
+    const all = []
+    for (const m of months.value) {
+      if (m.key === 'all') continue
+      const items = getBillList(m.key)
+      all.push(...items)
+    }
+    allBills.value = all.sort((a, b) => (b.bill_date || '').localeCompare(a.bill_date || ''))
+  } else {
+    allBills.value = getBillList(currentMonth.value)
+  }
+}
+
+function loadBudget() {
+  budget.value = getMonthlyBudget(currentMonth.value === 'all' ? '' : currentMonth.value)
+  if (currentMonth.value !== 'all') {
+    catBudgets.value = getCategoryBudgets(currentMonth.value)
+  } else {
+    catBudgets.value = {}
+  }
+}
+
+function switchMonth(key) {
+  currentMonth.value = key
+  filterCategory.value = ''
+  showTimePicker.value = false
+  loadBudget()
+  loadBills()
+}
+
+// ==================== 四维筛选 ====================
 const filteredBills = computed(() => {
-  let list = bills.value
+  let list = allBills.value
   if (filterType.value !== -1) {
     list = list.filter(b => {
-      const bType = b.type === 'income' ? 1 : 0
+      const bType = (b.type === 'income' || b.type === 1) ? 1 : 0
       return bType === filterType.value
     })
   }
   if (filterCategory.value) {
     list = list.filter(b => b.category === filterCategory.value)
   }
-  if (searchText.value.trim()) {
-    const kw = searchText.value.trim().toLowerCase()
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
     list = list.filter(b =>
       (b.note || b.remark || '').toLowerCase().includes(kw) ||
       (b.category || '').toLowerCase().includes(kw)
@@ -95,9 +105,10 @@ const filteredBills = computed(() => {
   return list
 })
 
+// ==================== 统计 ====================
 const stats = computed(() => {
   let income = 0, expense = 0
-  bills.value.forEach(b => {
+  allBills.value.forEach(b => {
     if (b.type === 'income' || b.type === 1) income += b.amount || 0
     else expense += b.amount || 0
   })
@@ -126,64 +137,39 @@ const groupedBills = computed(() => {
     })
 })
 
-// ==================== 生命周期 ====================
-onMounted(() => {
-  initMonths()
-  currentMonth.value = months.value[0]?.key || ''
-  loadBudget()
-  loadBills()
-})
+const hasActiveFilter = computed(() =>
+  searchKeyword.value || filterType.value !== -1 || filterCategory.value
+)
 
-onUnmounted(() => {
-  onSearchInput.cancel()
-})
-
-onShow(() => {
-  loadBills()
-})
-
-function loadBills() {
-  loading.value = true
-  try { bills.value = getBillList(currentMonth.value) }
-  finally { loading.value = false }
-}
-
-function loadBudget() {
-  const raw = uni.getStorageSync(`budget_${currentMonth.value}`)
-  budget.value = raw ? parseFloat(raw) : 0
-}
-
-function switchMonth(key) {
-  currentMonth.value = key
+function resetFilters() {
+  searchKeyword.value = ''
+  filterType.value = -1
   filterCategory.value = ''
-  loadBudget()
-  loadBills()
 }
 
-// ==================== 筛选交互 ====================
+function clearSearch() { searchKeyword.value = '' }
+
 function setFilterType(type) {
   filterType.value = type
   filterCategory.value = ''
 }
 
-// ==================== 搜索 ====================
-const onSearchInput = debounce((value) => {
-  searchText.value = value || ''
-}, 300)
+// ==================== 生命周期 ====================
+onMounted(() => {
+  initMonths()
+  currentMonth.value = months.value[1]?.key || ''
+  loadBudget()
+  loadBills()
+})
 
-function clearSearch() {
-  searchText.value = ''
-}
+onShow(() => loadBills())
 
 // ==================== 左滑删除 ====================
 const swipeItem = ref(null)
 const ACTION_WIDTH = 140
 
 function onBillTap(bill) {
-  if (swipeItem.value) {
-    swipeItem.value = null
-    return
-  }
+  if (swipeItem.value) { swipeItem.value = null; return }
   goEdit(bill)
 }
 
@@ -195,38 +181,22 @@ const swipingId = ref('')
 function onTouchStart(e, bill) {
   swipeStartX.value = e.touches[0].clientX
   swipeStartId.value = bill.client_id
-  if (swipeItem.value && swipeItem.value !== bill.client_id) {
-    swipeItem.value = null
-  }
+  if (swipeItem.value && swipeItem.value !== bill.client_id) swipeItem.value = null
 }
-
 function onTouchMove(e, bill) {
   if (swipeStartId.value !== bill.client_id) return
   const dx = e.touches[0].clientX - swipeStartX.value
-  if (dx < 0) {
-    swipingId.value = bill.client_id
-    swipeMoveX.value = Math.max(-ACTION_WIDTH, dx)
-  }
+  if (dx < 0) { swipingId.value = bill.client_id; swipeMoveX.value = Math.max(-ACTION_WIDTH, dx) }
 }
-
 function onTouchEnd(bill) {
   if (swipingId.value !== bill.client_id) return
-  if (swipeMoveX.value < -ACTION_WIDTH / 2) {
-    swipeItem.value = bill.client_id
-  } else {
-    swipeItem.value = null
-  }
-  swipingId.value = ''
-  swipeMoveX.value = 0
+  if (swipeMoveX.value < -ACTION_WIDTH / 2) swipeItem.value = bill.client_id
+  else swipeItem.value = null
+  swipingId.value = ''; swipeMoveX.value = 0
 }
-
 function getSwipeOffset(bill) {
-  if (swipingId.value === bill.client_id) {
-    return swipeMoveX.value + 'px'
-  }
-  if (swipeItem.value === bill.client_id) {
-    return -ACTION_WIDTH + 'px'
-  }
+  if (swipingId.value === bill.client_id) return swipeMoveX.value + 'px'
+  if (swipeItem.value === bill.client_id) return -ACTION_WIDTH + 'px'
   return '0px'
 }
 
@@ -251,15 +221,10 @@ function confirmDelete(bill) {
 // ==================== 编辑 ====================
 function goEdit(bill) {
   const month = bill.bill_date ? bill.bill_date.substring(0, 7) : currentMonth.value
-  uni.navigateTo({
-    url: `/pages/bill/edit?id=${bill.client_id}&month=${month}`
-  })
+  uni.navigateTo({ url: `/pages/bill/edit?id=${bill.client_id}&month=${month}` })
 }
-
 function goAdd(type) {
-  uni.navigateTo({
-    url: `/pages/bill/edit?type=${type || 'expense'}&month=${currentMonth.value}`
-  })
+  uni.navigateTo({ url: `/pages/bill/edit?type=${type || 'expense'}&month=${currentMonth.value === 'all' ? '' : currentMonth.value}` })
 }
 
 // ==================== 预算 ====================
@@ -267,23 +232,31 @@ function openBudgetSet() {
   budgetInput.value = budget.value > 0 ? String(budget.value) : ''
   showBudgetSet.value = true
 }
-
 function saveBudget() {
   const val = parseFloat(budgetInput.value) || 0
   budget.value = val
-  asyncSetStorage(`budget_${currentMonth.value}`, String(val))
+  if (currentMonth.value !== 'all') {
+    setMonthlyBudget(currentMonth.value, val)
+  }
   showBudgetSet.value = false
   uni.showToast({ title: '预算已设置', icon: 'success' })
 }
 
 function goStats() {
-  uni.navigateTo({ url: `/pages/bill/stats?month=${currentMonth.value}` })
+  const m = currentMonth.value === 'all' ? '' : currentMonth.value
+  uni.navigateTo({ url: `/pages/bill/stats?month=${m}` })
+}
+function goTrash() {
+  uni.navigateTo({ url: '/pages/bill/trash' })
 }
 
 // ==================== 格式化 ====================
 function formatDateLabel(dateStr) {
   if (!dateStr) return '未知日期'
   const d = new Date(dateStr)
+  if (currentMonth.value === 'all') {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -298,65 +271,173 @@ function formatDateLabel(dateStr) {
 
 <template>
   <view class="bill-page">
-    <BillStats
-      :income="stats.income"
-      :expense="stats.expense"
-      :balance="stats.balance"
-      :budget-used="stats.budgetUsed"
-      :budget="budget"
-      @open-budget-set="openBudgetSet"
-    />
+    <!-- 概览卡片 -->
+    <view class="summary-card">
+      <view class="summary-row">
+        <view class="summary-item" @tap="setFilterType(0)">
+          <text class="sum-label">支出</text>
+          <text class="sum-value expense">¥{{ stats.expense.toFixed(2) }}</text>
+        </view>
+        <view class="summary-item" @tap="setFilterType(1)">
+          <text class="sum-label">收入</text>
+          <text class="sum-value income">+¥{{ stats.income.toFixed(2) }}</text>
+        </view>
+      </view>
+      <view class="balance-row">
+        <view class="balance-divider" />
+        <text class="balance-label">{{ stats.balance >= 0 ? '结余' : '超支' }}</text>
+        <text class="balance-num" :class="stats.balance >= 0 ? 'positive' : 'negative'">
+          {{ stats.balance >= 0 ? '+' : '' }}¥{{ stats.balance.toFixed(2) }}
+        </text>
+        <view class="balance-divider" />
+      </view>
+      <!-- 预算进度 -->
+      <view class="budget-section" v-if="budget > 0 && currentMonth !== 'all'" @tap="openBudgetSet">
+        <view class="budget-info">
+          <text class="budget-label">预算 ¥{{ budget.toFixed(0) }}</text>
+          <text class="budget-pct" :class="{ over: stats.budgetUsed >= 100 }">{{ Math.round(stats.budgetUsed) }}%</text>
+        </view>
+        <view class="budget-bar-wrap">
+          <view class="budget-bar" :class="{ pulse: stats.budgetUsed >= 100 }"
+            :style="{ width: Math.min(100, stats.budgetUsed) + '%', background: stats.budgetUsed >= 100 ? '#EF4444' : stats.budgetUsed >= 80 ? '#E8A838' : '#18181B' }" />
+        </view>
+      </view>
+      <view class="budget-set-hint" v-else-if="currentMonth !== 'all'" @tap="openBudgetSet">
+        <text class="budget-hint-text">点击设置月度预算</text>
+      </view>
+      <!-- 统计入口 -->
+      <view class="stats-link" @tap="goStats">
+        <text class="stats-link-text">收支统计</text>
+        <text class="stats-link-arrow">→</text>
+      </view>
+    </view>
 
-    <BillMonthBar
-      :months="months"
-      :current-month="currentMonth"
-      @switch-month="switchMonth"
-      @load-more="loadMoreMonths"
-    />
+    <!-- 工具栏：搜索 + 时间 + 类型 + 回收站 -->
+    <view class="toolbar">
+      <view class="search-input-wrap">
+        <text class="search-icon">🔍</text>
+        <input v-model="searchKeyword" class="search-input" placeholder="搜索账单..." confirm-type="search" />
+        <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
+      </view>
+      <view class="tool-btns">
+        <view class="tool-btn" @tap="showTimePicker = !showTimePicker">
+          <text class="tool-label">{{ currentMonthLabel }}</text>
+          <text class="tool-arrow" :class="{ up: showTimePicker }">▼</text>
+        </view>
+        <view class="tool-btn" @tap="showCatPicker = !showCatPicker">
+          <text class="tool-label">{{ filterType === -1 ? '全部' : filterType === 0 ? '支出' : '收入' }}</text>
+          <text class="tool-arrow" :class="{ up: showCatPicker }">▼</text>
+        </view>
+        <view class="tool-btn" @tap="goTrash">
+          <text class="tool-label">🗑</text>
+        </view>
+      </view>
+    </view>
 
-    <BillFilterBar
-      :filter-type="filterType"
-      :filter-category="filterCategory"
-      :search-text="searchText"
-      :current-categories="currentCategories"
-      @update:filter-type="setFilterType"
-      @update:filter-category="filterCategory = $event"
-      @search-input="onSearchInput"
-      @clear-search="clearSearch"
-    />
+    <!-- 时间选择 -->
+    <view class="picker-panel" v-if="showTimePicker">
+      <scroll-view class="chip-scroll" scroll-x>
+        <view v-for="m in months" :key="m.key" class="chip" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key)">
+          <text>{{ m.label }}</text>
+        </view>
+      </scroll-view>
+    </view>
 
-    <BillList
-      :grouped-bills="groupedBills"
-      :swipe-item="swipeItem"
-      :get-swipe-offset="getSwipeOffset"
-      :format-date-label="formatDateLabel"
-      @bill-tap="onBillTap"
-      @edit="goEdit"
-      @delete="confirmDelete"
-      @touch-start="onTouchStart"
-      @touch-move="onTouchMove"
-      @touch-end="onTouchEnd"
-    />
+    <!-- 类型+分类选择 -->
+    <view class="picker-panel" v-if="showCatPicker">
+      <view class="type-row">
+        <view class="type-chip" :class="{ active: filterType === -1 }" @tap="setFilterType(-1)">全部</view>
+        <view class="type-chip" :class="{ active: filterType === 0 }" @tap="setFilterType(0)">支出</view>
+        <view class="type-chip" :class="{ active: filterType === 1 }" @tap="setFilterType(1)">收入</view>
+      </view>
+      <scroll-view class="chip-scroll" scroll-x v-if="currentCategories.length > 0">
+        <view class="chip" :class="{ active: filterCategory === '' }" @tap="filterCategory = ''"><text>全部分类</text></view>
+        <view v-for="cat in currentCategories" :key="cat.key" class="chip" :class="{ active: filterCategory === cat.key }" @tap="filterCategory = cat.key">
+          <text>{{ cat.icon }} {{ cat.key }}</text>
+        </view>
+      </scroll-view>
+    </view>
 
-    <BillFabGroup @add="goAdd" />
+    <!-- 筛选状态条 -->
+    <view class="filter-status" v-if="hasActiveFilter">
+      <view class="fs-tags">
+        <text class="fs-tag" v-if="searchKeyword">🔍 {{ searchKeyword }} <text class="fs-x" @tap="clearSearch">✕</text></text>
+        <text class="fs-tag" v-if="filterType !== -1">{{ filterType === 0 ? '支出' : '收入' }} <text class="fs-x" @tap="filterType = -1">✕</text></text>
+        <text class="fs-tag" v-if="filterCategory">{{ filterCategory }} <text class="fs-x" @tap="filterCategory = ''">✕</text></text>
+      </view>
+      <text class="fs-clear" @tap="resetFilters">清除全部</text>
+    </view>
 
-    <BillBottomBar @go-stats="goStats" />
+    <!-- 账单列表 -->
+    <scroll-view class="bill-scroll" scroll-y>
+      <view v-if="groupedBills.length === 0" class="empty-state">
+        <text class="empty-text">暂无账单</text>
+      </view>
+      <view v-else>
+        <view v-for="group in groupedBills" :key="group.date" class="bill-group">
+          <view class="date-header">
+            <text class="date-label">{{ formatDateLabel(group.date) }}</text>
+            <view class="date-summary">
+              <text v-if="group.dayExpense > 0" class="ds-expense">支出 ¥{{ group.dayExpense.toFixed(0) }}</text>
+              <text v-if="group.dayIncome > 0" class="ds-income">收入 ¥{{ group.dayIncome.toFixed(0) }}</text>
+            </view>
+          </view>
+          <view v-for="item in group.items" :key="item.client_id" class="swipe-container">
+            <!-- 左滑操作 -->
+            <view class="swipe-actions" v-if="swipeItem === item.client_id">
+              <view class="swipe-btn edit-btn" @tap.stop="goEdit(item)"><text class="sb-icon">✎</text><text class="sb-text">编辑</text></view>
+              <view class="swipe-btn delete-btn" @tap.stop="confirmDelete(item)"><text class="sb-icon">×</text><text class="sb-text">删除</text></view>
+            </view>
+            <view class="bill-item" :style="{ transform: 'translateX(' + getSwipeOffset(item) + ')' }"
+              @touchstart="onTouchStart($event, item)" @touchmove="onTouchMove($event, item)" @touchend="onTouchEnd(item)" @tap="onBillTap(item)">
+              <view class="bill-icon-wrap" :style="{ background: (getCategoryInfo(item.category || '').color || '#9E9E9E') + '15' }">
+                <text class="bill-icon">{{ getCategoryInfo(item.category || '').icon || '📌' }}</text>
+              </view>
+              <view class="bill-body">
+                <text class="bill-category">{{ item.category || '未分类' }}</text>
+                <text class="bill-note" v-if="item.note || item.remark">{{ item.note || item.remark }}</text>
+              </view>
+              <view class="bill-amount-wrap">
+                <text class="bill-amount" :class="(item.type === 'income' || item.type === 1) ? 'income' : 'expense'">
+                  {{ (item.type === 'income' || item.type === 1) ? '+' : '-' }}¥{{ (item.amount || 0).toFixed(2) }}
+                </text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view style="height: 160rpx" />
+    </scroll-view>
 
-    <BillBudgetModal
-      v-model="budgetInput"
-      :show="showBudgetSet"
-      :current-month="currentMonth"
-      @close="showBudgetSet = false"
-      @save="saveBudget"
-    />
+    <!-- FAB -->
+    <view class="fab-group">
+      <view class="fab fab-income" @tap="goAdd('income')"><text class="fab-icon">+</text><text class="fab-label">收入</text></view>
+      <view class="fab fab-expense" @tap="goAdd('expense')"><text class="fab-icon">+</text><text class="fab-label">支出</text></view>
+    </view>
+
+    <!-- 预算设置弹窗 -->
+    <view class="modal-mask" v-if="showBudgetSet" @tap="showBudgetSet = false">
+      <view class="modal-content" @tap.stop>
+        <text class="modal-title">设置月度预算</text>
+        <view class="modal-input-row">
+          <text class="modal-prefix">¥</text>
+          <input class="modal-input" type="digit" :value="budgetInput" placeholder="输入预算金额" focus @input="(e) => budgetInput = e.detail.value" />
+        </view>
+        <view class="modal-quick">
+          <text class="quick-val" @tap="budgetInput = '1000'">¥1000</text>
+          <text class="quick-val" @tap="budgetInput = '2000'">¥2000</text>
+          <text class="quick-val" @tap="budgetInput = '3000'">¥3000</text>
+          <text class="quick-val" @tap="budgetInput = '5000'">¥5000</text>
+        </view>
+        <view class="modal-actions">
+          <view class="modal-btn cancel" @tap="showBudgetSet = false">取消</view>
+          <view class="modal-btn confirm" @tap="saveBudget">确定</view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.bill-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: $bg-page;
-}
+@import './index.scss';
 </style>

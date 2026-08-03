@@ -1,0 +1,222 @@
+.about-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-page);
+  overflow: hidden;
+}
+
+/* Tab 导航 */
+.tab-bar {
+  display: flex;
+  gap: 4rpx;
+  padding: $spacing-sm $spacing-md;
+  background: var(--bg-page);
+  border-bottom: 1rpx solid var(--border-color);
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.tab-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 12rpx 20rpx;
+  border-radius: $radius-md;
+  border: 1rpx solid transparent;
+  transition: all $transition-fast;
+
+  &.active {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+  }
+
+  .tab-label {
+    font-size: $font-xs;
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+
+  &.active .tab-label {
+    color: var(--text-primary);
+  }
+}
+
+/* 内容区 */
+.about-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+
+.content-section {
+  padding: $spacing-md;
+  box-sizing: border-box;
+}
+
+/* Hero */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-xl $spacing-md;
+  margin-bottom: $spacing-md;
+
+  .hero-name {
+    font-size: 56rpx;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 8rpx;
+  }
+  .hero-version {
+    font-size: $font-xs;
+    color: var(--text-hint);
+    background: var(--bg-btn-secondary);
+    padding: 4rpx 16rpx;
+    border-radius: 20rpx;
+    margin-top: 8rpx;
+  }
+  .hero-tagline {
+    font-size: $font-sm;
+    color: var(--text-secondary);
+    margin-top: 12rpx;
+  }
+}
+
+/* 功能网格 */
+.features-grid {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+}
+
+.feat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: $spacing-sm;
+  background: var(--bg-card);
+  border-radius: $radius-md;
+  border: 1rpx solid var(--border-color);
+  box-sizing: border-box;
+
+  .feat-label {
+    font-size: $font-sm;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .feat-desc {
+    font-size: 20rpx;
+    color: var(--text-hint);
+  }
+}
+
+/* 段落标题 */
+.section-title {
+  display: block;
+  font-size: $font-lg;
+  font-weight: 800;
+  color: var(--text-primary);
+  padding: $spacing-sm 0 $spacing-md;
+  text-align: center;
+}
+
+/* 卡片 */
+.card {
+  background: var(--bg-card);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+  border: 1rpx solid var(--border-color);
+  box-sizing: border-box;
+
+  .card-title {
+    font-size: $font-md;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: $spacing-xs;
+  }
+  .card-text {
+    font-size: $font-sm;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    display: block;
+  }
+}
+
+/* 示例 */
+.example-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs 0;
+  border-bottom: 1rpx solid rgba(0,0,0,0.03);
+
+  &:last-child { border-bottom: none; }
+
+  .ex-tag {
+    flex-shrink: 0;
+    font-size: 20rpx;
+    font-weight: 600;
+    padding: 4rpx 12rpx;
+    border-radius: 20rpx;
+    min-width: 64rpx;
+    text-align: center;
+
+    &.bill { background: rgba(245, 158, 11, 0.12); color: var(--color-bill); }
+    &.diary { background: rgba(252, 211, 77, 0.15); color: var(--color-warning); }
+    &.plan { background: rgba(16, 185, 129, 0.12); color: var(--color-plan); }
+    &.multi { background: rgba(0, 0, 0, 0.06); color: var(--color-ai); }
+    &.query { background: rgba(14, 165, 233, 0.12); color: var(--color-info); }
+    &.undo { background: rgba(239, 68, 68, 0.12); color: var(--color-danger); }
+  }
+
+  .ex-text { flex: 1; font-size: $font-sm; color: var(--text-primary); }
+  .ex-result { font-size: $font-xs; color: var(--text-hint); flex-shrink: 0; }
+}
+
+/* 反馈卡片 */
+.feedback-card {
+  padding: $spacing-sm $spacing-md;
+  cursor: pointer;
+
+  &:active { background: var(--bg-input); }
+}
+
+.fb-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.fb-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.fb-title {
+  font-size: $font-md;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fb-desc {
+  font-size: $font-xs;
+  color: var(--text-hint);
+}
+
+.fb-arrow {
+  font-size: $font-lg;
+  color: var(--text-hint);
+  font-weight: 300;
+  flex-shrink: 0;
+}

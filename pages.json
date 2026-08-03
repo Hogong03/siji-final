@@ -12,6 +12,14 @@
       }
     },
     {
+      "path": "pages/disclaimer/index",
+      "style": {
+        "navigationBarTitleText": "用户协议与免责声明",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
       "path": "pages/lock/index",
       "style": {
         "navigationBarTitleText": "",
@@ -68,15 +76,15 @@
         {
           "path": "about",
           "style": {
-            "navigationBarTitleText": "关于与设备",
+            "navigationBarTitleText": "关于与设置",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
         },
         {
-          "path": "feedback",
+          "path": "feedback-list",
           "style": {
-            "navigationBarTitleText": "体验反馈",
+            "navigationBarTitleText": "历史反馈",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
@@ -109,14 +117,6 @@
           "path": "agent_add",
           "style": {
             "navigationBarTitleText": "创建 Agent",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "help",
-          "style": {
-            "navigationBarTitleText": "使用说明",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
@@ -176,6 +176,22 @@
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
+        },
+        {
+          "path": "version-history",
+          "style": {
+            "navigationBarTitleText": "版本历史",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "version-detail",
+          "style": {
+            "navigationBarTitleText": "版本详情",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
         }
       ]
     },
@@ -198,7 +214,7 @@
         {
           "path": "list",
           "style": {
-            "navigationBarTitleText": "日记",
+            "navigationBarTitleText": "记录",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
@@ -206,7 +222,15 @@
         {
           "path": "detail",
           "style": {
-            "navigationBarTitleText": "日记详情",
+            "navigationBarTitleText": "记录详情",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "trash",
+          "style": {
+            "navigationBarTitleText": "回收站",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
@@ -236,6 +260,14 @@
           "path": "edit",
           "style": {
             "navigationBarTitleText": "记一笔",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "trash",
+          "style": {
+            "navigationBarTitleText": "回收站",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
@@ -283,24 +315,36 @@
   "preloadRule": {
     "pages/chat/index": {
       "network": "all",
-      "packages": ["pages/diary", "pages/bill", "pages/plan"]
+      "packages": [
+        "pages/diary",
+        "pages/bill",
+        "pages/plan"
+      ]
     },
     "pages/functions/index": {
       "network": "all",
-      "packages": ["pages/settings/sub", "pages/search", "pages/diary", "pages/bill", "pages/plan"]
+      "packages": [
+        "pages/settings/sub",
+        "pages/search",
+        "pages/diary",
+        "pages/bill",
+        "pages/plan"
+      ]
     }
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "思迹",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "backgroundColor": "#FAFAFA", "navigationStyle": "default"
+    "backgroundColor": "#F4F4F5",
+    "navigationStyle": "default"
   },
   "tabBar": {
-    "color": "#94A3B8",
+    "color": "#A1A1AA",
     "selectedColor": "#000000",
     "borderStyle": "white",
-    "backgroundColor": "#FAFAFA", "navigationStyle": "default",
+    "backgroundColor": "#F4F4F5",
+    "navigationStyle": "default",
     "list": [
       {
         "pagePath": "pages/chat/index",

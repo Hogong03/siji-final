@@ -3,7 +3,10 @@
  * 月度收支概览卡片
  * 展示：支出/收入/结余/预算进度
  */
-defineProps({
+import { computed } from 'vue'
+import { useNumberRoll } from '@/composables/useNumberRoll.js'
+
+const props = defineProps({
   income:  { type: Number, default: 0 },
   expense: { type: Number, default: 0 },
   balance: { type: Number, default: 0 },
@@ -12,6 +15,11 @@ defineProps({
 })
 
 const emit = defineEmits(['openBudgetSet'])
+
+// 数字滚动动画
+const displayExpense = useNumberRoll(computed(() => props.expense))
+const displayIncome = useNumberRoll(computed(() => props.income))
+const displayBalance = useNumberRoll(computed(() => props.balance))
 </script>
 
 <template>
@@ -20,11 +28,11 @@ const emit = defineEmits(['openBudgetSet'])
     <view class="summary-row">
       <view class="summary-item">
         <text class="sum-label">支出</text>
-        <text class="sum-value expense">¥{{ expense.toFixed(0) }}</text>
+        <text class="sum-value expense">¥{{ displayExpense }}</text>
       </view>
       <view class="summary-item">
         <text class="sum-label">收入</text>
-        <text class="sum-value income">+¥{{ income.toFixed(0) }}</text>
+        <text class="sum-value income">+¥{{ displayIncome }}</text>
       </view>
     </view>
 
@@ -33,7 +41,7 @@ const emit = defineEmits(['openBudgetSet'])
       <view class="balance-divider" />
       <view class="balance-text" :class="balance >= 0 ? 'positive' : 'negative'">
         <text class="balance-label">{{ balance >= 0 ? '结余' : '超支' }}</text>
-        <text class="balance-num">{{ balance >= 0 ? '+' : '' }}{{ balance.toFixed(0) }}</text>
+        <text class="balance-num">{{ balance >= 0 ? '+' : '' }}{{ displayBalance }}</text>
       </view>
       <view class="balance-divider" />
     </view>

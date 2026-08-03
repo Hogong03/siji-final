@@ -1,8 +1,8 @@
 {
     "name" : "思迹",
     "appid" : "__UNI__128A9A5",
-    "description" : "AI个人生活助手 — 对话式日记/记账/计划",
-    "versionName" : "2.0.0",
+    "description" : "AI个人生活助手 — 对话式记录/记账/计划",
+    "versionName" : "1.0.0",
     "versionCode" : "101",
     "transformPx" : false,
     "app-plus" : {
@@ -18,10 +18,21 @@
         "modules" : {},
         "distribute" : {
             "android" : {
-                "permissions" : [ "<uses-permission android:name=\"android.permission.INTERNET\"/>" ]
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+                    "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
+                    "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\"/>",
+                    "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
+                ]
             },
             "ios" : {
-                "dSYMs" : false
+                "dSYMs" : false,
+                "privacyDescription" : {
+                    "NSPhotoLibraryUsageDescription" : "用于选择图片进行AI对话或上传",
+                    "NSPhotoLibraryAddUsageDescription" : "用于保存截图或导出数据到相册",
+                    "NSCameraUsageDescription" : "用于拍照并进行AI对话"
+                }
             },
             "sdkConfigs" : {},
             "splashscreen" : {
@@ -59,7 +70,9 @@
                     }
                 }
             }
-        }
+        },
+        "nvueLaunchMode" : "",
+        "softinputMode" : "adjustResize"
     },
     "h5" : {
         "router" : {
@@ -79,7 +92,15 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true
+        "usingComponents" : true,
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "不使用"
+            },
+            "scope.writePhotosAlbum" : {
+                "desc" : "用于保存导出数据"
+            }
+        }
     },
     "vueVersion" : "3"
 }

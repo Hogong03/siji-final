@@ -58,7 +58,7 @@ function cancelCustom() {
   <view class="section">
     <view class="reminder-header">
       <text class="section-label">提醒</text>
-      <switch :checked="enabled" @change="onSwitchChange" color="#000000" />
+      <switch :checked="enabled" @change="onSwitchChange" color="var(--color-ai)" />
     </view>
     <template v-if="enabled">
       <view class="reminder-options">

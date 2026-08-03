@@ -10,6 +10,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { generateConversationId } from '@/utils/uuid.js'
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
+import { logger } from '@/utils/logger.js'
 
 const CONV_STORAGE_KEY = 'siji_conversations'
 const ACTIVE_CONV_KEY = 'siji_active_conversation'
@@ -23,7 +24,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // ==================== Getters ====================
   const modeLabel = computed(() => {
-    const map = { chat: '自由对话', diary: '写日记', bill: '记账', plan: '定计划' }
+    const map = { chat: '自由对话', diary: '写记录', bill: '记账', plan: '定计划' }
     return map[currentMode.value] || '自由对话'
   })
 
@@ -44,7 +45,35 @@ export const useChatStore = defineStore('chat', () => {
   /** 会话数量 */
   const conversationCount = computed(() => conversations.value.length)
 
-  // ==================== Actions ====================
+  // ==================== 防抖持久化 ====================
+  let _persistTimer = null
+  let _isDirty = false
+  const PERSIST_DEBOUNCE_MS = 500
+
+  /** 防抖持久化 — 流式传输期间不写入，结束后一次性写入 */
+  function debouncedPersist() {
+    _isDirty = true
+    if (_persistTimer) return  // 已有定时器在等待，不重复设置
+    _persistTimer = setTimeout(() => {
+      _persistTimer = null
+      if (_isDirty) {
+        _isDirty = false
+        persistConversations()
+      }
+    }, PERSIST_DEBOUNCE_MS)
+  }
+
+  /** 立即 flush — 用于 onHide / 页面切换等需要立即写入的场景 */
+  function flushPersist() {
+    if (_persistTimer) {
+      clearTimeout(_persistTimer)
+      _persistTimer = null
+    }
+    if (_isDirty) {
+      _isDirty = false
+      persistConversations()
+    }
+  }
 
   /** 创建新会话 — 可自定义标题，默认 新对话N */
   function createConversation(customTitle) {
@@ -83,7 +112,7 @@ export const useChatStore = defineStore('chat', () => {
       // 切换到最近的对话，没有则空
       activeConversationId.value = conversations.value.length > 0 ? conversations.value[conversations.value.length - 1].id : ''
     }
-    persistConversations()
+    persistConversations()  // 删除操作立即写入
     persistActiveId()
     return true
   }
@@ -94,7 +123,8 @@ export const useChatStore = defineStore('chat', () => {
     if (conv) {
       conv.title = title || '未命名对话'
       conv.updatedAt = Date.now()
-      persistConversations()
+      conv._slimCache = null // P1-C3: 失效缓存
+      debouncedPersist()
     }
     return true
   }
@@ -105,7 +135,8 @@ export const useChatStore = defineStore('chat', () => {
     if (!conv) return
     conv.messages = []
     conv.updatedAt = Date.now()
-    persistConversations()
+    conv._slimCache = null // P1-C3: 失效缓存
+    persistConversations()  // 清空操作立即写入
   }
 
   function setCurrentMode(mode) {
@@ -126,18 +157,24 @@ export const useChatStore = defineStore('chat', () => {
     }
     conv.messages.push(msg)
     conv.updatedAt = Date.now()
+    conv._slimCache = null // P1-C3: 失效缓存
 
-    persistConversations()
+    debouncedPersist()
   }
 
-  /** 更新当前会话最后一条消息 */
+  /** 更新当前会话最后一条消息
+   * 流式传输期间高频调用（~16ms/次），使用防抖持久化避免性能问题
+   * _skipPersist: 内部标记，流式更新时跳过持久化
+   */
   function updateLastMessage(partial) {
     const conv = conversations.value.find(c => c.id === activeConversationId.value)
     if (!conv || conv.messages.length === 0) return
     const last = conv.messages[conv.messages.length - 1]
     Object.assign(last, partial)
     conv.updatedAt = Date.now()
-    persistConversations()
+    conv._slimCache = null // P1-C3: 失效缓存
+    // 防抖写入：流式期间大量调用只触发一次持久化
+    debouncedPersist()
   }
 
   /** 更新会话摘要 */
@@ -147,12 +184,29 @@ export const useChatStore = defineStore('chat', () => {
     conv.summary = summary
     conv.summaryIndex = index
     conv.updatedAt = Date.now()
-    persistConversations()
+    conv._slimCache = null // P1-C3: 失效缓存
+    debouncedPersist()
   }
 
   /** 保存对话历史到 Storage（多会话模式 — 持久化整个 conversations 数组） */
   function persistHistory() {
     persistConversations()
+  }
+
+  /** 检测 localStorage 剩余可用空间（字节），超限风险时返回 true */
+  function isStorageNearQuota(additionalBytes) {
+    try {
+      const probeKey = '__quota_probe__'
+      const before = JSON.stringify(uni.getStorageInfoSync()).length
+      // 估算写入大小
+      const estimated = additionalBytes || 0
+      // H5 localStorage 上限通常 5MB，小程序 10MB
+      const limit = typeof window !== 'undefined' ? 5 * 1024 * 1024 : 10 * 1024 * 1024
+      const current = before + estimated
+      return current > limit * 0.85 // 超过 85% 预警
+    } catch {
+      return false
+    }
   }
 
   /** 持久化所有会话 */
@@ -162,7 +216,14 @@ export const useChatStore = defineStore('chat', () => {
     const MIN_KEEP = 20
     const MAX_KEEP = 500
 
-    const slim = conversations.value.map(conv => {
+    // 预估序列化体积，超限时逐会话裁剪
+    // P1-C3: 只裁剪活跃会话，非活跃会话用上次缓存结果
+    let slim = conversations.value.map(conv => {
+      // 非活跃会话且有缓存 — 直接用上次结果
+      if (conv.id !== activeConversationId.value && conv._slimCache) {
+        return conv._slimCache
+      }
+
       const filtered = conv.messages.filter(m => {
         if (m.role === 'assistant' && !m.aiReply) {
           if (m.loading) return false
@@ -175,7 +236,7 @@ export const useChatStore = defineStore('chat', () => {
       let totalChars = 0
       for (let i = filtered.length - 1; i >= 0; i--) {
         const m = filtered[i]
-        const contentChars = (m.content || '').length + (m.aiReply || '').length
+        const contentChars = (m.content || '').length + (m.aiReply || '').length + ((m.image && m.image.base64) ? m.image.base64.length : 0)
         totalChars += contentChars
         if (totalChars > MAX_CHARS && recent.length >= MIN_KEEP) break
         recent.unshift(m)
@@ -191,10 +252,18 @@ export const useChatStore = defineStore('chat', () => {
         if (m.execResult) item.execResult = m.execResult
         if (m.execResults) item.execResults = m.execResults
         if (m.actionCard) item.actionCard = m.actionCard
+        if (m.image) {
+          // 持久化时优先用 localPath，避免 base64 撑爆 storage
+          if (m.image.localPath) {
+            item.image = { localPath: m.image.localPath }
+          } else {
+            item.image = m.image
+          }
+        }
         return item
       })
 
-      return {
+      const result = {
         id: conv.id,
         title: conv.title,
         messages: items,
@@ -203,12 +272,49 @@ export const useChatStore = defineStore('chat', () => {
         summary: conv.summary || null,
         summaryIndex: conv.summaryIndex || 0
       }
+      // P1-C3: 缓存裁剪结果，非活跃会话下次直接用
+      conv._slimCache = result
+      return result
     })
+
+    // 容量保护：预估序列化体积，超 85% 配额时逐会话裁剪
+    const estimatedSize = JSON.stringify(slim).length
+    if (isStorageNearQuota(estimatedSize)) {
+      logger.warn('[Storage] localStorage 接近配额上限，启动裁剪')
+      // 按 updatedAt 升序排列，最老的会话先裁剪
+      const sortedIdx = slim
+        .map((c, i) => ({ i, updated: c.updatedAt }))
+        .sort((a, b) => a.updated - b.updated)
+
+      for (const { i } of sortedIdx) {
+        if (!isStorageNearQuota(JSON.stringify(slim).length)) break
+        const conv = slim[i]
+        // 保留最近 50 条消息，其余丢弃
+        if (conv.messages.length > 50) {
+          conv.messages = conv.messages.slice(-50)
+          logger.info(`[Storage] 裁剪会话「${conv.title}」至 50 条`)
+        }
+        // 如果裁剪后仍超限且非活跃会话，直接删除
+        if (isStorageNearQuota(JSON.stringify(slim).length) && conv.id !== activeConversationId.value) {
+          slim.splice(i, 1)
+          conversations.value.splice(i, 1)
+          logger.info(`[Storage] 删除非活跃会话「${conv.title}」释放空间`)
+        }
+      }
+    }
 
     try {
       asyncSetStorageJSON(CONV_STORAGE_KEY, slim)
       asyncSetStorage('siji_last_chat_time', String(Date.now()))
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      // 异步写入失败时同步重试（降级）
+      try {
+        uni.setStorageSync(CONV_STORAGE_KEY, JSON.stringify(slim))
+      } catch (e2) {
+        logger.error('[Storage] 持久化失败，即使裁剪后仍超限', e2)
+        uni.showToast({ title: '存储空间不足，部分历史已丢失', icon: 'none', duration: 3000 })
+      }
+    }
   }
 
   /** 持久化活跃会话 ID */
@@ -254,7 +360,7 @@ export const useChatStore = defineStore('chat', () => {
           conversations.value = [conv]
           activeConversationId.value = conv.id
           persistConversations()
-          try { uni.removeStorageSync('siji_chat_history') } catch (e) {}
+          try { uni.removeStorageSync('siji_chat_history') } catch (e) { logger?.warn('清除聊天记录失败', e) }
           return
         }
       } catch { /* ignore */ }
@@ -283,5 +389,6 @@ export const useChatStore = defineStore('chat', () => {
     createConversation, switchConversation, deleteConversation, renameConversation,
     addMessage, updateLastMessage, updateConversationSummary, clearMessages,
     persistHistory, persistConversations, restoreHistory,
+    flushPersist,
   }
 })

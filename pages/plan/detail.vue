@@ -3,32 +3,34 @@
  * 计划详情 / 新建页
  * 路由: /pages/plan/detail?id=new | ?clientId=xxx
  *
- * 增强功能：
- *  ① 子任务可勾选完成/取消
- *  ② 子任务进度条
- *  ③ 新增子任务
- *  ④ AI 拆解按钮（请求 AI 拆解当前计划为子任务）
+ * 子任务管理 → composables/usePlanSubtasks.js
+ * 标签管理 → composables/usePlanTags.js
+ * 日期工具 → utils/datetime.js
  */
+import { onBackPress, onLoad, onShow } from '@dcloudio/uni-app'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import PlanTimeSection from '@/components/plan/PlanTimeSection.vue'
 import PlanReminderSection from '@/components/plan/PlanReminderSection.vue'
 import PlanChildPlans from '@/components/plan/PlanChildPlans.vue'
 import PlanSubtasksSection from '@/components/plan/PlanSubtasksSection.vue'
 import PlanTagPicker from '@/components/plan/PlanTagPicker.vue'
-import { ref, computed, onMounted } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getPlanList, savePlan, deletePlan, getTags, getChildPlans } from '@/utils/storage.js'
+import { ref, computed } from 'vue'
+
+import { getPlanList, savePlan, deletePlan, getChildPlans } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { useAppStore } from '@/store/index.js'
-import { chatRequest } from '@/utils/api.js'
 import { getPlanReminder, setPlanReminder, removePlanReminder } from '@/utils/reminder.js'
+import { parseDateTime, combineDateTime } from '@/utils/datetime.js'
+import { usePlanSubtasks } from '@/composables/usePlanSubtasks.js'
+import { usePlanTags } from '@/composables/usePlanTags.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const store = useAppStore()
 
 const isNew = ref(true)
 const planId = ref('')
-// 保存原始 created_at — 编辑时复用，避免传 undefined 导致字段丢失
 const originalCreatedAt = ref(null)
+const saved = ref(false)
 
 const form = ref({
   title: '',
@@ -36,15 +38,15 @@ const form = ref({
   priority: 0,
   status: 0,
   tags: [],
-  due_date: '',           // 截止日期 (YYYY-MM-DD)
-  due_time: '',           // 截止时间 (HH:mm:ss)
-  estimated_time: '',     // 预计开始日期 (YYYY-MM-DD)
-  estimated_time_value: '', // 预计开始时间 (HH:mm:ss)
-  start_time: '',         // 完整开始时间 (YYYY-MM-DD HH:mm:ss)
-  end_time: '',           // 完整结束时间 (YYYY-MM-DD HH:mm:ss)
-  parent_id: '',          // 父计划ID（嵌套计划）
+  due_date: '',
+  due_time: '',
+  estimated_time: '',
+  estimated_time_value: '',
+  start_time: '',
+  end_time: '',
+  parent_id: '',
   subtasks: [],
-  childPlans: [],         // 子计划列表
+  childPlans: [],
   ai_breakdown: '',
   ai_advice: ''
 })
@@ -78,25 +80,11 @@ const statusOptions = [
 ]
 const statusMap = ['待开始', '进行中', '已完成']
 
-// 标签相关
-const showTagPicker = ref(false)
+// 子任务管理
+const { aiLoading, subtaskProgress, toggleSubtask, addSubtask, removeSubtask, aiBreakdown } = usePlanSubtasks(form, store)
 
-function openTagPicker() {
-  showTagPicker.value = true
-}
-function toggleTag(tagName) {
-  const idx = form.value.tags.indexOf(tagName)
-  if (idx >= 0) form.value.tags.splice(idx, 1)
-  else form.value.tags.push(tagName)
-}
-function handleAddTag(name) {
-  if (form.value.tags.includes(name)) return
-  form.value.tags.push(name)
-}
-function removeTagFromPlan(tagName) {
-  const idx = form.value.tags.indexOf(tagName)
-  if (idx >= 0) form.value.tags.splice(idx, 1)
-}
+// 标签管理
+const { showTagPicker, openTagPicker, toggleTag, handleAddTag, removeTagFromPlan, tagColor } = usePlanTags(form)
 
 onLoad((query) => {
   if (query && query.clientId) {
@@ -104,7 +92,6 @@ onLoad((query) => {
     planId.value = query.clientId
     loadPlan()
   } else if (query && query.id === 'new' && query.parentId) {
-    // 新建子计划
     isNew.value = true
     form.value.parent_id = query.parentId
   }
@@ -113,100 +100,28 @@ onShow(() => {
   if (!isNew.value) loadPlan()
 })
 
-// 子任务进度
-const subtaskProgress = computed(() => {
-  const subs = form.value.subtasks
-  if (!subs || subs.length === 0) return null
-  const done = subs.filter(s => s.done).length
-  return { done, total: subs.length, pct: Math.round(done / subs.length * 100) }
-})
-
-/** 切换子任务完成状态 */
-function toggleSubtask(idx) {
-  if (form.value.subtasks[idx]) {
-    form.value.subtasks[idx].done = !form.value.subtasks[idx].done
-    // 自动保存
-    if (!isNew.value) {
-      const plan = {
-        client_id: planId.value,
-        ...form.value,
-        updated_at: Date.now()
+onBackPress(() => {
+  if (saved.value) return false
+  if (form.value.title || form.value.description) {
+    uni.showModal({
+      title: '放弃编辑？', content: '当前内容未保存',
+      confirmText: '放弃', cancelText: '继续编辑',
+      success: (res) => {
+        if (!res.confirm) return
+        saved.value = true
+        safeNavigateBack({ fallback: '/pages/functions/index' })
       }
-      savePlan(plan)
-    }
-    // 全部完成时自动改状态为已完成
-    if (subtaskProgress.value && subtaskProgress.value.pct === 100 && form.value.status !== 2) {
-      form.value.status = 2
-    } else if (subtaskProgress.value && subtaskProgress.value.pct < 100 && form.value.status === 2) {
-      form.value.status = 1
-    }
+    })
+    return true
   }
-}
-
-/** 添加子任务 */
-function addSubtask() {
-  form.value.subtasks.push({ id: form.value.subtasks.length + 1, title: '', done: false })
-}
-
-/** 删除子任务 */
-function removeSubtask(idx) {
-  form.value.subtasks.splice(idx, 1)
-}
-
-/** AI 拆解子任务 */
-const aiLoading = ref(false)
-async function aiBreakdown() {
-  if (!form.value.title.trim()) {
-    uni.showToast({ title: '请先输入计划标题', icon: 'none' })
-    return
-  }
-  if (!store.hasApiKey) {
-    uni.showToast({ title: '请先配置 API Key', icon: 'none' })
-    return
-  }
-
-  aiLoading.value = true
-  try {
-    const prompt = `你是计划拆解助手。请将以下计划拆解为3-8个具体的可执行子任务。
-
-计划标题：${form.value.title}
-描述：${form.value.description || '无'}
-
-请返回 JSON：
-{ "subtasks": [{ "title": "子任务1" }, { "title": "子任务2" }] }
-
-子任务要具体、可执行、有逻辑顺序。只返回 JSON。`
-    const result = await chatRequest(prompt, null, '', store.aiConfig)
-    const raw = result.reply || ''
-    let parsed
-    try { parsed = JSON.parse(raw) }
-    catch {
-      const m = raw.match(/\{[\s\S]*\}/)
-      if (m) parsed = JSON.parse(m[0])
-      else throw new Error('AI 返回格式错误')
-    }
-    if (Array.isArray(parsed.subtasks) && parsed.subtasks.length > 0) {
-      form.value.subtasks = parsed.subtasks.map((s, i) => ({
-        id: i + 1,
-        title: typeof s === 'string' ? s : (s.title || ''),
-        done: false
-      }))
-      form.value.ai_breakdown = parsed.subtasks.map((s, i) => `${i + 1}. ${typeof s === 'string' ? s : s.title}`).join('\n')
-      uni.showToast({ title: `已拆解 ${parsed.subtasks.length} 个子任务`, icon: 'success' })
-    }
-  } catch (e) {
-    uni.showToast({ title: e.message || 'AI 拆解失败', icon: 'none' })
-  } finally {
-    aiLoading.value = false
-  }
-}
+  return false
+})
 
 function loadPlan() {
   const plans = getPlanList()
   const item = plans.find(p => p.client_id === planId.value)
   if (item) {
     originalCreatedAt.value = item.created_at || null
-    // 解析完整时间到日期+时间分量
     const dueParts = parseDateTime(item.due_date || item.deadline || '')
     const estParts = parseDateTime(item.estimated_time || '')
     form.value = {
@@ -227,7 +142,6 @@ function loadPlan() {
       ai_breakdown: item.ai_breakdown || '',
       ai_advice: item.ai_advice || ''
     }
-    // 加载提醒设置
     const rem = getPlanReminder(planId.value)
     if (rem) {
       reminderEnabled.value = rem.enabled !== false
@@ -239,27 +153,6 @@ function loadPlan() {
       }
     }
   }
-}
-
-/** 解析 "YYYY-MM-DD HH:mm:ss" 为 { date, time } */
-function parseDateTime(str) {
-  if (!str) return { date: '', time: '' }
-  // 已经是纯日期格式
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return { date: str, time: '' }
-  // 完整日期时间格式
-  const m = str.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(:\d{2})?)?/)
-  if (m) return { date: m[1], time: m[2] || '' }
-  return { date: str, time: '' }
-}
-
-/** 组合日期+时间为完整字符串 */
-function combineDateTime(date, time) {
-  if (!date) return ''
-  if (!time) return date
-  // 确保 time 有秒位
-  const parts = time.split(':')
-  while (parts.length < 3) parts.push('00')
-  return `${date} ${parts.join(':')}`
 }
 
 async function handleSave() {
@@ -275,7 +168,6 @@ async function handleSave() {
     priority: form.value.priority,
     status: form.value.status,
     tags: [...form.value.tags],
-    // 精确到秒的时间：组合日期+时间
     due_date: combineDateTime(form.value.due_date, form.value.due_time),
     deadline: combineDateTime(form.value.due_date, form.value.due_time),
     estimated_time: combineDateTime(form.value.estimated_time, form.value.estimated_time_value),
@@ -296,7 +188,6 @@ async function handleSave() {
 
   savePlan(plan)
 
-  // 保存提醒设置
   if (reminderEnabled.value && (form.value.due_date || reminderCustomDate.value)) {
     const customTime = reminderCustomDate.value
       ? combineDateTime(reminderCustomDate.value, reminderCustomTimeValue.value ? reminderCustomTimeValue.value + ':00' : '')
@@ -310,8 +201,11 @@ async function handleSave() {
     removePlanReminder(plan.client_id)
   }
 
+  saved.value = true
   uni.showToast({ title: '已保存', icon: 'success' })
-  setTimeout(() => { uni.navigateBack() }, 800)
+  setTimeout(() => {
+    safeNavigateBack({ fallback: '/pages/functions/index' })
+  }, 800)
 }
 
 function handleDelete() {
@@ -322,38 +216,24 @@ function handleDelete() {
       if (res.confirm) {
         deletePlan(planId.value)
         uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => { uni.navigateBack() }, 800)
+        setTimeout(() => {
+          safeNavigateBack({ fallback: '/pages/functions/index' })
+        }, 800)
       }
     }
   })
 }
 
-
-
-/** 跳转到子计划创建页 */
 function goAddChildPlan() {
   uni.navigateTo({ url: `/pages/plan/detail?id=new&parentId=${planId.value}` })
 }
 
-/** 跳转到子计划详情 */
 function goChildPlan(clientId) {
   uni.navigateTo({ url: `/pages/plan/detail?clientId=${clientId}` })
 }
-
-// 标签颜色映射
-const tagColorCache = {}
-function tagColor(name) {
-  if (tagColorCache[name]) return tagColorCache[name]
-  const registry = getTags('plan')
-  const regItem = registry.find(t => t.name === name)
-  if (regItem?.color) {
-    tagColorCache[name] = regItem.color
-    return regItem.color
-  }
-  tagColorCache[name] = '#000000'
-  return '#000000'
-}
 </script>
+
+
 
 <template>
   <view class="detail-page">
@@ -496,159 +376,5 @@ function tagColor(name) {
 </template>
 
 <style lang="scss" scoped>
-.detail-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: $bg-page;
-}
-
-.detail-scroll {
-  flex: 1;
-  padding: $spacing-md;
-}
-
-/* ─── 表单基础元素（供本页 + 子组件根节点继承）─── */
-.section {
-  margin-bottom: $spacing-md;
-  background: $bg-card;
-  border-radius: $radius-md;
-  padding: $spacing-md;
-  box-shadow: $shadow-sm;
-}
-
-.section-label {
-  font-size: $font-sm;
-  color: $text-secondary;
-  margin-bottom: $spacing-sm;
-  display: block;
-}
-
-.input-field {
-  font-size: $font-md;
-  padding: $spacing-sm 0;
-  border-bottom: 1rpx solid rgba(0,0,0,0.06);
-  width: 100%;
-}
-
-.textarea-field {
-  font-size: $font-md;
-  min-height: 200rpx;
-  width: 100%;
-  line-height: 1.8;
-  padding: $spacing-sm 0;
-}
-
-/* ─── 优先级 ─── */
-.priority-row {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.priority-item {
-  flex: 1;
-  text-align: center;
-  padding: 12rpx 0;
-  border-radius: $radius-sm;
-  font-size: $font-sm;
-  border: 2rpx solid;
-  transition: all $transition-fast;
-}
-
-/* ─── 状态 ─── */
-.status-row {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.status-item {
-  flex: 1;
-  text-align: center;
-  padding: 12rpx 0;
-  border-radius: $radius-sm;
-  font-size: $font-sm;
-  background: $bg-input;
-  color: $text-secondary;
-  transition: all $transition-fast;
-
-  &.active {
-    background: var(--color-ai);
-    color: var(--text-on-ai);
-    font-weight: 600;
-    box-shadow: 0 2rpx 8rpx rgba(16, 185, 129, 0.25);
-  }
-}
-
-/* ─── AI 建议（仍在本页模板中）─── */
-.ai-section {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1rpx solid rgba(0, 0, 0, 0.06);
-
-  .ai-text {
-    font-size: $font-sm;
-    color: $text-primary;
-    line-height: 1.7;
-    white-space: pre-wrap;
-  }
-}
-
-/* ─── 标签 chips（仍在本页模板中）─── */
-.tag-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-  align-items: center;
-}
-
-.tag-chip {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 24rpx;
-  border: 1rpx solid;
-  font-size: $font-xs;
-
-  .tc-label { font-weight: 500; }
-  .tc-close { font-size: 20rpx; opacity: 0.7; margin-left: 2rpx; }
-}
-
-.tag-add-btn {
-  padding: 6rpx 20rpx;
-  border-radius: 24rpx;
-  border: 1rpx dashed var(--text-hint);
-  font-size: $font-xs;
-  color: var(--text-secondary);
-}
-
-/* ─── 底部操作栏 ─── */
-.bottom-bar {
-  display: flex;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  background: $bg-card;
-  border-top: 1rpx solid rgba(0,0,0,0.06);
-
-  .btn-delete {
-    flex: 1;
-    text-align: center;
-    padding: 24rpx 0;
-    border-radius: $radius-md;
-    background: $bg-input;
-    color: $danger;
-    font-size: $font-md;
-    font-weight: 600;
-  }
-
-  .btn-save {
-    flex: 2;
-    text-align: center;
-    padding: 24rpx 0;
-    border-radius: $radius-md;
-    background: $accent;
-    color: var(--text-on-ai);
-    font-size: $font-md;
-    font-weight: 600;
-  }
-}
+@import './detail.scss';
 </style>

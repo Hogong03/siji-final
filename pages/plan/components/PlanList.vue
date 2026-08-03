@@ -15,7 +15,7 @@ const emit = defineEmits(['go-detail', 'go-templates', 'go-new'])
 	<scroll-view class="plan-scroll" scroll-y>
 		<EmptyState v-if="filteredPlans.length === 0" icon="plan" title="暂无计划" description="使用模板快速创建，或让 AI 帮你规划">
 			<view class="empty-actions">
-				<view class="empty-btn" @tap="emit('go-templates')">从模板创建</view>
+				<view class="empty-btn primary" @tap="emit('go-templates')">从模板创建</view>
 				<view class="empty-btn outline" @tap="emit('go-new')">自定义计划</view>
 			</view>
 		</EmptyState>
@@ -30,33 +30,40 @@ const emit = defineEmits(['go-detail', 'go-templates', 'go-new'])
 	</scroll-view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .plan-scroll {
 	flex: 1;
-	padding: $spacing-md;
-}
-
-.plan-list {
-	/* container only; card styles in PlanCard */
+	padding: 8rpx 20rpx 0;
 }
 
 .empty-actions {
 	display: flex;
-	gap: $spacing-sm;
-	margin-top: $spacing-md;
+	gap: 12rpx;
+	margin-top: 16rpx;
 }
 
 .empty-btn {
-	padding: 16rpx 36rpx;
-	background: $accent;
-	color: var(--text-on-ai);
-	border-radius: $radius-lg;
-	font-size: $font-md;
+	padding: 14rpx 32rpx;
+	border-radius: 12rpx;
+	font-size: 26rpx;
+	font-weight: 600;
+
+	&.primary {
+		background: #18181B;
+		color: #FFFFFF;
+	}
 
 	&.outline {
 		background: transparent;
-		border: 2rpx solid $accent;
-		color: $accent;
+		border: 2rpx solid #18181B;
+		color: #18181B;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.empty-btn {
+		&.primary { background: #FAFAFA; color: #18181B; }
+		&.outline { border-color: #FAFAFA; color: #FAFAFA; }
 	}
 }
 </style>

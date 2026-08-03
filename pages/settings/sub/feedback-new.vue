@@ -16,9 +16,11 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { saveFeedback, updateFeedback, getFeedbackList } from '@/utils/storage.js'
 import { useAppStore } from '@/store/index.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 // 管理后台 API 地址
-const SERVER_BASE = 'http://localhost:3000'
+import { FEEDBACK_URL } from '@/config/endpoints.js'
+const SERVER_BASE = FEEDBACK_URL
 
 // 分类映射：本地分类 → 远程 type
 const CATEGORY_TO_TYPE = {
@@ -39,10 +41,10 @@ const editingId = ref(null)
 const isEditing = computed(() => !!editingId.value)
 
 const categories = [
-  { label: '功能建议', icon: '💡', color: '#000000' },
-  { label: 'Bug反馈', icon: '🐛', color: '#EF4444' },
+  { label: '功能建议', icon: '💡', color: 'var(--color-ai)' },
+  { label: 'Bug反馈', icon: '🐛', color: 'var(--color-danger)' },
   { label: '体验感受', icon: '💬', color: '#3B82F6' },
-  { label: '功能需求', icon: '✨', color: '#10B981' }
+  { label: '功能需求', icon: '✨', color: 'var(--color-plan)' }
 ]
 
 onLoad((options) => {
@@ -59,7 +61,7 @@ onLoad((options) => {
       uni.setNavigationBarTitle({ title: '编辑反馈' })
     } else {
       uni.showToast({ title: '反馈不存在', icon: 'none' })
-      setTimeout(() => uni.navigateBack(), 500)
+      setTimeout(() => safeNavigateBack(), 500)
     }
   } else {
     uni.setNavigationBarTitle({ title: '添加反馈' })
@@ -154,11 +156,11 @@ async function handleSubmit() {
   }
 
   submitting.value = false
-  setTimeout(() => uni.navigateBack(), 800)
+  setTimeout(() => safeNavigateBack(), 800)
 }
 
 function handleCancel() {
-  uni.navigateBack()
+  safeNavigateBack()
 }
 </script>
 
@@ -237,184 +239,6 @@ function handleCancel() {
   </view>
 </template>
 
-<style lang="scss" scoped>
-.feedback-form-page {
-  min-height: 100vh;
-  background: var(--bg-primary, #FFFFFF);
-  padding: 24rpx;
-  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
-  box-sizing: border-box;
-}
-
-/* 编辑提示条 */
-.edit-banner {
-  display: flex;
-  align-items: center;
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  padding: 16rpx 24rpx;
-  border-radius: 12rpx;
-  margin-bottom: 16rpx;
-  box-sizing: border-box;
-}
-
-.edit-banner-text {
-  font-size: 26rpx;
-  font-weight: 600;
-}
-
-/* 通用 section */
-.section {
-  margin-bottom: 32rpx;
-}
-
-.section-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--text-primary, #000000);
-  margin-bottom: 16rpx;
-  display: block;
-}
-
-/* 评分 */
-.rating-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.star {
-  padding: 8rpx;
-}
-
-.star-icon {
-  font-size: 44rpx;
-  color: var(--text-tertiary, #CCCCCC);
-  transition: color 0.2s;
-}
-
-.star.active .star-icon {
-  color: var(--text-primary);
-}
-
-.rating-text {
-  font-size: 26rpx;
-  color: var(--text-secondary, #999999);
-  margin-left: 16rpx;
-}
-
-/* 分类 */
-.category-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.category-chip {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 16rpx 28rpx;
-  border-radius: 12rpx;
-  border: 2rpx solid var(--border-color, #E5E5E5);
-  background: var(--bg-card, #F5F5F5);
-}
-
-.category-chip.active {
-  border-color: var(--text-primary);
-  background: var(--color-ai);
-}
-
-.category-chip.active .cat-icon,
-.category-chip.active .cat-label {
-  color: var(--text-on-ai);
-}
-
-.cat-icon {
-  font-size: 28rpx;
-}
-
-.cat-label {
-  font-size: 26rpx;
-  color: var(--text-primary, #000000);
-}
-
-/* 反馈内容 */
-.feedback-input {
-  width: 100%;
-  min-height: 200rpx;
-  padding: 24rpx;
-  background: var(--bg-card, #F5F5F5);
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  color: var(--text-primary, #000000);
-  box-sizing: border-box;
-}
-
-.char-count {
-  font-size: 24rpx;
-  color: var(--text-tertiary, #CCCCCC);
-  text-align: right;
-  display: block;
-  margin-top: 8rpx;
-}
-
-/* 联系方式 */
-.contact-input {
-  width: 100%;
-  padding: 24rpx;
-  background: var(--bg-card, #F5F5F5);
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  color: var(--text-primary, #000000);
-  box-sizing: border-box;
-}
-
-/* 提交行 */
-.submit-row {
-  display: flex;
-  gap: 16rpx;
-  margin-top: 16rpx;
-}
-
-.submit-btn {
-  flex: 1;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  font-size: 30rpx;
-  font-weight: 600;
-  border-radius: 16rpx;
-  border: none;
-  box-sizing: border-box;
-  padding: 0;
-}
-
-.submit-btn[disabled] {
-  opacity: 0.5;
-}
-
-.submit-btn:not([disabled]):active {
-  opacity: 0.85;
-}
-
-.cancel-btn {
-  width: 160rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-  text-align: center;
-  background: transparent;
-  color: var(--text-primary, #000000);
-  font-size: 28rpx;
-  border: 2rpx solid var(--border-color, #E5E5E5);
-  border-radius: 16rpx;
-  box-sizing: border-box;
-  padding: 0;
-}
-
-.cancel-btn:active {
-  background: var(--bg-input, #F5F5F5);
-}
+<style scoped lang="scss">
+@import './feedback-new.scss';
 </style>

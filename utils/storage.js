@@ -18,16 +18,38 @@ export { getRawList, getMonthFromDate, getMonthFromDateStr } from './storage/hel
 // 日记
 export {
   getDiaryList,
+  getDeletedDiaries,
+  restoreDiary,
+  purgeDiary,
   saveDiary,
   deleteDiary,
+  togglePinDiary,
   getDiaryById
 } from './storage/diary.js'
+
+// 分类
+export {
+  getCategories,
+  addCategory,
+  removeCategory,
+  getCategoryIcon
+} from './storage/categories.js'
 
 // 账单
 export {
   getBillList,
+  getDeletedBills,
+  restoreBill,
+  purgeBill,
   saveBill,
-  deleteBill
+  deleteBill,
+  getCategoryBudgets,
+  setCategoryBudget,
+  getMonthlyBudget,
+  setMonthlyBudget,
+  getBillTemplates,
+  saveBillTemplate,
+  deleteBillTemplate
 } from './storage/bill.js'
 
 // 计划 & 计划模板
@@ -75,3 +97,12 @@ export {
   addCustomTag,
   removeCustomTag
 } from './storage/tags.js'
+
+// 版本历史
+export {
+  getVersionHistory,
+  getVersionRecord,
+  addVersionRecord,
+  getLatestVersion,
+  initVersionHistory
+} from './storage/version-history.js'

@@ -142,7 +142,7 @@ watch(() => props.visible, (v) => {
 .tag-picker {
   width: 100%;
   max-height: 70vh;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-xl $radius-xl 0 0;
   padding: $spacing-md;
   display: flex;
@@ -153,7 +153,7 @@ watch(() => props.visible, (v) => {
 .tp-title {
   font-size: $font-lg;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   text-align: center;
   margin-bottom: $spacing-md;
 }
@@ -201,20 +201,20 @@ watch(() => props.visible, (v) => {
     width: 36rpx; height: 36rpx;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18rpx; color: var(--text-on-ai);
+    font-size: 18rpx; color: #FFFFFF;
     font-weight: 700;
     flex-shrink: 0;
   }
 
-  .tp-name { flex: 1; font-size: $font-sm; color: var(--text-primary); font-weight: 500; }
-  .tp-count { font-size: $font-xs; color: var(--text-hint); }
+  .tp-name { flex: 1; font-size: $font-sm; color: #18181B; font-weight: 500; }
+  .tp-count { font-size: $font-xs; color: #A1A1AA; }
 }
 
 .tp-empty {
   text-align: center;
   padding: $spacing-lg;
   font-size: $font-sm;
-  color: var(--text-hint);
+  color: #A1A1AA;
 }
 
 .tp-input-row {
@@ -230,14 +230,14 @@ watch(() => props.visible, (v) => {
     flex: 1;
     height: 72rpx;
     padding: 0 $spacing-md;
-    background: var(--bg-input);
+    background: #E4E4E7;
     border-radius: $radius-md;
     font-size: $font-sm;
   }
 
   .tp-add {
     font-size: $font-sm;
-    color: var(--color-ai);
+    color: #000000;
     font-weight: 700;
     padding: 0 $spacing-sm;
     flex-shrink: 0;
@@ -248,9 +248,9 @@ watch(() => props.visible, (v) => {
   margin-top: $spacing-md;
   padding: 24rpx 0;
   text-align: center;
-  background: var(--color-ai);
+  background: #000000;
   border-radius: $radius-md;
-  color: var(--text-on-ai);
+  color: #FFFFFF;
   font-size: $font-md;
   font-weight: 700;
 }

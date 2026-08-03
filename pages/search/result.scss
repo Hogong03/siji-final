@@ -1,0 +1,286 @@
+/* search/result.vue SCSS — 搜索结果页样式 */
+
+.search-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: $bg-input;
+}
+
+/* 搜索栏 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 24rpx;
+  background: $bg-card;
+}
+
+.search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: $bg-input;
+  border-radius: 16rpx;
+  padding: 14rpx 20rpx;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: $text-primary;
+}
+
+.clear-icon {
+  font-size: 24rpx;
+  color: $text-hint;
+  padding: 4rpx 8rpx;
+}
+
+.cancel-btn {
+  font-size: 28rpx;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+
+/* 筛选栏 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 24rpx;
+  background: $bg-card;
+  border-bottom: 1rpx solid $bg-input;
+  gap: 12rpx;
+}
+
+.filter-group {
+  display: flex;
+  gap: 8rpx;
+}
+
+.filter-divider {
+  width: 1rpx;
+  height: 24rpx;
+  background: $glass-border-color;
+}
+
+.filter-chip {
+  font-size: 24rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 100rpx;
+  background: $bg-btn-secondary;
+  color: $text-secondary;
+
+  &.active {
+    background: $text-primary;
+    color: $bg-card;
+    font-weight: 600;
+  }
+}
+
+/* 搜索历史 */
+.history-section {
+  padding: 24rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.section-title {
+  font-size: 26rpx;
+  color: $text-secondary;
+  font-weight: 600;
+}
+
+.clear-link {
+  font-size: 24rpx;
+  color: $text-hint;
+}
+
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.history-tag {
+  font-size: 24rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 100rpx;
+  background: $bg-card;
+  color: var(--text-mid);
+  border: 1rpx solid $glass-border-color;
+}
+
+/* 空状态 */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: $text-hint;
+}
+
+/* 结果列表 */
+.result-scroll {
+  flex: 1;
+  padding: 0 24rpx;
+}
+
+.result-count {
+  display: block;
+  font-size: 22rpx;
+  color: $text-hint;
+  padding: 12rpx 0 8rpx;
+}
+
+.loading-state {
+  padding: 60rpx 0;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: $text-hint;
+}
+
+.no-result {
+  padding: 80rpx 0;
+  text-align: center;
+}
+
+.no-result-text {
+  font-size: 28rpx;
+  color: $text-hint;
+}
+
+/* 分组 */
+.result-group {
+  margin-bottom: 16rpx;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 0 8rpx;
+}
+
+.group-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+}
+
+.group-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: $text-primary;
+}
+
+.group-count {
+  font-size: 22rpx;
+  color: $text-hint;
+  background: $bg-btn-secondary;
+  padding: 2rpx 12rpx;
+  border-radius: 100rpx;
+}
+
+/* 结果项 */
+.group-list {
+  background: $bg-card;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid $bg-input;
+
+  &:last-child { border-bottom: none; }
+  &:active { background: $bg-page; }
+}
+
+.item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $text-primary;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-preview {
+  font-size: 24rpx;
+  color: $text-secondary;
+  display: block;
+  margin-top: 4rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-meta {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
+}
+
+.item-extra {
+  font-size: 24rpx;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.item-date {
+  font-size: 22rpx;
+  color: $text-hint;
+}
+
+/* 对话搜索结果项 */
+.conv-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 4rpx;
+}
+
+.conv-role-tag {
+  font-size: 18rpx;
+  font-weight: 600;
+  padding: 2rpx 8rpx;
+  border-radius: 4rpx;
+  flex-shrink: 0;
+
+  &.user { background: $bg-btn-secondary; color: $text-secondary; }
+  &.assistant { background: $text-primary; color: $bg-card; }
+}
+
+.conv-source {
+  font-size: 22rpx;
+  color: $text-hint;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

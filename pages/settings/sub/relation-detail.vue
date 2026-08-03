@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="page">
     <view v-if="relation" class="detail-content">
       <!-- 人物头部 -->
@@ -141,6 +141,7 @@
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getRelationById, getInteractions, logInteraction, deleteRelation, updateRelation } from '@/utils/relations.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const relationId = ref('')
 const relation = ref(null)
@@ -264,7 +265,7 @@ function handleDelete() {
       if (res.confirm) {
         deleteRelation(relationId.value)
         uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => uni.navigateBack(), 800)
+        setTimeout(() => safeNavigateBack(), 800)
       }
     }
   })
@@ -272,61 +273,61 @@ function handleDelete() {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: #F4F4F5; }
+.page { min-height: 100vh; background: var(--bg-page); }
 .detail-content { padding: 24rpx; }
 
 .hero {
   display: flex; align-items: center;
-  background: #FFFFFF; border-radius: 24rpx; padding: 32rpx;
+  background: var(--bg-card); border-radius: 24rpx; padding: 32rpx;
   margin-bottom: 16rpx;
 }
 .hero-avatar {
   width: 96rpx; height: 96rpx; border-radius: 50%;
-  background: #18181B; color: #FFFFFF;
+  background: var(--color-ai); color: var(--bg-card);
   font-size: 40rpx; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
 .hero-info { flex: 1; margin-left: 24rpx; }
-.hero-name { font-size: 36rpx; font-weight: 700; color: #18181B; display: block; }
-.hero-role { font-size: 26rpx; color: #71717A; margin-top: 8rpx; }
+.hero-name { font-size: 36rpx; font-weight: 700; color: var(--text-primary); display: block; }
+.hero-role { font-size: 26rpx; color: var(--text-secondary); margin-top: 8rpx; }
 .score-display { display: flex; align-items: baseline; }
-.score-num { font-size: 56rpx; font-weight: 800; color: #000000; }
-.score-max { font-size: 28rpx; color: #A1A1AA; }
+.score-num { font-size: 56rpx; font-weight: 800; color: var(--text-primary); }
+.score-max { font-size: 28rpx; color: var(--text-hint); }
 
 .section {
-  background: #FFFFFF; border-radius: 24rpx; padding: 28rpx;
+  background: var(--bg-card); border-radius: 24rpx; padding: 28rpx;
   margin-bottom: 16rpx;
 }
 .section-header { display: flex; justify-content: space-between; align-items: center; }
-.section-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
-.section-text { font-size: 28rpx; color: #3F3F46; line-height: 1.6; margin-top: 12rpx; }
-.add-btn { font-size: 26rpx; color: #000000; font-weight: 600; }
+.section-title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
+.section-text { font-size: 28rpx; color: var(--text-strong); line-height: 1.6; margin-top: 12rpx; }
+.add-btn { font-size: 26rpx; color: var(--text-primary); font-weight: 600; }
 
 .tag-wrap { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
-.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #F4F4F5; color: #3F3F46; border-radius: 12rpx; }
-.tag-alt { background: #FAFAFA; color: #52525B; }
+.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: var(--bg-btn-secondary); color: var(--text-strong); border-radius: 12rpx; }
+.tag-alt { background: var(--bg-card-alt); color: var(--text-mid); }
 
-.empty-mini { font-size: 26rpx; color: #A1A1AA; margin-top: 16rpx; }
+.empty-mini { font-size: 26rpx; color: var(--text-hint); margin-top: 16rpx; }
 
 .interaction-item {
-  padding: 20rpx 0; border-bottom: 1rpx solid #F4F4F5;
+  padding: 20rpx 0; border-bottom: 1rpx solid var(--border-color);
 }
 .interaction-item:last-child { border-bottom: none; }
 .interaction-top { display: flex; justify-content: space-between; }
-.interaction-scene { font-size: 26rpx; font-weight: 600; color: #18181B; }
-.interaction-date { font-size: 24rpx; color: #A1A1AA; }
-.interaction-content { font-size: 28rpx; color: #3F3F46; margin-top: 8rpx; display: block; }
-.interaction-result, .interaction-emotion { font-size: 24rpx; color: #71717A; margin-top: 4rpx; display: block; }
+.interaction-scene { font-size: 26rpx; font-weight: 600; color: var(--text-primary); }
+.interaction-date { font-size: 24rpx; color: var(--text-hint); }
+.interaction-content { font-size: 28rpx; color: var(--text-strong); margin-top: 8rpx; display: block; }
+.interaction-result, .interaction-emotion { font-size: 24rpx; color: var(--text-secondary); margin-top: 4rpx; display: block; }
 
 .actions { display: flex; gap: 24rpx; margin-top: 24rpx; }
 .btn-action {
   flex: 1; height: 88rpx; border-radius: 16rpx;
   font-size: 30rpx; font-weight: 600; border: none;
-  background: #18181B; color: #FFFFFF;
+  background: var(--color-ai); color: var(--bg-card);
 }
-.btn-danger { background: #FEE2E2; color: #DC2626; }
+.btn-danger { background: var(--color-danger-light); color: var(--color-danger); }
 
-.empty { display: flex; justify-content: center; padding-top: 200rpx; color: #A1A1AA; }
+.empty { display: flex; justify-content: center; padding-top: 200rpx; color: var(--text-hint); }
 
 .modal-mask {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -334,27 +335,28 @@ function handleDelete() {
 }
 .modal-content {
   width: 100%; max-height: 80vh; overflow-y: auto;
-  background: #FFFFFF; border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx;
+  background: var(--bg-card); border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx;
 }
-.modal-title { font-size: 36rpx; font-weight: 700; color: #18181B; display: block; margin-bottom: 32rpx; }
+.modal-title { font-size: 36rpx; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 32rpx; }
 .form-item { margin-bottom: 24rpx; }
-.form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
+.form-label { font-size: 26rpx; color: var(--text-secondary); display: block; margin-bottom: 8rpx; }
 .form-input {
   width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx; color: #18181B;
+  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx; color: var(--text-primary);
 }
 .form-textarea {
   width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx;
+  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx;
 }
 .modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: #F4F4F5; color: #71717A; }
-.btn-confirm { background: #000000; color: #FFFFFF; }
+.btn-cancel { background: var(--bg-btn-secondary); color: var(--text-secondary); }
+.btn-confirm { background: var(--color-ai); color: var(--bg-card); }
 .picker-display {
   display: flex; align-items: center;
-  color: #18181B;
+  color: var(--text-primary);
 }
+
 </style>

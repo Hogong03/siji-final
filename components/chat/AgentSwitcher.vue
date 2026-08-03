@@ -3,7 +3,6 @@
  * Agent 快速切换 Modal
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import { useAppStore } from '@/store/index.js'
 
 const store = useAppStore()
@@ -35,12 +34,20 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
             :class="{ active: store.activeAgentId === a.id }"
             @tap="quickSwitchAgent(a.id)"
           >
-            <view class="switch-model-info switch-agent-info">
-              <AgentAvatar :name="a.name" size="56" />
-              <view class="switch-agent-text">
-                <text class="switch-model-name">{{ a.name }}</text>
-                <text class="switch-model-desc">{{ a.description || '自定义 Agent' }}</text>
+            <view class="agent-avatar-wrap">
+              <image
+                v-if="a.icon"
+                :src="a.icon"
+                mode="aspectFill"
+                class="agent-avatar-img"
+              />
+              <view v-else class="agent-avatar-fallback">
+                <text class="agent-avatar-text">{{ (a.name || '思').charAt(0) }}</text>
               </view>
+            </view>
+            <view class="switch-agent-text">
+              <text class="switch-model-name">{{ a.name }}</text>
+              <text class="switch-model-desc">{{ a.description || '自定义 Agent' }}</text>
             </view>
             <SijiIcon name="check" size="sm" class="switch-model-check" v-if="store.activeAgentId === a.id" />
           </view>
@@ -54,92 +61,61 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
 </template>
 
 <style lang="scss" scoped>
-.modal-mask {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: maskFadeIn 0.2s ease both;
-}
-.modal-container {
-  width: 86%;
-  max-width: 640rpx;
-  max-height: 72vh;
-  background: var(--bg-card);
-  border-radius: 16rpx;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) both;
-}
+@import './modal-mixins.scss';
+
 .model-switch-container {
   max-height: 68vh;
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   overflow: hidden;
 }
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: translateY(40rpx) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes maskFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 32rpx;
-  border-bottom: 1rpx solid var(--border-color);
-  flex-shrink: 0;
-  box-sizing: border-box;
-  .modal-title {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--color-ai);
-    flex: 1;
-    min-width: 0;
-  }
-  .modal-close {
-    padding: 0 8rpx;
-    flex-shrink: 0;
-  }
-}
-.modal-body {
-  padding: 24rpx 32rpx;
-  flex: 1;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
 .switch-model-list {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   gap: 8rpx;
 }
 .switch-model-item {
-  display: flex;
-  align-items: center;
+  @include flex-row;
   gap: 16rpx;
   padding: 16rpx;
   border-radius: 8rpx;
-  background: var(--bg-input);
+  background: #D4D4D8;
   border: 2rpx solid transparent;
   box-sizing: border-box;
   overflow: hidden;
   &:active { transform: scale(0.98); }
   &.active {
-    border-color: var(--color-ai);
-    background: var(--bg-card);
+    border-color: #18181B;
+    background: #FFFFFF;
   }
-  .switch-model-info {
+  .agent-avatar-wrap {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #D4D4D8;
+    @include flex-center;
+  }
+  .agent-avatar-img {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+  }
+  .agent-avatar-fallback {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    background: #D4D4D8;
+    @include flex-center;
+  }
+  .agent-avatar-text {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #18181B;
+    line-height: 1;
+  }
+  .switch-agent-text {
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    @include flex-col;
     gap: 2rpx;
     min-width: 0;
     overflow: hidden;
@@ -147,51 +123,52 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
   .switch-model-name {
     font-size: 26rpx;
     font-weight: 600;
-    color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: #18181B;
+    @include text-ellipsis;
   }
   .switch-model-desc {
     font-size: 22rpx;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: #71717A;
+    @include text-ellipsis;
   }
   .switch-model-check {
     flex-shrink: 0;
   }
-}
-.switch-agent-info {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 16rpx;
-}
-.switch-agent-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2rpx;
-  min-width: 0;
-  overflow: hidden;
 }
 .switch-config-btn {
   margin-top: 24rpx;
   padding: 16rpx;
   text-align: center;
   border-radius: 8rpx;
-  background: var(--bg-input);
+  background: #D4D4D8;
   box-sizing: border-box;
   overflow: hidden;
-  display: flex;
-  align-items: center;
+  @include flex-row;
   justify-content: center;
   gap: 8rpx;
   text {
     font-size: 22rpx;
-    color: var(--color-ai);
+    color: #18181B;
     font-weight: 600;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .switch-model-item {
+    background: #27272A;
+    &.active {
+      border-color: #FAFAFA;
+      background: #18181B;
+    }
+    .agent-avatar-wrap { background: #27272A; }
+    .agent-avatar-fallback { background: #27272A; }
+    .agent-avatar-text { color: #FAFAFA; }
+    .switch-model-name { color: #FAFAFA; }
+    .switch-model-desc { color: #A1A1AA; }
+  }
+  .switch-config-btn {
+    background: #27272A;
+    text { color: #FAFAFA; }
   }
 }
 </style>

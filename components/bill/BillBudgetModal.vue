@@ -127,13 +127,13 @@ function onQuickSet(val) {
     font-weight: 600;
 
     &.cancel {
-      background: $bg-input;
+      background: $bg-btn-secondary;
       color: $text-secondary;
     }
 
     &.confirm {
-      background: var(--color-ai);
-      color: var(--text-on-ai);
+      background: #000000;
+      color: #FFFFFF;
     }
   }
 }

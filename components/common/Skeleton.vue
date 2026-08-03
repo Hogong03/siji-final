@@ -60,19 +60,13 @@ const props = defineProps({
 .animated ::v-deep .sk-circle,
 .animated ::v-deep .sk-card,
 .animated ::v-deep .sk-chart-bar {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.04) 25%,
-    rgba(0, 0, 0, 0.08) 50%,
-    rgba(0, 0, 0, 0.04) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  background: var(--bg-input);
+  animation: skeletonPulse 1.5s infinite ease-in-out;
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 /* 基础占位样式 */

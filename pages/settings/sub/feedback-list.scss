@@ -1,0 +1,265 @@
+.feedback-page {
+  min-height: 100vh;
+  background: #F4F4F5;
+  padding: 24rpx;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* ─── 统计概览 ─── */
+.stats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 28rpx 24rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  border: 1rpx solid #E4E4E7;
+  margin-bottom: 24rpx;
+}
+
+.stat-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+  padding: 4rpx 0;
+}
+
+.stat-num {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #18181B;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+
+/* ─── 空状态 ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 48rpx;
+}
+
+.empty-icon {
+  font-size: 96rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #18181B;
+  margin-bottom: 12rpx;
+}
+
+.empty-desc {
+  font-size: 26rpx;
+  color: #A1A1AA;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ─── 反馈列表 ─── */
+.feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+/* ─── 反馈卡片 ─── */
+.feedback-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx 28rpx;
+  border: 1rpx solid #E4E4E7;
+  transition: transform 0.15s;
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.card-category {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.card-date {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+
+.card-stars {
+  display: flex;
+  gap: 4rpx;
+  margin-bottom: 16rpx;
+}
+
+.star {
+  font-size: 28rpx;
+  color: #D4D4D8;
+
+  &.active {
+    color: #18181B;
+  }
+}
+
+.card-content {
+  font-size: 28rpx;
+  color: #3F3F46;
+  line-height: 1.6;
+  margin-bottom: 12rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.card-contact {
+  display: flex;
+  gap: 6rpx;
+  font-size: 22rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid #F4F4F5;
+}
+
+.contact-label {
+  color: #A1A1AA;
+}
+
+.contact-value {
+  color: #3F3F46;
+}
+
+.card-edited {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+
+/* ─── FAB ─── */
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: calc(60rpx + env(safe-area-inset-bottom));
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  transition: transform 0.15s;
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.fab-icon {
+  font-size: 44rpx;
+  color: #FFFFFF;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* ─── 底部占位（给 FAB 留空间） ─── */
+.bottom-spacer {
+  height: 80rpx;
+}
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .feedback-page {
+    background: #09090B;
+  }
+
+  .stats-bar {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .stat-num {
+    color: #FAFAFA;
+  }
+
+  .stat-label {
+    color: #71717A;
+  }
+
+  .empty-title {
+    color: #FAFAFA;
+  }
+
+  .empty-desc {
+    color: #71717A;
+  }
+
+  .feedback-card {
+    background: #18181B;
+    border-color: #27272A;
+
+    &:active {
+      background: #27272A;
+    }
+  }
+
+  .card-date {
+    color: #71717A;
+  }
+
+  .star {
+    color: #3F3F46;
+
+    &.active {
+      color: #FAFAFA;
+    }
+  }
+
+  .card-content {
+    color: #D4D4D8;
+  }
+
+  .card-contact {
+    border-top-color: #27272A;
+  }
+
+  .contact-label {
+    color: #71717A;
+  }
+
+  .contact-value {
+    color: #D4D4D8;
+  }
+
+  .card-edited {
+    color: #71717A;
+  }
+
+  .fab {
+    background: #FAFAFA;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.5);
+  }
+
+  .fab-icon {
+    color: #000000;
+  }
+}

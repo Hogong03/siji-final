@@ -6,6 +6,7 @@
  */
 import { onMounted, ref } from 'vue'
 import { hasPin } from '@/utils/pin.js'
+import { getDisclaimerAccepted } from '@/utils/disclaimer.js'
 
 const phase = ref('in') // in → hold → out → done
 
@@ -13,6 +14,12 @@ onMounted(() => {
   setTimeout(() => { phase.value = 'hold' }, 500)
   setTimeout(() => { phase.value = 'out' }, 1100)
   setTimeout(() => {
+    uni.$emit('appReady')
+    // 首次启动 → 展示免责声明
+    if (!getDisclaimerAccepted()) {
+      uni.reLaunch({ url: '/pages/disclaimer/index' })
+      return
+    }
     const target = hasPin() ? '/pages/lock/index' : '/pages/chat/index'
     uni.reLaunch({ url: target })
   }, 1600)
@@ -36,7 +43,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-page, #FFFFFF);
+  background: var(--bg-card-alt);
   z-index: 9999;
   overflow: hidden;
 }
@@ -67,14 +74,14 @@ onMounted(() => {
 .logo-text {
   font-size: 72rpx;
   font-weight: 700;
-  color: var(--text-strong, #000000);
+  color: var(--text-strong);
   letter-spacing: 8rpx;
 }
 
 .logo-sub {
   font-size: 22rpx;
   font-weight: 500;
-  color: var(--text-hint, #A1A1AA);
+  color: var(--text-hint);
   letter-spacing: 12rpx;
   text-transform: uppercase;
 }
@@ -85,7 +92,7 @@ onMounted(() => {
   left: 50%;
   width: 0;
   height: 3rpx;
-  background: var(--text-strong, #000000);
+  background: #3F3F46;
   transform: translateX(-50%);
   border-radius: 2rpx;
   opacity: 0;
@@ -106,16 +113,17 @@ onMounted(() => {
 
 @media (prefers-color-scheme: dark) {
   .splash {
-    background: var(--bg-page);
+    background: #09090B;
   }
   .logo-text {
-    color: var(--text-primary);
+    color: #FAFAFA;
   }
   .logo-sub {
-    color: var(--text-tertiary);
+    color: #52525B;
   }
   .splash-line {
-    background: var(--bg-card);
+    background: #27272A;
   }
 }
+
 </style>

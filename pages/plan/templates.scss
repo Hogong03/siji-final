@@ -1,0 +1,243 @@
+.tpl-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #F4F4F5;
+}
+
+/* 顶部操作 */
+.top-bar {
+  display: flex;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+}
+
+.top-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 16rpx 0;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+}
+
+.ai-btn {
+  background: #18181B;
+}
+
+.ai-btn .tb-text { color: #FFFFFF; }
+
+.tb-icon { font-size: 28rpx; }
+.tb-text { font-size: 24rpx; font-weight: 600; color: #18181B; }
+
+/* 列表 */
+.tpl-scroll {
+  flex: 1;
+  padding: 0 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #18181B;
+  margin-bottom: 12rpx;
+  margin-top: 4rpx;
+}
+
+.empty {
+  text-align: center;
+  padding: 80rpx 0;
+}
+
+.empty-icon { font-size: 80rpx; display: block; }
+.empty-text { font-size: 24rpx; color: #71717A; margin-top: 8rpx; display: block; }
+
+.tpl-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+/* AI 输入 */
+.ai-input-section { padding: 12rpx 20rpx; }
+
+.ai-textarea {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 16rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #18181B;
+}
+
+.ai-examples { margin-top: 12rpx; }
+
+.ex-label { font-size: 22rpx; color: #71717A; }
+
+.ex-tags {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 8rpx;
+  flex-wrap: wrap;
+}
+
+.ex-tag {
+  font-size: 22rpx;
+  color: #52525B;
+  padding: 6rpx 20rpx;
+  background: #F4F4F5;
+  border-radius: 20rpx;
+}
+
+.ai-btn-row { margin-top: 12rpx; }
+
+.gen-btn {
+  text-align: center;
+  padding: 20rpx 0;
+  background: #18181B;
+  color: #FFFFFF;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+
+  &.loading { opacity: 0.6; }
+}
+
+/* AI 预览 */
+.ai-preview {
+  max-height: 60vh;
+  padding: 12rpx 20rpx;
+}
+
+.preview-card {
+  border: 2rpx solid #E4E4E7;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx;
+}
+
+.preview-icon { font-size: 36rpx; }
+.preview-name { font-size: 30rpx; font-weight: 700; color: #18181B; }
+
+.preview-desc {
+  font-size: 24rpx;
+  color: #71717A;
+  padding: 0 16rpx 12rpx;
+  display: block;
+}
+
+.preview-subtasks {
+  padding: 0 16rpx 16rpx;
+}
+
+.ps-label { font-size: 22rpx; color: #71717A; margin-bottom: 8rpx; display: block; }
+
+.ps-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 0;
+}
+
+.ps-num {
+  width: 32rpx; height: 32rpx;
+  border-radius: 50%;
+  background: #F4F4F5;
+  font-size: 20rpx;
+  color: #71717A;
+  text-align: center;
+  line-height: 32rpx;
+  flex-shrink: 0;
+}
+
+.ps-title { font-size: 24rpx; color: #18181B; }
+
+.preview-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.pa-btn {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.pa-btn.discard { background: #F4F4F5; color: #71717A; }
+.pa-btn.confirm { background: #18181B; color: #FFFFFF; }
+
+/* 弹窗通用 — fixed 定位，硬编码颜色 */
+.modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal-content {
+  width: 100%;
+  max-height: 85vh;
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  border-bottom: 1rpx solid #E4E4E7;
+}
+
+.modal-title { font-size: 30rpx; font-weight: 700; color: #18181B; }
+.modal-close { font-size: 32rpx; color: #A1A1AA; padding: 8rpx; }
+
+/* ═══ 深色模式 ═══ */
+@media (prefers-color-scheme: dark) {
+  .tpl-page { background: #18181B; }
+  .top-btn { background: #27272A; }
+  .tb-text { color: #FAFAFA; }
+  .ai-btn { background: #FAFAFA; }
+  .ai-btn .tb-text { color: #18181B; }
+
+  .section-title { color: #FAFAFA; }
+  .empty-text { color: #71717A; }
+
+  .ai-textarea { background: #27272A; color: #FAFAFA; }
+  .ex-label { color: #71717A; }
+  .ex-tag { background: #3F3F46; color: #D4D4D8; }
+  .gen-btn { background: #FAFAFA; color: #18181B; }
+
+  .preview-card { background: #27272A; border-color: #3F3F46; }
+  .preview-name { color: #FAFAFA; }
+  .preview-desc { color: #A1A1AA; }
+  .ps-label { color: #71717A; }
+  .ps-num { background: #3F3F46; color: #A1A1AA; }
+  .ps-title { color: #FAFAFA; }
+  .pa-btn.discard { background: #3F3F46; color: #A1A1AA; }
+  .pa-btn.confirm { background: #FAFAFA; color: #18181B; }
+
+  .modal-content { background: #27272A; }
+  .modal-header { border-bottom-color: #3F3F46; }
+  .modal-title { color: #FAFAFA; }
+  .modal-close { color: #71717A; }
+}

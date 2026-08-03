@@ -2,16 +2,19 @@
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 
 import { logger } from '@/utils/logger.js'
+import { reportError, reportRejection, flushErrors } from '@/utils/error-reporter.js'
 import { onErrorCaptured } from 'vue'
 import { useAppStore } from '@/store/index.js'
 import { rebuildIndex, ensureDefaultTemplates, getPlanList } from '@/utils/storage.js'
 import { initReminder, startReminderChecker, checkAllReminders } from '@/utils/reminder.js'
+import { checkVersionUpdate } from '@/utils/version-check.js'
 
 const store = useAppStore()
 
 // 全局错误捕获 — 防止白屏（onErrorCaptured 来自 vue 而非 uni-app）
 onErrorCaptured((err, instance, info) => {
   console.error('[思迹] Global error:', err?.message || err, info)
+  reportError(err, { info, component: instance?.$options?.name || 'unknown' })
   uni.showToast({
     title: '应用遇到一点问题，已自动恢复',
     icon: 'none',
@@ -22,34 +25,43 @@ onErrorCaptured((err, instance, info) => {
 
 onLaunch(() => {
   logger.log('[思迹] Launch')
-    // 1. 仅恢复关键配置（AI/主题/对话）— 非关键延迟加载
+  // 1. 仅恢复关键配置（AI/对话/设备ID）— 延迟非关键初始化到 splash 后
   store.restoreCriticalFromStorage()
   logger.log('[思迹] Critical storage restored, device:', store.deviceId)
 
-  // 2. 非关键配置延迟加载（首屏渲染后）
-  // 使用 setTimeout(0) 让出主线程，在下一个事件循环执行
-  setTimeout(() => {
+  // 2. 非关键配置在 splash 跳转后执行（appReady 事件由 splash 页触发）
+  uni.$once('appReady', () => {
     store.restoreNonCriticalFromStorage()
-    // 3. 构建搜索索引 + 默认模板（紧跟非关键加载之后）
-    setTimeout(() => {
-      try {
-        ensureDefaultTemplates()
-        rebuildIndex()
-        // 初始化提醒模块
-        initReminder(getPlanList)
-        startReminderChecker()
-      } catch (e) {
-        console.warn('[思迹] Init failed:', e.message)
-      }
-    }, 0)
-  }, 0)
-
-  // 4. 网络状态监听
-  uni.onNetworkStatusChange(res => {
-    store.setOnline(res.isConnected)
+    try {
+      ensureDefaultTemplates()
+      rebuildIndex()
+      initReminder(getPlanList)
+      startReminderChecker()
+    } catch (e) {
+      console.warn('[思迹] Init failed:', e.message)
+    }
   })
 
-  // 5. App 端防截屏（隐私保护）
+  // 3. 网络状态监听
+  uni.onNetworkStatusChange(res => {
+    store.setOnline(res.isConnected)
+    if (res.isConnected) {
+      // 网络恢复时尝试上报错误
+      flushErrors()
+    }
+  })
+
+  // 4. 全局 Promise rejection 捕获
+  if (typeof uni.onUnhandledRejection === 'function') {
+    uni.onUnhandledRejection(res => {
+      reportRejection(res.reason)
+    })
+  }
+
+  // 5. 版本更新检查
+  try { checkVersionUpdate() } catch (e) { logger.warn('[思迹] Version check failed:', e.message) }
+
+  // 6. App 端防截屏（隐私保护）
   // #ifdef APP-PLUS
   try {
     plus.screen.lockOrientation('portrait-primary')
@@ -90,6 +102,8 @@ onShow(() => {
 
 onHide(() => {
   logger.log('[思迹] Hide')
+  // flush 防抖队列 — 确保后台切换时数据不丢
+  store.flushPersist && store.flushPersist()
 })
 </script>
 
@@ -103,25 +117,26 @@ page,
 html,
 body {
   /* 浅色模式（默认） */
-  --bg-page: #FAFAFA;
-  --bg-card: #FFFFFF;
-  --bg-card-alt: #F8F8F8;
-  --bg-input: #F4F4F5;
-  --bg-subtle: #FAFAFA;
-  --bg-muted: #F4F4F5;
-  --text-primary: #18181B;
-  --text-secondary: #71717A;
-  --text-tertiary: #A1A1AA;
-  --text-hint: #A1A1AA;
-  --text-strong: #3F3F46;
+  --bg-page: $bg-page;
+  --bg-card: $bg-card;
+  --bg-card-alt: #E4E4E7;
+  --bg-input: $bg-input;
+  --bg-btn-secondary: $bg-btn-secondary;
+  --bg-subtle: #E4E4E7;
+  --bg-muted: #D4D4D8;
+  --text-primary: $text-primary;
+  --text-secondary: $text-secondary;
+  --text-tertiary: $text-hint;
+  --text-hint: $text-hint;
+  --text-strong: $ai-primary-light;
   --text-mid: #52525B;
-  --text-on-ai: #FFFFFF;
-  --color-ai: #000000;
-  --color-plan: #10B981;
-  --color-bill: #F59E0B;
-  --color-diary: #FCD34D;
-  --color-danger: #EF4444;
-  --color-info: #0EA5E9;
+  --text-on-ai: $bg-card;
+  --color-ai: $ai-primary;
+  --color-plan: $success;
+  --color-bill: $warning;
+  --color-diary: $color-diary;
+  --color-danger: $danger;
+  --color-info: $info;
   --color-warning: #D97706;
   --color-danger-light: #FEE2E2;
   --color-danger-bg: #FEF2F2;
@@ -130,14 +145,20 @@ body {
   --color-bill-light: #FEF3C7;
   --color-bill-bg: #FFFBEB;
   --color-warn-bg: #FEF3C7;
-  --color-amber: #F59E0B;
-  --color-red: #EF4444;
+  --color-amber: $warning;
+  --color-red: $danger;
   --color-red-light: #FEE2E2;
   --color-pink: #EC4899;
-  --border-color: #E4E4E7;
-  --border-strong: #D4D4D8;
-  --glass-bg: #FFFFFF;
-  --glass-border: 1rpx solid #E4E4E7;
+  --color-info-light: #DBEAFE;
+  --color-info-text: #1E40AF;
+  --color-plan-text: #065F46;
+  --color-bill-text: #92400E;
+  --color-danger-text: #991B1B;
+  --color-review-bg: #FEFCE8;
+  --border-color: $glass-border-color;
+  --border-strong: $border-color;
+  --glass-bg: $bg-card;
+  --glass-border: 1rpx solid $glass-border-color;
   --shadow-color: rgba(0, 0, 0, 0.06);
 
   background-color: var(--bg-page);
@@ -148,6 +169,55 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── 深色模式覆盖 ─── */
+@media (prefers-color-scheme: dark) {
+  page, html, body {
+    --bg-page: #09090B;
+    --bg-card: $text-primary;
+    --bg-card-alt: #27272A;
+    --bg-input: #27272A;
+    --bg-btn-secondary: #3F3F46;
+    --bg-subtle: #1F1F23;
+    --bg-muted: #2A2A2E;
+    --text-primary: $bg-page;
+    --text-secondary: $text-hint;
+    --text-tertiary: $text-secondary;
+    --text-hint: #52525B;
+    --text-strong: $bg-card;
+    --text-mid: $border-color;
+    --text-on-ai: $bg-card;
+    --color-ai: $ai-primary;
+    --color-plan: $success;
+    --color-bill: $warning;
+    --color-diary: $color-diary;
+    --color-danger: $danger;
+    --color-info: $info;
+    --color-warning: #D97706;
+    --color-pink: #EC4899;
+    --color-info-light: rgba(59, 130, 246, 0.15);
+    --color-info-text: #93C5FD;
+    --color-plan-text: #6EE7B7;
+    --color-bill-text: #FCD34D;
+    --color-danger-text: #FCA5A5;
+    --color-review-bg: rgba(254, 240, 138, 0.08);
+    --color-danger-light: rgba(239, 68, 68, 0.15);
+    --color-danger-bg: rgba(239, 68, 68, 0.08);
+    --color-plan-light: rgba(16, 185, 129, 0.15);
+    --color-plan-bg: rgba(16, 185, 129, 0.08);
+    --color-bill-light: rgba(245, 158, 11, 0.15);
+    --color-bill-bg: rgba(245, 158, 11, 0.08);
+    --color-warn-bg: rgba(245, 158, 11, 0.08);
+    --color-amber: $warning;
+    --color-red: $danger;
+    --color-red-light: rgba(239, 68, 68, 0.15);
+    --border-color: #27272A;
+    --border-strong: $ai-primary-light;
+    --glass-bg: $text-primary;
+    --glass-border: 1rpx solid #27272A;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+  }
 }
 
 

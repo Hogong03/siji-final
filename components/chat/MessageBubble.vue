@@ -14,16 +14,31 @@ import { computed } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import ExecResultCard from './ExecResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
+import { previewImage } from '@/utils/image.js'
 
 const props = defineProps({
   message: { type: Object, required: true },
-  isEditing: { type: Boolean, default: false }
+  isEditing: { type: Boolean, default: false },
+  prevRole: { type: String, default: '' },
+  isLast: { type: Boolean, default: false }
+})
+
+/** 图片 src：优先 localPath（已存本地），fallback base64 */
+const imageSrc = computed(() => {
+  const img = props.message?.image
+  if (!img) return ''
+  return img.localPath || img.base64 || ''
 })
 
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
-  'start-edit', 'save-edit', 'cancel-edit', 'update-tags', 'edit-own'
+  'start-edit', 'save-edit', 'cancel-edit', 'update-tags', 'edit-own', 'delete-message'
 ])
+
+/** 点击图片预览 */
+function onImageTap() {
+  if (imageSrc.value) previewImage([imageSrc.value], 0)
+}
 
 /** 根据执行结果类型决定颜色侧边条 */
 const edgeColor = computed(() => {
@@ -37,15 +52,55 @@ const edgeColor = computed(() => {
   return ''
 })
 
+/** AI 消息内容类型检测 — 用于气泡样式变化 */
+const contentStyle = computed(() => {
+  if (props.message.role !== 'assistant' || !props.message.content) return 'plain'
+  const c = props.message.content
+  const hasCodeBlock = c.includes('```')
+  const hasList = /^[\-\*]\s/m.test(c) || /^\d+\.\s/m.test(c)
+  const hasHeading = /^#{1,4}\s/m.test(c)
+  const hasQuote = /^>/m.test(c)
+  const hasTable = c.includes('|') && c.includes('---')
+  const length = c.length
+
+  if (hasCodeBlock) return 'code'
+  if (hasTable) return 'table'
+  if (hasQuote) return 'quote'
+  if (hasHeading && hasList && length > 200) return 'rich'
+  if (hasList && length > 100) return 'list'
+  if (length > 500) return 'long'
+  if (length < 30) return 'short'
+  return 'plain'
+})
+
+/** 是否为欢迎消息 */
+const isWelcome = computed(() => !!props.message._isWelcome)
+
+/** 是否为连续 AI 消息（上一条也是 AI）—— 去重标签 */
+const isContinuation = computed(() => {
+  return props.message.role === 'assistant' && props.prevRole === 'assistant'
+})
+
+/** 短文本检测 — 收窄气泡 */
+const isShort = computed(() => {
+  if (!props.message.content) return false
+  return props.message.content.length < 30 && !props.message.content.includes('\n')
+})
+
+/* 复制功能 — 所有消息可用，显式按钮替代长按 */
 function copyContent() {
-  const text = props.message?.content || ''
+  const text = props.message.content || ''
   if (!text) return
   uni.setClipboardData({
     data: text,
-    success() {
-      uni.showToast({ title: '已复制', icon: 'success' })
-    }
+    success: () => uni.showToast({ title: '已复制', icon: 'success' })
   })
+}
+
+/* 编辑自己的消息 — 填回输入框重新编辑发送 */
+function editOwn() {
+  if (!props.message.content) return
+  emit('edit-own', props.message.content)
 }
 
 /** 待确认卡片图标 */
@@ -61,10 +116,10 @@ function execIcon(type) {
 
 function actionTitle(action) {
   const map = {
-    create_diary: '写日记', create_bill: '记账', create_plan: '创建计划',
-    query_diary: '查询日记', query_bill: '查询账单', query_plan: '查询计划',
-    update_bill: '修改账单', update_diary: '修改日记', update_plan: '修改计划',
-    delete_bill: '删除账单', delete_diary: '删除日记', delete_plan: '删除计划'
+    create_diary: '写记录', create_bill: '记账', create_plan: '创建计划',
+    query_diary: '查询记录', query_bill: '查询账单', query_plan: '查询计划',
+    update_bill: '修改账单', update_diary: '修改记录', update_plan: '修改计划',
+    delete_bill: '删除账单', delete_diary: '删除记录', delete_plan: '删除计划'
   }
   return map[action.type] || '确认操作'
 }
@@ -84,40 +139,53 @@ function onStartEdit() { emit('start-edit') }
 function onSaveEdit(form) { emit('save-edit', form) }
 function onCancelEdit() { emit('cancel-edit') }
 function onUpdateTags(payload) { emit('update-tags', payload) }
+
+/** 长按消息 — 已禁用（削弱 AI 幻觉 + 简化交互） */
 </script>
 
 <template>
-  <view class="bubble-wrapper" :class="message.role">
-    <!-- 加载动画 — 横线伸缩 -->
-    <view v-if="message.loading" class="loading-bar">
-      <view class="bar-segment" />
-      <view class="bar-segment" />
-      <view class="bar-segment" />
+  <view class="bubble-wrapper" :class="[message.role, { streaming: message.loading && message.content, 'is-continuation': isContinuation, 'is-short': isShort }]">
+    <!-- 加载动画 — 仅在无内容时显示（等待 AI 响应） -->
+    <view v-if="message.loading && !message.content" class="bubble assistant loading-bubble">
+      <view class="loading-bar">
+        <view class="bar-segment" />
+        <view class="bar-segment" />
+        <view class="bar-segment" />
+      </view>
     </view>
 
     <!-- 消息内容 -->
     <template v-else>
-      <!-- 消息行：按钮 + 气泡 水平排列 -->
+      <!-- 消息行：单气泡，长按触发操作 -->
       <view class="msg-row" :class="message.role">
-        <!-- 操作按钮组（用户消息在左侧，AI消息在右侧） -->
-        <view class="bubble-actions" :class="message.role">
-          <view class="bubble-action-btn btn-tactile" @tap.stop="copyContent">
-            <SijiIcon name="copy" size="xs" color="var(--text-secondary)" />
-          </view>
-          <view v-if="message.role === 'user'" class="bubble-action-btn btn-tactile" @tap.stop="$emit('edit-own', message.content)">
-            <SijiIcon name="edit" size="xs" color="var(--text-secondary)" />
-          </view>
-        </view>
-
-        <view class="bubble" :class="[message.role, { 'has-edge': edgeColor }]" :style="edgeColor ? { borderLeftColor: edgeColor } : {}">
-          <text v-if="message.role === 'assistant'" class="ai-label">AI</text>
-          <image v-if="message.image" :src="message.image.base64" class="bubble-image" mode="widthFix" />
+        <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="edgeColor ? { borderLeftColor: edgeColor } : {}">
+          <image v-if="message.image" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" />
           <!-- AI 消息使用 MarkdownRenderer 渲染富文本 -->
           <MarkdownRenderer v-if="message.role === 'assistant'" :content="message.content" />
-          <!-- 用户消息保持纯文本 -->
-          <text v-else class="bubble-text" selectable="true" user-select="true">{{ message.content }}</text>
-          <text class="bubble-time">{{ message.time }}</text>
+          <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播） -->
+          <text v-else class="bubble-text">{{ message.content }}</text>
+
+          <!-- 欢迎消息快捷示例 -->
+          <view v-if="isWelcome" class="welcome-chips">
+            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '记一笔午餐 ¥25')">
+              <text>记一笔午餐 ¥25</text>
+            </view>
+            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '写个记录：今天很开心')">
+              <text>写个记录：今天很开心</text>
+            </view>
+            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '帮我规划下周工作')">
+              <text>帮我规划下周工作</text>
+            </view>
+          </view>
         </view>
+      </view>
+
+      <!-- 时间戳 + 操作按钮（AI: 复制；用户: 复制+编辑） -->
+      <view class="bubble-meta" :class="message.role">
+        <text class="bubble-time-outer">{{ message.time }}</text>
+        <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
+        <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="editOwn">编辑</text>
+        <text v-if="message.role === 'assistant' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
       </view>
 
       <!-- 待确认卡片 -->
@@ -174,237 +242,6 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
   </view>
 </template>
 
-<style lang="scss" scoped>
-.bubble-wrapper {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: $spacing-lg;
-  padding: 0 $spacing-md;
-  animation: bubbleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
-
-  &.user { align-items: flex-end; }
-  &.assistant { align-items: flex-start; }
-}
-
-/* 消息行：按钮 + 气泡水平排列 */
-.msg-row {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  max-width: 100%;
-
-  &.user {
-    flex-direction: row;
-    justify-content: flex-end;
-  }
-  &.assistant {
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-  }
-}
-
-@keyframes bubbleIn {
-  from {
-    opacity: 0;
-    transform: translateY(16rpx) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ─── 气泡 ─── */
-.bubble {
-  max-width: 80%;
-  padding: $spacing-sm $spacing-md;
-  position: relative;
-
-  &.user {
-    background: var(--color-ai);
-    color: var(--bg-card);
-    border-radius: 24rpx 24rpx 8rpx 24rpx;
-  }
-
-  &.assistant {
-    background: var(--bg-card-alt);
-    color: var(--text-primary);
-    border-radius: 24rpx 24rpx 24rpx 8rpx;
-    border-left: 3rpx solid var(--border-color);
-    transition: border-color 0.25s ease;
-
-    &.has-edge {
-      border-left-color: var(--text-secondary);
-    }
-  }
-
-  &-text {
-    font-size: $font-md;
-    line-height: 1.65;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  &-time {
-    display: block;
-    font-size: $font-xs;
-    margin-top: 6rpx;
-    opacity: 0.4;
-    text-align: right;
-  }
-
-  &-image {
-    width: 100%;
-    max-width: 300rpx;
-    border-radius: 12rpx;
-    margin-bottom: $spacing-sm;
-    display: block;
-  }
-}
-
-/* 消息操作按钮组 — 气泡外部 */
-.bubble-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  flex-shrink: 0;
-  padding-bottom: 4rpx;
-
-  /* 用户消息：按钮在气泡左侧 */
-  &.user {
-    margin-right: 8rpx;
-  }
-  /* AI 消息：按钮在气泡右侧（row-reverse 下自然落在右边） */
-  &.assistant {
-    margin-right: 8rpx;
-  }
-}
-
-.bubble-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 8rpx;
-  background: var(--bg-card-alt);
-  border: 1rpx solid var(--border-color);
-  transition: background 0.15s, opacity 0.15s;
-  opacity: 0.55;
-
-  &:active {
-    background: var(--border-color);
-    opacity: 1;
-  }
-}
-
-/* AI 标签 */
-.ai-label {
-  display: inline-block;
-  font-size: 18rpx;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: var(--border-color);
-  padding: 2rpx 10rpx;
-  border-radius: 4rpx;
-  margin-bottom: 8rpx;
-  letter-spacing: 1rpx;
-}
-
-/* ─── 加载动画 — 横线伸缩 ─── */
-.loading-bar {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: $spacing-sm $spacing-md;
-  background: var(--bg-card-alt);
-  border-radius: 24rpx 24rpx 24rpx 8rpx;
-  border-left: 3rpx solid var(--border-color);
-
-  .bar-segment {
-    width: 24rpx;
-    height: 4rpx;
-    background: var(--text-secondary);
-    border-radius: 2rpx;
-    animation: barSlide 1.2s infinite ease-in-out both;
-
-    &:nth-child(1) { animation-delay: 0s; }
-    &:nth-child(2) { animation-delay: 0.15s; }
-    &:nth-child(3) { animation-delay: 0.3s; }
-  }
-}
-
-@keyframes barSlide {
-  0%, 100% { transform: scaleX(0.4); opacity: 0.3; }
-  50% { transform: scaleX(1); opacity: 1; }
-}
-
-/* ─── 待确认卡片 ─── */
-.confirm-card {
-  margin-top: $spacing-sm;
-  padding: $spacing-md;
-  background: var(--bg-card);
-  border-radius: 12rpx;
-  border: 2rpx solid var(--color-ai);
-  width: 85%;
-}
-
-.confirm-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: $spacing-xs;
-
-  .confirm-icon { font-size: 32rpx; margin-right: $spacing-xs; }
-  .confirm-title { font-size: $font-sm; font-weight: 700; color: var(--color-ai); }
-}
-
-.confirm-body {
-  margin-bottom: $spacing-sm;
-  .confirm-detail { font-size: $font-sm; color: var(--text-strong); }
-}
-
-.confirm-actions {
-  display: flex;
-  gap: $spacing-sm;
-}
-
-.confirm-btn {
-  flex: 1;
-  text-align: center;
-  padding: 14rpx 0;
-  border-radius: 8rpx;
-  font-size: $font-sm;
-  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:active { transform: scale(0.94); }
-
-  &.cancel {
-    background: var(--bg-input);
-    color: var(--text-secondary);
-  }
-
-  &.ok {
-    background: var(--color-ai);
-    color: var(--bg-card);
-  }
-}
-
-/* ─── 失败提示（保留在 MessageBubble 中） ─── */
-.exec-card {
-  margin-top: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  background: var(--bg-card);
-  border-radius: 12rpx;
-  border: 1rpx solid var(--border-color);
-  width: 85%;
-
-  &.failed {
-    border-color: var(--color-danger, #ef4444);
-  }
-}
-
-.exec-error {
-  font-size: $font-sm;
-  color: var(--color-danger, #ef4444);
-}
+<style scoped lang="scss">
+@import './MessageBubble.scss';
 </style>

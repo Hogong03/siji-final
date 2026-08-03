@@ -82,7 +82,7 @@ function onSearchInput(e) {
     padding: 6rpx 20rpx;
     border-radius: 24rpx;
     font-size: 22rpx;
-    background: var(--bg-input);
+    background: var(--bg-btn-secondary);
     color: var(--text-secondary);
 
     &.active {
@@ -108,7 +108,7 @@ function onSearchInput(e) {
   padding: 6rpx 20rpx;
   border-radius: 24rpx;
   font-size: 22rpx;
-  background: var(--bg-input);
+  background: var(--bg-btn-secondary);
   color: var(--text-secondary);
   white-space: nowrap;
 

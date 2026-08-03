@@ -48,7 +48,7 @@ function onMonthTap(key) {
     padding: 10rpx 28rpx;
     border-radius: 32rpx;
     font-size: 26rpx;
-    background: var(--bg-input);
+    background: var(--bg-btn-secondary);
     color: var(--text-secondary);
 
     &.active {

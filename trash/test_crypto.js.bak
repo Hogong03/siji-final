@@ -1,0 +1,57 @@
+const SECRET = 'siji_2026_xor_key_!@#'
+const PREFIX = 'enc:'
+
+function xorEncrypt(plain, key) {
+  const result = []
+  for (let i = 0; i < plain.length; i++) {
+    result.push(String.fromCharCode(plain.charCodeAt(i) ^ key.charCodeAt(i % key.length)))
+  }
+  return result.join('')
+}
+
+// Simulate H5 path
+function toBase64H5(str) {
+  return Buffer.from(unescape(encodeURIComponent(str)), 'binary').toString('base64')
+}
+
+// Simulate non-H5 path (uni.arrayBufferToBase64 equivalent)
+function toBase64NonH5(str) {
+  const arr = new Uint8Array(Array.from(str).map(c => c.charCodeAt(0)))
+  return Buffer.from(arr).toString('base64')
+}
+
+// Simulate H5 decode
+function fromBase64H5(b64) {
+  return decodeURIComponent(escape(Buffer.from(b64, 'base64').toString('binary')))
+}
+
+// Simulate non-H5 decode
+function fromBase64NonH5(b64) {
+  const buf = Buffer.from(b64, 'base64')
+  return String.fromCharCode(...new Uint8Array(buf))
+}
+
+const testKey = 'sk-test123abcdef'
+
+// H5 round trip
+const xoredH5 = xorEncrypt(testKey, SECRET)
+const encH5 = PREFIX + toBase64H5(xoredH5)
+const decH5 = xorEncrypt(fromBase64H5(encH5.slice(PREFIX.length)), SECRET)
+console.log('H5:', encH5, '->', decH5, 'match:', testKey === decH5)
+
+// Non-H5 round trip
+const xoredNon = xorEncrypt(testKey, SECRET)
+const encNon = PREFIX + toBase64NonH5(xoredNon)
+const decNon = xorEncrypt(fromBase64NonH5(encNon.slice(PREFIX.length)), SECRET)
+console.log('NonH5:', encNon, '->', decNon, 'match:', testKey === decNon)
+
+// Cross: encrypt on H5, decrypt on Non-H5
+const decCross1 = xorEncrypt(fromBase64NonH5(encH5.slice(PREFIX.length)), SECRET)
+console.log('H5->NonH5:', decCross1, 'match:', testKey === decCross1)
+
+// Cross: encrypt on Non-H5, decrypt on H5
+const decCross2 = xorEncrypt(fromBase64H5(encNon.slice(PREFIX.length)), SECRET)
+console.log('NonH5->H5:', decCross2, 'match:', testKey === decCross2)
+
+// Check if XOR output has non-ASCII
+console.log('XOR bytes:', Array.from(xoredH5).map(c => c.charCodeAt(0)))

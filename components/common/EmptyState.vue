@@ -39,11 +39,11 @@ const emit = defineEmits(['action'])
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: var(--bg-input);
-  display: flex;
+  background: var(--bg-btn-secondary);
   align-items: center;
   justify-content: center;
   margin-bottom: $spacing-md;
+  animation: floatGentle 3s ease-in-out infinite;
 }
 
 .empty-icon {
@@ -55,6 +55,7 @@ const emit = defineEmits(['action'])
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: $spacing-xs;
+  animation: emptyTextFadeIn 0.5s ease 0.3s both;
 }
 
 .empty-desc {
@@ -63,6 +64,7 @@ const emit = defineEmits(['action'])
   text-align: center;
   line-height: 1.6;
   max-width: 480rpx;
+  animation: emptyTextFadeIn 0.5s ease 0.4s both;
 }
 
 .empty-action {
@@ -71,6 +73,7 @@ const emit = defineEmits(['action'])
   background: var(--color-ai);
   border-radius: $radius-lg;
   transition: transform $transition-fast;
+  animation: emptyTextFadeIn 0.5s ease 0.5s both;
 
   &:active {
     transform: scale(0.95);
@@ -82,5 +85,15 @@ const emit = defineEmits(['action'])
     color: var(--text-on-ai);
     font-weight: 600;
   }
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12rpx); }
+}
+
+@keyframes emptyTextFadeIn {
+  from { opacity: 0; transform: translateY(8rpx); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>

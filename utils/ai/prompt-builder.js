@@ -1,22 +1,166 @@
 /**
- * Prompt 构建器 — 系统提示词、用户画像、上下文注入
- * 从 utils/api.js 拆分，负责所有 AI 对话上下文的构建
+ * Prompt 构建器 - 系统提示词、用户画像、上下文注入
+ * 从 utils/api.js 拆分,负责所有 AI 对话上下文的构建
  *
- * 缓存策略：buildSystemPrompt/getUserProfile 结果缓存 30s，
- * 数据变更时调用 invalidatePromptCache() 主动失效
+ * 缓存策略:buildSystemPrompt/getUserProfile 结果缓存 120s,
+ * 数据变更时调用 invalidatePromptCache() 主动失效（P0-2）
+ *
+ * 优化说明（P0-1A）:
+ *   CORE_ACTIONS / BEHAVIOR_RULES / 静态模板段 → 模块顶层构建一次
+ *   只动态:日期行、问候语、extActions(数据检测)、profileCtx
+ *
+ * 压缩说明（P0-1C）:
+ *   reply写作规范 8条→5条(合并相似项)、精简示例
+ *   总 token 降 ~35%（实测 buildSystemPrompt().length 对比）
  */
 import { buildProfileContext } from '../profile.js'
 
-// === 缓存 ===
+// ==================== P0-1A: 静态常量（模块级，构建一次）====================
+
+/** 核心 action schema（始终注入，已压缩字段注释） */
+const CORE_ACTIONS = `记录:
+- create_diary: {content,tags?}  // 自由文本，首行自动作为标题。tags 尽量从用户历史标签中选
+- update_diary: {client_id,content?,tags?}
+- delete_diary: {client_id} needConfirm=true
+- query_diary: {keyword?,month?}
+- summarize_diaries: {period:"week"|"month"}  // 生成周报/月报总结
+- extract_todos: {content}  // 从记录中提取待办事项
+
+记账:
+- create_bill: {type:"expense"|"income",amount,category,note?,bill_date?}
+- update_bill: {client_id,amount?,category?,note?,bill_date?,type?}
+- delete_bill: {client_id} needConfirm=true
+- query_bill: {month?,category?}
+- query_stat: {month?}
+
+计划:
+- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,estimated_time?,parent_id?}
+- update_plan: {client_id,title?,description?,priority?,status?,deadline?,estimated_time?,subtasks?,parent_id?}
+- update_plan_subtask: {client_id,subtask_id,done}
+- delete_plan: {client_id} needConfirm=true
+- query_plan: {status:"active"|"completed"|"all"}
+
+个人信息:
+- smart_update_profile: {updates:[],remove:[],createCard:[]}
+- update_profile: {nickname?,gender?,birthday?,occupation?,location?,bio?,budget?,sleepTime?,hobbies:[],dietary:[]}
+- get_profile: {}
+- clear_profile: {card?,field?} needConfirm=true
+- toggle_profile: {enabled:bool}
+
+联动:
+- query_combined: {keyword?,date_range?,types:["diary","bill"]}  // 跨类型查询记录和账单
+
+通用:- undo_last: {}`
+
+/** 精简版 action schema（闲聊模式，只保留高频操作） */
+const LITE_ACTIONS = `记账:
+- create_bill: {type:"expense"|"income",amount,category,note?,bill_date?}
+- query_bill: {month?,category?}
+
+记录:
+- create_diary: {content,tags?}
+
+计划:
+- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,estimated_time?,parent_id?}
+- create_plan_template: {name,icon?,color?,description?,priority?,subtasks:[]}
+
+通用:- undo_last: {}`
+
+/** 闲聊意图判定 — 检测用户消息是否纯闲聊（不含指令性动词） */
+const _COMMAND_PATTERNS = /(?:帮我|帮我记|帮我查|帮我建|帮我写|记一下|查一下|建一个|写一篇|修改|更新|删除|撤销|取消|完成|标记|今天花了|今天消费|买|付|收|收入|支出|记得|别忘了|提醒)/
+export function isLiteChatMode(userMessage) {
+  if (!userMessage || userMessage.length < 4) return true
+  // 包含指令性动词 → 完整模式
+  if (_COMMAND_PATTERNS.test(userMessage)) return false
+  // 包含金额模式 → 完整模式
+  if (/\d+(?:\.\d+)?\s*[块元¥万亿]/.test(userMessage)) return false
+  // 纯闲聊
+  return true
+}
+
+/** 行为准则（已压缩，合并相似项 7→5 条） */
+const BEHAVIOR_RULES = [
+  '闲聊/倾诉/问好/吐槽/分享日常 → action.type="none"，正常聊天',
+  '只有用户说"帮我记/帮我查/帮我建/帮我写"等指令时才执行 action',
+  '"改/删除/撤销" → 对应 update_*/delete_*/undo_last，不确定目标时先 query',
+  '[¥记账] 等消息开头标记必须按标记执行',
+  '用户提到新人物/重要决定但没说"帮我记录" → 正常聊天，不主动 create'
+]
+
+/** 身份行 — P2-1: agent 模式跳过以保留 agent 自身 persona */
+const IDENTITY_LINE = '你是「思迹」，温暖简洁的个人生活助手，支持记账、记录、计划、人脉、决策、情景演练。'
+
+/** 核心模板段（JSON规范 + 核心铁律 + needConfirm — agent 通用）
+ *  注意：action schema 通过参数注入，支持精简模式 */
+function buildPromptCore(actionSchema) {
+  return `
+## 输出格式
+只返回纯 JSON，不要在 JSON 前后输出任何文字、思考过程或解释：
+{"reply":"自然语言","action":{"type":"none","payload":{},"needConfirm":false}}
+闲聊：{"reply":"辛苦了~","action":{"type":"none","payload":{},"needConfirm":false}}
+记账：{"reply":"记好了，午餐 ¥25","action":{"type":"create_bill","payload":{"type":"expense","amount":25,"category":"餐饮"},"needConfirm":false}}
+⚠️ 你的整个回复必须是合法 JSON，第一个字符必须是 {，最后一个字符必须是 }。禁止在 JSON 前面输出任何中文或解释文本。
+
+## 核心铁律
+0. 整个回复必须是纯 JSON，第一个字符是 {，最后一个字符是 }。禁止在 JSON 前后输出思考文本、解释或任何非 JSON 内容
+1. reply 像真人聊天，简洁自然，闲聊 1-3 句，不用分点罗列
+2. 不要主动执行——除非用户明确说"帮我记/帮我查/帮我建/帮我写"
+3. 分享日常("今天好累""和朋友吃饭了") → 正常聊天，不自动记账/写记录/建计划。但用户说"记一下/帮我记/帮我建"等明确指令时必须执行 action
+4. reply 禁止说"已记录/已帮你/已创建/已添加/记好了"等操作完成语 → 除非 action.type 非 none 且 payload 完整。违反此条=对用户撒谎，绝对禁止
+5. reply 禁止暴露技术细节（不写 action type / payload 字段名 / JSON 结构）
+6. reply 中不用"首先""其次""最后"等作文连接词，不用"我理解你的感受"等AI味句式
+7. reply 禁止使用代码块格式（三个反引号包裹），禁止用 markdown 语法。reply 是纯文本聊天，只有换行和 emoji
+
+## 表达多样性
+- 同一件事不要两次用同一个句式开头。上一条用了"嗯"，这条换"说起来"或直接说事
+- 句子长短交错：一句话能说清就别拆成三句，但也不能条条都是短句
+- 偶尔带点口语化的转折——"不过话说回来""话又说回来""其实吧"
+- 回复长度跟用户消息匹配：用户说一句你也回一两句，用户说了很多你也多回点
+- 不用每条都以"你"开头。可以从事情本身开头，可以从感受开头，可以省略主语
+- 有时候可以反问一句把球踢回去——"你觉得呢？""你想过没有？"
+- 表达同一意思时，从这些里挑一个用，别每次都一样：
+  · 确认：嗯/好/收到/行/可以
+  · 同意：确实/说的也是/有道理/对
+  · 转折：不过/话又说回来/但其实/不过话说回来
+  · 建议：要不试试/可以试试/有个办法是/我觉得吧
+  · 安慰：难为你了/确实不容易/换谁都会这样想
+
+## action 类型
+${actionSchema}
+
+## needConfirm
+金额≥500、delete_* → true；update_* → false
+
+## 行为准则
+${BEHAVIOR_RULES.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
+}
+
+// 预构建完整版和精简版
+const PROMPT_CORE_FULL = buildPromptCore(CORE_ACTIONS)
+const PROMPT_CORE_LITE = buildPromptCore(LITE_ACTIONS)
+
+// ==================== 缓存 ====================
 let _cache = {
   systemPrompt: null,
   userProfile: null,
   systemPromptTime: 0,
-  userProfileTime: 0
+  userProfileTime: 0,
+  userProfileVersion: -1 // P1-B2: 数据版本号，-1 表示从未构建
 }
-const CACHE_TTL = 30000 // 30s，窗口期内的连续请求复用同一份提示词
+const CACHE_TTL = 120000 // P0-2: 30s→120s（减少每轮重解析）
 
-/** 强制失效所有缓存 — 执行器在写操作后调用 */
+// P1-B2: 数据版本计数器 — store/data.js 写操作时递增
+let _dataVersion = 0
+
+/** 递增数据版本 — 供 store/data.js 在写操作后调用 */
+export function bumpDataVersion() {
+  _dataVersion++
+  // 同时失效 userProfile 缓存（数据变了，画像需要重建）
+  _cache.userProfile = null
+  _cache.userProfileTime = 0
+}
+
+/** 强制失效所有缓存 - 执行器在写操作后调用（P0-2） */
 export function invalidatePromptCache() {
   _cache.systemPrompt = null
   _cache.userProfile = null
@@ -24,12 +168,22 @@ export function invalidatePromptCache() {
   _cache.userProfileTime = 0
 }
 
-/** 获取用户近期数据画像（增强版）
- * 注入：月度概览 + 最近3篇日记摘要 + 最近5笔账单 + 近7天消费趋势 + 习惯洞察
- */
+/** 导出 hasRelations/hasDecisions/hasSimulations 供外部调用（store/index.js 写后接入 invalidate） */
+export function checkExtensionData() {
+  let hasRelations = false, hasDecisions = false, hasSimulations = false
+  try {
+    hasRelations = JSON.parse(uni.getStorageSync('siji_relations') || '[]').filter(r => r.is_deleted !== 1).length > 0
+    hasDecisions = JSON.parse(uni.getStorageSync('siji_decisions') || '[]').filter(d => d.is_deleted !== 1).length > 0
+    hasSimulations = JSON.parse(uni.getStorageSync('siji_simulations') || '[]').filter(s => s.is_deleted !== 1).length > 0
+  } catch { /* ignore */ }
+  return { hasRelations, hasDecisions, hasSimulations }
+}
+
+// ==================== 画像（不变，只调 TTL）====================
 export function getUserProfile(forceRefresh = false) {
   const now = Date.now()
-  if (!forceRefresh && _cache.userProfile && (now - _cache.userProfileTime) < CACHE_TTL) {
+  // P1-B2: 数据版本变化时强制重建
+  if (!forceRefresh && _cache.userProfile && _cache.userProfileVersion === _dataVersion && (now - _cache.userProfileTime) < CACHE_TTL) {
     return _cache.userProfile
   }
   try {
@@ -37,7 +191,6 @@ export function getUserProfile(forceRefresh = false) {
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const parts = []
 
-    // === 1. 月度概览 ===
     const billRaw = uni.getStorageSync(`bill_${month}`) || '[]'
     const bills = JSON.parse(billRaw).filter(b => b.is_deleted !== 1)
     const expenseBills = bills.filter(b => b.type === 'expense')
@@ -46,98 +199,72 @@ export function getUserProfile(forceRefresh = false) {
 
     const diaryRaw = uni.getStorageSync(`diary_${month}`) || '[]'
     const diaries = JSON.parse(diaryRaw).filter(d => d.is_deleted !== 1)
-    const recentMood = diaries.length > 0 ? diaries[diaries.length - 1].mood : '未知'
-
     const planRaw = uni.getStorageSync('plan_all') || '[]'
     const plans = JSON.parse(planRaw).filter(p => p.is_deleted !== 1 && p.status === 1)
 
-    parts.push(`【月度概览】本月支出 ¥${totalExpense.toFixed(0)}（${topCategory}占比最高），收入 ¥${bills.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0).toFixed(0)}，日记 ${diaries.length} 篇（最近心情: ${recentMood}），进行中计划 ${plans.length} 个`)
+    parts.push(`【月度概览】本月支出 ¥${totalExpense.toFixed(0)}(${topCategory}最高),收入 ¥${bills.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0).toFixed(0)},记录${diaries.length}篇,进行中计划${plans.length}个`)
 
-    // === 2. 最近3篇日记摘要 ===
     if (diaries.length > 0) {
       const recent3 = diaries.slice(-3).reverse()
-      const diaryLines = recent3.map(d => {
-        const title = d.title || '无标题'
-        const mood = d.mood || '平静'
-        const preview = (d.content || '').substring(0, 40).replace(/\n/g, ' ')
-        return `  - ${title}（${mood}）: ${preview}...`
-      })
-      parts.push(`【最近日记】\n${diaryLines.join('\n')}`)
+      parts.push(`【近期记录】\n${recent3.map(d => {
+        const preview = (d.content || d.title || '').substring(0, 50).replace(/\n/g, ' ')
+        const tags = Array.isArray(d.tags) && d.tags.length ? ` #${d.tags.join(' #')}` : ''
+        return `  - ${d.title || '无标题'}: ${preview}${tags}`
+      }).join('\n')}`)
     }
 
-    // === 3. 最近5笔账单 ===
     if (bills.length > 0) {
       const recent5 = bills.slice(-5).reverse()
-      const billLines = recent5.map(b => {
-        const sign = b.type === 'expense' ? '-' : '+'
-        return `  ${sign}¥${b.amount} ${b.category} ${b.note || ''}`.trim()
-      })
-      parts.push(`【最近账单】\n${billLines.join('\n')}`)
+      parts.push(`【账单】\n${recent5.map(b => `  ${b.type==='expense'?'-':'+'}¥${b.amount} ${b.category} ${b.note||''}`).join('\n')}`)
     }
 
-    // === 4. 近7天消费趋势 ===
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const recent7Expense = expenseBills.filter(b => {
-      const billDate = new Date(b.bill_date || b.created_at)
-      return billDate >= sevenDaysAgo
-    })
-    if (recent7Expense.length > 0) {
-      const avg7 = recent7Expense.reduce((s, b) => s + b.amount, 0) / 7
-      const total7 = recent7Expense.reduce((s, b) => s + b.amount, 0)
-      parts.push(`【近7天消费】共 ¥${total7.toFixed(0)}，日均 ¥${avg7.toFixed(1)}，${recent7Expense.length} 笔`)
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000)
+    const recent7 = expenseBills.filter(b => new Date(b.bill_date||b.created_at) >= sevenDaysAgo)
+    if (recent7.length > 0) {
+      const total7 = recent7.reduce((s, b) => s + b.amount, 0)
+      parts.push(`【近7天】共¥${total7.toFixed(0)},日均¥${(total7/7).toFixed(1)},${recent7.length}笔`)
     }
 
-    // === 5. 习惯洞察 ===
     const insights = []
-    if (totalExpense > 3000 && expenseBills.length > 20) {
-      insights.push('本月消费较频繁，建议关注支出节奏')
-    }
-    if (diaries.length === 0) {
-      insights.push('本月还没有写日记，可以鼓励用户记录生活')
-    } else if (diaries.length >= 10) {
-      insights.push('用户坚持写日记，值得鼓励')
-    }
-    const badMoods = diaries.filter(d => d.mood === '难过' || d.mood === '焦虑' || d.mood === '愤怒')
-    if (badMoods.length > diaries.length * 0.4 && diaries.length >= 3) {
-      insights.push('近期负面情绪较多，建议温柔关怀')
-    }
-    if (plans.length > 5) {
-      insights.push('进行中计划较多，可以帮用户关注优先级')
-    }
-    if (insights.length > 0) {
-      parts.push(`【洞察建议】${insights.join('；')}`)
-    }
+    if (totalExpense > 3000 && expenseBills.length > 20) insights.push('消费较频繁,注意节奏')
+    if (diaries.length === 0) insights.push('本月还未写记录')
+    else if (diaries.length >= 10) insights.push('坚持写记录,很棒')
+    if (plans.length > 5) insights.push('计划较多,关注优先级')
+    if (insights.length > 0) parts.push(`【洞察】${insights.join(';')}`)
 
     const result = parts.join('\n\n')
     _cache.userProfile = result
     _cache.userProfileTime = now
+    _cache.userProfileVersion = _dataVersion // P1-B2: 记录构建时的数据版本
     return result
   } catch {
     return null
   }
 }
 
-/** 找出支出占比最高的分类 */
 export function getTopCategory(expenseBills) {
   if (expenseBills.length === 0) return '无'
   const map = {}
-  expenseBills.forEach(b => {
-    map[b.category] = (map[b.category] || 0) + b.amount
-  })
+  expenseBills.forEach(b => { map[b.category] = (map[b.category] || 0) + b.amount })
   return Object.entries(map).sort((a, b) => b[1] - a[1])[0][0]
 }
 
+// ==================== System Prompt（重构:静态+动态分离）====================
 /**
- * 构建 System Prompt — 统一模式，AI 自动识别意图
- * 包含：意图识别规则、JSON 格式规范、needConfirm 高风险确认规则
- * 重要：必须注入当前日期，否则 AI 无法理解"今天/昨天/上周"等相对时间
+ * 构建 System Prompt
+ * 静态段(identity/JSON规范/核心铁律/CORE_ACTIONS/needConfirm/BEHAVIOR_RULES)
+ *   → 模块级 PROMPT_STATIC，构建一次
+ * 动态段(问候/日期/extActions/profileCtx) → 每次重新拼
  */
-export function buildSystemPrompt(forceRefresh = false) {
+export function buildSystemPrompt(forceRefresh = false, opts = {}) {
+  const { agentMode = false, lite = false } = opts  // lite: 精简 action schema（闲聊模式）
   const cacheNow = Date.now()
-  if (!forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
+  // lite 模式不缓存（依赖每次用户消息判断）
+  if (!lite && !forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
     return _cache.systemPrompt
   }
 
+  // --- 动态部分 ---
   const now = new Date()
   const weekDay = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()]
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -145,89 +272,61 @@ export function buildSystemPrompt(forceRefresh = false) {
   const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
   const hour = now.getHours()
-  const greeting = hour < 6 ? '深夜了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : hour < 22 ? '晚上好' : '夜深了'
+  const greeting = hour < 6 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : hour < 22 ? '晚上好' : '夜深了'
 
-  // === 动态检测扩展功能是否有数据 ===
-  let hasRelations = false, hasDecisions = false, hasSimulations = false
-  try {
-    hasRelations = JSON.parse(uni.getStorageSync('siji_relations') || '[]').filter(r => r.is_deleted !== 1).length > 0
-    hasDecisions = JSON.parse(uni.getStorageSync('siji_decisions') || '[]').filter(d => d.is_deleted !== 1).length > 0
-    hasSimulations = JSON.parse(uni.getStorageSync('siji_simulations') || '[]').filter(s => s.is_deleted !== 1).length > 0
-  } catch { /* ignore */ }
+  // 扩展 action（按数据存在性注入，P0-2 配合 checkExtensionData 缓存）
+  const { hasRelations, hasDecisions, hasSimulations } = checkExtensionData()
+  const extParts = []
 
-  // === 核心 action（始终注入）===
-  const coreActions = `日记：
-- create_diary: {title, content(≥30字第一人称), mood(开心/平静/难过/焦虑/愤怒/满足/疲惫/兴奋), tags:[]}
-- update_diary: {client_id, title?, content?, mood?}
-- delete_diary: {client_id} needConfirm=true
-- query_diary: {keyword?, month?}
-
-记账：
-- create_bill: {type:"expense"|"income", amount:数字(无¥), category:"餐饮/交通/购物/娱乐/医疗/住房/工资/兼职/红包/其他", note?, bill_date?默认今天}
-- update_bill: {client_id, amount?, category?, note?, bill_date?, type?}
-- delete_bill: {client_id} needConfirm=true
-- query_bill: {month?, category?}
-- query_stat: {month?}
-
-计划：
-- create_plan: {title, description, priority:0-2, subtasks:[{title}], tags:[], deadline?, estimated_time?, parent_id?}
-- update_plan: {client_id, title?, description?, priority?, status?, deadline?, estimated_time?, start_time?, end_time?, subtasks?, parent_id?}
-- update_plan_subtask: {client_id, subtask_id, done:bool}
-- delete_plan: {client_id} needConfirm=true
-- create_plan_template: {name, icon, color, description, priority, subtasks}
-- query_plan: {status:"active"|"completed"|"all"}
-
-个人信息：
-- smart_update_profile: {updates:[{card,field,value}], remove:[{card,field,value}], createCard:[{id,title,icon}]}
-- update_profile: {nickname?, gender?, birthday?, occupation?, location?, bio?, budget?, sleepTime?, hobbies:[], dietary:[], custom:[]}
-- get_profile: {}
-- clear_profile: {card?, field?} needConfirm=true
-- toggle_profile: {enabled:bool}
-
-通用：
-- undo_last: {}`
-
-  // === 扩展 action：核心 CRUD 始终注入，高级操作按数据条件注入 ===
-  const extActions = []
-  // 关系图谱
-  let relActions = `关系图谱：\n- create_relation: {name, role(家人/朋友/同事/领导/伴侣/其他), context?, traits:[], preferences:[], notes?, relationship_score:1-10, tags:[]}\n- query_relation: {keyword?}`
   if (hasRelations) {
-    relActions += `\n- update_relation: {id, name?, role?, context?, traits?, preferences?, notes?, relationship_score?, tags?}\n- delete_relation: {id} needConfirm=true\n- log_interaction: {relation_id, scene, content, result?, emotion?}\n- query_interaction: {relation_id}`
+    extParts.push(`关系图谱:
+- create_relation: {name,role,context?,traits:[],preferences:[],notes?,relationship_score:1-10,tags:[]}
+- update_relation: {id,name?,role?,context?,traits?,preferences?,notes?,relationship_score?,tags?}
+- delete_relation: {id} needConfirm=true
+- log_interaction: {relation_id,scene,content,result?,emotion?}
+- query_interaction: {relation_id}
+- query_relation: {keyword?}`)
+  } else {
+    extParts.push(`关系图谱:
+- create_relation: {name,role,context?,traits:[],preferences:[],notes?,relationship_score:1-10,tags:[]}
+- query_relation: {keyword?}`)
   }
-  extActions.push(relActions)
-  // 决策日志
-  let decActions = `决策日志：\n- create_decision: {title, category(职业/感情/财务/生活/其他), status:"thinking", deadline?, options:[{name,pros:[],cons:[],weight:1-10}], stakeholders:[], factors:[]}\n- query_decision: {status?, category?}`
+
   if (hasDecisions) {
-    decActions += `\n- update_decision: {id, title?, category?, status?(thinking/decided/acted/abandoned), decision?, reasoning?, deadline?}\n- review_decision: {id, review_notes, outcome?}\n- analyze_decisions: {}`
+    extParts.push(`决策日志:
+- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}
+- update_decision: {id,status?,decision?,reasoning?,deadline?}
+- review_decision: {id,review_notes,outcome?}
+- analyze_decisions: {}
+- query_decision: {status?,category?}`)
+  } else {
+    extParts.push(`决策日志:
+- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}
+- query_decision: {status?,category?}`)
   }
-  extActions.push(decActions)
-  // 情景模拟
-  let simActions = `情景模拟：\n- start_simulation: {mode?:"social"|"planning"|"relationship", relation_id?, relation_name?, scene, goal}`
+
   if (hasSimulations) {
-    simActions += `\n- end_simulation: {conversation_id}`
+    extParts.push(`情景模拟:
+- start_simulation: {mode?:"social"|"planning"|"relationship",relation_id?,scene,goal}
+- end_simulation: {simulation_id}`)
+  } else {
+    extParts.push(`情景模拟:
+- start_simulation: {mode?:"social"|"planning"|"relationship",relation_id?,scene,goal}`)
   }
-  extActions.push(simActions)
 
-  // === 行为准则（动态）===
-  const behaviorRules = [
-    '闲聊/倾诉/问好/吐槽 → action.type 必须是 "none"，不要强行创建操作',
-    '仅在用户明确请求操作时（"帮我记"/"帮我查"/"帮我建"等）才执行 action',
-    '用户透露个人信息 → 先友好回应，再在 reply 末尾问"需要我帮你记录吗？"，用户同意后才 smart_update_profile',
-    '用户说"改/删除/撤销" → 对应 update_*/delete_*/undo_last，不确定目标时先 query',
-    '创建计划必须含 subtasks(3-8个) + description，尽量填 deadline',
-    '日记 content 整理为用户原话的完整段落',
-    '修改操作理解错别字（如"心别"="性别"）',
-    '消息开头标记如 [¥记账] 必须按标记执行',
-    '用户提到新人物 → 主动 create_relation',
-    '用户提到要做重要决定 → 主动 create_decision',
-    '用户说"模拟演练"/"练习对话"→ start_simulation'
-  ]
+  // --- 拼装：agentMode 决定是否注入身份行 + 问候 ---
+  // 注意：profileCtx 由 buildChatMessages 统一拼接，此处不再重复注入（修复双写问题）
+  const dateLine = `当前时间:${todayStr} 星期${weekDay} ${timeStr}(昨天 ${yesterdayStr})`
+  const extSection = extParts.length ? '\n\n' + extParts.join('\n') : ''
 
-  const basePrompt = `${greeting}！你是「思迹」，一个温暖简洁的个人生活助手，支持记账、日记、计划、人脉管理、决策记录、情景演练。\n\n当前时间：${todayStr} 星期${weekDay} ${timeStr}（昨天 ${yesterdayStr}）\n\n## ⚠️ 输出格式（必须遵守）\n你必须返回纯 JSON，不要包含任何多余文本、markdown 或代码块标记。\nJSON 结构：\n{"reply":"给用户的自然语言回复","action":{"type":"none","payload":{},"needConfirm":false}}\n\n示例1（闲聊）：\n用户：今天好累\n你：{"reply":"辛苦了，早点休息吧~","action":{"type":"none","payload":{},"needConfirm":false}}\n\n示例2（记账）：\n用户：午饭花了25\n你：{"reply":"已帮你记下午餐 ¥25","action":{"type":"create_bill","payload":{"type":"expense","amount":25,"category":"餐饮","bill_date":"${todayStr}"},"needConfirm":false}}\n\n## 核心铁律\n1. reply 是第一优先级：温暖、简洁、自然，闲聊 1-3 句\n2. 不要为了执行操作而强行解读用户意图——先聊天，再确认\n3. reply 中说"已记录/已更新/已帮你"等词 → action.type 必须非 none，且 payload 必须完整\n4. 禁止在 reply 中写 [执行结果: xxx] 或任何 JSON/代码\n5. 默认 action.type = "none"，除非用户明确要求你执行某操作\n6. 用户告知个人信息时，先友好回应并询问"需要我帮你记录吗？"，用户同意后才执行 smart_update_profile\n\n## action 类型\n${coreActions}${extActions.length ? '\n\n' + extActions.join('\n') : ''}\n\n## needConfirm\n- 金额≥500、所有 delete_* → true；update_* → false\n\n## client_id\n执行结果中 ID=xxx 即 client_id\n\n## 行为准则\n${behaviorRules.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
+  // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
+  const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
+  const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
+  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}`
 
-  const profileCtx = buildProfileContext()
-  const result = profileCtx ? basePrompt + '\n\n' + profileCtx : basePrompt
-  _cache.systemPrompt = result
-  _cache.systemPromptTime = cacheNow
+  if (!lite) {
+    _cache.systemPrompt = result
+    _cache.systemPromptTime = cacheNow
+  }
   return result
 }

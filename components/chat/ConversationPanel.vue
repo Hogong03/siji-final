@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 /**
  * ConversationPanel - 会话列表底部抽屉组件
  *
@@ -90,7 +90,7 @@ function formatConvTime(ts) {
 .conv-drawer {
   width: 100%;
   height: 70vh;
-  background: var(--bg-card);
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -109,7 +109,7 @@ function formatConvTime(ts) {
   align-items: center;
   justify-content: space-between;
   padding: $spacing-md;
-  border-bottom: 1rpx solid var(--border-color);
+  border-bottom: 1rpx solid #E4E4E7;
   flex-shrink: 0;
   box-sizing: border-box;
   position: relative;
@@ -117,7 +117,7 @@ function formatConvTime(ts) {
   .conv-drawer-title {
     font-size: $font-lg;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #18181B;
   }
 }
 
@@ -131,7 +131,7 @@ function formatConvTime(ts) {
   width: 64rpx;
   height: 8rpx;
   border-radius: 4rpx;
-  background: var(--text-hint);
+  background: #A1A1AA;
   opacity: 0.3;
 }
 
@@ -147,18 +147,18 @@ function formatConvTime(ts) {
   .conv-divider-line {
     flex: 1;
     height: 1rpx;
-    border-top: 2rpx dashed var(--border-color);
+    border-top: 2rpx dashed #E4E4E7;
   }
 
   .conv-new-divider-text {
     font-size: $font-sm;
-    color: var(--text-secondary);
+    color: #71717A;
     white-space: nowrap;
     padding: 0 $spacing-xs;
   }
 
   &:active .conv-new-divider-text {
-    color: var(--text-primary);
+    color: #18181B;
     font-weight: 600;
   }
 }
@@ -173,13 +173,13 @@ function formatConvTime(ts) {
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
-  border-bottom: 1rpx solid var(--border-color);
+  border-bottom: 1rpx solid #E4E4E7;
   box-sizing: border-box;
   overflow: hidden;
 
-  &:active { background: var(--bg-input); }
+  &:active { background: #E4E4E7; }
   &.active {
-    background: var(--bg-input);
+    background: #E4E4E7;
     border-left: 6rpx solid #000000;
   }
 }
@@ -210,16 +210,16 @@ function formatConvTime(ts) {
 
 .conv-item-rename {
   font-size: 32rpx;
-  color: var(--text-hint, #999);
+  color: #A1A1AA;
   padding: 4rpx 8rpx;
 
-  &:active { color: var(--text-primary); }
+  &:active { color: #18181B; }
 }
 
 .conv-item-title {
   font-size: $font-md;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #18181B;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -227,12 +227,12 @@ function formatConvTime(ts) {
 
 .conv-item-time {
   font-size: $font-xs;
-  color: var(--text-hint, #999);
+  color: #A1A1AA;
 }
 
 .conv-item-msgs {
   font-size: $font-xs;
-  color: var(--text-hint, #999);
+  color: #A1A1AA;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -245,7 +245,7 @@ function formatConvTime(ts) {
 
   .conv-empty-text {
     font-size: $font-sm;
-    color: var(--text-hint, #999);
+    color: #A1A1AA;
   }
 }
 
@@ -267,9 +267,9 @@ function formatConvTime(ts) {
   justify-content: center;
   gap: 8rpx;
   padding: 20rpx 0;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 16rpx;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 }
 .conv-shortcut-item:active {
@@ -280,6 +280,50 @@ function formatConvTime(ts) {
 }
 .conv-shortcut-text {
   font-size: 24rpx;
-  color: var(--text-secondary);
+  color: #71717A;
+}
+
+@media (prefers-color-scheme: dark) {
+  .conv-drawer {
+    background: #18181B;
+  }
+  .conv-drawer-header {
+    border-bottom-color: #27272A;
+    .conv-drawer-title {
+      color: #FAFAFA;
+    }
+  }
+  .conv-drawer-header::before {
+    background: #52525B;
+  }
+  .conv-new-divider .conv-divider-line {
+    border-top-color: #27272A;
+  }
+  .conv-new-divider-text {
+    color: #71717A;
+    &:active { color: #FAFAFA; }
+  }
+  .conv-item {
+    border-bottom-color: #27272A;
+    &:active { background: #27272A; }
+    &.active {
+      background: #27272A;
+      border-left-color: #FAFAFA;
+    }
+  }
+  .conv-item-rename {
+    color: #52525B;
+    &:active { color: #FAFAFA; }
+  }
+  .conv-item-title {
+    color: #FAFAFA;
+  }
+  .conv-shortcut-item {
+    background: #18181B;
+    border-color: #27272A;
+  }
+  .conv-shortcut-text {
+    color: #A1A1AA;
+  }
 }
 </style>

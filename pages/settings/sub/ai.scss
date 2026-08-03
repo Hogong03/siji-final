@@ -36,14 +36,11 @@
   &:active { background: var(--bg-input); }
 }
 
-.provider-icon {
+.provider-logo {
   width: 64rpx;
   height: 64rpx;
   min-width: 64rpx;
   border-radius: $radius-md;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
 }
@@ -193,7 +190,7 @@
     white-space: nowrap;
 
     &.save {
-      background: var(--bg-input);
+      background: var(--bg-btn-secondary);
       color: var(--color-ai);
     }
     &.test {
@@ -215,7 +212,7 @@
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  background: var(--bg-input);
+  background: var(--bg-btn-secondary);
   border-radius: $radius-md;
   border: 2rpx solid transparent;
   transition: all $transition-fast;
@@ -262,7 +259,7 @@
     .model-no-vision-badge {
       font-size: 16rpx;
       color: var(--text-hint);
-      background: var(--bg-input);
+      background: var(--bg-btn-secondary);
       padding: 0 6rpx;
       border-radius: 4rpx;
       flex-shrink: 0;
@@ -412,7 +409,7 @@
   height: 72rpx;
   line-height: 72rpx;
   text-align: center;
-  background: var(--bg-input);
+  background: var(--bg-btn-secondary);
   color: var(--text-primary);
   font-size: $font-sm;
   font-weight: 600;

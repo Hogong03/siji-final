@@ -1,32 +1,30 @@
 <script setup>
-import SijiIcon from '@/components/common/SijiIcon.vue'
-
 const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
 </script>
 
 <template>
 	<view class="quick-row">
 		<view class="quick-btn" @tap="emit('go-templates')">
-			<SijiIcon name="plan" size="md" class="qb-icon" />
+			<text class="qb-icon">📋</text>
 			<text class="qb-text">模板</text>
 		</view>
 		<view class="quick-btn" @tap="emit('go-stats')">
-			<SijiIcon name="stats" size="md" class="qb-icon" />
+			<text class="qb-icon">📊</text>
 			<text class="qb-text">统计</text>
 		</view>
 		<view class="quick-btn" @tap="emit('go-new')">
-			<SijiIcon name="sparkle" size="md" class="qb-icon" />
+			<text class="qb-icon">✨</text>
 			<text class="qb-text">新建</text>
 		</view>
 	</view>
 </template>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .quick-row {
 	display: flex;
-	gap: $spacing-sm;
-	padding: 0 $spacing-md;
-	margin-bottom: $spacing-sm;
+	gap: 12rpx;
+	padding: 0 20rpx;
+	margin-bottom: 8rpx;
 }
 
 .quick-btn {
@@ -34,19 +32,30 @@ const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: $spacing-sm 0;
-	background: $bg-card;
-	border-radius: $radius-md;
-	box-shadow: $shadow-sm;
+	padding: 14rpx 0;
+	background: #FFFFFF;
+	border-radius: 12rpx;
+
+	&:active {
+		background: #F4F4F5;
+		transform: scale(0.97);
+	}
 }
 
 .qb-icon {
-	font-size: 36rpx;
+	font-size: 32rpx;
+	line-height: 1;
 }
 
 .qb-text {
-	font-size: $font-xs;
-	color: $text-secondary;
-	margin-top: 4rpx;
+	font-size: 22rpx;
+	color: #52525B;
+	margin-top: 6rpx;
+	font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+	.quick-btn { background: #27272A; &:active { background: #3F3F46; } }
+	.qb-text { color: #D4D4D8; }
 }
 </style>

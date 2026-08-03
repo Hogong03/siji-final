@@ -14,7 +14,7 @@ const store = useAppStore()
 
 function doExport() {
   uni.showActionSheet({
-    itemList: ['导出全部 (JSON)', '导出日记 (CSV)', '导出账单 (CSV)', '导出计划 (CSV)'],
+    itemList: ['导出全部 (JSON)', '导出记录 (CSV)', '导出账单 (CSV)', '导出计划 (CSV)'],
     success(res) {
       if (res.tapIndex === 0) exportJsonFile()
       else exportCsvFile(['diary', 'bill', 'plan'][res.tapIndex - 1])
@@ -27,7 +27,7 @@ function exportJsonFile() {
     const json = exportJson()
     const d = JSON.parse(json)
     asyncSetStorage('siji_export_json', json)
-    uni.showToast({ title: `已导出: 日记${d.diaries.length} 账单${d.bills.length} 计划${d.plans.length}`, icon: 'success' })
+    uni.showToast({ title: `已导出: 记录${d.diaries.length} 账单${d.bills.length} 计划${d.plans.length}`, icon: 'success' })
   } catch (e) { uni.showToast({ title: e.message, icon: 'none' }) }
 }
 
@@ -35,7 +35,7 @@ function exportCsvFile(type) {
   const csv = exportCsv(type)
   if (!csv) return uni.showToast({ title: '无数据', icon: 'none' })
   asyncSetStorage(`siji_export_${type}_csv`, csv)
-  uni.showToast({ title: `${({diary:'日记',bill:'账单',plan:'计划'})[type]} CSV 已导出`, icon: 'success' })
+  uni.showToast({ title: `${({diary:'记录',bill:'账单',plan:'计划'})[type]} CSV 已导出`, icon: 'success' })
 }
 
 async function doRebuild() {
@@ -82,7 +82,7 @@ function clearAll() {
     <!-- 危险操作 -->
     <view class="card danger-card">
       <text class="card-title danger-title">⚠️ 清除数据</text>
-      <text class="card-desc">删除所有本地日记、账单、计划和配置</text>
+      <text class="card-desc">删除所有本地记录、账单、计划和配置</text>
       <view class="btn-danger" @tap="clearAll">清除所有本地数据</view>
     </view>
   </view>

@@ -1,9 +1,10 @@
-/**
+﻿/**
  * AI 响应解析器 — 容错处理，支持单意图/复合意图/撤销
  *
  * 从 utils/api.js 拆分，减少单文件体积
  */
 import { logger } from '../logger.js'
+import { OP_CLAIM_RE } from './constants.js'
 
 /**
  * 解析 AI 响应 — 容错处理，支持单意图/复合意图/撤销
@@ -17,7 +18,8 @@ export function parseAiResponse(raw, conversationId) {
       action: null,
       actions: [],
       suggestions: [],
-      conversation_id: conversationId || ''
+      conversation_id: conversationId || '',
+      _isFallback: true
     }
   }
 
@@ -51,6 +53,30 @@ export function parseAiResponse(raw, conversationId) {
         }
       }
     }
+    // 兜底：尝试找 {"reply" 开头的子串（AI 有时在 JSON 前输出思考文本）
+    if (!parsed) {
+      const replyJsonIdx = cleaned.indexOf('{"reply"')
+      if (replyJsonIdx === -1) {
+        // 再试单引号变体
+        const replyJsonIdx2 = cleaned.indexOf("{'reply'")
+        if (replyJsonIdx2 !== -1) {
+          const sub = cleaned.slice(replyJsonIdx2)
+          try { parsed = JSON.parse(sub) } catch {}
+        }
+      } else if (replyJsonIdx !== -1) {
+        const sub = cleaned.slice(replyJsonIdx)
+        try { parsed = JSON.parse(sub) } catch {}
+        // 如果直接 parse 失败，再试贪婪匹配
+        if (!parsed) {
+          const subMatch = sub.match(/\{[\s\S]*\}/g)
+          if (subMatch) {
+            for (let i = subMatch.length - 1; i >= 0; i--) {
+              try { parsed = JSON.parse(subMatch[i]); break } catch { continue }
+            }
+          }
+        }
+      }
+    }
     if (!parsed) {
       // 非 JSON → 当作纯文本回复
       return {
@@ -68,6 +94,9 @@ export function parseAiResponse(raw, conversationId) {
     logger.warn('[思迹] AI 返回 JSON 但 reply 为空:', raw.substring(0, 200))
     reply = '抱歉，我没能理解，能换个方式说说吗？'
   }
+
+  // 清洗 reply 中的 markdown 代码块（AI 有时会违反禁令）
+  reply = stripMarkdownCodeBlocks(reply)
   let action = null
   let actions = []
 
@@ -96,13 +125,15 @@ export function parseAiResponse(raw, conversationId) {
     actions = [action]
   }
 
-  // 兜底：AI 回复含操作词但未返回 action 时，尝试从 reply 中检测
-  if (!action && (!actions || actions.length === 0)) {
-    const opWords = /已记录|已更新|已帮你|已记下|记下了|已经记|已经帮|已经更新|已经修改|帮你记|帮你更新|帮你修改/
-    if (opWords.test(reply)) {
-      logger.warn('[AI] reply 含操作词但未返回 action，尝试兜底')
-      // 无法从 reply 精确提取参数，只能提示用户
-      // 不自动构造 action，因为无法确定具体要更新什么
+  // P2-2: 操作词兜底已由 autoExecutor.extractFallbackAction 统一处理（更全面）
+  // 此处不再重复检测，避免两套正则不一致
+
+  // 铁律4兜底：标记 AI 声称操作但无 action 的情况，交由 autoExecutor 决定修正或 fallback
+  let _opClaimWithoutAction = false
+  if (!action && reply) {
+    if (OP_CLAIM_RE.test(reply)) {
+      _opClaimWithoutAction = true
+      logger.warn('[response-parser] AI 声称操作但无 action，标记 _opClaimWithoutAction:', reply)
     }
   }
 
@@ -110,7 +141,19 @@ export function parseAiResponse(raw, conversationId) {
     reply,
     action,
     actions,
+    _opClaimWithoutAction,
     suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3).map(s => String(s)).filter(Boolean) : [],
     conversation_id: conversationId || ''
   }
+}
+
+/**
+ * 清洗 reply 中的 markdown 代码块
+ * AI 有时会违反禁令在 reply 中用 ```wrap 内容```
+ * 策略：去掉代码块包裹（```lang ... ```），保留内部纯文本
+ */
+function stripMarkdownCodeBlocks(text) {
+  if (!text) return text
+  // 匹配 ```lang\n...``` 模式，保留内部内容
+  return text.replace(/```(?:[a-zA-Z]+)?\s*\n?([\s\S]*?)```/g, '$1').trim()
 }

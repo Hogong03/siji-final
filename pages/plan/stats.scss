@@ -1,0 +1,135 @@
+/* plan/stats.vue SCSS — 计划统计页样式 */
+
+.stats-page {
+  min-height: 100vh;
+  background: #F4F4F5;
+}
+
+.stats-scroll {
+  min-height: 100vh;
+  padding: 12rpx 20rpx;
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.card-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #18181B;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+/* 总览 */
+.overview-card {
+  background: #18181B;
+}
+.overview-card .card-title { color: #FAFAFA; }
+.overview-card .og-num { color: #FAFAFA; }
+.overview-card .og-label { color: rgba(250, 250, 250, 0.6); }
+
+.overview-grid {
+  display: flex;
+  justify-content: space-between;
+}
+
+.og-item { text-align: center; flex: 1; }
+.og-num { font-size: 44rpx; font-weight: 800; display: block; color: #18181B; font-variant-numeric: tabular-nums; }
+.og-label { font-size: 20rpx; color: #71717A; }
+
+/* 图表+图例并排 */
+.chart-with-legend {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.ring-side { flex-shrink: 0; width: 200rpx; }
+
+.legend-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.mini-legend { display: flex; align-items: center; gap: 8rpx; }
+.mini-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
+.mini-label { font-size: 24rpx; color: #18181B; min-width: 60rpx; }
+.mini-val { font-size: 20rpx; color: #71717A; font-variant-numeric: tabular-nums; }
+
+/* 分布 */
+.dist-list { display: flex; flex-direction: column; gap: 8rpx; }
+.dist-row { display: flex; align-items: center; gap: 12rpx; }
+.dist-left { display: flex; align-items: center; gap: 8rpx; width: 100rpx; }
+.dist-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
+.dist-label { font-size: 24rpx; color: #18181B; }
+.dist-bar-wrap { flex: 1; height: 14rpx; background: #E4E4E7; border-radius: 7rpx; overflow: hidden; }
+.dist-bar { height: 100%; border-radius: 7rpx; transition: width 0.3s; }
+.dist-count { font-size: 20rpx; color: #71717A; min-width: 100rpx; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 趋势 */
+.trend-legend {
+  display: flex;
+  gap: 24rpx;
+  justify-content: center;
+  margin-top: 8rpx;
+}
+
+.legend-item { display: flex; align-items: center; gap: 6rpx; }
+.legend-dot {
+  width: 14rpx; height: 14rpx; border-radius: 4rpx;
+  &.created { background: #18181B; }
+  &.done { background: #A1A1AA; }
+}
+.legend-text { font-size: 20rpx; color: #71717A; }
+
+/* 完成速度 */
+.speed-grid { display: flex; justify-content: space-between; }
+.sp-item { text-align: center; flex: 1; }
+.sp-num { font-size: 36rpx; font-weight: 800; color: #18181B; display: block; font-variant-numeric: tabular-nums; }
+.sp-label { font-size: 20rpx; color: #71717A; }
+
+.empty-block { padding: 40rpx 0; text-align: center; }
+.empty-text { font-size: 24rpx; color: #A1A1AA; }
+
+/* 优先级完成率 */
+.pc-list { display: flex; flex-direction: column; gap: 8rpx; }
+.pc-row { display: flex; align-items: center; gap: 12rpx; }
+.pc-left { display: flex; align-items: center; gap: 8rpx; width: 100rpx; }
+.pc-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
+.pc-label { font-size: 24rpx; color: #18181B; }
+.pc-bar-wrap { flex: 1; height: 14rpx; background: #E4E4E7; border-radius: 7rpx; overflow: hidden; }
+.pc-bar { height: 100%; border-radius: 7rpx; transition: width 0.3s; }
+.pc-text { font-size: 20rpx; color: #71717A; min-width: 120rpx; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ═══ 深色模式 ═══ */
+@media (prefers-color-scheme: dark) {
+  .overview-card { background: #FAFAFA; }
+  .overview-card .card-title { color: #18181B; }
+  .overview-card .og-num { color: #18181B; }
+  .overview-card .og-label { color: rgba(24, 24, 27, 0.6); }
+  .stats-page { background: #18181B; }
+  .card { background: #27272A; }
+  .card-title { color: #FAFAFA; }
+  .og-num { color: #FAFAFA; }
+  .og-label { color: #71717A; }
+  .mini-label { color: #FAFAFA; }
+  .mini-val { color: #71717A; }
+  .dist-label { color: #FAFAFA; }
+  .dist-bar-wrap { background: #3F3F46; }
+  .dist-count { color: #71717A; }
+  .legend-dot.done { background: #52525B; }
+  .legend-text { color: #71717A; }
+  .sp-num { color: #FAFAFA; }
+  .sp-label { color: #71717A; }
+  .empty-text { color: #71717A; }
+  .pc-label { color: #FAFAFA; }
+  .pc-bar-wrap { background: #3F3F46; }
+  .pc-text { color: #71717A; }
+}

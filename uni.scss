@@ -27,6 +27,7 @@ $accent-light: #3F3F46;
 $bg-page: #FAFAFA;             // Zinc-50 页面背景
 $bg-card: #FFFFFF;              // 纯白卡片
 $bg-input: #F4F4F5;            // 输入框背景 Zinc-100
+$bg-btn-secondary: #D4D4D8;   // 按钮次级背景 Zinc-300
 $bg-glass: rgba(255, 255, 255, 0.72);  // 毛玻璃白
 $bg-glass-dark: rgba(255, 255, 255, 0.08);
 
@@ -66,6 +67,8 @@ $shadow-none: none;
 
 // ─── 玻璃拟物（已废弃，保留兼容） ───
 $glass-border: 1rpx solid #E4E4E7;
+$glass-border-color: #E4E4E7;
+$border-color: #E4E4E7;
 $glass-blur: none;
 $glass-bg: #FFFFFF;
 $glass-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.04);

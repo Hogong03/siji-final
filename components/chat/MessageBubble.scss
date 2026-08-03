@@ -1,0 +1,406 @@
+.bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: $spacing-lg;
+  padding: 0 $spacing-md;
+  animation: bubbleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+
+  &.user { align-items: flex-end; }
+  &.assistant { align-items: flex-start; }
+
+  &.streaming {
+    animation: streamFadeIn 0.2s ease both;
+  }
+
+  /* 连续 AI 消息缩小间距 */
+  &.is-continuation {
+    margin-bottom: $spacing-sm;
+  }
+
+  /* 短文本缩小间距 */
+  &.is-short {
+    margin-bottom: $spacing-md;
+  }
+}
+
+.msg-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  max-width: 100%;
+
+  &.user {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  &.assistant {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes streamFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── 气泡基础 ─── */
+.bubble {
+  max-width: 80%;
+  padding: $spacing-sm $spacing-md;
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  /* 用户气泡 — 加阴影提升层次 */
+  &.user {
+    background: var(--color-ai);
+    color: var(--bg-card);
+    border-radius: 24rpx 24rpx 8rpx 24rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+  }
+
+  /* AI 气泡基础 */
+  &.assistant {
+    background: var(--bg-card-alt);
+    color: var(--text-primary);
+    border-radius: 24rpx 24rpx 24rpx 8rpx;
+    border-left: 3rpx solid var(--border-color);
+
+    &.has-edge {
+      border-left-color: var(--text-secondary);
+    }
+
+    /* plain/short 去掉左侧条，更干净 */
+    &.plain, &.short {
+      border-left: none;
+    }
+  }
+
+  /* 短文本收窄 */
+  &.is-short {
+    max-width: 70%;
+  }
+
+  /* 连续 AI 消息去掉左侧边框和圆角微调 */
+  &.assistant.is-continuation {
+    border-left-color: var(--bg-input);
+    border-radius: 16rpx 24rpx 24rpx 8rpx;
+  }
+
+  &-text {
+    font-size: $font-md;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &-image {
+    width: 100%;
+    max-width: 300rpx;
+    border-radius: 12rpx;
+    margin-bottom: $spacing-sm;
+    display: block;
+  }
+}
+
+/* ─── 时间戳 + 操作提示 ─── */
+.bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 4rpx;
+  padding: 0 4rpx;
+  transition: opacity 0.15s;
+
+  &.user { justify-content: flex-end; }
+  &.assistant { justify-content: flex-start; }
+
+  /* 连续消息中间不显示 */
+  .is-continuation & {
+    display: none;
+  }
+}
+
+.bubble-time-outer {
+  font-size: $font-xs;
+  color: var(--text-hint);
+  opacity: 0.5;
+}
+
+.bubble-actions-hint {
+  display: flex;
+  gap: 16rpx;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+
+  &:active {
+    opacity: 1;
+  }
+}
+
+.bubble-action-btn {
+  font-size: $font-xs;
+  color: var(--text-hint);
+  padding: 2rpx 8rpx;
+
+  &:active {
+    color: var(--text-primary);
+  }
+}
+
+/* ─── AI 气泡内容类型变体 ─── */
+
+/* 纯文本/短文本 — 标准灰底，无边框 */
+.bubble.assistant.plain,
+.bubble.assistant.short {
+  background: var(--bg-card-alt);
+  border-left: none;
+}
+
+/* 短回复内容居中 — 见下方 .bubble.assistant.short */
+
+/* 欢迎消息 — 去掉左侧边框，更柔和 */
+.bubble.assistant.is-welcome {
+  border-left: none;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  border-radius: 16rpx;
+  padding: $spacing-md $spacing-lg;
+  max-width: 88%;
+}
+
+/* ─── 欢迎消息快捷 chip ─── */
+.welcome-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: $spacing-sm;
+}
+
+.welcome-chip {
+  padding: 8rpx 16rpx;
+  border-radius: 16rpx;
+  background: var(--bg-btn-secondary);
+  border: 1rpx solid var(--border-color);
+  text {
+    font-size: $font-xs;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  &:active {
+    transform: scale(0.94);
+    background: var(--bg-card-alt);
+  }
+}
+
+/* 代码型 — 代码块撑满气泡，去掉双层圆角 */
+.bubble.assistant.code {
+  padding: 0;
+  overflow: hidden;
+  border-left: none;
+  background: var(--bg-card-alt);
+  .md-code-block {
+    margin: 0;
+    border-radius: 24rpx 24rpx 24rpx 8rpx;
+  }
+}
+
+/* 富文本型 — 左侧主色条 */
+.bubble.assistant.rich {
+  border-left: 4rpx solid var(--color-ai);
+}
+
+/* 列表型 — 左侧次要色条 */
+.bubble.assistant.list {
+  border-left: 4rpx solid var(--text-secondary);
+}
+
+/* 引用型 — 左侧粗条+浅底 */
+.bubble.assistant.quote {
+  border-left: 4rpx solid var(--text-hint);
+  background: var(--bg-input);
+}
+
+/* 表格型 — 顶部细线 */
+.bubble.assistant.table {
+  border-left: none;
+  border-top: 3rpx solid var(--text-primary);
+  border-radius: 0 0 24rpx 8rpx;
+}
+
+/* 长文型 — 更宽松的内边距 + 行高优化 */
+.bubble.assistant.long {
+  padding: $spacing-md $spacing-lg;
+  border-left: 4rpx solid var(--color-ai);
+
+  .md-text {
+    line-height: 1.85;
+    letter-spacing: 0.5rpx;
+  }
+  .md-p {
+    margin: 12rpx 0;
+  }
+}
+
+/* ─── 消息操作（长按触发，无常显按钮） ─── */
+.bubble-actions {
+  display: none;
+}
+
+/* ─── 短回复居中收窄 ─── */
+.bubble.assistant.short {
+  max-width: 60%;
+  border-radius: 28rpx;
+  border-left: none;
+  .md-renderer {
+    text-align: center;
+    .md-p { text-align: center; }
+  }
+}
+
+/* ─── 流式打字光标 ─── */
+.bubble.assistant.streaming::after {
+  content: '▌';
+  font-size: $font-md;
+  color: #18181B;
+  animation: blink 0.8s infinite;
+  margin-left: 2rpx;
+  display: inline-block;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* ─── 加载动画 — 融合在气泡内 ─── */
+.loading-bubble {
+  padding: $spacing-md $spacing-lg;
+  background: #E4E4E7;
+  border-radius: 24rpx 24rpx 24rpx 8rpx;
+  border-left: 3rpx solid #D4D4D8;
+}
+
+.loading-bar {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+
+  .bar-segment {
+    width: 14rpx;
+    height: 14rpx;
+    background: #A1A1AA;
+    border-radius: 50%;
+    animation: dotBounce 1.4s infinite ease-in-out both;
+
+    &:nth-child(1) { animation-delay: -0.32s; }
+    &:nth-child(2) { animation-delay: -0.16s; }
+    &:nth-child(3) { animation-delay: 0s; }
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.4);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 深色模式覆盖 */
+@media (prefers-color-scheme: dark) {
+  .loading-bubble {
+    background: #27272A;
+    border-left-color: #3F3F46;
+  }
+  .bar-segment {
+    background: #A1A1AA !important;
+  }
+  .bubble.assistant.streaming::after {
+    color: #FAFAFA;
+  }
+}
+
+/* ─── 待确认卡片 ─── */
+.confirm-card {
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: var(--bg-card);
+  border-radius: 12rpx;
+  border: 2rpx solid var(--color-ai);
+  width: 85%;
+}
+
+.confirm-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-xs;
+
+  .confirm-icon { font-size: 32rpx; margin-right: $spacing-xs; }
+  .confirm-title { font-size: $font-sm; font-weight: 700; color: var(--color-ai); }
+}
+
+.confirm-body {
+  margin-bottom: $spacing-sm;
+  .confirm-detail { font-size: $font-sm; color: var(--text-strong); }
+}
+
+.confirm-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.confirm-btn {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0;
+  border-radius: 8rpx;
+  font-size: $font-sm;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active { transform: scale(0.94); }
+
+  &.cancel {
+    background: var(--bg-btn-secondary);
+    color: var(--text-secondary);
+  }
+
+  &.ok {
+    background: var(--color-ai);
+    color: var(--bg-card);
+  }
+}
+
+/* ─── 失败提示 ─── */
+.exec-card {
+  margin-top: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background: var(--bg-card);
+  border-radius: 12rpx;
+  border: 1rpx solid var(--border-color);
+  width: 85%;
+
+  &.failed {
+    border-color: var(--color-danger, $danger);
+    background: rgba(239, 68, 68, 0.04);
+  }
+}
+
+.exec-error {
+  font-size: $font-sm;
+  color: var(--color-danger, $danger);
+}

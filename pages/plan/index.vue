@@ -222,10 +222,10 @@ import {
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
-		background: $bg-page;
+		background: #F4F4F5;
 	}
 
-	/* 新建浮动按钮 — 极简 + 入场动画 */
+	/* 新建浮动按钮 — fixed 定位，硬编码颜色 */
 	.fab {
 		position: fixed;
 		right: $spacing-lg;
@@ -233,8 +233,8 @@ import {
 		width: 112rpx;
 		height: 112rpx;
 		border-radius: $radius-round;
-		background: var(--color-ai);
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.12);
+		background: #000000;
+		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -247,7 +247,7 @@ import {
 
 		.fab-icon {
 			font-size: 52rpx;
-			color: var(--text-on-ai);
+			color: #FFFFFF;
 			font-weight: 300;
 		}
 	}
@@ -263,4 +263,15 @@ import {
 			transform: scale(1);
 		}
 	}
+
+	@media (prefers-color-scheme: dark) {
+		.fab {
+			background: #FAFAFA;
+			box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+		}
+		.fab .fab-icon {
+			color: #18181B;
+		}
+	}
+
 </style>
