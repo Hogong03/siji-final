@@ -7,34 +7,14 @@ const props = defineProps({
 
 const emit = defineEmits(['go-detail'])
 
-/** 格式化完整时间显示（精确到秒） */
 function formatDateTime(str) {
 	if (!str) return null
-	// 纯日期格式
-	if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-		return {
-			date: str,
-			time: '',
-			full: str
-		}
-	}
-	// 完整日期时间格式
+	if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return { date: str, time: '', full: str }
 	const m = str.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(:\d{2})?)?/)
-	if (m) {
-		return {
-			date: m[1],
-			time: m[2] || '',
-			full: str
-		}
-	}
-	return {
-		date: str,
-		time: '',
-		full: str
-	}
+	if (m) return { date: m[1], time: m[2] || '', full: str }
+	return { date: str, time: '', full: str }
 }
 
-/** 子任务进度 */
 function subProgress(item) {
 	if (!item.subtasks || item.subtasks.length === 0) return null
 	const done = item.subtasks.filter(s => s.done).length
@@ -49,45 +29,32 @@ function formatDue(ds) {
 	if (!ds) return null
 	const dt = formatDateTime(ds)
 	const now = new Date()
-	const due = new Date(dt.full.replace(/-/g, '/')) // iOS 兼容
+	const due = new Date(dt.full.replace(/-/g, '/'))
 	const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
 	let text
 	if (diff < 0) text = '已过期'
-	else if (diff === 0) text = '今天截止'
-	else if (diff === 1) text = '明天截止'
-	else if (diff <= 7) text = `${diff}天后截止`
+	else if (diff === 0) text = '今天'
+	else if (diff === 1) text = '明天'
+	else if (diff <= 7) text = `${diff}天`
 	else text = dt.date
-	// 如果有具体时间，附加
-	if (dt.time && diff >= 0 && diff <= 1) {
-		text += ` ${dt.time.substring(0, 5)}`
-	}
-	return {
-		text,
-		danger: diff < 0 || diff === 0,
-		raw: ds
-	}
+	if (dt.time && diff >= 0 && diff <= 1) text += ` ${dt.time.substring(0, 5)}`
+	return { text, danger: diff < 0 || diff === 0 }
 }
 
 function formatEst(ds) {
 	if (!ds) return null
 	const dt = formatDateTime(ds)
 	const now = new Date()
-	const est = new Date(dt.full.replace(/-/g, '/')) // iOS 兼容
+	const est = new Date(dt.full.replace(/-/g, '/'))
 	const diff = Math.ceil((est - now) / (1000 * 60 * 60 * 24))
 	let text
-	if (diff < 0) text = '应已开始'
+	if (diff < 0) text = '应开始'
 	else if (diff === 0) text = '今天'
 	else if (diff === 1) text = '明天'
-	else if (diff <= 7) text = `${diff}天后`
+	else if (diff <= 7) text = `${diff}天`
 	else text = dt.date
-	// 如果有具体时间且在近期，附加时间
-	if (dt.time && diff >= 0 && diff <= 1) {
-		text += ` ${dt.time.substring(0, 5)}`
-	}
-	return {
-		text,
-		danger: false
-	}
+	if (dt.time && diff >= 0 && diff <= 1) text += ` ${dt.time.substring(0, 5)}`
+	return { text }
 }
 </script>
 
@@ -95,57 +62,176 @@ function formatEst(ds) {
 	<view class="plan-card"
 		:class="{ 'card-done': item.status === 2, 'card-urg': item.priority === 2, 'card-imp': item.priority === 1 }"
 		@tap="emit('go-detail', item.client_id)">
+		<!-- 标题行 -->
 		<view class="card-top">
-			<view class="card-left">
-      <view class="title-row">
-					<view class="priority-dot"
-						:style="{ background: priorityColors[item.priority] || '#999' }" />
-					<text class="card-title">{{ item.title }}</text>
-					<view class="mini-progress" v-if="subProgress(item)">
-						<view class="mini-bar" :style="{ width: subProgress(item).pct + '%' }" />
-						<text class="mini-pct">{{ subProgress(item).pct }}%</text>
-					</view>
-				</view>
-				<text class="card-desc" v-if="item.description">
-					{{ item.description.substring(0, 80) }}
-				</text>
-			</view>
-			<text class="status-tag"
-				:class="`status-${item.status}`">{{ statusMap[item.status] || '未知' }}</text>
+			<view class="priority-dot" :style="{ background: priorityColors[item.priority] || '#999' }" />
+			<text class="card-title">{{ item.title }}</text>
+			<text class="status-tag" :class="`status-${item.status}`">{{ statusMap[item.status] || '未知' }}</text>
 		</view>
 
-		<!-- 子计划/子任务进度 -->
+		<!-- 描述 -->
+		<text class="card-desc" v-if="item.description">{{ item.description.substring(0, 80) }}</text>
+
+		<!-- 子任务进度 -->
 		<view v-if="subProgress(item)" class="subtask-row">
-			<view class="st-progress-bar">
-				<view class="st-progress-fill" :style="{ width: subProgress(item).pct + '%' }" />
+			<view class="st-bar">
+				<view class="st-fill" :style="{ width: subProgress(item).pct + '%' }" />
 			</view>
-			<text class="st-progress-text">{{ subProgress(item).done }}/{{ subProgress(item).total }}</text>
+			<text class="st-text">{{ subProgress(item).done }}/{{ subProgress(item).total }}</text>
 		</view>
 
-		<!-- 嵌套子计划标识 -->
-		<view v-if="item.parent_id" class="nested-badge">
-			<text class="nb-icon">↳</text>
-			<text class="nb-text">子计划</text>
-		</view>
-
+		<!-- 底部：日期 -->
 		<view class="card-bottom">
 			<view class="date-info">
-				<view v-if="item.estimated_time" class="date-chip est">
-					<text class="dc-label">预计</text>
-					<text class="dc-value">{{ formatEst(item.estimated_time)?.text }}</text>
-				</view>
-				<view v-if="item.due_date" class="date-chip due"
-					:class="{ danger: formatDue(item.due_date)?.danger }">
-					<text class="dc-label">截止</text>
-					<text class="dc-value">{{ formatDue(item.due_date)?.text }}</text>
-				</view>
-				<text v-if="!item.estimated_time && !item.due_date" class="due-text muted">无日期</text>
+				<text v-if="item.estimated_time" class="date-text est">📅 {{ formatEst(item.estimated_time)?.text }}</text>
+				<text v-if="item.due_date" class="date-text due" :class="{ danger: formatDue(item.due_date)?.danger }">⏰ {{ formatDue(item.due_date)?.text }}</text>
+				<text v-if="!item.estimated_time && !item.due_date" class="date-text muted">无日期</text>
 			</view>
-			<text class="card-time">{{ new Date(item.created_at).toLocaleDateString() }}</text>
+			<text v-if="item.parent_id" class="nested-badge">↳ 子计划</text>
 		</view>
 	</view>
 </template>
 
 <style scoped lang="scss">
-@import './PlanCard.scss';
+.plan-card {
+	background: #FFFFFF;
+	border-radius: 12rpx;
+	padding: 16rpx 20rpx;
+	margin-bottom: 10rpx;
+	border-left: 6rpx solid transparent;
+
+	&:active { transform: scale(0.98); }
+
+	&.card-done {
+		opacity: 0.5;
+		border-left-color: #D4D4D8;
+		.card-title { text-decoration: line-through; color: #A1A1AA; }
+	}
+	&.card-urg { border-left-color: #EF4444; }
+	&.card-imp { border-left-color: #E8A838; }
+}
+
+.card-top {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+}
+
+.priority-dot {
+	width: 12rpx;
+	height: 12rpx;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.card-title {
+	font-size: 30rpx;
+	font-weight: 700;
+	color: #18181B;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.status-tag {
+	font-size: 20rpx;
+	padding: 4rpx 14rpx;
+	border-radius: 16rpx;
+	font-weight: 600;
+	flex-shrink: 0;
+
+	&.status-0 { background: #F4F4F5; color: #71717A; }
+	&.status-1 { background: #18181B; color: #FFFFFF; }
+	&.status-2 { background: rgba(16, 185, 129, 0.12); color: #059669; }
+}
+
+.card-desc {
+	font-size: 24rpx;
+	color: #71717A;
+	margin-top: 4rpx;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.subtask-row {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+	margin-top: 8rpx;
+}
+
+.st-bar {
+	flex: 1;
+	height: 6rpx;
+	background: #E4E4E7;
+	border-radius: 3rpx;
+	overflow: hidden;
+}
+
+.st-fill {
+	height: 100%;
+	background: #18181B;
+	border-radius: 3rpx;
+	transition: width 0.3s;
+}
+
+.st-text {
+	font-size: 20rpx;
+	color: #52525B;
+	font-weight: 600;
+	min-width: 50rpx;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.card-bottom {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 8rpx;
+}
+
+.date-info {
+	display: flex;
+	gap: 12rpx;
+	flex-wrap: wrap;
+}
+
+.date-text {
+	font-size: 20rpx;
+	color: #71717A;
+
+	&.due { color: #18181B; font-weight: 600; }
+	&.danger { color: #EF4444; font-weight: 700; }
+	&.muted { color: #A1A1AA; }
+}
+
+.nested-badge {
+	font-size: 18rpx;
+	color: #A1A1AA;
+	background: #F4F4F5;
+	padding: 2rpx 10rpx;
+	border-radius: 10rpx;
+}
+
+@media (prefers-color-scheme: dark) {
+	.plan-card { background: #27272A; }
+	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #52525B; } }
+	.card-title { color: #FAFAFA; }
+	.card-desc { color: #A1A1AA; }
+	.status-tag {
+		&.status-0 { background: #3F3F46; color: #A1A1AA; }
+		&.status-1 { background: #FAFAFA; color: #18181B; }
+		&.status-2 { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+	}
+	.st-bar { background: #3F3F46; }
+	.st-fill { background: #FAFAFA; }
+	.st-text { color: #D4D4D8; }
+	.date-text { color: #71717A; &.due { color: #FAFAFA; } &.danger { color: #F87171; } }
+	.nested-badge { background: #3F3F46; color: #71717A; }
+}
 </style>

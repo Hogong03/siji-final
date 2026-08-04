@@ -23,6 +23,19 @@ export function createPlanExecutors(ctx) {
         title: s.title || s,
         done: false
       })) : [],
+      phases: Array.isArray(p.phases) ? p.phases.map((ph, i) => ({
+        id: ph.id || i + 1,
+        title: ph.title || `第${i + 1}阶段`,
+        description: ph.description || '',
+        start_date: ph.start_date || '',
+        end_date: ph.end_date || '',
+        milestones: Array.isArray(ph.milestones) ? ph.milestones.filter(m => m) : [],
+        subtasks: Array.isArray(ph.subtasks) ? ph.subtasks.map((s, j) => ({
+          id: s.id || j + 1,
+          title: typeof s === 'string' ? s : (s.title || s || ''),
+          done: false
+        })) : []
+      })) : [],
       // 父计划ID — 支持计划嵌套
       parent_id: p.parent_id || '',
       // 精确到秒的时间（YYYY-MM-DD HH:mm:ss 格式）
@@ -48,6 +61,8 @@ export function createPlanExecutors(ctx) {
         priority: plan.priority, tags: plan.tags,
         subtaskCount: plan.subtasks.length,
         subtasks: plan.subtasks,
+        phaseCount: plan.phases.length,
+        phases: plan.phases,
         parent_id: plan.parent_id,
         deadline: plan.deadline,
         due_date: plan.due_date,
@@ -83,6 +98,7 @@ export function createPlanExecutors(ctx) {
     if (p.end_time != null) updates.end_time = p.end_time
     if (p.parent_id != null) updates.parent_id = p.parent_id
     if (Array.isArray(p.subtasks)) updates.subtasks = p.subtasks
+    if (Array.isArray(p.phases)) updates.phases = p.phases
 
     const updated = { ...old, ...updates, updated_at: Date.now() }
     savePlan(updated)

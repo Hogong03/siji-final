@@ -10,6 +10,30 @@
   padding: 12rpx 20rpx;
 }
 
+/* 时间范围选择 */
+.range-bar {
+  display: flex;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
+}
+
+.range-item {
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 0;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  background: #FFFFFF;
+  color: #71717A;
+  transition: all 0.15s ease;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
 .card {
   background: #FFFFFF;
   border-radius: 12rpx;
@@ -26,67 +50,30 @@
 }
 
 /* 总览 */
-.overview-card {
-  background: #18181B;
-}
+.overview-card { background: #18181B; }
 .overview-card .card-title { color: #FAFAFA; }
 .overview-card .og-num { color: #FAFAFA; }
 .overview-card .og-label { color: rgba(250, 250, 250, 0.6); }
 
-.overview-grid {
-  display: flex;
-  justify-content: space-between;
-}
-
+.overview-grid { display: flex; justify-content: space-between; }
 .og-item { text-align: center; flex: 1; }
 .og-num { font-size: 44rpx; font-weight: 800; display: block; color: #18181B; font-variant-numeric: tabular-nums; }
 .og-label { font-size: 20rpx; color: #71717A; }
 
 /* 图表+图例并排 */
-.chart-with-legend {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-}
-
+.chart-with-legend { display: flex; gap: 16rpx; align-items: center; }
 .ring-side { flex-shrink: 0; width: 200rpx; }
-
-.legend-side {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
+.legend-side { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
 
 .mini-legend { display: flex; align-items: center; gap: 8rpx; }
 .mini-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
 .mini-label { font-size: 24rpx; color: #18181B; min-width: 60rpx; }
 .mini-val { font-size: 20rpx; color: #71717A; font-variant-numeric: tabular-nums; }
 
-/* 分布 */
-.dist-list { display: flex; flex-direction: column; gap: 8rpx; }
-.dist-row { display: flex; align-items: center; gap: 12rpx; }
-.dist-left { display: flex; align-items: center; gap: 8rpx; width: 100rpx; }
-.dist-dot { width: 14rpx; height: 14rpx; border-radius: 50%; }
-.dist-label { font-size: 24rpx; color: #18181B; }
-.dist-bar-wrap { flex: 1; height: 14rpx; background: #E4E4E7; border-radius: 7rpx; overflow: hidden; }
-.dist-bar { height: 100%; border-radius: 7rpx; transition: width 0.3s; }
-.dist-count { font-size: 20rpx; color: #71717A; min-width: 100rpx; text-align: right; font-variant-numeric: tabular-nums; }
-
 /* 趋势 */
-.trend-legend {
-  display: flex;
-  gap: 24rpx;
-  justify-content: center;
-  margin-top: 8rpx;
-}
-
+.trend-legend { display: flex; gap: 24rpx; justify-content: center; margin-top: 8rpx; }
 .legend-item { display: flex; align-items: center; gap: 6rpx; }
-.legend-dot {
-  width: 14rpx; height: 14rpx; border-radius: 4rpx;
-  &.created { background: #18181B; }
-  &.done { background: #A1A1AA; }
-}
+.legend-dot { width: 14rpx; height: 14rpx; border-radius: 4rpx; &.created { background: #18181B; } &.done { background: #A1A1AA; } }
 .legend-text { font-size: 20rpx; color: #71717A; }
 
 /* 完成速度 */
@@ -108,28 +95,79 @@
 .pc-bar { height: 100%; border-radius: 7rpx; transition: width 0.3s; }
 .pc-text { font-size: 20rpx; color: #71717A; min-width: 120rpx; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* 标签统计 */
+.tag-stats-list { display: flex; flex-direction: column; gap: 8rpx; }
+.ts-row { display: flex; align-items: center; gap: 12rpx; }
+.ts-label { font-size: 24rpx; color: #18181B; min-width: 100rpx; }
+.ts-bar-wrap { flex: 1; height: 14rpx; background: #E4E4E7; border-radius: 7rpx; overflow: hidden; }
+.ts-bar { height: 100%; background: #18181B; border-radius: 7rpx; transition: width 0.3s; }
+.ts-text { font-size: 20rpx; color: #71717A; min-width: 120rpx; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 过期分析 */
+.overdue-grid { display: flex; justify-content: space-between; }
+.od-item { text-align: center; flex: 1; }
+.od-num { font-size: 36rpx; font-weight: 800; color: #18181B; display: block; font-variant-numeric: tabular-nums; }
+.od-num.danger { color: #D35D5D; }
+.od-label { font-size: 20rpx; color: #71717A; }
+
+/* 热力图 */
+.heatmap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rpx;
+}
+
+.hm-cell {
+  width: calc((100% - 20 * 4rpx) / 10);
+  aspect-ratio: 1;
+  border-radius: 4rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hm-day { font-size: 18rpx; font-weight: 600; }
+
+.hm-legend {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  justify-content: flex-end;
+  margin-top: 8rpx;
+}
+
+.hm-scale { width: 20rpx; height: 20rpx; border-radius: 3rpx; }
+.hm-label { font-size: 20rpx; color: #71717A; margin: 0 4rpx; }
+
 /* ═══ 深色模式 ═══ */
 @media (prefers-color-scheme: dark) {
+  .stats-page { background: #18181B; }
+  .range-item { background: #27272A; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
   .overview-card { background: #FAFAFA; }
   .overview-card .card-title { color: #18181B; }
   .overview-card .og-num { color: #18181B; }
   .overview-card .og-label { color: rgba(24, 24, 27, 0.6); }
-  .stats-page { background: #18181B; }
   .card { background: #27272A; }
   .card-title { color: #FAFAFA; }
   .og-num { color: #FAFAFA; }
   .og-label { color: #71717A; }
   .mini-label { color: #FAFAFA; }
   .mini-val { color: #71717A; }
-  .dist-label { color: #FAFAFA; }
-  .dist-bar-wrap { background: #3F3F46; }
-  .dist-count { color: #71717A; }
+  .pc-label { color: #FAFAFA; }
+  .pc-bar-wrap { background: #3F3F46; }
+  .pc-text { color: #71717A; }
   .legend-dot.done { background: #52525B; }
   .legend-text { color: #71717A; }
   .sp-num { color: #FAFAFA; }
   .sp-label { color: #71717A; }
   .empty-text { color: #71717A; }
-  .pc-label { color: #FAFAFA; }
-  .pc-bar-wrap { background: #3F3F46; }
-  .pc-text { color: #71717A; }
+  .ts-label { color: #FAFAFA; }
+  .ts-bar-wrap { background: #3F3F46; }
+  .ts-bar { background: #FAFAFA; }
+  .ts-text { color: #71717A; }
+  .od-num { color: #FAFAFA; }
+  .od-num.danger { color: #F87171; }
+  .od-label { color: #71717A; }
+  .hm-day { color: #71717A; }
+  .hm-label { color: #71717A; }
 }

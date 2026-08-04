@@ -308,6 +308,14 @@
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
+        },
+        {
+          "path": "trash",
+          "style": {
+            "navigationBarTitleText": "计划回收站",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
         }
       ]
     }

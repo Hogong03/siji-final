@@ -46,6 +46,22 @@ function quickSetDueEndOfDay() {
   emit('update:dueTime', '23:59:59')
 }
 
+function quickSetDueEndOfWeek() {
+  const d = new Date()
+  const dayOfWeek = d.getDay() // 0=Sun, 6=Sat
+  const daysToSat = dayOfWeek === 6 ? 0 : (6 - dayOfWeek)
+  d.setDate(d.getDate() + daysToSat)
+  emit('update:dueDate', fmtDate(d))
+}
+
+function quickSetDueNextMonday() {
+  const d = new Date()
+  const dayOfWeek = d.getDay()
+  const daysToMon = dayOfWeek === 1 ? 7 : ((8 - dayOfWeek) % 7)
+  d.setDate(d.getDate() + daysToMon)
+  emit('update:dueDate', fmtDate(d))
+}
+
 function onDueDateChange(e) {
   emit('update:dueDate', e.detail.value)
 }
@@ -119,7 +135,10 @@ function onEstTimeChange(e) {
       </picker>
     </view>
     <view class="quick-dates">
-      <text class="qd-btn" @tap="quickSetDue(3)">3天后</text>
+      <text class="qd-btn" @tap="quickSetDue(0)">今天</text>
+      <text class="qd-btn" @tap="quickSetDue(1)">明天</text>
+      <text class="qd-btn" @tap="quickSetDueEndOfWeek">本周末</text>
+      <text class="qd-btn" @tap="quickSetDueNextMonday">下周一</text>
       <text class="qd-btn" @tap="quickSetDue(7)">一周后</text>
       <text class="qd-btn" @tap="quickSetDue(30)">一月后</text>
       <text class="qd-btn" @tap="quickSetDueEndOfDay">今天结束</text>

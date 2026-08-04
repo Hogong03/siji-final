@@ -23,14 +23,57 @@
   border-radius: 12rpx;
 }
 
-.ai-btn {
-  background: #18181B;
-}
-
+.ai-btn { background: #18181B; }
 .ai-btn .tb-text { color: #FFFFFF; }
 
 .tb-icon { font-size: 28rpx; }
 .tb-text { font-size: 24rpx; font-weight: 600; color: #18181B; }
+
+/* 搜索 + 分类 */
+.filter-bar {
+  padding: 8rpx 20rpx 12rpx;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid #E4E4E7;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #F4F4F5;
+  border-radius: 20rpx;
+  padding: 8rpx 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.search-icon { flex-shrink: 0; }
+.search-input { flex: 1; font-size: 26rpx; color: #18181B; padding: 4rpx 0; }
+.search-clear { font-size: 24rpx; color: #A1A1AA; padding: 4rpx 8rpx; }
+
+.cat-scroll {
+  white-space: nowrap;
+}
+
+.cat-row {
+  display: inline-flex;
+  gap: 8rpx;
+}
+
+.cat-item {
+  flex-shrink: 0;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  background: #F4F4F5;
+  color: #71717A;
+  white-space: nowrap;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
 
 /* 列表 */
 .tpl-scroll {
@@ -75,7 +118,6 @@
 }
 
 .ai-examples { margin-top: 12rpx; }
-
 .ex-label { font-size: 22rpx; color: #71717A; }
 
 .ex-tags {
@@ -103,15 +145,11 @@
   border-radius: 12rpx;
   font-size: 28rpx;
   font-weight: 600;
-
   &.loading { opacity: 0.6; }
 }
 
 /* AI 预览 */
-.ai-preview {
-  max-height: 60vh;
-  padding: 12rpx 20rpx;
-}
+.ai-preview { max-height: 60vh; padding: 12rpx 20rpx; }
 
 .preview-card {
   border: 2rpx solid #E4E4E7;
@@ -137,10 +175,7 @@
   display: block;
 }
 
-.preview-subtasks {
-  padding: 0 16rpx 16rpx;
-}
-
+.preview-subtasks { padding: 0 16rpx 16rpx; }
 .ps-label { font-size: 22rpx; color: #71717A; margin-bottom: 8rpx; display: block; }
 
 .ps-item {
@@ -218,6 +253,12 @@
   .tb-text { color: #FAFAFA; }
   .ai-btn { background: #FAFAFA; }
   .ai-btn .tb-text { color: #18181B; }
+
+  .filter-bar { background: #27272A; border-bottom-color: #3F3F46; }
+  .search-box { background: #3F3F46; }
+  .search-input { color: #FAFAFA; }
+  .search-clear { color: #52525B; }
+  .cat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 
   .section-title { color: #FAFAFA; }
   .empty-text { color: #71717A; }

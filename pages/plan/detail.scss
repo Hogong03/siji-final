@@ -91,6 +91,65 @@
   }
 }
 
+/* AI 工具栏 */
+.ai-tools-section {
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+}
+
+.ai-tools-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.ai-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 10rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  font-size: 24rpx;
+  color: #18181B;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.95);
+    background: #F4F4F5;
+  }
+}
+
+.ai-result {
+  margin-top: 12rpx;
+  padding: 12rpx;
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #18181B;
+}
+
+.ai-result-title {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #18181B;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.ai-result-text {
+  font-size: 24rpx;
+  color: #52525B;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 /* AI 建议 */
 .ai-section {
   background: #FAFAFA;
@@ -135,6 +194,64 @@
   color: #71717A;
 }
 
+/* 父计划关联 */
+.parent-section {
+  padding: 12rpx 20rpx;
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+
+  &:active { background: #F4F4F5; }
+}
+
+.parent-link {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.parent-label {
+  font-size: 22rpx;
+  color: #71717A;
+  flex-shrink: 0;
+}
+
+.parent-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #18181B;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parent-arrow {
+  font-size: 28rpx;
+  color: #A1A1AA;
+}
+
+/* 重复提醒 */
+.repeat-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.repeat-item {
+  padding: 10rpx 24rpx;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  background: #F4F4F5;
+  color: #71717A;
+  transition: all 0.15s ease;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
 /* 底部操作栏 — fixed 定位，硬编码颜色 */
 .bottom-bar {
   position: fixed;
@@ -176,14 +293,298 @@
   .detail-page { background: #18181B; }
   .section { background: #27272A; }
   .section-label { color: #71717A; }
+  .parent-section { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
+  .parent-title { color: #FAFAFA; }
+  .parent-label { color: #71717A; }
+  .parent-arrow { color: #52525B; }
+  .repeat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
   .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
   .textarea-field { color: #FAFAFA; }
   .priority-item { border-color: #3F3F46; color: #A1A1AA; &.active { border-color: #FAFAFA; background: #FAFAFA; color: #18181B; } }
   .status-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+  .ai-tools-section { background: #27272A; border-color: #3F3F46; }
+  .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
+  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
+  .ai-result-title { color: #FAFAFA; }
+  .ai-result-text { color: #D4D4D8; }
   .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
   .tag-chip { background: #3F3F46; border-color: #52525B; color: #D4D4D8; }
   .tag-add-btn { border-color: #52525B; color: #71717A; }
   .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
   .bottom-bar .btn-delete { background: #3F3F46; }
   .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
+  .phases-section { background: #27272A; border-color: #3F3F46; }
+  .phases-progress { color: #FAFAFA; }
+  .phase-block { background: #18181B; }
+  .phase-num { background: #FAFAFA; color: #18181B; }
+  .phase-title { color: #FAFAFA; }
+  .phase-date { color: #71717A; }
+  .phase-pct { color: #FAFAFA; }
+  .phase-toggle { color: #A1A1AA; }
+  .phase-input { background: #27272A; border-color: #3F3F46; color: #FAFAFA; }
+  .date-picker-text { color: #D4D4D8; }
+  .ms-bullet { color: #FAFAFA; }
+  .ms-input { background: #27272A; border-color: #3F3F46; color: #FAFAFA; }
+  .st-check { border-color: #52525B; &.done { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
+  .st-input { color: #FAFAFA; border-color: #3F3F46; }
+  .phase-remove { color: #71717A; }
+  .phase-add-btn { border-color: #3F3F46; color: #71717A; }
+  .ai-phase-btn { background: #FAFAFA; color: #18181B; }
+  .phase-hint { color: #71717A; }
+}
+
+/* 阶段化计划样式 */
+.phases-section {
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+}
+
+.phases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.phases-progress {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #18181B;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-block {
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx;
+}
+
+.phase-num {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #18181B;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: 700;
+  text-align: center;
+  line-height: 36rpx;
+  flex-shrink: 0;
+}
+
+.phase-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #18181B;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phase-date {
+  font-size: 20rpx;
+  color: #71717A;
+}
+
+.phase-pct {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #18181B;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-toggle {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  flex-shrink: 0;
+}
+
+.phase-body {
+  padding: 0 12rpx 12rpx;
+}
+
+.phase-input {
+  width: 100%;
+  font-size: 24rpx;
+  color: #18181B;
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 6rpx;
+  padding: 8rpx 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.phase-dates {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+.date-picker-text {
+  font-size: 22rpx;
+  color: #52525B;
+  background: #F4F4F5;
+  border-radius: 6rpx;
+  padding: 6rpx 12rpx;
+}
+
+.date-sep {
+  color: #A1A1AA;
+}
+
+.milestones {
+  margin-bottom: 8rpx;
+}
+
+.ms-label {
+  font-size: 20rpx;
+  color: #71717A;
+  margin-bottom: 4rpx;
+  display: block;
+}
+
+.ms-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 4rpx 0;
+}
+
+.ms-bullet {
+  font-size: 16rpx;
+  color: #18181B;
+  flex-shrink: 0;
+}
+
+.ms-input {
+  flex: 1;
+  font-size: 22rpx;
+  color: #52525B;
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 6rpx;
+  padding: 6rpx 12rpx;
+}
+
+.ms-remove {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  padding: 4rpx;
+}
+
+.ms-add {
+  padding: 4rpx 0;
+  font-size: 22rpx;
+  color: #71717A;
+  margin-bottom: 8rpx;
+}
+
+.phase-subtasks {
+  margin-bottom: 8rpx;
+}
+
+.phase-st-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 0;
+}
+
+.st-check {
+  width: 32rpx;
+  height: 32rpx;
+  border: 2rpx solid #D4D4D8;
+  border-radius: 6rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  flex-shrink: 0;
+
+  &.done {
+    background: #18181B;
+    border-color: #18181B;
+    color: #FFFFFF;
+  }
+}
+
+.st-input {
+  flex: 1;
+  font-size: 24rpx;
+  color: #18181B;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 6rpx;
+  padding: 6rpx 12rpx;
+}
+
+.st-remove {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  padding: 4rpx;
+  flex-shrink: 0;
+}
+
+.st-add {
+  padding: 8rpx 0;
+  font-size: 22rpx;
+  color: #71717A;
+  text-align: center;
+}
+
+.phase-remove {
+  padding: 8rpx 0;
+  font-size: 22rpx;
+  color: #A1A1AA;
+  text-align: center;
+  border-top: 1rpx solid #E4E4E7;
+  margin-top: 4rpx;
+}
+
+.phase-add-btn {
+  border: 1rpx dashed #D4D4D8;
+  border-radius: 8rpx;
+  padding: 12rpx;
+  font-size: 24rpx;
+  color: #52525B;
+  text-align: center;
+}
+
+.ai-phase-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 20rpx;
+  background: #18181B;
+  color: #FFFFFF;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+.phase-hint {
+  font-size: 22rpx;
+  color: #71717A;
+  margin-top: 8rpx;
+  display: block;
 }

@@ -3,7 +3,7 @@ defineProps({
   template: { type: Object, required: true },
   showActions: { type: Boolean, default: true }
 })
-defineEmits(['use', 'delete'])
+defineEmits(['use', 'edit', 'delete'])
 </script>
 
 <template>
@@ -15,14 +15,18 @@ defineEmits(['use', 'delete'])
     <view class="tpl-body">
       <text class="tpl-desc" v-if="template.description">{{ template.description }}</text>
       <view class="tpl-subtasks">
-        <view v-for="(s, i) in (template.plan_data?.subtasks || [])" :key="i" class="st-item">
+        <view v-for="(s, i) in (template.plan_data?.subtasks || []).slice(0, 5)" :key="i" class="st-item">
           <text class="st-bullet">·</text>
           <text class="st-title">{{ s.title || s }}</text>
         </view>
+        <text v-if="(template.plan_data?.subtasks || []).length > 5" class="st-more">
+          +{{ (template.plan_data?.subtasks || []).length - 5 }} 更多
+        </text>
       </view>
     </view>
     <view v-if="showActions" class="tpl-footer">
       <view class="tpl-use" @tap="$emit('use', template)">使用</view>
+      <view class="tpl-edit" @tap="$emit('edit', template)">编辑</view>
       <view class="tpl-del" @tap="$emit('delete', template)">删除</view>
     </view>
   </view>
@@ -45,9 +49,7 @@ defineEmits(['use', 'delete'])
 .tpl-icon { font-size: 36rpx; }
 .tpl-name { font-size: 30rpx; font-weight: 700; color: #FFFFFF; }
 
-.tpl-body {
-  padding: 16rpx 20rpx;
-}
+.tpl-body { padding: 16rpx 20rpx; }
 
 .tpl-desc {
   font-size: 24rpx;
@@ -62,21 +64,17 @@ defineEmits(['use', 'delete'])
   gap: 6rpx;
 }
 
-.st-item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
+.st-item { display: flex; align-items: center; gap: 8rpx; }
 .st-bullet { color: #18181B; font-weight: 700; }
 .st-title { font-size: 24rpx; color: #18181B; }
+.st-more { font-size: 22rpx; color: #A1A1AA; margin-top: 4rpx; }
 
 .tpl-footer {
   display: flex;
   border-top: 1rpx solid #E4E4E7;
 }
 
-.tpl-use, .tpl-del {
+.tpl-use, .tpl-edit, .tpl-del {
   flex: 1;
   text-align: center;
   padding: 16rpx 0;
@@ -85,6 +83,7 @@ defineEmits(['use', 'delete'])
 }
 
 .tpl-use { color: #18181B; }
+.tpl-edit { color: #71717A; border-left: 1rpx solid #E4E4E7; }
 .tpl-del { color: #EF4444; border-left: 1rpx solid #E4E4E7; }
 
 @media (prefers-color-scheme: dark) {
@@ -93,8 +92,10 @@ defineEmits(['use', 'delete'])
   .tpl-desc { color: #A1A1AA; }
   .st-bullet { color: #FAFAFA; }
   .st-title { color: #FAFAFA; }
+  .st-more { color: #52525B; }
   .tpl-footer { border-top-color: #3F3F46; }
   .tpl-use { color: #FAFAFA; }
+  .tpl-edit { color: #A1A1AA; border-left-color: #3F3F46; }
   .tpl-del { color: #EF4444; border-left-color: #3F3F46; }
 }
 </style>

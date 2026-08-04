@@ -1,5 +1,5 @@
 <script setup>
-const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
+const emit = defineEmits(['go-templates', 'go-stats'])
 </script>
 
 <template>
@@ -11,10 +11,6 @@ const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
 		<view class="quick-btn" @tap="emit('go-stats')">
 			<text class="qb-icon">📊</text>
 			<text class="qb-text">统计</text>
-		</view>
-		<view class="quick-btn" @tap="emit('go-new')">
-			<text class="qb-icon">✨</text>
-			<text class="qb-text">新建</text>
 		</view>
 	</view>
 </template>
@@ -32,7 +28,7 @@ const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: 14rpx 0;
+	padding: 12rpx 0;
 	background: #FFFFFF;
 	border-radius: 12rpx;
 
@@ -43,7 +39,7 @@ const emit = defineEmits(['go-templates', 'go-stats', 'go-new'])
 }
 
 .qb-icon {
-	font-size: 32rpx;
+	font-size: 30rpx;
 	line-height: 1;
 }
 

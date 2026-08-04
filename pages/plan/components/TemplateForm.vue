@@ -44,7 +44,16 @@ const form = ref({
 watch(() => props.visible, (val) => {
   if (val) {
     if (props.isEdit && props.editData) {
-      form.value = JSON.parse(JSON.stringify(props.editData))
+      const d = props.editData
+      const subtasks = (d.plan_data?.subtasks || []).map(s => typeof s === 'string' ? s : (s.title || ''))
+      form.value = {
+        name: d.name || '',
+        icon: d.icon || '📋',
+        color: d.color || '#000000',
+        description: d.description || '',
+        priority: d.plan_data?.priority ?? 2,
+        subtasks: subtasks.length > 0 ? subtasks : ['']
+      }
     } else {
       form.value = { name: '', icon: '📋', color: '#000000', description: '', priority: 2, subtasks: [''] }
     }

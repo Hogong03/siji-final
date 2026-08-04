@@ -1,41 +1,46 @@
 <script setup>
+import SijiIcon from '@/components/common/SijiIcon.vue'
+
 defineProps({
 	stats: { type: Object, required: true },
 	priorityBar: { type: Array, default: () => [] }
 })
+const emit = defineEmits(['go-templates', 'go-stats'])
 </script>
 
 <template>
 	<view class="overview-card">
 		<view class="ov-header">
-			<text class="ov-title">计划总览</text>
-			<view class="ov-stats">
-				<text class="ov-rate">{{ stats.rate }}%</text>
-				<text class="ov-rate-label">完成率</text>
+			<view class="ov-left">
+				<text class="ov-title">计划总览</text>
+				<text class="ov-sub">{{ stats.active }} 进行中 · {{ stats.overdue }} 过期</text>
+			</view>
+			<view class="ov-right">
+				<view class="ov-rate-box">
+					<text class="ov-rate">{{ stats.rate }}%</text>
+					<text class="ov-rate-label">完成率</text>
+				</view>
+				<view class="ov-actions">
+					<view class="ov-action" @tap="emit('go-stats')">
+						<SijiIcon name="stats" size="sm" />
+					</view>
+					<view class="ov-action" @tap="emit('go-templates')">
+						<SijiIcon name="plan" size="sm" />
+					</view>
+				</view>
 			</view>
 		</view>
 
-		<!-- 四宫格 -->
-		<view class="ov-grid">
-			<view class="ov-item">
-				<text class="ov-num">{{ stats.total }}</text>
-				<text class="ov-label">总计划</text>
-			</view>
-			<view class="ov-item">
-				<text class="ov-num active">{{ stats.active }}</text>
-				<text class="ov-label">进行中</text>
-			</view>
-			<view class="ov-item">
-				<text class="ov-num done">{{ stats.completed }}</text>
-				<text class="ov-label">已完成</text>
-			</view>
-			<view class="ov-item">
-				<text class="ov-num" :class="{ danger: stats.overdue > 0 }">{{ stats.overdue }}</text>
-				<text class="ov-label">已过期</text>
-			</view>
+		<view class="ov-stats-row">
+			<text class="os-item"><text class="os-num">{{ stats.total }}</text> 总计</text>
+			<text class="os-sep">·</text>
+			<text class="os-item"><text class="os-num">{{ stats.completed }}</text> 完成</text>
+			<text class="os-sep">·</text>
+			<text class="os-item" v-if="stats.subTotal > 0">
+				<text class="os-num">{{ stats.subDone }}/{{ stats.subTotal }}</text> 子任务
+			</text>
 		</view>
 
-		<!-- 优先级分布条 -->
 		<view v-if="priorityBar.length > 0" class="priority-bar">
 			<view v-for="p in priorityBar" :key="p.label" class="pb-segment"
 				:style="{ width: p.pct + '%', background: p.color }" />
@@ -45,23 +50,13 @@ defineProps({
 				{{ p.label }} {{ p.count }}
 			</text>
 		</view>
-
-		<!-- 子任务进度 -->
-		<view v-if="stats.subTotal > 0" class="subtask-summary">
-			<text class="st-text">子任务进度</text>
-			<view class="st-bar-wrap">
-				<view class="st-bar"
-					:style="{ width: (stats.subTotal > 0 ? stats.subDone / stats.subTotal * 100 : 0) + '%' }" />
-			</view>
-			<text class="st-count">{{ stats.subDone }}/{{ stats.subTotal }}</text>
-		</view>
 	</view>
 </template>
 
 <style scoped lang="scss">
 .overview-card {
 	margin: 12rpx 20rpx;
-	padding: 24rpx 20rpx;
+	padding: 20rpx;
 	background: #FFFFFF;
 	border-radius: 16rpx;
 }
@@ -69,8 +64,12 @@ defineProps({
 .ov-header {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 16rpx;
+	align-items: flex-start;
+	margin-bottom: 12rpx;
+}
+
+.ov-left {
+	flex: 1;
 }
 
 .ov-title {
@@ -81,12 +80,25 @@ defineProps({
 	border-left: 4rpx solid #18181B;
 }
 
-.ov-stats {
+.ov-sub {
+	font-size: 22rpx;
+	color: #71717A;
+	margin-top: 4rpx;
+	padding-left: 16rpx;
+}
+
+.ov-right {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+
+.ov-rate-box {
 	text-align: right;
 }
 
 .ov-rate {
-	font-size: 48rpx;
+	font-size: 40rpx;
 	font-weight: 800;
 	line-height: 1;
 	color: #18181B;
@@ -95,47 +107,59 @@ defineProps({
 }
 
 .ov-rate-label {
-	font-size: 22rpx;
-	color: #71717A;
-}
-
-.ov-grid {
-	display: flex;
-	justify-content: space-between;
-	margin-bottom: 16rpx;
-	padding-top: 12rpx;
-	border-top: 1rpx solid #E4E4E7;
-}
-
-.ov-item {
-	flex: 1;
-	text-align: center;
-}
-
-.ov-num {
-	font-size: 36rpx;
-	font-weight: 800;
-	display: block;
-	color: #18181B;
-	font-variant-numeric: tabular-nums;
-
-	&.active { color: #18181B; }
-	&.done { color: #52525B; }
-	&.danger { color: #EF4444; }
-}
-
-.ov-label {
 	font-size: 20rpx;
 	color: #71717A;
 }
 
-/* 优先级分布条 */
+.ov-actions {
+	display: flex;
+	gap: 8rpx;
+}
+
+.ov-action {
+	width: 56rpx;
+	height: 56rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 12rpx;
+	background: #F4F4F5;
+
+	&:active {
+		background: #E4E4E7;
+		transform: scale(0.92);
+	}
+}
+
+.ov-stats-row {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+	margin-bottom: 10rpx;
+}
+
+.os-item {
+	font-size: 22rpx;
+	color: #71717A;
+}
+
+.os-num {
+	font-size: 26rpx;
+	font-weight: 700;
+	color: #18181B;
+	font-variant-numeric: tabular-nums;
+}
+
+.os-sep {
+	color: #D4D4D8;
+}
+
 .priority-bar {
 	display: flex;
-	height: 8rpx;
-	border-radius: 4rpx;
+	height: 6rpx;
+	border-radius: 3rpx;
 	overflow: hidden;
-	margin-bottom: 6rpx;
+	margin-bottom: 4rpx;
 	background: #E4E4E7;
 }
 
@@ -152,56 +176,16 @@ defineProps({
 	font-size: 20rpx;
 }
 
-/* 子任务进度摘要 */
-.subtask-summary {
-	display: flex;
-	align-items: center;
-	gap: 12rpx;
-	margin-top: 12rpx;
-	padding-top: 12rpx;
-	border-top: 1rpx solid #E4E4E7;
-}
-
-.st-text {
-	font-size: 22rpx;
-	color: #71717A;
-}
-
-.st-bar-wrap {
-	flex: 1;
-	height: 6rpx;
-	background: #E4E4E7;
-	border-radius: 3rpx;
-	overflow: hidden;
-}
-
-.st-bar {
-	height: 100%;
-	background: #18181B;
-	border-radius: 3rpx;
-	transition: width 0.3s;
-}
-
-.st-count {
-	font-size: 22rpx;
-	font-weight: 600;
-	color: #52525B;
-	font-variant-numeric: tabular-nums;
-}
-
 @media (prefers-color-scheme: dark) {
 	.overview-card { background: #27272A; }
 	.ov-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+	.ov-sub { color: #71717A; }
 	.ov-rate { color: #FAFAFA; }
 	.ov-rate-label { color: #71717A; }
-	.ov-grid { border-top-color: #3F3F46; }
-	.ov-num { color: #FAFAFA; &.done { color: #A1A1AA; } &.danger { color: #EF4444; } }
-	.ov-label { color: #71717A; }
+	.ov-action { background: #3F3F46; &:active { background: #52525B; } }
+	.os-item { color: #71717A; }
+	.os-num { color: #FAFAFA; }
+	.os-sep { color: #3F3F46; }
 	.priority-bar { background: #3F3F46; }
-	.subtask-summary { border-top-color: #3F3F46; }
-	.st-text { color: #71717A; }
-	.st-bar-wrap { background: #3F3F46; }
-	.st-bar { background: #FAFAFA; }
-	.st-count { color: #D4D4D8; }
 }
 </style>

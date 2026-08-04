@@ -5,32 +5,57 @@
  * 功能：
  *  ① 预置模板浏览 ② 一键从模板创建计划
  *  ③ AI 定制模板 ④ 自定义创建空白模板 ⑤ 模板编辑/删除
- *
- * UI 组件：TemplateCard（卡片）, TemplateForm（自定义表单）
+ *  ⑥ 搜索 ⑦ 分类筛选
  */
 
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateForm from './components/TemplateForm.vue'
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getPlanTemplates, savePlanTemplate, deletePlanTemplate } from '@/utils/storage.js'
 import { useAppStore } from '@/store/index.js'
-import { chatRequest } from '@/utils/api.js'
 import { generateEntityId } from '@/utils/uuid.js'
+import { useTemplateAI } from './composables/useTemplateAI.js'
 
 const store = useAppStore()
 const templates = ref([])
 const showAI = ref(false)
 const showCustom = ref(false)
-const aiInput = ref('')
-const aiLoading = ref(false)
-const aiPreview = ref(null)
+const editingTemplate = ref(null)
+const searchKeyword = ref('')
+const activeCategory = ref('all')
+
+const { aiInput, aiLoading, aiPreview, generateAI, saveAIPreview } = useTemplateAI(store)
+
+const categories = [
+  { label: '全部', value: 'all' },
+  { label: '生活', value: 'life' },
+  { label: '工作', value: 'work' },
+  { label: '学习', value: 'study' },
+  { label: '健康', value: 'health' },
+  { label: '自定义', value: 'custom' }
+]
 
 onMounted(() => { loadTemplates() })
 
 function loadTemplates() {
   templates.value = getPlanTemplates()
 }
+
+const filteredTemplates = computed(() => {
+  let list = templates.value
+  if (activeCategory.value !== 'all') {
+    list = list.filter(t => (t.category || 'custom') === activeCategory.value)
+  }
+  if (searchKeyword.value.trim()) {
+    const kw = searchKeyword.value.trim().toLowerCase()
+    list = list.filter(t =>
+      (t.name || '').toLowerCase().includes(kw) ||
+      (t.description || '').toLowerCase().includes(kw)
+    )
+  }
+  return list
+})
 
 function useTemplate(tpl) {
   uni.showModal({
@@ -48,103 +73,39 @@ function useTemplate(tpl) {
   })
 }
 
-async function generateAI() {
-  if (!aiInput.value.trim()) {
-    uni.showToast({ title: '请描述你想要的计划模板', icon: 'none' })
-    return
-  }
-  if (!store.hasApiKey) {
-    uni.showToast({ title: '请先在设置页配置 API Key', icon: 'none' })
-    return
-  }
-  aiLoading.value = true
-  aiPreview.value = null
-  try {
-    const prompt = `你是计划模板生成器。用户想创建一个计划模板，请根据描述智能拆解为3-8个可执行的子任务。
-
-用户描述：${aiInput.value}
-
-请返回 JSON：
-{
-  "name": "模板名称（≤12字）",
-  "icon": "合适的emoji图标",
-  "color": "十六进制颜色（如 #18181B）",
-  "description": "模板描述（≤40字）",
-  "priority": 1-3（1高2中3低）,
-  "subtasks": [{ "title": "子任务1" }, { "title": "子任务2" }]
-}
-
-注意：子任务要具体、可执行、有逻辑顺序。只返回 JSON，不要其他内容。`
-
-    const result = await chatRequest(prompt, null, '', store.aiConfig.apiKey)
-    const raw = result.reply || ''
-    let parsed
-    try { parsed = JSON.parse(raw) } catch {
-      const m = raw.match(/\{[\s\S]*\}/)
-      if (m) parsed = JSON.parse(m[0])
-      else throw new Error('AI 返回格式错误')
-    }
-    aiPreview.value = {
-      name: parsed.name || '自定义模板',
-      icon: parsed.icon || '📋',
-      color: parsed.color || '#18181B',
-      description: parsed.description || '',
-      priority: typeof parsed.priority === 'number' ? parsed.priority : 2,
-      subtasks: Array.isArray(parsed.subtasks) ? parsed.subtasks.map(s => ({
-        title: typeof s === 'string' ? s : (s.title || '')
-      })) : []
-    }
-  } catch (e) {
-    uni.showToast({ title: e.message || 'AI 生成失败', icon: 'none' })
-  } finally {
-    aiLoading.value = false
-  }
-}
-
-function saveAIPreview() {
-  if (!aiPreview.value) return
-  const tpl = {
-    client_id: generateEntityId('tpl'),
-    name: aiPreview.value.name,
-    icon: aiPreview.value.icon,
-    color: aiPreview.value.color,
-    description: aiPreview.value.description,
-    plan_data: {
-      priority: aiPreview.value.priority,
-      subtasks: aiPreview.value.subtasks
-    },
-    created_at: Date.now(),
-    updated_at: Date.now(),
-    is_deleted: 0
-  }
-  savePlanTemplate(tpl)
-  loadTemplates()
-  aiPreview.value = null
-  aiInput.value = ''
+function saveAIGenerated() {
+  const tpl = saveAIPreview()
+  if (tpl) loadTemplates()
   showAI.value = false
-  uni.showToast({ title: '模板已保存', icon: 'success' })
 }
 
-/** 从 TemplateForm 的 save 事件保存模板 */
 function saveCustom(data) {
+  const isEdit = !!editingTemplate.value
   const tpl = {
-    client_id: generateEntityId('tpl'),
+    client_id: isEdit ? editingTemplate.value.client_id : generateEntityId('tpl'),
     name: data.name,
     icon: data.icon,
     color: data.color,
     description: data.description,
+    category: 'custom',
     plan_data: {
       priority: data.priority,
       subtasks: data.subtasks.map(s => ({ title: s }))
     },
-    created_at: Date.now(),
+    created_at: isEdit ? editingTemplate.value.created_at : Date.now(),
     updated_at: Date.now(),
     is_deleted: 0
   }
   savePlanTemplate(tpl)
   loadTemplates()
   showCustom.value = false
-  uni.showToast({ title: '模板已保存', icon: 'success' })
+  editingTemplate.value = null
+  uni.showToast({ title: isEdit ? '模板已更新' : '模板已保存', icon: 'success' })
+}
+
+function editTemplate(tpl) {
+  editingTemplate.value = tpl
+  showCustom.value = true
 }
 
 function removeTemplate(tpl) {
@@ -160,6 +121,11 @@ function removeTemplate(tpl) {
     }
   })
 }
+
+function closeCustomForm() {
+  showCustom.value = false
+  editingTemplate.value = null
+}
 </script>
 
 <template>
@@ -170,26 +136,46 @@ function removeTemplate(tpl) {
         <SijiIcon name="ai" size="md" class="tb-icon" />
         <text class="tb-text">AI 定制模板</text>
       </view>
-      <view class="top-btn" @tap="showCustom = true">
+      <view class="top-btn" @tap="showCustom = true; editingTemplate = null">
         <SijiIcon name="edit" size="md" class="tb-icon" />
         <text class="tb-text">自定义模板</text>
       </view>
     </view>
 
+    <!-- 搜索 + 分类 -->
+    <view class="filter-bar">
+      <view class="search-box">
+        <SijiIcon name="search" size="sm" class="search-icon" />
+        <input v-model="searchKeyword" class="search-input" placeholder="搜索模板..." :placeholder-style="'color: #A1A1AA'" />
+        <text v-if="searchKeyword" class="search-clear" @tap="searchKeyword = ''">✕</text>
+      </view>
+      <scroll-view class="cat-scroll" scroll-x :show-scrollbar="false">
+        <view class="cat-row">
+          <view
+            v-for="cat in categories" :key="cat.value"
+            class="cat-item"
+            :class="{ active: activeCategory === cat.value }"
+            @tap="activeCategory = cat.value"
+          >{{ cat.label }}</view>
+        </view>
+      </scroll-view>
+    </view>
+
     <!-- 模板列表 -->
     <scroll-view class="tpl-scroll" scroll-y>
-      <view class="section-title">模板库（{{ templates.length }}）</view>
+      <view class="section-title">模板库（{{ filteredTemplates.length }}）</view>
 
-      <view v-if="templates.length === 0" class="empty">
+      <view v-if="filteredTemplates.length === 0" class="empty">
         <SijiIcon name="plan" size="xl" class="empty-icon" />
-        <text class="empty-text">还没有模板，试试 AI 定制吧</text>
+        <text class="empty-text">{{ searchKeyword || activeCategory !== 'all' ? '没有匹配的模板' : '还没有模板，试试 AI 定制吧' }}</text>
       </view>
 
       <view v-else class="tpl-grid">
         <TemplateCard
-          v-for="tpl in templates" :key="tpl.client_id"
+          v-for="tpl in filteredTemplates" :key="tpl.client_id"
           :template="tpl"
           @use="useTemplate"
+          @edit="editTemplate"
           @delete="removeTemplate"
         />
       </view>
@@ -222,18 +208,13 @@ function removeTemplate(tpl) {
             </view>
           </view>
           <view class="ai-btn-row">
-            <view
-              class="gen-btn"
-              :class="{ loading: aiLoading }"
-              @tap="!aiLoading && generateAI()"
-            >
+            <view class="gen-btn" :class="{ loading: aiLoading }" @tap="!aiLoading && generateAI()">
               <template v-if="aiLoading">AI 思考中...</template>
               <template v-else><SijiIcon name="sparkle" size="sm" /> 生成模板</template>
             </view>
           </view>
         </view>
 
-        <!-- AI 预览 -->
         <scroll-view v-else class="ai-preview" scroll-y>
           <view class="preview-card" :style="{ borderColor: aiPreview.color }">
             <view class="preview-header" :style="{ background: aiPreview.color }">
@@ -251,7 +232,7 @@ function removeTemplate(tpl) {
           </view>
           <view class="preview-actions">
             <view class="pa-btn discard" @tap="aiPreview = null">重新生成</view>
-            <view class="pa-btn confirm" @tap="saveAIPreview">保存模板</view>
+            <view class="pa-btn confirm" @tap="saveAIGenerated">保存模板</view>
           </view>
         </scroll-view>
       </view>
@@ -260,7 +241,9 @@ function removeTemplate(tpl) {
     <!-- 自定义模板弹窗（组件） -->
     <TemplateForm
       :visible="showCustom"
-      @close="showCustom = false"
+      :isEdit="!!editingTemplate"
+      :editData="editingTemplate"
+      @close="closeCustomForm"
       @save="saveCustom"
     />
   </view>
