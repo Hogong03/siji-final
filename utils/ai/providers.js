@@ -23,6 +23,7 @@ export const AI_PROVIDERS = {
     keyLabel: 'DeepSeek API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
     supportsResponseFormat: true,
+    supportsToolCalling: true,
     docs: 'https://platform.deepseek.com/'
   },
   zhipu: {
@@ -41,6 +42,7 @@ export const AI_PROVIDERS = {
     keyLabel: '智谱 API Key',
     keyPlaceholder: 'xxxxxxxxxxxxxxxx.xxxxxxxx',
     supportsResponseFormat: false,  // zhipu 部分模型 json_object 行为不稳定，靠 prompt 约束
+    supportsToolCalling: true,
     docs: 'https://open.bigmodel.cn/'
   },
   qwen: {
@@ -59,6 +61,7 @@ export const AI_PROVIDERS = {
     keyLabel: '通义 API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
     supportsResponseFormat: false,  // qwen 部分模型 json_object 行为不稳定，靠 prompt 约束
+    supportsToolCalling: true,
     docs: 'https://help.aliyun.com/zh/model-studio/'
   },
   moonshot: {
@@ -76,6 +79,7 @@ export const AI_PROVIDERS = {
     keyLabel: 'Moonshot API Key',
     keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
     supportsResponseFormat: true,
+    supportsToolCalling: true,
     docs: 'https://platform.moonshot.cn/'
   }
 }

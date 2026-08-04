@@ -11,6 +11,7 @@ import { useSimulationManager } from '@/composables/useSimulationManager.js'
 import { buildChatHistory } from '@/utils/ai/chatHistoryBuilder.js'
 import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
 import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
+import { QUERY_TOOLS } from '@/utils/ai/tools.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
 import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
@@ -29,6 +30,24 @@ import {
 
 export function useChatEngine() {
   const store = useAppStore()
+
+  /**
+   * Agent 模式结果渲染 — 工具已在循环内执行，这里只展示结果卡片，不重复执行
+   */
+  function renderAgentResults(store, result, reply) {
+    const execResults = result.execResults || []
+    const successCards = execResults.filter(r => r.ok && r.detail && !QUERY_TOOLS.has(r.name))
+    const execCard = execResults.find(r => r.ok && r.detail)
+    store.updateLastMessage({
+      content: reply, loading: false, aiReply: reply,
+      actionCard: successCards.length
+        ? { type: 'multi', payload: successCards.map(r => r.detail) }
+        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null),
+      execResult: execCard ? { success: true, message: execCard.message || '', detail: execCard.detail } : null,
+      execResults: successCards
+    })
+  }
+
   const isSending = ref(false)
   const stopSignal = ref(null)
   const pendingAction = ref(null)
@@ -105,7 +124,8 @@ export function useChatEngine() {
         stopSignal: stopSignal.value,
         convSummary: activeConv?.summary || null,
         summaryIndex: activeConv?.summaryIndex || 0,
-        image: imageData || null
+        image: imageData || null,
+        store: store
       }
 
       validateModel(cfg, store)
@@ -240,8 +260,14 @@ export function useChatEngine() {
         pendingReply.value = reply
         currentSuggestions.value = []
       } else {
-        autoExecuteAndDisplay(store, result, reply, message)
-        currentSuggestions.value = result.suggestions || []
+        if (result._agentMode) {
+          // Agent 模式：工具已在循环内执行，不再二次执行，仅渲染结果卡片
+          renderAgentResults(store, result, reply)
+          currentSuggestions.value = result.suggestions || []
+        } else {
+          autoExecuteAndDisplay(store, result, reply, message)
+          currentSuggestions.value = result.suggestions || []
+        }
       }
       if (result.conversation_id) store.setConversationId(result.conversation_id)
 

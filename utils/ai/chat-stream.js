@@ -12,6 +12,7 @@ import { buildChatMessages, getRecentHistory } from './chat-helpers.js'
 import { chatRequest as chatRequestNonStream } from './chat-request.js'
 import { logger } from '../logger.js'
 import { checkRateLimit, recordRequest } from './rate-limiter.js'
+import { runAgentChat } from './agent-loop.js'
 
 // ==================== 公开入口 ====================
 
@@ -36,6 +37,19 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
   }
   recordRequest()
 
+  // Agent 模式 — 工具循环（支持 function calling 的厂商启用）
+  const store = cfg.store
+  if (store && cfg.agent !== false) {
+    const provider = getProvider(cfg.provider)
+    if (provider.supportsToolCalling) {
+      // 仅对可能涉及数据的消息启用 agent 循环，纯闲聊走原路径（避免多余延迟）
+      if (looksDataQuery(message) || isCommandMessage(message)) {
+        logger.debug('[AgentMode] Enabling tool loop for message')
+        return runAgentChat(store, message, conversationId, cfg, history || getRecentHistory(), onChunk)
+      }
+    }
+  }
+
   // H5 环境优先使用真实 SSE 流式
   // #ifdef H5
   if (typeof fetch !== 'undefined' && typeof ReadableStream !== 'undefined') {
@@ -45,6 +59,18 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
 
   // 非 H5 环境降级为模拟流式
   return simulatedStream(message, conversationId, cfg, onChunk, history)
+}
+
+/** 判断消息是否可能涉及数据查询（触发 agent 工具循环） */
+function looksDataQuery(msg) {
+  if (!msg) return false
+  return /(?:花|账单|账|消费|记录|日记|计划|目标|人物|朋友|决策|纠结|查|多少|几个|几次|哪些|上次|之前|上个月|这个月|今月|最近|预算|总结|周报|月报)/.test(msg)
+}
+
+/** 判断消息是否含明确指令（触发 agent 工具循环） */
+function isCommandMessage(msg) {
+  if (!msg) return false
+  return /(?:帮我|记一下|查一下|建一个|写一篇|创建|修改|更新|删除|撤销|记录|记账|计划)/.test(msg)
 }
 
 // ==================== 真实 SSE 流式（H5）====================

@@ -7,6 +7,66 @@
 export function getDefaultHistory() {
   return [
     {
+      version: '2.0.0',
+      date: '2026-08-05',
+      title: 'Agentic Loop 智能体 + 计划全面升级 + 阶段化计划',
+      summary: [
+        'AI 升级为智能 Agent：可多次调用工具、基于本地数据库结果继续推理',
+        '计划功能全面优化：列表/详情/统计/模板/回收站/看板/AI 增强',
+        '阶段化计划：大目标拆为 2-6 阶段，含里程碑+时间窗口',
+        '死代码清理 + 代码拆分（reminder/chat/bill/version-history）'
+      ],
+      categories: [
+        {
+          title: 'Agentic Loop（工具循环）',
+          items: [
+            'AI 从单轮返回 action 升级为可多次调用工具、基于结果继续推理',
+            '新建 tools.js：24 个 OpenAI 兼容 function schema（记录/账单/计划/画像/关系/决策）',
+            '新建 agent-loop.js：工具循环引擎（maxRounds=5 防死循环，结果截断 2000 字符）',
+            '查询结果格式化为自然语言回传 AI（query_bill→"共15笔¥3,240，餐饮¥1,240"）',
+            '四家厂商（DeepSeek/智谱/通义/Moonshot）均启用 supportsToolCalling',
+            '向后兼容：旧 JSON action 格式仍可执行，不支持 function calling 的厂商走原路径',
+            '安全边界：破坏性工具（undo/delete）不自动执行，转人工确认'
+          ]
+        },
+        {
+          title: '计划功能全面优化',
+          items: [
+            '列表页：搜索+状态/优先级/标签三维 AND 筛选+左滑手势+看板视图',
+            '详情页：父计划关联+优先级/状态选择+重复提醒+AI 工具栏（排期/复盘/下一步）',
+            '回收站：搜索+恢复+彻底删除+全部恢复',
+            '统计页：11 个卡片（总览/优先级/状态/趋势/速度/子任务/完成率/标签/过期/热力图）',
+            '模板：搜索+分类筛选+编辑/删除/另存为+AI 定制',
+            '看板视图：待开始/进行中/已完成三列跨列切换',
+            '日期快捷选择：今天/明天/本周末/下周一/一周后/一月后'
+          ]
+        },
+        {
+          title: '阶段化计划',
+          items: [
+            'plan 新增 phases 数组（id/title/description/start_date/end_date/milestones/subtasks）',
+            '新建 usePlanPhases.js：阶段 CRUD + AI 深度拆解（2-6 阶段，每阶段含子任务+里程碑+时间窗口）',
+            '详情页阶段化 UI：可折叠阶段区块+里程碑+日期选择器+AI 阶段化拆解按钮',
+            '有 phases 时隐藏普通子任务区块（互斥）',
+            '统计页 subtaskStats 兼容阶段化子任务聚合',
+            'prompt-builder CORE_ACTIONS 新增 create_plan_phases / update_plan_phase',
+            '向后兼容：旧计划无 phases 不受影响'
+          ]
+        },
+        {
+          title: '代码拆分与清理',
+          items: [
+            'reminder.js 351→55行 + 4 子模块（settings/triggered/notifier/scheduler）',
+            'store/chat.js 339→170行 + 2 子模块（persist.js + restore.js）',
+            'bill/index.vue 441→190行 + 2 composable（useBillList + useBillSwipe）',
+            'version-history.js 319→86行 + version-data.js（纯数据）',
+            '死代码清理：14 个文件移至 .trash/（8 旧账单组件+PlanQuickActions+PlanCard.scss+VirtualList+api-key-store.js+2 py 脚本）',
+            'SijiIcon 补 more/chat 图标'
+          ]
+        }
+      ]
+    },
+    {
       version: '1.3.0',
       date: '2026-08-04',
       title: '记录4.0 + 记账5.0 + 计划UI + 体验优化',

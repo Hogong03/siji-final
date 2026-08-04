@@ -1,0 +1,220 @@
+/**
+ * agent-loop.js — Agent 工具循环引擎
+ *
+ * 把 AI 从"单轮返回 action"升级为"可多次调用工具、基于结果继续推理"。
+ *
+ * 流程：
+ *   用户消息 → AI（带 tools 参数）→ 若返回 tool_calls → 执行工具 → 结果回传 AI
+ *     → AI 再推理 → 可能再调 tool → ...（maxRounds 上限）→ AI 给出最终 reply
+ *
+ * 仅在 provider.supportsToolCalling 时启用；其余走原单轮路径（向后兼容）。
+ */
+
+import { getProvider } from './providers.js'
+import { buildChatMessages } from './chat-helpers.js'
+import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS } from './tools.js'
+import { parseAiResponse } from './response-parser.js'
+import { logger } from '../logger.js'
+
+const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
+const MAX_QUERY_RESULTS = 20  // 查询类工具最多返回条数（防 token 爆炸）
+const TOOL_RESULT_TRUNCATE = 2000 // 单条 tool_result 最大字符数
+
+/**
+ * 运行 Agent 循环
+ * @param {Object} store - useDataStore（pinia），用于执行工具
+ * @param {string} message - 用户消息
+ * @param {string} conversationId - 会话ID
+ * @param {Object} cfg - { provider, model, apiKey, temperature, systemPrompt }
+ * @param {Array} history - 对话历史
+ * @returns {Promise<Object>} { reply, toolCalls, execResults, action, actions, conversation_id }
+ */
+export async function runAgentLoop(store, message, conversationId, cfg, history) {
+  const provider = getProvider(cfg.provider)
+  const apiKey = cfg.apiKey || ''
+  const chatHistory = history || []
+
+  // 构建基础消息（含 system/profile/记忆/关系等）
+  const baseMessages = buildChatMessages(message, chatHistory, cfg)
+
+  // system prompt 追加工具说明，让 AI 明确"要先查数据再回答"
+  const toolInstruction = `
+## Agent 模式
+你是「思迹」的智能助手，可以调用工具读取本地数据后再回答用户。规则：
+- 用户问涉及数据的问题（账单/记录/计划/人物/决策）时，先调用对应 query_* 工具拿到真实数据，再基于数据回答。禁止凭记忆瞎编数字。
+- 一个查询不够时，可连续调用多个工具（例如先 query_stat 再看 query_plan）。
+- 用户明确要求创建/修改时，调用对应 create_*/update_* 工具。
+- 所有工具调用完成后，用自然语言总结回答用户。
+- 若用户消息是纯闲聊，不调用任何工具，直接回复。`
+
+  const messages = [
+    { ...baseMessages[0], content: baseMessages[0].content + toolInstruction },
+    ...baseMessages.slice(1)
+  ]
+
+  const toolCalls = []        // 记录所有 tool_call
+  const execResults = []      // 记录所有执行结果
+  let rounds = 0
+
+  while (rounds < MAX_ROUNDS) {
+    rounds++
+    const response = await callWithTools(provider, cfg, messages, apiKey)
+
+    // API 错误/网络失败 → 直接抛给上层处理
+    if (response.error) {
+      throw new Error(response.error)
+    }
+
+    const assistantMsg = response.message || {}
+    const callList = assistantMsg.tool_calls || []
+
+    // AI 没有请求工具 → 给出最终回复
+    if (callList.length === 0) {
+      const content = assistantMsg.content || ''
+      // 兼容：AI 仍可能返回 JSON action 格式（部分场景）
+      const result = parseAiResponse(content, conversationId)
+      return {
+        reply: result.reply,
+        action: result.action,
+        actions: result.actions,
+        suggestions: result.suggestions,
+        toolCalls,
+        execResults,
+        conversation_id: response.id || conversationId
+      }
+    }
+
+    // 执行本轮所有工具调用
+    const assistantTurn = { role: 'assistant', content: assistantMsg.content || '', tool_calls: callList }
+    messages.push(assistantTurn)
+
+    for (const call of callList) {
+      const fnName = call.function?.name
+      let fnArgs = {}
+      try {
+        fnArgs = JSON.parse(call.function?.arguments || '{}')
+      } catch { fnArgs = {} }
+
+      const toolResult = executeTool(store, fnName, fnArgs)
+      toolCalls.push({ name: fnName, args: fnArgs })
+      execResults.push({
+        name: fnName,
+        ok: toolResult.ok,
+        message: toolResult.message || null,
+        detail: toolResult.detail || null,
+        confirm: !!toolResult.confirm
+      })
+
+      // 截断 tool_result，防 token 爆炸
+      let resultText = toolResult.text || '（无返回）'
+      if (resultText.length > TOOL_RESULT_TRUNCATE) {
+        resultText = resultText.substring(0, TOOL_RESULT_TRUNCATE) + '…（已截断）'
+      }
+      messages.push({
+        role: 'tool',
+        tool_call_id: call.id,
+        content: resultText
+      })
+    }
+  }
+
+  // 达到 maxRounds — 兜底：让 AI 基于已收集数据给最终回答
+  logger.warn('[AgentLoop] Max rounds reached, forcing final reply')
+  const response = await callWithTools(provider, cfg, messages, apiKey)
+  const finalReply = response.message?.content || ''
+  const result = parseAiResponse(finalReply, conversationId)
+  return {
+    reply: result.reply,
+    action: result.action,
+    actions: result.actions,
+    toolCalls,
+    execResults,
+    conversation_id: response.id || conversationId
+  }
+}
+
+/**
+ * 调用带 tools 参数的 AI（非流式）
+ */
+function callWithTools(provider, cfg, messages, apiKey) {
+  const body = {
+    model: cfg.model,
+    messages,
+    temperature: cfg.temperature ?? 0.7,
+    tools: TOOL_DEFINITIONS.map(t => ({
+      type: 'function',
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters
+      }
+    })),
+    tool_choice: 'auto'
+  }
+
+  return new Promise((resolve) => {
+    uni.request({
+      url: provider.endpoint,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      data: body,
+      timeout: 60000,
+      success(res) {
+        if (res.statusCode === 200 && res.data?.choices?.[0]) {
+          const choice = res.data.choices[0]
+          // 工具调用
+          if (choice.message?.tool_calls && choice.message.tool_calls.length) {
+            resolve({ message: choice.message, id: res.data.id })
+          } else {
+            resolve({ message: choice.message, id: res.data.id })
+          }
+        } else {
+          const errMsg = res.data?.error?.message || res.data?.message || `HTTP ${res.statusCode}`
+          logger.error('[AgentLoop] API error:', res.statusCode, errMsg)
+          resolve({ error: errMsg })
+        }
+      },
+      fail(err) {
+        logger.error('[AgentLoop] Network error:', err.errMsg)
+        resolve({ error: '网络连接失败，请稍后再试' })
+      }
+    })
+  })
+}
+
+/**
+ * Agent 对话入口 — 供 chat-stream 调用
+ * 跑完工具循环后，把最终 reply 逐步推送，返回可被 useChatEngine 消费的结果对象。
+ * 若工具调用时已执行写入操作，则标记 _agentExecuted，上层不再二次执行。
+ * @param {Object} store - useDataStore
+ * @param {string} message - 用户消息
+ * @param {string} conversationId
+ * @param {Object} cfg
+ * @param {Array} history
+ * @param {Function} onChunk - (text) => void，逐段推送最终回复
+ */
+export async function runAgentChat(store, message, conversationId, cfg, history, onChunk) {
+  const result = await runAgentLoop(store, message, conversationId, cfg, history)
+
+  // 已执行过写入工具 → 标记，避免上层 autoExecutor 二次执行
+  const hasWrites = result.execResults.some(r => r.ok && !QUERY_TOOLS.has(r.name))
+  result._agentMode = true
+  result._agentExecuted = hasWrites
+
+  // 流式推送最终 reply（逐段，模拟打字机）
+  const reply = result.reply || ''
+  if (onChunk && reply) {
+    const chars = reply.split('')
+    const group = reply.length > 100 ? 8 : 3
+    for (let i = 0; i < chars.length; i += group) {
+      onChunk(chars.slice(i, i + group).join(''))
+      await new Promise(r => setTimeout(r, 8))
+    }
+  }
+  return result
+}
+
+export { MAX_ROUNDS }
