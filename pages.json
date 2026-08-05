@@ -1,377 +1,384 @@
-{
-  "easycom": {
-    "autoscan": true
+﻿{
+ "easycom": {
+  "autoscan": true
+ },
+ "pages": [
+  {
+   "path": "pages/splash/index",
+   "style": {
+    "navigationBarTitleText": "",
+    "navigationStyle": "custom",
+    "disableScroll": true
+   }
   },
-  "pages": [
-    {
-      "path": "pages/splash/index",
-      "style": {
-        "navigationBarTitleText": "",
-        "navigationStyle": "custom",
-        "disableScroll": true
-      }
-    },
-    {
-      "path": "pages/disclaimer/index",
-      "style": {
-        "navigationBarTitleText": "用户协议与免责声明",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
-      }
-    },
-    {
-      "path": "pages/lock/index",
-      "style": {
-        "navigationBarTitleText": "",
-        "navigationStyle": "custom",
-        "disableScroll": true
-      }
-    },
-    {
-      "path": "pages/chat/index",
-      "style": {
-        "navigationBarTitleText": "思迹",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/functions/index",
-      "style": {
-        "navigationBarTitleText": "功能",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
-      }
-    },
-    {
-      "path": "pages/settings/index",
-      "style": {
-        "navigationBarTitleText": "设置",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
-      }
-    }
-  ],
-  "subPackages": [
-    {
-      "root": "pages/settings/sub",
-      "pages": [
-        {
-          "path": "data",
-          "style": {
-            "navigationBarTitleText": "数据同步与导出",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "privacy",
-          "style": {
-            "navigationBarTitleText": "应用锁",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "about",
-          "style": {
-            "navigationBarTitleText": "关于与设置",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "feedback-list",
-          "style": {
-            "navigationBarTitleText": "历史反馈",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "feedback-new",
-          "style": {
-            "navigationBarTitleText": "添加反馈",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "ai",
-          "style": {
-            "navigationBarTitleText": "AI 模型配置",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "agent",
-          "style": {
-            "navigationBarTitleText": "Agent 管理",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "agent_add",
-          "style": {
-            "navigationBarTitleText": "创建 Agent",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "memory",
-          "style": {
-            "navigationBarTitleText": "记忆管理",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "profile",
-          "style": {
-            "navigationBarTitleText": "我的信息",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "relations",
-          "style": {
-            "navigationBarTitleText": "关系图谱",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "relation-detail",
-          "style": {
-            "navigationBarTitleText": "人物详情",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "decisions",
-          "style": {
-            "navigationBarTitleText": "决策日志",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "decision-detail",
-          "style": {
-            "navigationBarTitleText": "决策详情",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "simulation",
-          "style": {
-            "navigationBarTitleText": "社交沙盘",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "version-history",
-          "style": {
-            "navigationBarTitleText": "版本历史",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "version-detail",
-          "style": {
-            "navigationBarTitleText": "版本详情",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/search",
-      "pages": [
-        {
-          "path": "result",
-          "style": {
-            "navigationBarTitleText": "搜索",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/diary",
-      "pages": [
-        {
-          "path": "list",
-          "style": {
-            "navigationBarTitleText": "记录",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "detail",
-          "style": {
-            "navigationBarTitleText": "记录详情",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "trash",
-          "style": {
-            "navigationBarTitleText": "回收站",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/bill",
-      "pages": [
-        {
-          "path": "index",
-          "style": {
-            "navigationBarTitleText": "账单",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "stats",
-          "style": {
-            "navigationBarTitleText": "收支统计",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "edit",
-          "style": {
-            "navigationBarTitleText": "记一笔",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "trash",
-          "style": {
-            "navigationBarTitleText": "回收站",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        }
-      ]
-    },
-    {
-      "root": "pages/plan",
-      "pages": [
-        {
-          "path": "index",
-          "style": {
-            "navigationBarTitleText": "计划",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "detail",
-          "style": {
-            "navigationBarTitleText": "计划详情",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "templates",
-          "style": {
-            "navigationBarTitleText": "计划模板",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "stats",
-          "style": {
-            "navigationBarTitleText": "计划统计",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        },
-        {
-          "path": "trash",
-          "style": {
-            "navigationBarTitleText": "计划回收站",
-            "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
-          }
-        }
-      ]
-    }
-  ],
-  "preloadRule": {
-    "pages/chat/index": {
-      "network": "all",
-      "packages": [
-        "pages/diary",
-        "pages/bill",
-        "pages/plan"
-      ]
-    },
-    "pages/functions/index": {
-      "network": "all",
-      "packages": [
-        "pages/settings/sub",
-        "pages/search",
-        "pages/diary",
-        "pages/bill",
-        "pages/plan"
-      ]
-    }
+  {
+   "path": "pages/disclaimer/index",
+   "style": {
+    "navigationBarTitleText": "用户协议与免责声明",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTextStyle": "black"
+   }
   },
-  "globalStyle": {
-    "navigationBarTextStyle": "black",
+  {
+   "path": "pages/lock/index",
+   "style": {
+    "navigationBarTitleText": "",
+    "navigationStyle": "custom",
+    "disableScroll": true
+   }
+  },
+  {
+   "path": "pages/chat/index",
+   "style": {
     "navigationBarTitleText": "思迹",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "backgroundColor": "#F4F4F5",
-    "navigationStyle": "default"
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom"
+   }
   },
-  "tabBar": {
-    "color": "#A1A1AA",
-    "selectedColor": "#000000",
-    "borderStyle": "white",
-    "backgroundColor": "#F4F4F5",
-    "navigationStyle": "default",
-    "list": [
-      {
-        "pagePath": "pages/chat/index",
-        "iconPath": "/static/tab/chat.png",
-        "selectedIconPath": "/static/tab/chat-active.png",
-        "text": "思迹"
-      },
-      {
-        "pagePath": "pages/functions/index",
-        "iconPath": "static/tab/functions.png",
-        "selectedIconPath": "static/tab/functions-active.png",
-        "text": "功能"
-      },
-      {
-        "pagePath": "pages/settings/index",
-        "iconPath": "static/tab/settings.png",
-        "selectedIconPath": "static/tab/settings-active.png",
-        "text": "设置"
-      }
-    ]
+  {
+   "path": "pages/functions/index",
+   "style": {
+    "navigationBarTitleText": "功能",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTextStyle": "black"
+   }
+  },
+  {
+   "path": "pages/settings/index",
+   "style": {
+    "navigationBarTitleText": "设置",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTextStyle": "black"
+   }
   }
+ ],
+ "subPackages": [
+  {
+   "root": "pages/settings/sub",
+   "pages": [
+    {
+     "path": "data",
+     "style": {
+      "navigationBarTitleText": "数据同步与导出",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "privacy",
+     "style": {
+      "navigationBarTitleText": "应用锁",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "about",
+     "style": {
+      "navigationBarTitleText": "关于与设置",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "feedback-list",
+     "style": {
+      "navigationBarTitleText": "历史反馈",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "feedback-new",
+     "style": {
+      "navigationBarTitleText": "添加反馈",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "ai",
+     "style": {
+      "navigationBarTitleText": "AI 模型配置",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "agent",
+     "style": {
+      "navigationBarTitleText": "Agent 管理",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "agent_add",
+     "style": {
+      "navigationBarTitleText": "创建 Agent",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "memory",
+     "style": {
+      "navigationBarTitleText": "记忆管理",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "profile",
+     "style": {
+      "navigationBarTitleText": "我的信息",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "relations",
+     "style": {
+      "navigationBarTitleText": "关系图谱",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black",
+      "navigationStyle": "custom"
+     }
+    },
+    {
+     "path": "relation-detail",
+     "style": {
+      "navigationBarTitleText": "人物详情",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "decisions",
+     "style": {
+      "navigationBarTitleText": "决策日志",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "decision-detail",
+     "style": {
+      "navigationBarTitleText": "决策详情",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "simulation",
+     "style": {
+      "navigationBarTitleText": "社交沙盘",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "version-history",
+     "style": {
+      "navigationBarTitleText": "版本历史",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "version-detail",
+     "style": {
+      "navigationBarTitleText": "版本详情",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "relation-graph",
+     "style": {
+      "navigationStyle": "custom"
+     }
+    }
+   ]
+  },
+  {
+   "root": "pages/search",
+   "pages": [
+    {
+     "path": "result",
+     "style": {
+      "navigationBarTitleText": "搜索",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    }
+   ]
+  },
+  {
+   "root": "pages/diary",
+   "pages": [
+    {
+     "path": "list",
+     "style": {
+      "navigationBarTitleText": "记录",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "detail",
+     "style": {
+      "navigationBarTitleText": "记录详情",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "trash",
+     "style": {
+      "navigationBarTitleText": "回收站",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    }
+   ]
+  },
+  {
+   "root": "pages/bill",
+   "pages": [
+    {
+     "path": "index",
+     "style": {
+      "navigationBarTitleText": "账单",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "stats",
+     "style": {
+      "navigationBarTitleText": "收支统计",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "edit",
+     "style": {
+      "navigationBarTitleText": "记一笔",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "trash",
+     "style": {
+      "navigationBarTitleText": "回收站",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    }
+   ]
+  },
+  {
+   "root": "pages/plan",
+   "pages": [
+    {
+     "path": "index",
+     "style": {
+      "navigationBarTitleText": "计划",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "detail",
+     "style": {
+      "navigationBarTitleText": "计划详情",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "templates",
+     "style": {
+      "navigationBarTitleText": "计划模板",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "stats",
+     "style": {
+      "navigationBarTitleText": "计划统计",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
+     "path": "trash",
+     "style": {
+      "navigationBarTitleText": "计划回收站",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    }
+   ]
+  }
+ ],
+ "preloadRule": {
+  "pages/chat/index": {
+   "network": "all",
+   "packages": [
+    "pages/diary",
+    "pages/bill",
+    "pages/plan"
+   ]
+  },
+  "pages/functions/index": {
+   "network": "all",
+   "packages": [
+    "pages/settings/sub",
+    "pages/search",
+    "pages/diary",
+    "pages/bill",
+    "pages/plan"
+   ]
+  }
+ },
+ "globalStyle": {
+  "navigationBarTextStyle": "black",
+  "navigationBarTitleText": "思迹",
+  "navigationBarBackgroundColor": "#FFFFFF",
+  "backgroundColor": "#F4F4F5",
+  "navigationStyle": "default"
+ },
+ "tabBar": {
+  "color": "#A1A1AA",
+  "selectedColor": "#000000",
+  "borderStyle": "white",
+  "backgroundColor": "#F4F4F5",
+  "navigationStyle": "default",
+  "list": [
+   {
+    "pagePath": "pages/chat/index",
+    "iconPath": "/static/tab/chat.png",
+    "selectedIconPath": "/static/tab/chat-active.png",
+    "text": "思迹"
+   },
+   {
+    "pagePath": "pages/functions/index",
+    "iconPath": "static/tab/functions.png",
+    "selectedIconPath": "static/tab/functions-active.png",
+    "text": "功能"
+   },
+   {
+    "pagePath": "pages/settings/index",
+    "iconPath": "static/tab/settings.png",
+    "selectedIconPath": "static/tab/settings-active.png",
+    "text": "设置"
+   }
+  ]
+ }
 }

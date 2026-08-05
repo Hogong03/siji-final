@@ -1,5 +1,23 @@
 <template>
   <view class="page">
+    <!-- 自定义导航栏：左侧返回 + 标题 + 右侧「自己」/「关系图」 -->
+    <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <view class="nav-content">
+        <view class="nav-back" @tap="goBack">
+          <text class="nav-back-icon">‹</text>
+        </view>
+        <text class="nav-title">关系图谱</text>
+        <view class="nav-actions">
+          <view class="nav-btn" @tap="goMyself">
+            <text class="nav-btn-text">自己</text>
+          </view>
+          <view class="nav-btn" @tap="goGraph">
+            <text class="nav-btn-text">关系图</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 顶部统计 -->
     <view class="stats-bar">
       <view class="stat-item">
@@ -140,6 +158,27 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats, isBuiltinRelation } from '@/utils/relations.js'
+import { safeNavigateBack } from '@/utils/nav-helper.js'
+
+const statusBarHeight = ref(20)
+try {
+  const sys = uni.getSystemInfoSync()
+  if (sys && sys.statusBarHeight) statusBarHeight.value = sys.statusBarHeight
+} catch (e) {}
+
+function goBack() {
+  safeNavigateBack()
+}
+
+// 跳转「自己」（内置角色）
+function goMyself() {
+  uni.navigateTo({ url: '/pages/settings/sub/relation-detail?id=builtin_gengge' })
+}
+
+// 跳转「人物关系图」
+function goGraph() {
+  uni.navigateTo({ url: '/pages/settings/sub/relation-graph' })
+}
 
 // ─── 关系模板 ───
 const RELATION_TEMPLATES = [
