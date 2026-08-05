@@ -17,7 +17,7 @@ import { buildProfileContext } from '../profile.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES, isLiteChatMode } from './prompt-actions.js'
 
 // 重新导出（保持向后兼容）
-export { isLiteChatMode, bumpDataVersion }
+export { isLiteChatMode }
 
 // ==================== P0-1A: 静态常量（已拆分到 prompt-actions.js）====================
 // CORE_ACTIONS / LITE_ACTIONS / BEHAVIOR_RULES / isLiteChatMode / _COMMAND_PATTERNS
