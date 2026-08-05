@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-page);
+  background: #FAFAFA;
   overflow: hidden;
 }
 
@@ -11,8 +11,8 @@
   display: flex;
   gap: 4rpx;
   padding: $spacing-sm $spacing-md;
-  background: var(--bg-page);
-  border-bottom: 1rpx solid var(--border-color);
+  background: #FAFAFA;
+  border-bottom: 1rpx solid #E4E4E7;
   overflow-x: auto;
   flex-shrink: 0;
   -webkit-overflow-scrolling: touch;
@@ -31,18 +31,18 @@
   transition: all $transition-fast;
 
   &.active {
-    background: var(--bg-card);
-    border-color: var(--border-color);
+    background: #FFFFFF;
+    border-color: #E4E4E7;
   }
 
   .tab-label {
     font-size: $font-xs;
     font-weight: 600;
-    color: var(--text-tertiary);
+    color: #A1A1AA;
   }
 
   &.active .tab-label {
-    color: var(--text-primary);
+    color: #18181B;
   }
 }
 
@@ -68,20 +68,20 @@
   .hero-name {
     font-size: 56rpx;
     font-weight: 800;
-    color: var(--text-primary);
+    color: #18181B;
     letter-spacing: 8rpx;
   }
   .hero-version {
     font-size: $font-xs;
-    color: var(--text-hint);
-    background: var(--bg-btn-secondary);
+    color: #A1A1AA;
+    background: #D4D4D8;
     padding: 4rpx 16rpx;
     border-radius: 20rpx;
     margin-top: 8rpx;
   }
   .hero-tagline {
     font-size: $font-sm;
-    color: var(--text-secondary);
+    color: #71717A;
     margin-top: 12rpx;
   }
 }
@@ -100,19 +100,19 @@
   align-items: center;
   gap: 6rpx;
   padding: $spacing-sm;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 
   .feat-label {
     font-size: $font-sm;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #18181B;
   }
   .feat-desc {
     font-size: 20rpx;
-    color: var(--text-hint);
+    color: #A1A1AA;
   }
 }
 
@@ -121,30 +121,30 @@
   display: block;
   font-size: $font-lg;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #18181B;
   padding: $spacing-sm 0 $spacing-md;
   text-align: center;
 }
 
 /* 卡片 */
 .card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
   padding: $spacing-md;
   margin-bottom: $spacing-sm;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 
   .card-title {
     font-size: $font-md;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #18181B;
     display: block;
     margin-bottom: $spacing-xs;
   }
   .card-text {
     font-size: $font-sm;
-    color: var(--text-secondary);
+    color: #71717A;
     line-height: 1.8;
     display: block;
   }
@@ -169,16 +169,16 @@
     min-width: 64rpx;
     text-align: center;
 
-    &.bill { background: rgba(245, 158, 11, 0.12); color: var(--color-bill); }
-    &.diary { background: rgba(252, 211, 77, 0.15); color: var(--color-warning); }
-    &.plan { background: rgba(16, 185, 129, 0.12); color: var(--color-plan); }
-    &.multi { background: rgba(0, 0, 0, 0.06); color: var(--color-ai); }
-    &.query { background: rgba(14, 165, 233, 0.12); color: var(--color-info); }
-    &.undo { background: rgba(239, 68, 68, 0.12); color: var(--color-danger); }
+    &.bill { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
+    &.diary { background: rgba(252, 211, 77, 0.15); color: #F59E0B; }
+    &.plan { background: rgba(16, 185, 129, 0.12); color: #059669; }
+    &.multi { background: rgba(0, 0, 0, 0.06); color: #000000; }
+    &.query { background: rgba(14, 165, 233, 0.12); color: #0EA5E9; }
+    &.undo { background: rgba(239, 68, 68, 0.12); color: #DC2626; }
   }
 
-  .ex-text { flex: 1; font-size: $font-sm; color: var(--text-primary); }
-  .ex-result { font-size: $font-xs; color: var(--text-hint); flex-shrink: 0; }
+  .ex-text { flex: 1; font-size: $font-sm; color: #18181B; }
+  .ex-result { font-size: $font-xs; color: #A1A1AA; flex-shrink: 0; }
 }
 
 /* 反馈卡片 */
@@ -186,7 +186,7 @@
   padding: $spacing-sm $spacing-md;
   cursor: pointer;
 
-  &:active { background: var(--bg-input); }
+  &:active { background: #F4F4F5; }
 }
 
 .fb-row {
@@ -206,17 +206,17 @@
 .fb-title {
   font-size: $font-md;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #18181B;
 }
 
 .fb-desc {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
 }
 
 .fb-arrow {
   font-size: $font-lg;
-  color: var(--text-hint);
+  color: #A1A1AA;
   font-weight: 300;
   flex-shrink: 0;
 }

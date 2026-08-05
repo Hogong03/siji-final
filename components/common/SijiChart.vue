@@ -16,7 +16,7 @@ const props = defineProps({
   height: { type: Number, default: 200 },
   colors: {
     type: Array,
-    default: () => ['var(--color-ai)', 'var(--color-plan)', 'var(--color-bill)', 'var(--color-danger)', 'var(--color-info)', '#8B5CF6', 'var(--color-pink)', '#14B8A6', '#F97316', '#6B7280']
+    default: () => ['#000000', '#059669', '#F59E0B', '#DC2626', '#0EA5E9', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6B7280']
   },
   label: { type: String, default: '' },
   value: { type: Number, default: 0 },

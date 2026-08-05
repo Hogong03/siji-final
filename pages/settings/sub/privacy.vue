@@ -97,7 +97,7 @@ function submit() {
 <style lang="scss" scoped>
 .sub-page {
   min-height: 100vh;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   padding: $spacing-md;
 }
 
@@ -108,15 +108,15 @@ function submit() {
   box-shadow: $shadow-sm;
 
   .card-title { font-size: $font-lg; font-weight: 700; color: #18181B; display: block; margin-bottom: $spacing-xs; }
-  .card-desc { font-size: $font-xs; color: var(--text-hint); display: block; margin-bottom: $spacing-md; }
+  .card-desc { font-size: $font-xs; color: #A1A1AA; display: block; margin-bottom: $spacing-md; }
 }
 
 .action-row {
   display: flex; justify-content: space-between; align-items: center;
   .status-badge {
     padding: 8rpx 20rpx; border-radius: 20rpx; font-size: $font-xs; font-weight: 600;
-    color: var(--text-hint);
-    &.on { color: var(--color-plan); background: var(--color-plan-bg); }
+    color: #A1A1AA;
+    &.on { color: #059669; background: #D1FAE5; }
   }
   .action-btn { font-size: $font-sm; color: #18181B; font-weight: 600; }
 }
@@ -136,7 +136,7 @@ function submit() {
   overflow: hidden;
 
   .pin-title { font-size: $font-lg; font-weight: 700; color: #18181B; margin-bottom: 8rpx; }
-  .pin-sub { font-size: $font-xs; color: var(--text-hint); margin-bottom: $spacing-md; }
+  .pin-sub { font-size: $font-xs; color: #A1A1AA; margin-bottom: $spacing-md; }
   .pin-error { font-size: $font-xs; color: $danger; margin-bottom: $spacing-md; }
   .pin-mask { font-size: $font-xxl; letter-spacing: 16rpx; color: #18181B; margin-bottom: $spacing-md; }
 }
@@ -146,7 +146,7 @@ function submit() {
   .pin-key {
     width: calc(33.33% - 12rpx); height: 80rpx; margin: 6rpx;
     display: flex; align-items: center; justify-content: center;
-    background: var(--bg-btn-secondary); border-radius: $radius-md;
+    background: #D4D4D8; border-radius: $radius-md;
     font-size: $font-lg; font-weight: 600; color: #18181B;
     box-sizing: border-box;
     &:active { background: rgba(99,102,241,0.15); transform: scale(0.95); }

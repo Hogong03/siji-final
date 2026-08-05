@@ -78,7 +78,7 @@
 					<view class="disclaimer-link">
 						<SijiIcon name="info" size="sm" color="#71717A" />
 						<text class="disclaimer-link-text">用户协议与免责声明</text>
-						<SijiIcon name="arrow-right" size="xs" color="var(--text-hint)" />
+						<SijiIcon name="arrow-right" size="xs" color="#A1A1AA" />
 					</view>
 				</view>
 

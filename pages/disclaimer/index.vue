@@ -128,7 +128,7 @@ function handleDecline() {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-page, #FFFFFF);
+  background: #FAFAFA;
   overflow: scroll;
 }
 
@@ -143,13 +143,13 @@ function handleDecline() {
 .disclaimer-brand {
   font-size: 52rpx;
   font-weight: 700;
-  color: var(--text-strong, var(--color-ai));
+  color: #3F3F46;
   letter-spacing: 6rpx;
 }
 .disclaimer-brand-sub {
   font-size: 18rpx;
   font-weight: 500;
-  color: var(--text-hint, #A1A1AA);
+  color: #A1A1AA;
   letter-spacing: 10rpx;
   text-transform: uppercase;
 }
@@ -165,13 +165,13 @@ function handleDecline() {
   display: block;
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--text-strong, var(--color-ai));
+  color: #3F3F46;
   margin-bottom: 8rpx;
 }
 .disclaimer-date {
   display: block;
   font-size: 22rpx;
-  color: var(--text-hint, #A1A1AA);
+  color: #A1A1AA;
   margin-bottom: 32rpx;
 }
 
@@ -182,13 +182,13 @@ function handleDecline() {
   display: block;
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--text-primary, var(--bg-input));
+  color: #18181B;
   margin-bottom: 12rpx;
 }
 .disclaimer-text {
   display: block;
   font-size: 24rpx;
-  color: var(--text-secondary, #71717A);
+  color: #71717A;
   line-height: 1.7;
   margin-bottom: 8rpx;
   word-wrap: break-word;
@@ -205,8 +205,8 @@ function handleDecline() {
 .disclaimer-footer {
   padding: 20rpx 40rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid var(--border-light, #E4E4E7);
-  background: var(--bg-page, #FFFFFF);
+  border-top: 1rpx solid #E4E4E7;
+  background: #FAFAFA;
 }
 .disclaimer-footer-inner {
   display: flex;
@@ -228,11 +228,11 @@ function handleDecline() {
   }
 }
 .disclaimer-btn-primary {
-  background: var(--text-strong, var(--color-ai));
+  background: #3F3F46;
   color: #FFFFFF;
 }
 .disclaimer-btn-secondary {
-  background: var(--bg-card, var(--bg-input));
-  color: var(--text-secondary, #71717A);
+  background: #FFFFFF;
+  color: #71717A;
 }
 </style>

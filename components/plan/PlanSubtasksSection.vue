@@ -110,7 +110,7 @@ const emit = defineEmits([
 
 .sp-fill {
   height: 100%;
-  background: var(--color-ai);
+  background: #000000;
   border-radius: 5rpx;
   transition: width 0.3s;
 }
@@ -132,7 +132,7 @@ const emit = defineEmits([
   padding: 12rpx 0;
 
   &.done {
-    .si-check-icon { color: var(--color-plan); font-weight: 700; }
+    .si-check-icon { color: #059669; font-weight: 700; }
     .si-input { text-decoration: line-through; color: $text-hint; }
   }
 }

@@ -184,7 +184,7 @@ function handleDelete() {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: var(--bg-page); }
+.page { min-height: 100vh; background: #FAFAFA; }
 .detail-content { padding: 24rpx; }
 
 .hero {
@@ -194,11 +194,11 @@ function handleDelete() {
 .hero-meta { display: flex; align-items: center; gap: 16rpx; margin-top: 16rpx; }
 .meta-category { font-size: 24rpx; color: #71717A; }
 .status-badge { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }
-.status-thinking { background: var(--color-bill-light); color: var(--color-bill-text); }
-.status-decided { background: var(--color-info-light); color: var(--color-info-text); }
-.status-acted { background: var(--color-plan-light); color: var(--color-plan-text); }
-.status-reviewed { background: var(--bg-btn-secondary); color: var(--text-mid); }
-.status-abandoned { background: var(--color-danger-light); color: var(--color-danger-text); }
+.status-thinking { background: #FEF3C7; color: #92400E; }
+.status-decided { background: #DBEAFE; color: #1E40AF; }
+.status-acted { background: #D1FAE5; color: #065F46; }
+.status-reviewed { background: #D4D4D8; color: #52525B; }
+.status-abandoned { background: #FEE2E2; color: #991B1B; }
 .hero-deadline, .hero-emotion { font-size: 26rpx; color: #71717A; margin-top: 12rpx; display: block; }
 
 .section {
@@ -210,32 +210,32 @@ function handleDelete() {
 .option-item:last-child { border-bottom: none; }
 .option-header { display: flex; align-items: center; }
 .option-name { font-size: 28rpx; font-weight: 600; color: #18181B; flex: 1; }
-.weight-bar { width: 160rpx; height: 8rpx; background: var(--bg-input); border-radius: 4rpx; margin: 0 16rpx; }
-.weight-fill { height: 100%; background: var(--color-ai); border-radius: 4rpx; }
+.weight-bar { width: 160rpx; height: 8rpx; background: #F4F4F5; border-radius: 4rpx; margin: 0 16rpx; }
+.weight-fill { height: 100%; background: #000000; border-radius: 4rpx; }
 .weight-num { font-size: 24rpx; color: #71717A; width: 32rpx; text-align: right; }
 .pros-cons { margin-top: 8rpx; }
 .pc-label { font-size: 24rpx; color: #71717A; }
-.pc-text { font-size: 24rpx; color: var(--text-strong); }
+.pc-text { font-size: 24rpx; color: #3F3F46; }
 
 .tag-wrap { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
-.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: var(--bg-btn-secondary); color: var(--text-strong); border-radius: 12rpx; }
-.tag-alt { background: var(--bg-card-alt); color: var(--text-mid); }
+.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #D4D4D8; color: #3F3F46; border-radius: 12rpx; }
+.tag-alt { background: #E4E4E7; color: #52525B; }
 
-.section-decision { background: var(--bg-card-alt); }
+.section-decision { background: #E4E4E7; }
 .decision-text { font-size: 32rpx; font-weight: 600; color: #18181B; margin-top: 16rpx; display: block; }
-.decision-reasoning { font-size: 26rpx; color: var(--text-mid); margin-top: 12rpx; line-height: 1.6; }
+.decision-reasoning { font-size: 26rpx; color: #52525B; margin-top: 12rpx; line-height: 1.6; }
 
-.section-review { background: var(--color-review-bg); }
-.review-text { font-size: 28rpx; color: var(--text-strong); margin-top: 16rpx; line-height: 1.6; }
+.section-review { background: #F4F4F5; }
+.review-text { font-size: 28rpx; color: #3F3F46; margin-top: 16rpx; line-height: 1.6; }
 
 .actions { display: flex; gap: 24rpx; margin-top: 24rpx; }
 .btn-action {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
-  background: var(--color-ai); color: #FFFFFF;
+  background: #000000; color: #FFFFFF;
 }
-.btn-danger { background: var(--color-danger-light); color: var(--color-danger); }
+.btn-danger { background: #FEE2E2; color: #DC2626; }
 
-.empty { display: flex; justify-content: center; padding-top: 200rpx; color: var(--text-hint); }
+.empty { display: flex; justify-content: center; padding-top: 200rpx; color: #A1A1AA; }
 
 .modal-mask {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -250,18 +250,18 @@ function handleDelete() {
 .form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
 .form-input {
   width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx; color: #18181B;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx; color: #18181B;
 }
 .form-textarea {
   width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx;
 }
 .modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: var(--bg-btn-secondary); color: #71717A; }
-.btn-confirm { background: var(--color-ai); color: #FFFFFF; }
+.btn-cancel { background: #D4D4D8; color: #71717A; }
+.btn-confirm { background: #000000; color: #FFFFFF; }
 
 </style>
 

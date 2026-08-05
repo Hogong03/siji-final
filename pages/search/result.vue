@@ -131,9 +131,9 @@ const groupedResults = computed(() => {
 const totalCount = computed(() => results.value.length + convResults.value.length)
 
 const typeMeta = {
-  diary: { label: '记录', iconName: 'diary', color: 'var(--color-diary)' },
-  bill: { label: '账单', iconName: 'bill', color: 'var(--color-bill)' },
-  plan: { label: '计划', iconName: 'plan', color: 'var(--color-plan)' },
+  diary: { label: '记录', iconName: 'diary', color: '#0EA5E9' },
+  bill: { label: '账单', iconName: 'bill', color: '#F59E0B' },
+  plan: { label: '计划', iconName: 'plan', color: '#059669' },
   conversation: { label: '对话', iconName: 'chat-bubble', color: '#18181B' }
 }
 

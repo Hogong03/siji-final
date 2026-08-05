@@ -13,7 +13,7 @@ $spacing-lg: 32rpx;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-page, $bg-page);
+  background: #FAFAFA;
   overflow: scroll;
 }
 
@@ -36,13 +36,13 @@ $spacing-lg: 32rpx;
   .intro-title {
     font-size: $font-lg;
     font-weight: 700;
-    color: var(--text-primary, $ai-primary);
+    color: #18181B;
     display: block;
     margin-bottom: $spacing-xs;
   }
   .intro-sub {
     font-size: $font-sm;
-    color: var(--text-hint, $text-hint);
+    color: #A1A1AA;
     display: block;
     line-height: 1.5;
   }
@@ -55,14 +55,14 @@ $spacing-lg: 32rpx;
 .form-label {
   font-size: $font-md;
   font-weight: 600;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   margin-bottom: $spacing-sm;
   display: block;
 }
 
 .form-hint {
   font-size: $font-sm;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   display: block;
   margin-bottom: $spacing-sm;
   line-height: 1.5;
@@ -72,12 +72,12 @@ $spacing-lg: 32rpx;
   width: 100%;
   height: 80rpx;
   padding: 0 $spacing-md;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-sm;
   font-size: $font-md;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   box-sizing: border-box;
-  border: 1rpx solid var(--border-color, var(--border-color));
+  border: 1rpx solid #E4E4E7;
 }
 
 .form-textarea {
@@ -85,14 +85,14 @@ $spacing-lg: 32rpx;
   min-height: 200rpx;
   max-height: 600rpx;
   padding: $spacing-md;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-sm;
   font-size: 26rpx;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   line-height: 1.6;
   box-sizing: border-box;
   overflow: scroll;
-  border: 1rpx solid var(--border-color, var(--border-color));
+  border: 1rpx solid #E4E4E7;
 }
 
 .form-textarea-sm {
@@ -102,7 +102,7 @@ $spacing-lg: 32rpx;
 
 .char-count {
   font-size: $font-xs;
-  color: var(--text-hint, $border-color);
+  color: #A1A1AA;
   text-align: right;
   display: block;
   margin-top: $spacing-xs;
@@ -124,15 +124,15 @@ $spacing-lg: 32rpx;
   align-items: center;
   gap: 6rpx;
   padding: $spacing-sm 4rpx;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-sm;
-  border: 2rpx solid var(--border-color, var(--border-color));
+  border: 2rpx solid #E4E4E7;
   box-sizing: border-box;
   overflow: hidden;
 
   &.active {
-    border-color: var(--text-primary, $ai-primary);
-    background: var(--bg-input, $bg-input);
+    border-color: #18181B;
+    background: #F4F4F5;
   }
 
   &:active { opacity: 0.7; }
@@ -147,7 +147,7 @@ $spacing-lg: 32rpx;
 
 .avatar-option-label {
   font-size: 20rpx;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -164,8 +164,8 @@ $spacing-lg: 32rpx;
   z-index: 10;
   padding: $spacing-sm $spacing-md;
   padding-bottom: calc(#{$spacing-sm} + env(safe-area-inset-bottom, 0rpx));
-  background: var(--bg-page, $bg-page);
-  border-top: 1rpx solid var(--border-color, var(--border-color));
+  background: #FAFAFA;
+  border-top: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 }
 
@@ -186,12 +186,12 @@ $spacing-lg: 32rpx;
   height: 84rpx;
   line-height: 84rpx;
   text-align: center;
-  background: var(--bg-card, $bg-card);
-  color: var(--text-primary, $ai-primary);
+  background: #FFFFFF;
+  color: #18181B;
   font-size: $font-md;
   font-weight: 600;
   border-radius: $radius-sm;
-  border: 1rpx solid var(--border-color, var(--border-color));
+  border: 1rpx solid #E4E4E7;
   padding: 0;
   margin: 0;
   box-sizing: border-box;
@@ -206,8 +206,8 @@ $spacing-lg: 32rpx;
   height: 84rpx;
   line-height: 84rpx;
   text-align: center;
-  background: var(--color-ai, $ai-primary);
-  color: var(--text-on-ai, #FFF);
+  background: #000000;
+  color: #FFFFFF;
   font-size: $font-md;
   font-weight: 600;
   border-radius: $radius-sm;

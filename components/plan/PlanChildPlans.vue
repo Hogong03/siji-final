@@ -124,7 +124,7 @@ function goAddChildPlan() {
 
   &.cp-status-0 { background: rgba(0,0,0,0.05); color: $text-secondary; }
   &.cp-status-1 { background: rgba(0,0,0,0.06); color: $text-primary; }
-  &.cp-status-2 { background: rgba(16, 185, 129, 0.1); color: var(--color-plan); }
+  &.cp-status-2 { background: rgba(16, 185, 129, 0.1); color: #059669; }
 }
 
 .cp-due, .cp-sub {

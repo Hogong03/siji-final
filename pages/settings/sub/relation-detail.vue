@@ -273,7 +273,7 @@ function handleDelete() {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: var(--bg-page); }
+.page { min-height: 100vh; background: #FAFAFA; }
 .detail-content { padding: 24rpx; }
 
 .hero {
@@ -283,7 +283,7 @@ function handleDelete() {
 }
 .hero-avatar {
   width: 96rpx; height: 96rpx; border-radius: 50%;
-  background: var(--color-ai); color: #FFFFFF;
+  background: #000000; color: #FFFFFF;
   font-size: 40rpx; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
@@ -292,7 +292,7 @@ function handleDelete() {
 .hero-role { font-size: 26rpx; color: #71717A; margin-top: 8rpx; }
 .score-display { display: flex; align-items: baseline; }
 .score-num { font-size: 56rpx; font-weight: 800; color: #18181B; }
-.score-max { font-size: 28rpx; color: var(--text-hint); }
+.score-max { font-size: 28rpx; color: #A1A1AA; }
 
 .section {
   background: #FFFFFF; border-radius: 24rpx; padding: 28rpx;
@@ -300,14 +300,14 @@ function handleDelete() {
 }
 .section-header { display: flex; justify-content: space-between; align-items: center; }
 .section-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
-.section-text { font-size: 28rpx; color: var(--text-strong); line-height: 1.6; margin-top: 12rpx; }
+.section-text { font-size: 28rpx; color: #3F3F46; line-height: 1.6; margin-top: 12rpx; }
 .add-btn { font-size: 26rpx; color: #18181B; font-weight: 600; }
 
 .tag-wrap { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
-.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: var(--bg-btn-secondary); color: var(--text-strong); border-radius: 12rpx; }
-.tag-alt { background: var(--bg-card-alt); color: var(--text-mid); }
+.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #D4D4D8; color: #3F3F46; border-radius: 12rpx; }
+.tag-alt { background: #E4E4E7; color: #52525B; }
 
-.empty-mini { font-size: 26rpx; color: var(--text-hint); margin-top: 16rpx; }
+.empty-mini { font-size: 26rpx; color: #A1A1AA; margin-top: 16rpx; }
 
 .interaction-item {
   padding: 20rpx 0; border-bottom: 1rpx solid #E4E4E7;
@@ -315,19 +315,19 @@ function handleDelete() {
 .interaction-item:last-child { border-bottom: none; }
 .interaction-top { display: flex; justify-content: space-between; }
 .interaction-scene { font-size: 26rpx; font-weight: 600; color: #18181B; }
-.interaction-date { font-size: 24rpx; color: var(--text-hint); }
-.interaction-content { font-size: 28rpx; color: var(--text-strong); margin-top: 8rpx; display: block; }
+.interaction-date { font-size: 24rpx; color: #A1A1AA; }
+.interaction-content { font-size: 28rpx; color: #3F3F46; margin-top: 8rpx; display: block; }
 .interaction-result, .interaction-emotion { font-size: 24rpx; color: #71717A; margin-top: 4rpx; display: block; }
 
 .actions { display: flex; gap: 24rpx; margin-top: 24rpx; }
 .btn-action {
   flex: 1; height: 88rpx; border-radius: 16rpx;
   font-size: 30rpx; font-weight: 600; border: none;
-  background: var(--color-ai); color: #FFFFFF;
+  background: #000000; color: #FFFFFF;
 }
-.btn-danger { background: var(--color-danger-light); color: var(--color-danger); }
+.btn-danger { background: #FEE2E2; color: #DC2626; }
 
-.empty { display: flex; justify-content: center; padding-top: 200rpx; color: var(--text-hint); }
+.empty { display: flex; justify-content: center; padding-top: 200rpx; color: #A1A1AA; }
 
 .modal-mask {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -342,18 +342,18 @@ function handleDelete() {
 .form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
 .form-input {
   width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx; color: #18181B;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx; color: #18181B;
 }
 .form-textarea {
   width: 100%; min-height: 120rpx; padding: 16rpx 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx;
 }
 .modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: var(--bg-btn-secondary); color: #71717A; }
-.btn-confirm { background: var(--color-ai); color: #FFFFFF; }
+.btn-cancel { background: #D4D4D8; color: #71717A; }
+.btn-confirm { background: #000000; color: #FFFFFF; }
 .picker-display {
   display: flex; align-items: center;
   color: #18181B;

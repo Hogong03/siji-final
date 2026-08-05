@@ -60,7 +60,7 @@ const props = defineProps({
 .animated ::v-deep .sk-circle,
 .animated ::v-deep .sk-card,
 .animated ::v-deep .sk-chart-bar {
-  background: var(--bg-input);
+  background: #F4F4F5;
   animation: skeletonPulse 1.5s infinite ease-in-out;
 }
 
@@ -97,7 +97,7 @@ const props = defineProps({
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
-  border-bottom: 1rpx solid var(--border-color, rgba(0,0,0,0.04));
+  border-bottom: 1rpx solid #E4E4E7);
 }
 
 .sk-lines {

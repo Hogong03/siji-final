@@ -43,7 +43,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   z-index: 9999;
   overflow: hidden;
 }
@@ -74,14 +74,14 @@ onMounted(() => {
 .logo-text {
   font-size: 72rpx;
   font-weight: 700;
-  color: var(--text-strong);
+  color: #3F3F46;
   letter-spacing: 8rpx;
 }
 
 .logo-sub {
   font-size: 22rpx;
   font-weight: 500;
-  color: var(--text-hint);
+  color: #A1A1AA;
   letter-spacing: 12rpx;
   text-transform: uppercase;
 }

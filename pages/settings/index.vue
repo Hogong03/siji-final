@@ -133,7 +133,7 @@ function go(target) {
 </template>
 
 <style lang="scss" scoped>
-.page { height: 100vh; background: var(--bg-page); }
+.page { height: 100vh; background: #FAFAFA; }
 .scroll { height: 100%; padding: $spacing-md; box-sizing: border-box; }
 
 /* ─── Section 标题 ─── */
@@ -165,18 +165,18 @@ function go(target) {
   display: flex;
   align-items: center;
   padding: 28rpx $spacing-md;
-  border-bottom: 1rpx solid var(--bg-input);
+  border-bottom: 1rpx solid #F4F4F5;
   gap: $spacing-sm;
   box-sizing: border-box;
   &:last-child { border-bottom: none; }
-  &:active { background: var(--bg-input); }
+  &:active { background: #F4F4F5; }
 }
 
 .ai-row { padding-top: 32rpx; padding-bottom: 32rpx; }
 
 /* AI 配置区顶部黑条 */
 .card-ai-section {
-  border-top: 3rpx solid var(--color-ai);
+  border-top: 3rpx solid #000000;
 }
 
 /* 厂商 logo 替代 SijiIcon */
@@ -192,16 +192,16 @@ function go(target) {
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
 .row-label { font-size: $font-md; font-weight: 600; color: #18181B; 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-desc { font-size: $font-xs; color: var(--text-hint);
+.row-desc { font-size: $font-xs; color: #A1A1AA;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .row-right { display: flex; align-items: center; gap: 6rpx; flex-shrink: 0; }
-.row-value { font-size: $font-xs; color: var(--text-hint); flex-shrink: 0; max-width: 40%;
+.row-value { font-size: $font-xs; color: #A1A1AA; flex-shrink: 0; max-width: 40%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-arrow { font-size: $font-lg; color: var(--text-hint); font-weight: 300; flex-shrink: 0; }
+.row-arrow { font-size: $font-lg; color: #A1A1AA; font-weight: 300; flex-shrink: 0; }
 
 .dot { width: 16rpx; height: 16rpx; border-radius: 50%; flex-shrink: 0;
-  &.ok { background: var(--color-plan); box-shadow: 0 0 0 6rpx rgba(16, 185, 129, 0.12); }
-  &.warn { background: var(--color-bill); box-shadow: 0 0 0 6rpx rgba(245, 158, 11, 0.12); }
+  &.ok { background: #059669; box-shadow: 0 0 0 6rpx rgba(16, 185, 129, 0.12); }
+  &.warn { background: #F59E0B; box-shadow: 0 0 0 6rpx rgba(245, 158, 11, 0.12); }
 }
 </style>

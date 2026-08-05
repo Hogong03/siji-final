@@ -40,8 +40,9 @@ export const OP_CLAIM_RE_EXT = buildRegex(OP_CLAIM_WORDS_EXT)
 /** AI 声称操作完成 — 替换正则（修改 reply 用） */
 export const OP_CLAIM_REPLACE_RE = buildReplaceRegex(OP_CLAIM_WORDS)
 
-/** fallback 场景 reply 触发正则（关联记录/日记等场景，用模糊匹配） */
-export const OP_CLAIM_RE_FALLBACK = /.*记|.*帮|记下了|帮你|已更新|已创建|已添加|已保存|已写入/
+/** fallback 场景 reply 触发正则（收窄：必须含"已"+操作动词，或"帮你"+操作动词，或"记下了"）
+ *  原 .*记 过宽，"我记得你说过" 会误触发 */
+export const OP_CLAIM_RE_FALLBACK = /已(?:记|帮|创建|添加|保存|写入|更新|删除|生成)|帮你(?:记|建|创建|添加|保存|写入|更新)|记下了|记了一笔/
 
 /** 关系类型映射表 */
 export const RELATION_TYPES = [

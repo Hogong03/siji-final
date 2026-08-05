@@ -40,7 +40,7 @@ export function parseAiResponse(raw, conversationId) {
   try {
     parsed = JSON.parse(cleaned)
   } catch {
-    // 尝试从文本中提取 JSON 对象（贪婪匹配最后一个 { ... }）
+    // 尝试从文本中提取最后一个 JSON 对象（贪婪匹配 { ... }）
     const jsonMatches = cleaned.match(/\{[\s\S]*\}/g)
     if (jsonMatches) {
       // 从后往前尝试，取第一个能解析成功的
@@ -50,30 +50,6 @@ export function parseAiResponse(raw, conversationId) {
           break
         } catch {
           continue
-        }
-      }
-    }
-    // 兜底：尝试找 {"reply" 开头的子串（AI 有时在 JSON 前输出思考文本）
-    if (!parsed) {
-      const replyJsonIdx = cleaned.indexOf('{"reply"')
-      if (replyJsonIdx === -1) {
-        // 再试单引号变体
-        const replyJsonIdx2 = cleaned.indexOf("{'reply'")
-        if (replyJsonIdx2 !== -1) {
-          const sub = cleaned.slice(replyJsonIdx2)
-          try { parsed = JSON.parse(sub) } catch {}
-        }
-      } else if (replyJsonIdx !== -1) {
-        const sub = cleaned.slice(replyJsonIdx)
-        try { parsed = JSON.parse(sub) } catch {}
-        // 如果直接 parse 失败，再试贪婪匹配
-        if (!parsed) {
-          const subMatch = sub.match(/\{[\s\S]*\}/g)
-          if (subMatch) {
-            for (let i = subMatch.length - 1; i >= 0; i--) {
-              try { parsed = JSON.parse(subMatch[i]); break } catch { continue }
-            }
-          }
         }
       }
     }

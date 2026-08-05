@@ -280,7 +280,7 @@ function deleteSim(sim) {
   uni.showModal({
     title: '确认删除',
     content: `确定删除「${sim.relation_name}」的演练记录？关联的对话内容也将一并删除。`,
-    confirmColor: 'var(--color-danger)',
+    confirmColor: '#DC2626',
     success: (res) => {
       if (res.confirm) {
         deleteSimulation(sim.id)

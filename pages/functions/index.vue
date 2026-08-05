@@ -234,7 +234,7 @@
 					<text class="ac-title">消费分析</text>
 					<view class="ac-link" @tap="goStats">
 						<text>详细</text>
-						<SijiIcon name="chevron-right" size="xs" color="var(--color-ai)" />
+						<SijiIcon name="chevron-right" size="xs" color="#000000" />
 					</view>
 				</view>
 
@@ -252,7 +252,7 @@
 							<view class="trend-bar-bg">
 								<view class="trend-bar" :style="{
                   height: Math.max(6, (d.amount / trendMax) * 100) + '%',
-                  background: d.amount > 0 ? 'var(--color-ai)' : 'var(--bg-input)'
+                  background: d.amount > 0 ? '#000000' : '#F4F4F5'
                 }" />
 							</view>
 							<text class="trend-day">{{ d.label }}</text>

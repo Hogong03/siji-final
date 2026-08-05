@@ -64,21 +64,21 @@
 
   /* 用户气泡 — 加阴影提升层次 */
   &.user {
-    background: var(--color-ai);
-    color: var(--bg-card);
+    background: #000000;
+    color: #FFFFFF;
     border-radius: 24rpx 24rpx 8rpx 24rpx;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
   }
 
   /* AI 气泡基础 */
   &.assistant {
-    background: var(--bg-card-alt);
-    color: var(--text-primary);
+    background: #E4E4E7;
+    color: #18181B;
     border-radius: 24rpx 24rpx 24rpx 8rpx;
-    border-left: 3rpx solid var(--border-color);
+    border-left: 3rpx solid #E4E4E7;
 
     &.has-edge {
-      border-left-color: var(--text-secondary);
+      border-left-color: #71717A;
     }
 
     /* plain/short 去掉左侧条，更干净 */
@@ -94,7 +94,7 @@
 
   /* 连续 AI 消息去掉左侧边框和圆角微调 */
   &.assistant.is-continuation {
-    border-left-color: var(--bg-input);
+    border-left-color: #F4F4F5;
     border-radius: 16rpx 24rpx 24rpx 8rpx;
   }
 
@@ -134,7 +134,7 @@
 
 .bubble-time-outer {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   opacity: 0.5;
 }
 
@@ -151,11 +151,11 @@
 
 .bubble-action-btn {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   padding: 2rpx 8rpx;
 
   &:active {
-    color: var(--text-primary);
+    color: #18181B;
   }
 }
 
@@ -164,7 +164,7 @@
 /* 纯文本/短文本 — 标准灰底，无边框 */
 .bubble.assistant.plain,
 .bubble.assistant.short {
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   border-left: none;
 }
 
@@ -173,8 +173,8 @@
 /* 欢迎消息 — 去掉左侧边框，更柔和 */
 .bubble.assistant.is-welcome {
   border-left: none;
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
   border-radius: 16rpx;
   padding: $spacing-md $spacing-lg;
   max-width: 88%;
@@ -191,16 +191,16 @@
 .welcome-chip {
   padding: 8rpx 16rpx;
   border-radius: 16rpx;
-  background: var(--bg-btn-secondary);
-  border: 1rpx solid var(--border-color);
+  background: #D4D4D8;
+  border: 1rpx solid #E4E4E7;
   text {
     font-size: $font-xs;
-    color: var(--text-primary);
+    color: #18181B;
     font-weight: 500;
   }
   &:active {
     transform: scale(0.94);
-    background: var(--bg-card-alt);
+    background: #E4E4E7;
   }
 }
 
@@ -209,7 +209,7 @@
   padding: 0;
   overflow: hidden;
   border-left: none;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   .md-code-block {
     margin: 0;
     border-radius: 24rpx 24rpx 24rpx 8rpx;
@@ -218,31 +218,31 @@
 
 /* 富文本型 — 左侧主色条 */
 .bubble.assistant.rich {
-  border-left: 4rpx solid var(--color-ai);
+  border-left: 4rpx solid #000000;
 }
 
 /* 列表型 — 左侧次要色条 */
 .bubble.assistant.list {
-  border-left: 4rpx solid var(--text-secondary);
+  border-left: 4rpx solid #71717A;
 }
 
 /* 引用型 — 左侧粗条+浅底 */
 .bubble.assistant.quote {
-  border-left: 4rpx solid var(--text-hint);
-  background: var(--bg-input);
+  border-left: 4rpx solid #A1A1AA;
+  background: #F4F4F5;
 }
 
 /* 表格型 — 顶部细线 */
 .bubble.assistant.table {
   border-left: none;
-  border-top: 3rpx solid var(--text-primary);
+  border-top: 3rpx solid #18181B;
   border-radius: 0 0 24rpx 8rpx;
 }
 
 /* 长文型 — 更宽松的内边距 + 行高优化 */
 .bubble.assistant.long {
   padding: $spacing-md $spacing-lg;
-  border-left: 4rpx solid var(--color-ai);
+  border-left: 4rpx solid #000000;
 
   .md-text {
     line-height: 1.85;
@@ -339,9 +339,9 @@
 .confirm-card {
   margin-top: $spacing-sm;
   padding: $spacing-md;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 12rpx;
-  border: 2rpx solid var(--color-ai);
+  border: 2rpx solid #000000;
   width: 85%;
 }
 
@@ -351,12 +351,12 @@
   margin-bottom: $spacing-xs;
 
   .confirm-icon { font-size: 32rpx; margin-right: $spacing-xs; }
-  .confirm-title { font-size: $font-sm; font-weight: 700; color: var(--color-ai); }
+  .confirm-title { font-size: $font-sm; font-weight: 700; color: #000000; }
 }
 
 .confirm-body {
   margin-bottom: $spacing-sm;
-  .confirm-detail { font-size: $font-sm; color: var(--text-strong); }
+  .confirm-detail { font-size: $font-sm; color: #3F3F46; }
 }
 
 .confirm-actions {
@@ -375,13 +375,13 @@
   &:active { transform: scale(0.94); }
 
   &.cancel {
-    background: var(--bg-btn-secondary);
-    color: var(--text-secondary);
+    background: #D4D4D8;
+    color: #71717A;
   }
 
   &.ok {
-    background: var(--color-ai);
-    color: var(--bg-card);
+    background: #000000;
+    color: #FFFFFF;
   }
 }
 
@@ -389,18 +389,18 @@
 .exec-card {
   margin-top: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 12rpx;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   width: 85%;
 
   &.failed {
-    border-color: var(--color-danger, $danger);
+    border-color: #DC2626;
     background: rgba(239, 68, 68, 0.04);
   }
 }
 
 .exec-error {
   font-size: $font-sm;
-  color: var(--color-danger, $danger);
+  color: #DC2626;
 }

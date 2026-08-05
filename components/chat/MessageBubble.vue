@@ -46,9 +46,9 @@ const edgeColor = computed(() => {
   const er = props.message.execResult
   if (!er || !er.success) return ''
   const t = er.detail?.type || ''
-  if (t.startsWith('bill') || t === 'create_bill' || t === 'update_bill' || t === 'query_bill') return 'var(--color-bill)'
-  if (t.startsWith('diary') || t === 'create_diary' || t === 'update_diary' || t === 'query_diary') return 'var(--color-diary)'
-  if (t.startsWith('plan') || t === 'create_plan' || t === 'update_plan' || t === 'query_plan') return 'var(--color-plan)'
+  if (t.startsWith('bill') || t === 'create_bill' || t === 'update_bill' || t === 'query_bill') return '#F59E0B'
+  if (t.startsWith('diary') || t === 'create_diary' || t === 'update_diary' || t === 'query_diary') return '#0EA5E9'
+  if (t.startsWith('plan') || t === 'create_plan' || t === 'update_plan' || t === 'query_plan') return '#059669'
   return ''
 })
 

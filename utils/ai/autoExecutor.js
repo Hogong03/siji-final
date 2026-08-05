@@ -48,46 +48,8 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage) {
   let effectiveAction = (result.actions && result.actions.length === 1)
     ? result.actions[0] : result.action
   
-  // 兜底：如果 action 为 null，但 reply 中包含 JSON 特征，尝试二次提取
-  if (!effectiveAction && reply) {
-    const jsonStart = reply.indexOf('{"reply"')
-    if (jsonStart > 0) {
-      const jsonStr = reply.slice(jsonStart)
-      try {
-        const reparsed = JSON.parse(jsonStr)
-        if (reparsed.action && reparsed.action.type && reparsed.action.type !== 'none') {
-          logger.warn('[AutoExecutor] action was null, extracted from reply text:', reparsed.action.type)
-          effectiveAction = {
-            type: reparsed.action.type,
-            payload: reparsed.action.payload || {},
-            needConfirm: reparsed.needConfirm === true
-          }
-          // 同时修正 displayContent 为纯 reply
-          if (reparsed.reply) displayContent = reparsed.reply
-        }
-      } catch {
-        // 贪婪匹配兜底
-        const m = jsonStr.match(/\{[\s\S]*\}/g)
-        if (m) {
-          for (let i = m.length - 1; i >= 0; i--) {
-            try {
-              const reparsed = JSON.parse(m[i])
-              if (reparsed.action && reparsed.action.type && reparsed.action.type !== 'none') {
-                logger.warn('[AutoExecutor] action was null, greedy-extracted from reply:', reparsed.action.type)
-                effectiveAction = {
-                  type: reparsed.action.type,
-                  payload: reparsed.action.payload || {},
-                  needConfirm: reparsed.needConfirm === true
-                }
-                if (reparsed.reply) displayContent = reparsed.reply
-                break
-              }
-            } catch { continue }
-          }
-        }
-      }
-    }
-  }
+  // 注：原二次 JSON 提取逻辑已删除——response-parser 已做充分兜底，
+  // action 为 null 就是 null，不应在 autoExecutor 再试一次
   
   let execResult = null
   if (effectiveAction) {

@@ -1,6 +1,6 @@
 .functions-page {
   height: 100vh;
-  background: var(--bg-page);
+  background: #FAFAFA;
   overflow: hidden;
 }
 
@@ -16,7 +16,7 @@
   align-items: center;
   gap: 12rpx;
   padding: 16rpx 24rpx;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 20rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
@@ -24,26 +24,26 @@
   transition: border-color 0.2s ease;
 
   &:focus-within {
-    border-color: var(--color-ai);
+    border-color: #000000;
   }
 }
 
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  color: var(--text-primary);
+  color: #18181B;
   background: transparent;
 }
 
 .search-clear {
   font-size: 28rpx;
-  color: var(--text-tertiary);
+  color: #A1A1AA;
   padding: 4rpx 8rpx;
 }
 
 .search-placeholder {
   font-size: 28rpx;
-  color: var(--text-tertiary);
+  color: #A1A1AA;
 }
 
 .search-results {
@@ -57,18 +57,18 @@
   gap: 12rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   letter-spacing: 1rpx;
   margin: 28rpx 0 16rpx 4rpx;
   padding-left: 16rpx;
-  border-left: 4rpx solid var(--text-primary);
+  border-left: 4rpx solid #18181B;
 }
 
 /* --- 子分区标签已废弃，AI 面板合并为单列表 --- */
 
 /* --- 统一卡片列表 --- */
 .card-list {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 24rpx;
   overflow: hidden;
   margin-bottom: 24rpx;
@@ -80,7 +80,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 32rpx 28rpx;
-  border-bottom: 1rpx solid var(--bg-input);
+  border-bottom: 1rpx solid #F4F4F5;
   gap: 20rpx;
   box-sizing: border-box;
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -91,7 +91,7 @@
   &:active {
     transform: scale(0.97);
     opacity: 0.92;
-    background: var(--bg-page);
+    background: #FAFAFA;
   }
 }
 
@@ -108,7 +108,7 @@
   height: 72rpx;
   min-width: 72rpx;
   border-radius: 50%;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,7 +126,7 @@
 .entry-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #18181B;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -134,7 +134,7 @@
 
 .entry-desc {
   font-size: 24rpx;
-  color: var(--text-tertiary);
+  color: #A1A1AA;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -167,7 +167,7 @@
 
 .entry-arrow {
   font-size: 36rpx;
-  color: var(--border-strong);
+  color: #D4D4D8;
   font-weight: 300;
   flex-shrink: 0;
 }
@@ -176,7 +176,7 @@
 .analysis-card {
   padding: 32rpx 28rpx;
   margin-bottom: 24rpx;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 24rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   box-sizing: border-box;
@@ -189,10 +189,10 @@
   padding-bottom: 16rpx;
   gap: 16rpx;
 
-  .ac-title { font-size: 28rpx; font-weight: 800; color: var(--text-primary); }
+  .ac-title { font-size: 28rpx; font-weight: 800; color: #18181B; }
   .ac-link {
     display: flex; align-items: center; gap: 2rpx;
-    text { font-size: 24rpx; color: var(--color-ai); font-weight: 500; }
+    text { font-size: 24rpx; color: #000000; font-weight: 500; }
   }
 }
 
@@ -201,15 +201,15 @@
   justify-content: space-between;
   margin-bottom: 12rpx;
   gap: 12rpx;
-  .trend-label { font-size: 22rpx; color: var(--text-tertiary); }
-  .trend-total { font-size: 26rpx; color: var(--text-primary); font-weight: 600; }
+  .trend-label { font-size: 22rpx; color: #A1A1AA; }
+  .trend-total { font-size: 26rpx; color: #18181B; font-weight: 600; }
 }
 
 .trend-compare {
   font-size: 22rpx;
   font-weight: 600;
-  &.up { color: var(--color-danger); }
-  &.down { color: var(--color-plan); }
+  &.up { color: #DC2626; }
+  &.down { color: #059669; }
 }
 
 .trend-chart {
@@ -230,7 +230,7 @@
 
 .trend-amount {
   font-size: 18rpx;
-  color: var(--text-secondary);
+  color: #71717A;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -251,30 +251,30 @@
   transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.trend-day { font-size: 18rpx; color: var(--text-tertiary); }
+.trend-day { font-size: 18rpx; color: #A1A1AA; }
 
 .ac-divider {
   height: 1rpx;
-  background: var(--bg-input);
+  background: #F4F4F5;
   margin: 16rpx 0;
 }
 
 .trend-section {
   padding: 16rpx;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   border-radius: 16rpx;
 }
 
 .rank-section {
   padding: 16rpx;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   border-radius: 16rpx;
 }
 
 .rank-title {
   font-size: 22rpx;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #71717A;
   display: block;
   margin-bottom: 12rpx;
 }
@@ -285,11 +285,11 @@
   gap: 12rpx;
   padding: 6rpx 0;
 
-  .rank-name { width: 80rpx; min-width: 80rpx; font-size: 24rpx; color: var(--text-secondary); flex-shrink: 0; }
-  .rank-bar-wrap { flex: 1; min-width: 0; height: 10rpx; background: var(--bg-input); border-radius: 5rpx; overflow: hidden; }
-  .rank-bar { height: 100%; background: var(--color-ai); border-radius: 5rpx; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-  .rank-amount { font-size: 24rpx; font-weight: 600; color: var(--text-primary); width: 80rpx; min-width: 80rpx; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-  .rank-pct { font-size: 20rpx; color: var(--text-tertiary); width: 50rpx; min-width: 50rpx; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .rank-name { width: 80rpx; min-width: 80rpx; font-size: 24rpx; color: #71717A; flex-shrink: 0; }
+  .rank-bar-wrap { flex: 1; min-width: 0; height: 10rpx; background: #F4F4F5; border-radius: 5rpx; overflow: hidden; }
+  .rank-bar { height: 100%; background: #000000; border-radius: 5rpx; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .rank-amount { font-size: 24rpx; font-weight: 600; color: #18181B; width: 80rpx; min-width: 80rpx; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .rank-pct { font-size: 20rpx; color: #A1A1AA; width: 50rpx; min-width: 50rpx; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 }
 
 /* --- 对话搜索结果 --- */
@@ -298,11 +298,11 @@
   flex-direction: column;
   gap: 8rpx;
   padding: 28rpx 28rpx;
-  border-bottom: 1rpx solid var(--bg-input);
+  border-bottom: 1rpx solid #F4F4F5;
   box-sizing: border-box;
 
   &:last-child { border-bottom: none; }
-  &:active { background: var(--bg-page); }
+  &:active { background: #FAFAFA; }
 }
 
 .conv-result-top {
@@ -318,14 +318,14 @@
   border-radius: 6rpx;
   flex-shrink: 0;
 
-  &.user { background: var(--bg-btn-secondary); color: var(--text-secondary); }
+  &.user { background: #D4D4D8; color: #71717A; }
   &.assistant { background: $text-primary; color: $bg-card; }
 }
 
 .conv-title {
   flex: 1;
   font-size: 26rpx;
-  color: var(--text-primary);
+  color: #18181B;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -335,12 +335,12 @@
 
 .conv-arrow {
   flex-shrink: 0;
-  color: var(--border-strong);
+  color: #D4D4D8;
 }
 
 .conv-preview {
   font-size: 24rpx;
-  color: var(--text-secondary);
+  color: #71717A;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -352,11 +352,11 @@
 /* AI 面板 — Agent 卡片            */
 /* ============================== */
 .agent-card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 24rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-  border-top: 3rpx solid var(--color-ai);
+  border-top: 3rpx solid #000000;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -368,7 +368,7 @@
   padding: 32rpx 28rpx;
   box-sizing: border-box;
 
-  &:active { background: var(--bg-page); }
+  &:active { background: #FAFAFA; }
 }
 
 .agent-card-info {
@@ -382,7 +382,7 @@
 .agent-card-name {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -390,7 +390,7 @@
 
 .agent-card-desc {
   font-size: 24rpx;
-  color: var(--text-tertiary);
+  color: #A1A1AA;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -398,7 +398,7 @@
 
 .agent-card-actions {
   display: flex;
-  border-top: 1rpx solid var(--bg-input);
+  border-top: 1rpx solid #F4F4F5;
 }
 
 .agent-action-btn {
@@ -410,12 +410,12 @@
   padding: 24rpx 0;
   box-sizing: border-box;
 
-  &:first-child { border-right: 1rpx solid var(--bg-input); }
-  &:active { background: var(--bg-page); }
+  &:first-child { border-right: 1rpx solid #F4F4F5; }
+  &:active { background: #FAFAFA; }
 }
 
 .agent-action-text {
   font-size: 24rpx;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #71717A;
 }

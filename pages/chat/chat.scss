@@ -5,7 +5,7 @@
 .chat-page {
   @include flex-col;
   height: 100vh;
-  background: var(--bg-card);
+  background: #FFFFFF;
   position: relative;
   overflow: hidden;
 }
@@ -13,14 +13,14 @@
 .custom-nav {
   position: relative;
   z-index: 1;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-bottom: 1rpx solid transparent;
   flex-shrink: 0;
   transition: border-bottom-color 0.2s ease, background-color 0.2s ease;
 
   &.nav-scrolled {
-    border-bottom-color: var(--border-color);
-    background: var(--bg-card);
+    border-bottom-color: #E4E4E7;
+    background: #FFFFFF;
     opacity: 0.92;
   }
 }
@@ -67,12 +67,12 @@
   @include flex-row;
   justify-content: space-between;
   padding: 12rpx 24rpx;
-  background: var(--color-ai);
+  background: #000000;
   flex-shrink: 0;
 
   &-left { @include flex-row; gap: 8rpx; }
   &-text { font-size: 24rpx; color: #FFFFFF; font-weight: 500; }
-  &-hint { font-size: 22rpx; color: var(--text-hint); }
+  &-hint { font-size: 22rpx; color: #A1A1AA; }
 }
 
 .nav-content {
@@ -94,7 +94,7 @@
 .nav-title {
   font-size: 34rpx;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #18181B;
   letter-spacing: 1rpx;
   @include text-ellipsis;
   flex-shrink: 0;
@@ -102,7 +102,7 @@
 
 .nav-subtitle {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   margin-left: $spacing-sm;
   @include text-ellipsis;
   flex-shrink: 1;
@@ -115,10 +115,10 @@
   min-width: 0;
   @include flex-row;
   gap: 6rpx;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   padding: 4rpx 14rpx 4rpx 4rpx;
   border-radius: 24rpx;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s;
 
@@ -131,7 +131,7 @@
 
   .nav-badge-text {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
     font-weight: 500;
     @include text-ellipsis;
     max-width: 100%;
@@ -139,7 +139,7 @@
   }
 
   &:active {
-    background: var(--bg-input);
+    background: #F4F4F5;
     transform: scale(0.97);
   }
 }
@@ -152,14 +152,14 @@
   min-width: 0;
   @include flex-row;
   gap: 8rpx;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   padding: 4rpx 16rpx 4rpx 4rpx;
   border-radius: 24rpx;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
 
   .badge-text {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
     @include text-ellipsis;
     max-width: 100%;
     box-sizing: border-box;
@@ -172,23 +172,23 @@
 
   .menu-icon {
     font-size: 32rpx;
-    color: var(--text-primary);
+    color: #18181B;
   }
 }
 
 .nav-guide-btn {
   @include circular-btn;
   margin-left: auto;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
 
   .guide-icon {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: #71717A;
   }
 
   &:active {
-    background: var(--bg-input);
+    background: #F4F4F5;
     transform: scale(0.9);
   }
 }
@@ -207,8 +207,8 @@
   width: 56rpx;
   height: 56rpx;
   border-radius: 100%;
-  background: var(--bg-card);
-  border: 2rpx solid var(--border-color);
+  background: #FFFFFF;
+  border: 2rpx solid #E4E4E7;
   @include flex-center;
   box-shadow: $shadow-md;
   z-index: 5;
@@ -218,7 +218,7 @@
 
   &:active {
     transform: scale(0.88);
-    background: var(--bg-input);
+    background: #F4F4F5;
     opacity: 0.5;
   }
 }
@@ -245,7 +245,7 @@
   width: 86%;
   max-width: 640rpx;
   max-height: 72vh;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 16rpx;
   overflow: hidden;
   @include flex-col;
@@ -267,21 +267,21 @@
   @include flex-row;
   justify-content: space-between;
   padding: $spacing-md $spacing-lg;
-  border-bottom: 1rpx solid var(--border-color);
+  border-bottom: 1rpx solid #E4E4E7;
   flex-shrink: 0;
   box-sizing: border-box;
 
   .modal-title {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #18181B;
     @include text-ellipsis;
     flex: 1;
     min-width: 0;
   }
   .modal-close {
     font-size: 36rpx;
-    color: var(--text-hint);
+    color: #A1A1AA;
     padding: 0 8rpx;
     line-height: 1;
     flex-shrink: 0;
@@ -302,7 +302,7 @@
   .guide-section-title {
     font-size: $font-xs;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: #71717A;
     text-transform: uppercase;
     letter-spacing: 1rpx;
   }
@@ -314,7 +314,7 @@
   @include flex-row;
   gap: $spacing-sm;
   padding: $spacing-xs 0;
-  border-bottom: 1rpx solid var(--border-color);
+  border-bottom: 1rpx solid #E4E4E7;
 
   &:last-of-type { border-bottom: none; }
 
@@ -327,18 +327,18 @@
     min-width: 56rpx;
     text-align: center;
 
-    &.bill { background: var(--bg-btn-secondary); color: #F59E0B; }
-    &.diary { background: var(--bg-btn-secondary); color: #D97706; }
-    &.plan { background: var(--bg-btn-secondary); color: #10B981; }
-    &.multi { background: var(--bg-btn-secondary); color: var(--color-ai); }
-    &.query { background: var(--bg-btn-secondary); color: #0EA5E9; }
-    &.undo { background: var(--bg-btn-secondary); color: #EF4444; }
+    &.bill { background: #D4D4D8; color: #F59E0B; }
+    &.diary { background: #D4D4D8; color: #D97706; }
+    &.plan { background: #D4D4D8; color: #10B981; }
+    &.multi { background: #D4D4D8; color: #000000; }
+    &.query { background: #D4D4D8; color: #0EA5E9; }
+    &.undo { background: #D4D4D8; color: #EF4444; }
   }
 
   .gi-text {
     flex: 1;
     font-size: $font-xs;
-    color: var(--text-strong);
+    color: #3F3F46;
     line-height: 1.6;
   }
 }
@@ -348,7 +348,7 @@
 
   text {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
     line-height: 1.7;
   }
 }
@@ -358,11 +358,11 @@
   padding: $spacing-xs $spacing-sm;
   text-align: center;
   border-radius: 8rpx;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
 
   text {
     font-size: $font-xs;
-    color: var(--text-primary);
+    color: #18181B;
     font-weight: 600;
   }
 }
@@ -376,7 +376,7 @@
 .switch-section-label {
   font-size: $font-xs;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: #71717A;
   text-transform: uppercase;
   letter-spacing: 1rpx;
   display: block;
@@ -396,7 +396,7 @@
   gap: 4rpx;
   padding: $spacing-xs $spacing-sm;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   border: 2rpx solid transparent;
   min-width: 100rpx;
   max-width: calc(50% - #{$spacing-xs} / 2);
@@ -405,14 +405,14 @@
 
   &:active { transform: scale(0.95); }
   &.active {
-    border-color: var(--text-primary);
-    background: var(--bg-card);
+    border-color: #18181B;
+    background: #FFFFFF;
   }
 
   .switch-provider-name {
     font-size: $font-xs;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #18181B;
     @include text-ellipsis;
     max-width: 100%;
   }
@@ -428,15 +428,15 @@
   gap: $spacing-sm;
   padding: $spacing-sm;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   border: 2rpx solid transparent;
   box-sizing: border-box;
   overflow: hidden;
 
   &:active { transform: scale(0.98); }
   &.active {
-    border-color: var(--text-primary);
-    background: var(--bg-card);
+    border-color: #18181B;
+    background: #FFFFFF;
   }
 
   .switch-model-info {
@@ -463,12 +463,12 @@
     .switch-model-name {
       font-size: $font-sm;
       font-weight: 600;
-      color: var(--text-primary);
+      color: #18181B;
       @include text-ellipsis;
     }
     .switch-model-desc {
       font-size: $font-xs;
-      color: var(--text-secondary);
+      color: #71717A;
       @include text-ellipsis;
     }
   }
@@ -476,7 +476,7 @@
   .switch-model-check {
     font-size: $font-md;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #18181B;
     flex-shrink: 0;
   }
 }
@@ -486,13 +486,13 @@
   padding: $spacing-sm;
   text-align: center;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   box-sizing: border-box;
   overflow: hidden;
 
   text {
     font-size: $font-xs;
-    color: var(--text-primary);
+    color: #18181B;
     font-weight: 600;
     display: inline-block;
     @include text-ellipsis;
@@ -508,12 +508,12 @@
 
   .switch-empty-text {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
   }
 
   .switch-empty-btn {
     padding: $spacing-xs $spacing-lg;
-    background: var(--color-ai);
+    background: #000000;
     border-radius: $radius-sm;
 
     text {
@@ -531,18 +531,18 @@
   flex-shrink: 0;
   overflow-x: auto;
   white-space: nowrap;
-  background: var(--bg-card);
-  border-top: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border-top: 1rpx solid #E4E4E7;
 }
 
 .suggestion-chip {
   flex-shrink: 0;
   padding: 10rpx 24rpx;
   border-radius: 24rpx;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   font-size: $font-xs;
-  color: var(--text-primary);
-  border: 1rpx solid var(--border-color);
+  color: #18181B;
+  border: 1rpx solid #E4E4E7;
   transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
 
   &:active {
@@ -553,8 +553,8 @@
 
 // ==================== 重试栏 ====================
 .retry-bar {
-  background: var(--bg-card);
-  border-top: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border-top: 1rpx solid #E4E4E7;
   padding: $spacing-md $spacing-lg $spacing-md;
   @include flex-col;
   gap: $spacing-md;
@@ -563,7 +563,7 @@
 
 .retry-bar-title {
   font-size: $font-sm;
-  color: var(--text-secondary);
+  color: #71717A;
   text-align: center;
   line-height: 1.4;
 }
@@ -579,7 +579,7 @@
   gap: 6rpx;
   padding: $spacing-sm $spacing-lg;
   border-radius: 8rpx;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   font-size: $font-xs;
   transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
 
@@ -589,13 +589,13 @@
   }
 
   text {
-    color: var(--text-primary);
+    color: #18181B;
   }
 }
 
 .retry-btn-primary {
-  background: var(--color-ai);
-  border-color: var(--text-primary);
+  background: #000000;
+  border-color: #18181B;
 
   text {
     color: #fff;
@@ -604,7 +604,7 @@
 }
 
 .retry-btn-secondary {
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
 }
 
 @keyframes slideUp {
@@ -623,7 +623,7 @@
   text-align: center;
   padding: 16rpx 0;
   font-size: 24rpx;
-  color: var(--text-hint);
+  color: #A1A1AA;
 }
 
 @media (prefers-color-scheme: dark) {

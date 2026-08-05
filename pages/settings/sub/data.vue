@@ -91,7 +91,7 @@ function clearAll() {
 <style lang="scss" scoped>
 .sub-page {
   min-height: 100vh;
-  background: var(--bg-page);
+  background: #FAFAFA;
   padding: $spacing-md;
   box-sizing: border-box;
 }
@@ -106,7 +106,7 @@ function clearAll() {
   overflow: hidden;
 
   .card-title { font-size: $font-md; font-weight: 700; color: #18181B; display: block; margin-bottom: $spacing-sm; }
-  .card-desc { font-size: $font-xs; color: var(--text-hint); display: block; margin-bottom: $spacing-md; }
+  .card-desc { font-size: $font-xs; color: #A1A1AA; display: block; margin-bottom: $spacing-md; }
 }
 
 .danger-card { border: 1rpx solid rgba(231, 76, 60, 0.2); }
@@ -114,19 +114,19 @@ function clearAll() {
 
 .btn-primary {
   width: 100%; padding: 20rpx 0; text-align: center; border-radius: $radius-md;
-  background: var(--color-ai); color: var(--text-on-ai); font-size: $font-sm; font-weight: 600;
+  background: #000000; color: #FFFFFF; font-size: $font-sm; font-weight: 600;
   box-sizing: border-box;
   &:active { opacity: 0.85; }
 }
 .btn-outline {
   width: 100%; padding: 20rpx 0; text-align: center; border-radius: $radius-md;
-  border: 2rpx solid var(--color-ai); color: var(--color-ai); font-size: $font-sm; font-weight: 600;
+  border: 2rpx solid #000000; color: #000000; font-size: $font-sm; font-weight: 600;
   box-sizing: border-box;
   &:active { opacity: 0.85; }
 }
 .btn-danger {
   width: 100%; padding: 20rpx 0; text-align: center; border-radius: $radius-md;
-  background: $danger; color: var(--text-on-ai); font-size: $font-sm; font-weight: 600;
+  background: $danger; color: #FFFFFF; font-size: $font-sm; font-weight: 600;
   box-sizing: border-box;
   &:active { opacity: 0.85; }
 }

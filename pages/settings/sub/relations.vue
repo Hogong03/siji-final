@@ -283,7 +283,7 @@ function handleDelete(item) {
   uni.showModal({
     title: '确认删除',
     content: `确定要删除「${item.name}」吗？此操作不可撤销。`,
-    confirmColor: 'var(--color-ai)',
+    confirmColor: '#000000',
     success: (res) => {
       if (res.confirm) {
         deleteRelation(item.id)

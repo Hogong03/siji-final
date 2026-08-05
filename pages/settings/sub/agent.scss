@@ -13,7 +13,7 @@ $spacing-lg: 32rpx;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-page, $bg-page);
+  background: #FAFAFA;
   overflow: hidden;
 }
 
@@ -39,7 +39,7 @@ $spacing-lg: 32rpx;
 .section-label {
   font-size: $font-xs;
   font-weight: 600;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   padding: $spacing-md $spacing-xs $spacing-sm;
   display: block;
 }
@@ -47,10 +47,10 @@ $spacing-lg: 32rpx;
 .section-add-btn {
   font-size: $font-sm;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #18181B;
   padding: $spacing-xs $spacing-md;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   white-space: nowrap;
   &:active { opacity: 0.7; }
 }
@@ -61,7 +61,7 @@ $spacing-lg: 32rpx;
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
   margin-bottom: $spacing-sm;
   border: 2rpx solid transparent;
@@ -71,8 +71,8 @@ $spacing-lg: 32rpx;
 
   &:active { opacity: 0.7; }
   &.active {
-    border-color: var(--text-primary);
-    background: var(--bg-input, $bg-input);
+    border-color: #18181B;
+    background: #F4F4F5;
   }
 }
 
@@ -84,7 +84,7 @@ $spacing-lg: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -101,7 +101,7 @@ $spacing-lg: 32rpx;
 .agent-name {
   font-size: $font-md;
   font-weight: 600;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -109,7 +109,7 @@ $spacing-lg: 32rpx;
 
 .agent-desc {
   font-size: $font-xs;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -125,12 +125,12 @@ $spacing-lg: 32rpx;
 
   .badge-dot {
     font-size: 16rpx;
-    color: var(--color-plan, $success);
+    color: #059669;
     line-height: 1;
   }
   .badge-text {
     font-size: $font-xs;
-    color: var(--color-plan, $success);
+    color: #059669;
     font-weight: 600;
     white-space: nowrap;
   }
@@ -147,12 +147,12 @@ $spacing-lg: 32rpx;
   font-size: $font-sm;
   padding: $spacing-xs $spacing-sm;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
-  color: var(--text-primary, $ai-primary);
+  background: #D4D4D8;
+  color: #18181B;
   white-space: nowrap;
   box-sizing: border-box;
 
-  &.delete { color: var(--color-danger, $danger); }
+  &.delete { color: #DC2626; }
 
   &:active { opacity: 0.7; }
 }
@@ -162,12 +162,12 @@ $spacing-lg: 32rpx;
   flex-shrink: 0;
   padding: $spacing-xs $spacing-sm;
   border-radius: $radius-sm;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   box-sizing: border-box;
 
   .tag-text {
     font-size: $font-xs;
-    color: var(--text-hint, $text-hint);
+    color: #A1A1AA;
     white-space: nowrap;
   }
 }
@@ -184,7 +184,7 @@ $spacing-lg: 32rpx;
   width: calc(50% - #{$spacing-sm} / 2);
   max-width: calc(50% - #{$spacing-sm} / 2);
   padding: $spacing-md $spacing-sm;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
   display: flex;
   flex-direction: column;
@@ -196,7 +196,7 @@ $spacing-lg: 32rpx;
   min-width: 0;
 
   &:active {
-    border-color: var(--text-primary);
+    border-color: #18181B;
     opacity: 0.85;
   }
 }
@@ -210,7 +210,7 @@ $spacing-lg: 32rpx;
 .template-name {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,7 +221,7 @@ $spacing-lg: 32rpx;
 
 .template-desc {
   font-size: $font-xs;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   text-align: center;
   line-height: 1.5;
   display: -webkit-box;
@@ -237,16 +237,16 @@ $spacing-lg: 32rpx;
 .tips-card {
   margin-top: $spacing-md;
   padding: $spacing-md;
-  background: var(--bg-card, $bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx solid var(--border-color, var(--border-color));
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 }
 
 .tips-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--text-primary, $ai-primary);
+  color: #18181B;
   display: flex;
   align-items: center;
   gap: 8rpx;
@@ -259,7 +259,7 @@ $spacing-lg: 32rpx;
 
 .tips-text {
   font-size: $font-sm;
-  color: var(--text-hint, $text-hint);
+  color: #A1A1AA;
   display: block;
   line-height: 1.8;
 }

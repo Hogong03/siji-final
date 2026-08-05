@@ -208,7 +208,7 @@ function handleClearAll() {
   uni.showModal({
     title: '清空所有信息',
     content: '此操作将清空所有个人信息且不可恢复，确定继续吗？',
-    confirmColor: 'var(--color-ai)',
+    confirmColor: '#000000',
     success: (res) => {
       if (res.confirm) {
         clearProfile()
@@ -249,7 +249,7 @@ function isFixedCard(card) {
           {{ enabled ? `已填写 ${filledCount} 项，${totalCards} 个分组` : '开启后，AI 将感知你的个人信息' }}
         </view>
       </view>
-      <switch :checked="enabled" @change="toggleEnabled" color="var(--color-ai)" />
+      <switch :checked="enabled" @change="toggleEnabled" color="#000000" />
     </view>
 
     <!-- 未开启提示 -->

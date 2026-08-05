@@ -58,7 +58,7 @@ function cancelCustom() {
   <view class="section">
     <view class="reminder-header">
       <text class="section-label">提醒</text>
-      <switch :checked="enabled" @change="onSwitchChange" color="var(--color-ai)" />
+      <switch :checked="enabled" @change="onSwitchChange" color="#000000" />
     </view>
     <template v-if="enabled">
       <view class="reminder-options">
@@ -140,9 +140,9 @@ function cancelCustom() {
 }
 
 .reminder-chip.active {
-  background: var(--color-ai);
-  color: var(--text-on-ai);
-  border-color: var(--color-ai);
+  background: #000000;
+  color: #FFFFFF;
+  border-color: #000000;
 }
 
 .reminder-custom {
@@ -160,7 +160,7 @@ function cancelCustom() {
 
 .reminder-hint {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   margin-top: $spacing-xs;
   display: block;
 }

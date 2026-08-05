@@ -167,28 +167,44 @@ export function deleteInteraction(id) {
 
 /**
  * 构建关系图谱上下文（注入系统提示词）
- * 注入最近 5 个关系卡片摘要
+ * 优化：若用户消息提到了已收录人物，只注入被提到的人物详情；
+ *  否则注入最近 3 个关系卡片摘要（不全量 5 个，减少 token）
  */
-export function buildRelationsContext() {
+export function buildRelationsContext(userMessage) {
   const relations = getAllRelations()
   if (relations.length === 0) return ''
 
-  // 按最近互动排序，取前 5 个
+  // 如果用户消息提到了已知人物，只注入被提到的人物
+  if (userMessage) {
+    const mentioned = relations.filter(r => {
+      if (!r.name || r.name.length < 2) return false
+      return userMessage.includes(r.name) || 
+        (r.name.length > 2 && userMessage.includes(r.name.substring(1)))
+    })
+    if (mentioned.length > 0) {
+      const lines = mentioned.map(r => formatRelationLine(r))
+      return `\n\n---\n关系图谱（用户提到的人物）：\n${lines.join('\n')}`
+    }
+  }
+
+  // 未提到人物 → 注入最近 3 个关系摘要（从 5 个减到 3 个，省 token）
   const sorted = relations
     .sort((a, b) => (b.last_interaction || 0) - (a.last_interaction || 0))
-    .slice(0, 5)
+    .slice(0, 3)
 
-  const lines = sorted.map(r => {
-    const parts = [`  - ${r.name}（${r.role}）`]
-    if (r.context) parts.push(`场景: ${r.context}`)
-    if (r.traits && r.traits.length > 0) parts.push(`特征: ${r.traits.join('、')}`)
-    if (r.preferences && r.preferences.length > 0) parts.push(`偏好: ${r.preferences.join('、')}`)
-    if (r.notes) parts.push(`备注: ${r.notes}`)
-    parts.push(`亲密度: ${r.relationship_score}/10`)
-    return parts.join(' | ')
-  })
-
+  const lines = sorted.map(r => formatRelationLine(r))
   return `\n\n---\n关系图谱（用户的人际网络）：\n${lines.join('\n')}`
+}
+
+/** 格式化单个关系卡片为一行 */
+function formatRelationLine(r) {
+  const parts = [`  - ${r.name}（${r.role}）`]
+  if (r.context) parts.push(`场景: ${r.context}`)
+  if (r.traits && r.traits.length > 0) parts.push(`特征: ${r.traits.join('、')}`)
+  if (r.preferences && r.preferences.length > 0) parts.push(`偏好: ${r.preferences.join('、')}`)
+  if (r.notes) parts.push(`备注: ${r.notes}`)
+  parts.push(`亲密度: ${r.relationship_score}/10`)
+  return parts.join(' | ')
 }
 
 /**

@@ -147,7 +147,7 @@ const dots = computed(() => {
 <style lang="scss" scoped>
 .lock-page {
   height: 100vh;
-  background: var(--color-ai);
+  background: #000000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,7 +196,7 @@ const dots = computed(() => {
 .lock-title {
   font-size: $font-xxl;
   font-weight: 800;
-  color: var(--text-on-ai);
+  color: #FFFFFF;
   margin-bottom: 8rpx;
   letter-spacing: 4rpx;
 }
@@ -222,14 +222,14 @@ const dots = computed(() => {
 
   &.filled {
     background: #FFFFFF;
-    border-color: var(--text-on-ai);
+    border-color: #FFFFFF;
     box-shadow: 0 0 12rpx rgba(255, 255, 255, 0.5);
   }
 }
 
 .error-msg {
   font-size: $font-xs;
-  color: var(--color-danger-light);
+  color: #FEE2E2;
   margin-bottom: $spacing-sm;
   min-height: 32rpx;
 }
@@ -273,7 +273,7 @@ const dots = computed(() => {
   .key-text {
     font-size: $font-xl;
     font-weight: 600;
-    color: var(--text-on-ai);
+    color: #FFFFFF;
   }
 }
 </style>

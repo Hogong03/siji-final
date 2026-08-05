@@ -69,7 +69,7 @@ const hasIcon = computed(() => !!props.icon)
   border: 2rpx solid rgba(0, 0, 0, 0.08);
 }
 .agent-avatar--icon {
-  background: var(--bg-input, var(--bg-input));
+  background: #F4F4F5;
   border: none;
 }
 .avatar-icon-img {

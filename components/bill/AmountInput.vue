@@ -91,10 +91,10 @@ function tapDelete() {
     transition: all $transition-fast;
 
     &.active {
-      color: var(--text-on-ai);
+      color: #FFFFFF;
 
-      &.expense { background: var(--color-ai); box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.12); }
-      &.income { background: var(--text-strong); box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08); }
+      &.expense { background: #000000; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.12); }
+      &.income { background: #3F3F46; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08); }
     }
   }
 }
@@ -116,8 +116,8 @@ function tapDelete() {
     letter-spacing: 2rpx;
   }
 
-  &.expense .currency, &.expense .amount-num { color: var(--color-bill); }
-  &.income .currency, &.income .amount-num { color: var(--color-plan); }
+  &.expense .currency, &.expense .amount-num { color: #F59E0B; }
+  &.income .currency, &.income .amount-num { color: #059669; }
 }
 
 /* 数字键盘 */

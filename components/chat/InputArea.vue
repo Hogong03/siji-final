@@ -174,7 +174,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 /* ─── 图片预览 ─── */
 .img-preview {
   display: flex; align-items: center; gap: $spacing-sm; padding: 8rpx 16rpx;
-  background: var(--bg-input); border-radius: 16rpx; margin-bottom: $spacing-sm;
+  background: #F4F4F5; border-radius: 16rpx; margin-bottom: $spacing-sm;
 }
 .img-preview-thumb { width: 80rpx; height: 80rpx; border-radius: 8rpx; flex-shrink: 0; }
 .img-preview-label { flex: 1; font-size: 26rpx; color: #71717A; }

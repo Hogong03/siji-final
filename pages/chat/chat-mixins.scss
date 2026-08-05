@@ -46,8 +46,8 @@
 
 // 卡片基础
 @mixin card-base {
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
   border-radius: 16rpx;
   box-sizing: border-box;
 }

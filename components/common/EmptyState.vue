@@ -39,7 +39,7 @@ const emit = defineEmits(['action'])
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   align-items: center;
   justify-content: center;
   margin-bottom: $spacing-md;
@@ -60,7 +60,7 @@ const emit = defineEmits(['action'])
 
 .empty-desc {
   font-size: $font-sm;
-  color: var(--text-hint);
+  color: #A1A1AA;
   text-align: center;
   line-height: 1.6;
   max-width: 480rpx;
@@ -70,7 +70,7 @@ const emit = defineEmits(['action'])
 .empty-action {
   margin-top: $spacing-lg;
   padding: 16rpx 48rpx;
-  background: var(--color-ai);
+  background: #000000;
   border-radius: $radius-lg;
   transition: transform $transition-fast;
   animation: emptyTextFadeIn 0.5s ease 0.5s both;
@@ -82,7 +82,7 @@ const emit = defineEmits(['action'])
 
   .empty-action-text {
     font-size: $font-md;
-    color: var(--text-on-ai);
+    color: #FFFFFF;
     font-weight: 600;
   }
 }

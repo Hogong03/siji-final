@@ -46,11 +46,11 @@
 .score-mid { background: $glass-border-color; color: $ai-primary-light; }
 .score-low { background: $bg-btn-secondary; color: $text-hint; }
 
-.card-context { font-size: 26rpx; color: var(--text-mid); margin-top: 16rpx; }
+.card-context { font-size: 26rpx; color: #52525B; margin-top: 16rpx; }
 .card-tags { display: flex; flex-wrap: wrap; margin-top: 12rpx; gap: 8rpx; }
 .tag {
   font-size: 22rpx; padding: 4rpx 16rpx;
-  background: $bg-btn-secondary; color: var(--text-mid); border-radius: 8rpx;
+  background: $bg-btn-secondary; color: #52525B; border-radius: 8rpx;
 }
 
 .card-actions {
@@ -64,7 +64,7 @@
   background: $bg-btn-secondary;
 }
 .action-icon { font-size: 24rpx; }
-.action-text { font-size: 24rpx; color: var(--text-mid); }
+.action-text { font-size: 24rpx; color: #52525B; }
 
 .fab {
   position: fixed; right: 40rpx; bottom: 80rpx;

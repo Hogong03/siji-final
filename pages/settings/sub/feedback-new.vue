@@ -41,10 +41,10 @@ const editingId = ref(null)
 const isEditing = computed(() => !!editingId.value)
 
 const categories = [
-  { label: '功能建议', icon: '💡', color: 'var(--color-ai)' },
-  { label: 'Bug反馈', icon: '🐛', color: 'var(--color-danger)' },
+  { label: '功能建议', icon: '💡', color: '#000000' },
+  { label: 'Bug反馈', icon: '🐛', color: '#DC2626' },
   { label: '体验感受', icon: '💬', color: '#3B82F6' },
-  { label: '功能需求', icon: '✨', color: 'var(--color-plan)' }
+  { label: '功能需求', icon: '✨', color: '#059669' }
 ]
 
 onLoad((options) => {

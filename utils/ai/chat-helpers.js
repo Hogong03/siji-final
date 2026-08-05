@@ -6,7 +6,7 @@
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
 import { buildMemoryContext } from '@/utils/memory.js'
-import { buildRelationsContext, detectMentionedRelations } from '@/utils/relations.js'
+import { buildRelationsContext } from '@/utils/relations.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
 import { buildVisionMessage } from '@/utils/image.js'
 import { logger } from '../logger.js'
@@ -42,7 +42,7 @@ export function buildChatMessages(userMessage, history, cfg) {
     system += memoryContext
   }
 
-  const relationsCtx = buildRelationsContext()
+  const relationsCtx = buildRelationsContext(userMessage)
   if (relationsCtx) {
     system += relationsCtx
   }
@@ -52,19 +52,8 @@ export function buildChatMessages(userMessage, history, cfg) {
     system += decisionsCtx
   }
 
-  const mentioned = detectMentionedRelations(userMessage)
-  if (mentioned && mentioned.length > 0) {
-    const detailLines = mentioned.map(r => {
-      const parts = [`「${r.name}」(${r.role})`]
-      if (r.context) parts.push(`场景: ${r.context}`)
-      if (r.traits?.length) parts.push(`性格: ${r.traits.join('、')}`)
-      if (r.preferences?.length) parts.push(`偏好: ${r.preferences.join('、')}`)
-      if (r.notes) parts.push(`备注: ${r.notes}`)
-      parts.push(`亲密度: ${r.relationship_score}/10`)
-      return parts.join(' | ')
-    })
-    system += `\n\n---\n用户提到的已收录人物：\n${detailLines.join('\n')}`
-  }
+  // 关系上下文已包含被提到的人物详情（buildRelationsContext 内部处理）
+  // 不再单独注入 detectMentionedRelations，避免重复
 
   const messages = [{ role: 'system', content: system }]
 

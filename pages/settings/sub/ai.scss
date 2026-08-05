@@ -1,6 +1,6 @@
 .ai-page {
   min-height: 100vh;
-  background: var(--bg-page);
+  background: #FAFAFA;
   padding: $spacing-md;
   box-sizing: border-box;
 }
@@ -13,10 +13,10 @@
 }
 
 .provider-card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
   overflow: hidden;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   transition: all $transition-fast;
   box-sizing: border-box;
 
@@ -33,7 +33,7 @@
   box-sizing: border-box;
   overflow: hidden;
 
-  &:active { background: var(--bg-input); }
+  &:active { background: #F4F4F5; }
 }
 
 .provider-logo {
@@ -48,7 +48,7 @@
 .provider-short {
   font-size: $font-xs;
   font-weight: 700;
-  color: var(--text-on-ai);
+  color: #FFFFFF;
   letter-spacing: 1rpx;
 }
 
@@ -63,14 +63,14 @@
   .provider-name {
     font-size: $font-md;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #18181B;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .provider-desc {
     font-size: $font-xs;
-    color: var(--text-hint);
+    color: #A1A1AA;
   }
 }
 
@@ -86,19 +86,19 @@
     border-radius: 50%;
     flex-shrink: 0;
 
-    &.ok { background: var(--color-plan); }
-    &.none { background: var(--border-strong); }
+    &.ok { background: #059669; }
+    &.none { background: #D4D4D8; }
   }
   .key-label {
     font-size: $font-xs;
-    color: var(--text-hint);
+    color: #A1A1AA;
     white-space: nowrap;
   }
 }
 
 .provider-arrow {
   font-size: $font-lg;
-  color: var(--text-hint);
+  color: #A1A1AA;
   font-weight: 300;
   flex-shrink: 0;
   transition: transform 0.2s ease;
@@ -111,7 +111,7 @@
 /* 展开内容 */
 .provider-body {
   padding: 0 $spacing-md $spacing-md;
-  border-top: 1rpx solid var(--border-color);
+  border-top: 1rpx solid #E4E4E7;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -126,7 +126,7 @@
 
   .vision-notice-text {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
     line-height: 1.6;
   }
 }
@@ -136,7 +136,7 @@
 
   text {
     font-size: $font-xs;
-    color: var(--color-plan);
+    color: #059669;
     font-weight: 600;
   }
 }
@@ -147,14 +147,14 @@
 
 .config-label {
   font-size: $font-sm;
-  color: var(--text-secondary);
+  color: #71717A;
   margin-bottom: $spacing-xs;
   display: block;
 }
 
 .config-hint {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   display: block;
   margin-bottom: $spacing-xs;
   line-height: 1.5;
@@ -172,7 +172,7 @@
     min-width: 0;
     height: 64rpx;
     padding: 0 16rpx;
-    background: var(--bg-input);
+    background: #F4F4F5;
     border-radius: $radius-sm;
     font-size: $font-xs;
     font-family: monospace;
@@ -190,12 +190,12 @@
     white-space: nowrap;
 
     &.save {
-      background: var(--bg-btn-secondary);
-      color: var(--color-ai);
+      background: #D4D4D8;
+      color: #000000;
     }
     &.test {
       background: rgba(16, 185, 129, 0.1);
-      color: var(--color-plan);
+      color: #059669;
     }
   }
 }
@@ -212,7 +212,7 @@
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   border-radius: $radius-md;
   border: 2rpx solid transparent;
   transition: all $transition-fast;
@@ -222,12 +222,12 @@
   &:active { transform: scale(0.98); }
 
   &.active {
-    background: var(--bg-input);
-    border-color: var(--text-primary);
+    background: #F4F4F5;
+    border-color: #18181B;
   }
 
   &.custom .model-name {
-    color: var(--text-secondary);
+    color: #71717A;
   }
 
   .model-detail {
@@ -247,7 +247,7 @@
     .model-name {
       font-size: $font-sm;
       font-weight: 600;
-      color: var(--text-primary);
+      color: #18181B;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -258,15 +258,15 @@
     }
     .model-no-vision-badge {
       font-size: 16rpx;
-      color: var(--text-hint);
-      background: var(--bg-btn-secondary);
+      color: #A1A1AA;
+      background: #D4D4D8;
       padding: 0 6rpx;
       border-radius: 4rpx;
       flex-shrink: 0;
     }
     .model-desc {
       font-size: $font-xs;
-      color: var(--text-hint);
+      color: #A1A1AA;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -278,7 +278,7 @@
     height: 36rpx;
     min-width: 36rpx;
     border-radius: 50%;
-    background: var(--color-ai);
+    background: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -286,7 +286,7 @@
     box-sizing: border-box;
 
     text {
-      color: var(--text-on-ai);
+      color: #FFFFFF;
       font-size: $font-sm;
       font-weight: 700;
     }
@@ -296,7 +296,7 @@
 /* 删除自定义厂商 */
 .delete-provider {
   font-size: $font-sm;
-  color: var(--color-danger);
+  color: #DC2626;
   padding: $spacing-xs 0;
   display: block;
 }
@@ -305,7 +305,7 @@
 .apply-btn {
   margin-top: $spacing-md;
   padding: $spacing-sm;
-  background: var(--color-ai);
+  background: #000000;
   border-radius: $radius-md;
   text-align: center;
   box-sizing: border-box;
@@ -314,7 +314,7 @@
   text {
     font-size: $font-sm;
     font-weight: 700;
-    color: var(--text-on-ai);
+    color: #FFFFFF;
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -327,20 +327,20 @@
 .add-custom-btn {
   margin-top: $spacing-sm;
   padding: $spacing-md;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx dashed var(--border-strong);
+  border: 1rpx dashed #D4D4D8;
   text-align: center;
   box-sizing: border-box;
 
   text {
     font-size: $font-sm;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: #71717A;
   }
 
   &:active {
-    border-color: var(--text-primary);
+    border-color: #18181B;
   }
 }
 
@@ -348,22 +348,22 @@
 .custom-form {
   margin-top: $spacing-sm;
   padding: $spacing-md;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   box-sizing: border-box;
 }
 
 .form-title {
   font-size: $font-md;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   margin-bottom: $spacing-xs;
 }
 
 .form-hint {
   font-size: $font-xs;
-  color: var(--text-hint);
+  color: #A1A1AA;
   line-height: 1.5;
   margin-bottom: $spacing-md;
   display: block;
@@ -376,7 +376,7 @@
 .field-label {
   font-size: $font-sm;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #71717A;
   margin-bottom: $spacing-xs;
   display: block;
 }
@@ -385,15 +385,15 @@
   width: 100%;
   height: 64rpx;
   padding: 0 $spacing-md;
-  background: var(--bg-input);
+  background: #F4F4F5;
   border-radius: $radius-sm;
   font-size: $font-xs;
-  color: var(--text-primary);
+  color: #18181B;
   border: 1rpx solid transparent;
   box-sizing: border-box;
 
   &:focus {
-    border-color: var(--text-primary);
+    border-color: #18181B;
   }
 }
 
@@ -409,8 +409,8 @@
   height: 72rpx;
   line-height: 72rpx;
   text-align: center;
-  background: var(--bg-btn-secondary);
-  color: var(--text-primary);
+  background: #D4D4D8;
+  color: #18181B;
   font-size: $font-sm;
   font-weight: 600;
   border-radius: $radius-sm;
@@ -428,8 +428,8 @@
   height: 72rpx;
   line-height: 72rpx;
   text-align: center;
-  background: var(--color-ai);
-  color: var(--text-on-ai);
+  background: #000000;
+  color: #FFFFFF;
   font-size: $font-sm;
   font-weight: 600;
   border-radius: $radius-sm;
@@ -445,20 +445,20 @@
 .tips-card {
   margin-top: $spacing-md;
   padding: $spacing-md;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
 
   .tips-title {
     font-size: $font-sm;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #18181B;
     display: block;
     margin-bottom: $spacing-xs;
   }
   .tips-text {
     font-size: $font-xs;
-    color: var(--text-hint);
+    color: #A1A1AA;
     display: block;
     line-height: 1.8;
   }
