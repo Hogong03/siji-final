@@ -107,13 +107,17 @@ function getCanvasNode() {
 }
 
 async function drawGraph() {
+  // 先加载关系并更新 nodes（控制空态显示），不依赖 canvas
   loadRelations()
+  nodes.value = relations.value.length > 0 ? relations.value : []
+
   const info = await getCanvasNode()
   if (!info) {
-    // canvas 未就绪，稍后重试
+    // canvas 未就绪，稍后重试（nodes 已更新，空态判断正确）
     setTimeout(() => { if (!canvasReady.value) drawGraph() }, 200)
     return
   }
+
   const canvas = info.node
   const dpr = uni.getSystemInfoSync().pixelRatio || 1
   // 设置画布实际尺寸（物理像素）
