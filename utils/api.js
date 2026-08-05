@@ -87,6 +87,5 @@ export {
   AI_PROVIDERS, getProvider, getProviderModels, getProviderDefaultModel,
   getProviderVisionModel, supportsVision, getProviderKeys, getConfiguredProviderIds,
   getDefaultConfig, buildProviderRequest,
-  chatRequest, chatRequestStream, generateConversationTitle,
-  request, get, post, put, del
+  chatRequest, chatRequestStream, generateConversationTitle
 }
