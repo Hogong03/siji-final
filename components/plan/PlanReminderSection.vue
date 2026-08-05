@@ -118,7 +118,7 @@ function cancelCustom() {
 
 .reminder-desc {
   font-size: $font-sm;
-  color: var(--text-secondary);
+  color: #71717A;
   margin-bottom: $spacing-xs;
   display: block;
 }
@@ -132,10 +132,10 @@ function cancelCustom() {
 .reminder-chip {
   padding: 12rpx 28rpx;
   border-radius: $radius-sm;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   font-size: $font-sm;
-  color: var(--text-secondary);
-  background: var(--bg-card);
+  color: #71717A;
+  background: #FFFFFF;
   transition: all 0.2s;
 }
 
@@ -148,12 +148,12 @@ function cancelCustom() {
 .reminder-custom {
   margin-top: $spacing-md;
   padding-top: $spacing-md;
-  border-top: 1rpx solid var(--border-color);
+  border-top: 1rpx solid #E4E4E7;
 }
 
 .reminder-custom-label {
   font-size: $font-sm;
-  color: var(--text-secondary);
+  color: #71717A;
   display: block;
   margin-bottom: $spacing-xs;
 }

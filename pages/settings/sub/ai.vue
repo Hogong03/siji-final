@@ -170,7 +170,7 @@ function saveCustomProvider() {
     id: pid,
     name: name.trim(),
     short: name.trim().slice(0, 2).toUpperCase(),
-    color: 'var(--text-primary)',
+    color: '#18181B',
     models: [{ id: model.trim(), name: model.trim(), desc: '自定义模型', tag: '' }],
     endpoint: endpoint.trim(),
     keyLabel: `${name.trim()} API Key`,

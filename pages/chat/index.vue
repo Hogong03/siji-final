@@ -327,7 +327,7 @@ function handleWelcomeChip(text) {
 
     <!-- 回到底部按钮 -->
     <view v-if="showBackToBottom" class="back-to-bottom" @tap="backToBottom">
-      <SijiIcon name="arrow-down" size="sm" color="var(--text-secondary)" />
+      <SijiIcon name="arrow-down" size="sm" color="#71717A" />
     </view>
 
     <!-- 快捷建议按钮 -->

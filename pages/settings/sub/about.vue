@@ -50,7 +50,7 @@
 			<view v-for="t in tabs" :key="t.id" class="tab-item" :class="{ active: activeTab === t.id }"
 				@tap="activeTab = t.id">
 				<SijiIcon :name="t.iconName" size="xs"
-					:color="activeTab === t.id ? 'var(--text-primary)' : 'var(--text-tertiary)'" />
+					:color="activeTab === t.id ? '#18181B' : '#A1A1AA'" />
 				<text class="tab-label">{{ t.label }}</text>
 			</view>
 		</view>
@@ -76,7 +76,7 @@
 
 				<view class="card disclaimer-card" @tap="uni.navigateTo({ url: '/pages/disclaimer/index' })">
 					<view class="disclaimer-link">
-						<SijiIcon name="info" size="sm" color="var(--text-secondary)" />
+						<SijiIcon name="info" size="sm" color="#71717A" />
 						<text class="disclaimer-link-text">用户协议与免责声明</text>
 						<SijiIcon name="arrow-right" size="xs" color="var(--text-hint)" />
 					</view>
@@ -84,22 +84,22 @@
 
 				<view class="features-grid">
 					<view class="feat-item">
-						<SijiIcon name="ai" size="lg" color="var(--text-primary)" />
+						<SijiIcon name="ai" size="lg" color="#18181B" />
 						<text class="feat-label">AI 对话</text>
 						<text class="feat-desc">自然语言操作</text>
 					</view>
 					<view class="feat-item">
-						<SijiIcon name="diary" size="lg" color="var(--text-primary)" />
+						<SijiIcon name="diary" size="lg" color="#18181B" />
 						<text class="feat-label">记录</text>
 						<text class="feat-desc">心情与标签</text>
 					</view>
 					<view class="feat-item">
-						<SijiIcon name="bill" size="lg" color="var(--text-primary)" />
+						<SijiIcon name="bill" size="lg" color="#18181B" />
 						<text class="feat-label">记账</text>
 						<text class="feat-desc">预算与分类</text>
 					</view>
 					<view class="feat-item">
-						<SijiIcon name="plan" size="lg" color="var(--text-primary)" />
+						<SijiIcon name="plan" size="lg" color="#18181B" />
 						<text class="feat-label">计划</text>
 						<text class="feat-desc">模板与统计</text>
 					</view>

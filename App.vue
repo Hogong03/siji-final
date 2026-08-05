@@ -165,7 +165,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   font-size: $font-md;
-  color: var(--text-primary);
+  color: #18181B;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -218,6 +218,11 @@ body {
     --glass-border: 1rpx solid #27272A;
     --shadow-color: rgba(0, 0, 0, 0.3);
   }
+  /* 硬编码覆盖 */
+  page, html, body { color: #F4F4F5; }
+  .glass-card { background: #18181B; border-color: #27272A; }
+  .text-primary { color: #F4F4F5; }
+  .text-secondary { color: #A1A1AA; }
 }
 
 
@@ -245,8 +250,8 @@ body {
 
 /* ─── 卡片（极简） ─── */
 .glass-card {
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
   border-radius: $radius-md;
 }
 
@@ -258,8 +263,8 @@ body {
 .fade-in-up { animation: fadeInUp 0.4s ease both; }
 
 /* 通用工具类 */
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
+.text-primary { color: #18181B; }
+.text-secondary { color: #71717A; }
 .text-hint { color: var(--text-hint); }
 .text-success { color: $success; }
 .text-warning { color: $warning; }

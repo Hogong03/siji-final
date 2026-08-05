@@ -102,12 +102,12 @@ function submit() {
 }
 
 .card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-lg;
   padding: $spacing-md;
   box-shadow: $shadow-sm;
 
-  .card-title { font-size: $font-lg; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: $spacing-xs; }
+  .card-title { font-size: $font-lg; font-weight: 700; color: #18181B; display: block; margin-bottom: $spacing-xs; }
   .card-desc { font-size: $font-xs; color: var(--text-hint); display: block; margin-bottom: $spacing-md; }
 }
 
@@ -118,7 +118,7 @@ function submit() {
     color: var(--text-hint);
     &.on { color: var(--color-plan); background: var(--color-plan-bg); }
   }
-  .action-btn { font-size: $font-sm; color: var(--text-primary); font-weight: 600; }
+  .action-btn { font-size: $font-sm; color: #18181B; font-weight: 600; }
 }
 
 /* PIN Dialog */
@@ -128,17 +128,17 @@ function submit() {
   display: flex; align-items: center; justify-content: center; z-index: 999;
 }
 .pin-dialog {
-  background: var(--bg-card); border-radius: $radius-xl;
+  background: #FFFFFF; border-radius: $radius-xl;
   padding: $spacing-lg $spacing-md; width: 80%; max-width: 500rpx;
   display: flex; flex-direction: column; align-items: center;
   box-shadow: $shadow-lg;
   box-sizing: border-box;
   overflow: hidden;
 
-  .pin-title { font-size: $font-lg; font-weight: 700; color: var(--text-primary); margin-bottom: 8rpx; }
+  .pin-title { font-size: $font-lg; font-weight: 700; color: #18181B; margin-bottom: 8rpx; }
   .pin-sub { font-size: $font-xs; color: var(--text-hint); margin-bottom: $spacing-md; }
   .pin-error { font-size: $font-xs; color: $danger; margin-bottom: $spacing-md; }
-  .pin-mask { font-size: $font-xxl; letter-spacing: 16rpx; color: var(--text-primary); margin-bottom: $spacing-md; }
+  .pin-mask { font-size: $font-xxl; letter-spacing: 16rpx; color: #18181B; margin-bottom: $spacing-md; }
 }
 .pin-pad {
   display: flex; flex-wrap: wrap; width: 100%; max-width: 400rpx;
@@ -147,7 +147,7 @@ function submit() {
     width: calc(33.33% - 12rpx); height: 80rpx; margin: 6rpx;
     display: flex; align-items: center; justify-content: center;
     background: var(--bg-btn-secondary); border-radius: $radius-md;
-    font-size: $font-lg; font-weight: 600; color: var(--text-primary);
+    font-size: $font-lg; font-weight: 600; color: #18181B;
     box-sizing: border-box;
     &:active { background: rgba(99,102,241,0.15); transform: scale(0.95); }
     &.empty { background: transparent; }
@@ -155,8 +155,9 @@ function submit() {
 }
 .pin-actions {
   display: flex; gap: $spacing-lg; margin-top: $spacing-md;
-  .pin-cancel { font-size: $font-sm; color: var(--text-secondary); padding: $spacing-xs $spacing-md; }
-  .pin-confirm { font-size: $font-sm; color: var(--text-primary); font-weight: 700; padding: $spacing-xs $spacing-md; }
+  .pin-cancel { font-size: $font-sm; color: #71717A; padding: $spacing-xs $spacing-md; }
+  .pin-confirm { font-size: $font-sm; color: #18181B; font-weight: 700; padding: $spacing-xs $spacing-md; }
 }
 
 </style>
+

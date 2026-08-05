@@ -221,7 +221,7 @@ const dots = computed(() => {
   transition: all 0.2s;
 
   &.filled {
-    background: var(--bg-card);
+    background: #FFFFFF;
     border-color: var(--text-on-ai);
     box-shadow: 0 0 12rpx rgba(255, 255, 255, 0.5);
   }

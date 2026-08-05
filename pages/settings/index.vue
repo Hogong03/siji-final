@@ -143,20 +143,20 @@ function go(target) {
   gap: 12rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   letter-spacing: 1rpx;
   margin: 0 0 16rpx 4rpx;
   padding-left: 16rpx;
-  border-left: 4rpx solid var(--text-primary);
+  border-left: 4rpx solid #18181B;
   &:first-child { margin-top: 0; padding-top: 0; }
 }
 
 /* ─── 统一卡片 ─── */
 .card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 24rpx;
   overflow: hidden;
-  border: 1rpx solid var(--border-color);
+  border: 1rpx solid #E4E4E7;
   margin-bottom: $spacing-lg;
 }
 
@@ -190,7 +190,7 @@ function go(target) {
 .row-icon { flex-shrink: 0; }
 
 .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
-.row-label { font-size: $font-md; font-weight: 600; color: var(--text-primary); 
+.row-label { font-size: $font-md; font-weight: 600; color: #18181B; 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-desc { font-size: $font-xs; color: var(--text-hint);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

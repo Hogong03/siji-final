@@ -97,7 +97,7 @@ function clearAll() {
 }
 
 .card {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: $radius-lg;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
@@ -105,7 +105,7 @@ function clearAll() {
   box-sizing: border-box;
   overflow: hidden;
 
-  .card-title { font-size: $font-md; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: $spacing-sm; }
+  .card-title { font-size: $font-md; font-weight: 700; color: #18181B; display: block; margin-bottom: $spacing-sm; }
   .card-desc { font-size: $font-xs; color: var(--text-hint); display: block; margin-bottom: $spacing-md; }
 }
 

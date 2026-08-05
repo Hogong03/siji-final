@@ -53,7 +53,7 @@ const emit = defineEmits(['action'])
 .empty-title {
   font-size: $font-lg;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #71717A;
   margin-bottom: $spacing-xs;
   animation: emptyTextFadeIn 0.5s ease 0.3s both;
 }

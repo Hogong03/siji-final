@@ -134,7 +134,7 @@ const typeMeta = {
   diary: { label: '记录', iconName: 'diary', color: 'var(--color-diary)' },
   bill: { label: '账单', iconName: 'bill', color: 'var(--color-bill)' },
   plan: { label: '计划', iconName: 'plan', color: 'var(--color-plan)' },
-  conversation: { label: '对话', iconName: 'chat-bubble', color: 'var(--text-primary)' }
+  conversation: { label: '对话', iconName: 'chat-bubble', color: '#18181B' }
 }
 
 function formatTime(ts) {
@@ -170,7 +170,7 @@ function switchTime(days) {
     <!-- 搜索栏（紧凑） -->
     <view class="search-bar">
       <view class="search-input-wrap">
-        <SijiIcon name="search" size="sm" color="var(--text-tertiary)" />
+        <SijiIcon name="search" size="sm" color="#A1A1AA" />
         <input
           v-model="searchInput"
           class="search-input"

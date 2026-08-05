@@ -37,7 +37,7 @@ function handleDecline() {
         if (window.history.length > 1) {
           window.history.back()
         } else {
-          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:16px;color:var(--text-secondary);font-family:sans-serif;">感谢关注 · 思迹</div>'
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:16px;color:#71717A;font-family:sans-serif;">感谢关注 · 思迹</div>'
         }
         // #endif
       }
@@ -128,7 +128,7 @@ function handleDecline() {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-page, var(--bg-card));
+  background: var(--bg-page, #FFFFFF);
   overflow: scroll;
 }
 
@@ -149,7 +149,7 @@ function handleDecline() {
 .disclaimer-brand-sub {
   font-size: 18rpx;
   font-weight: 500;
-  color: var(--text-hint, var(--text-tertiary));
+  color: var(--text-hint, #A1A1AA);
   letter-spacing: 10rpx;
   text-transform: uppercase;
 }
@@ -171,7 +171,7 @@ function handleDecline() {
 .disclaimer-date {
   display: block;
   font-size: 22rpx;
-  color: var(--text-hint, var(--text-tertiary));
+  color: var(--text-hint, #A1A1AA);
   margin-bottom: 32rpx;
 }
 
@@ -188,7 +188,7 @@ function handleDecline() {
 .disclaimer-text {
   display: block;
   font-size: 24rpx;
-  color: var(--text-secondary, var(--text-secondary));
+  color: var(--text-secondary, #71717A);
   line-height: 1.7;
   margin-bottom: 8rpx;
   word-wrap: break-word;
@@ -205,8 +205,8 @@ function handleDecline() {
 .disclaimer-footer {
   padding: 20rpx 40rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid var(--border-light, var(--border-color));
-  background: var(--bg-page, var(--bg-card));
+  border-top: 1rpx solid var(--border-light, #E4E4E7);
+  background: var(--bg-page, #FFFFFF);
 }
 .disclaimer-footer-inner {
   display: flex;
@@ -229,10 +229,10 @@ function handleDecline() {
 }
 .disclaimer-btn-primary {
   background: var(--text-strong, var(--color-ai));
-  color: var(--bg-card);
+  color: #FFFFFF;
 }
 .disclaimer-btn-secondary {
   background: var(--bg-card, var(--bg-input));
-  color: var(--text-secondary, var(--text-secondary));
+  color: var(--text-secondary, #71717A);
 }
 </style>

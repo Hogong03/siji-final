@@ -99,7 +99,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
         class="shortcut-item"
         @tap="applyShortcut(s)"
       >
-        <SijiIcon :name="s.icon" size="sm" color="var(--text-secondary)" />
+        <SijiIcon :name="s.icon" size="sm" color="#71717A" />
         <text class="shortcut-label">{{ s.label }}</text>
       </view>
     </view>
@@ -118,7 +118,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
       </view>
 
       <view class="side-btn" @tap="pickImage">
-        <SijiIcon name="image" size="sm" color="var(--text-secondary)" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
+        <SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
       </view>
 
       <view class="input-wrap">
@@ -168,8 +168,8 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   transition: transform 0.12s;
   &:active { transform: scale(0.92); background: #C4C4C8; }
 }
-.shortcut-label { font-size: 22rpx; color: var(--text-secondary); }
-.shortcut-toggle { font-size: 36rpx; color: var(--text-secondary); font-weight: 300; line-height: 1; }
+.shortcut-label { font-size: 22rpx; color: #71717A; }
+.shortcut-toggle { font-size: 36rpx; color: #71717A; font-weight: 300; line-height: 1; }
 
 /* ─── 图片预览 ─── */
 .img-preview {
@@ -177,10 +177,10 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   background: var(--bg-input); border-radius: 16rpx; margin-bottom: $spacing-sm;
 }
 .img-preview-thumb { width: 80rpx; height: 80rpx; border-radius: 8rpx; flex-shrink: 0; }
-.img-preview-label { flex: 1; font-size: 26rpx; color: var(--text-secondary); }
+.img-preview-label { flex: 1; font-size: 26rpx; color: #71717A; }
 .img-preview-del {
   width: 36rpx; height: 36rpx; border-radius: 50%; background: rgba(0,0,0,.1);
-  display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: #71717A;
 }
 
 /* ─── 输入行 ─── */
@@ -206,7 +206,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   }
 }
 .text-input {
-  width: 100%; font-size: $font-md; line-height: 1.5; color: var(--text-primary);
+  width: 100%; font-size: $font-md; line-height: 1.5; color: #18181B;
   background: transparent; border: none; outline: none; padding: 0; min-height: 40rpx;
 }
 
@@ -223,8 +223,8 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   }
 }
 .send-icon { color: #FFFFFF; font-size: 36rpx; font-weight: 700; }
-.stop-btn { background: var(--text-primary); &:active { transform: scale(.9); } }
-.stop-icon { color: var(--bg-card); font-size: 28rpx; }
+.stop-btn { background: #18181B; &:active { transform: scale(.9); } }
+.stop-icon { color: #FFFFFF; font-size: 28rpx; }
 
 /* ─── 深色模式 ─── */
 @media (prefers-color-scheme: dark) {

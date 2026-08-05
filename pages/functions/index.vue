@@ -237,7 +237,7 @@
 
 			<!-- 搜索栏（紧凑） -->
 			<view class="search-box">
-				<SijiIcon name="search" size="sm" color="var(--text-tertiary)" />
+				<SijiIcon name="search" size="sm" color="#A1A1AA" />
 				<input class="search-input" v-model="searchKeyword" placeholder="搜索功能、记录、账单、计划..." confirm-type="search"
 					@input="onSearchInput" @confirm="onSearchConfirm" />
 				<text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
@@ -251,7 +251,7 @@
 						@tap="goToEntry(entry)">
 						<view class="entry-left">
 							<view class="entry-icon-circle">
-								<SijiIcon :name="entry.iconName" size="md" color="var(--text-primary)" />
+								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
 							</view>
 							<view class="entry-info">
 								<text class="entry-title">{{ entry.title }}</text>
@@ -288,7 +288,7 @@
 					@tap="goPage(card.listPage)">
 					<view class="entry-left">
 						<view class="entry-icon-circle">
-							<SijiIcon :name="card.iconName" size="md" color="var(--text-primary)" />
+							<SijiIcon :name="card.iconName" size="md" color="#18181B" />
 						</view>
 						<view class="entry-info">
 							<text class="entry-title">{{ card.title }}</text>
@@ -368,11 +368,11 @@
 				</view>
 				<view class="agent-card-actions">
 					<view class="agent-action-btn" @tap="goAiConfig">
-						<SijiIcon name="settings" size="xs" color="var(--text-secondary)" />
+						<SijiIcon name="settings" size="xs" color="#71717A" />
 						<text class="agent-action-text">AI 配置</text>
 					</view>
 					<view class="agent-action-btn" @tap="goAgentManage">
-						<SijiIcon name="user" size="xs" color="var(--text-secondary)" />
+						<SijiIcon name="user" size="xs" color="#71717A" />
 						<text class="agent-action-text">管理 Agent</text>
 					</view>
 				</view>
@@ -384,7 +384,7 @@
 					@tap="goSub(entry.route)">
 					<view class="entry-left">
 						<view class="entry-icon-circle">
-							<SijiIcon :name="entry.iconName" size="md" color="var(--text-primary)" />
+							<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
 						</view>
 						<view class="entry-info">
 							<text class="entry-title">{{ entry.title }}</text>
