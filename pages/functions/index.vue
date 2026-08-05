@@ -17,7 +17,6 @@
 		onShow
 	} from '@dcloudio/uni-app'
 	import SijiIcon from '@/components/common/SijiIcon.vue'
-	import AgentAvatar from '@/components/common/AgentAvatar.vue'
 	import {
 		useAppStore
 	} from '@/store/index.js'
@@ -138,18 +137,6 @@
 	function goStats() {
 		uni.navigateTo({
 			url: '/pages/bill/stats'
-		})
-	}
-
-	function goAgentManage() {
-		uni.navigateTo({
-			url: '/pages/settings/sub/agent'
-		})
-	}
-
-	function goAiConfig() {
-		uni.navigateTo({
-			url: '/pages/settings/sub/ai'
 		})
 	}
 
@@ -354,28 +341,6 @@
 		<!-- AI 面板分区（合并为单列表） -->
 		<!-- ============================== -->
 		<text class="section-label">AI 面板</text>
-
-		<!-- 当前 Agent 卡片（独立保留，有操作按钮） -->
-		<view class="agent-card card-press slide-in-left-stagger">
-			<view class="agent-card-main" @tap="goAgentManage">
-				<AgentAvatar :name="store.activeAgent.name" :icon="store.activeAgent.icon" :size="80" />
-				<view class="agent-card-info">
-					<text class="agent-card-name">{{ store.activeAgent.name }}</text>
-					<text class="agent-card-desc">{{ store.activeAgent.description || '自定义 Agent' }}</text>
-				</view>
-				<text class="entry-arrow">›</text>
-			</view>
-			<view class="agent-card-actions">
-				<view class="agent-action-btn" @tap="goAiConfig">
-					<SijiIcon name="settings" size="xs" color="#71717A" />
-					<text class="agent-action-text">AI 配置</text>
-				</view>
-				<view class="agent-action-btn" @tap="goAgentManage">
-					<SijiIcon name="user" size="xs" color="#71717A" />
-					<text class="agent-action-text">管理 Agent</text>
-				</view>
-			</view>
-		</view>
 
 		<!-- AI 入口合并列表（数据层 + 执行层） -->
 		<view class="card-list card-list-stagger">
