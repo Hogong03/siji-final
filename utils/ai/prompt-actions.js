@@ -3,7 +3,12 @@
  * 从 prompt-builder.js 拆分，降低单文件体积
  */
 
-/** 核心 action schema（始终注入，已压缩字段注释） */
+/**
+ * 核心 action schema（始终注入，已压缩字段注释）
+ * 注意：此 schema 与 tools.js 的 TOOL_DEFINITIONS 描述同一能力，
+ * 但格式不同（此处为紧凑文本供路径 A JSON action，tools.js 为 OpenAI function schema 供路径 B）。
+ * 新增 action 时两处都要改。
+ */
 export const CORE_ACTIONS = `记录:
 - create_diary: {content,tags?}  // 自由文本，首行自动作为标题。tags 尽量从用户历史标签中选
 - update_diary: {client_id,content?,tags?}

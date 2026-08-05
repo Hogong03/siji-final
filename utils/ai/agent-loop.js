@@ -29,7 +29,7 @@ const TOOL_RESULT_TRUNCATE = 2000 // 单条 tool_result 最大字符数
  * @param {Array} history - 对话历史
  * @returns {Promise<Object>} { reply, toolCalls, execResults, action, actions, conversation_id }
  */
-export async function runAgentLoop(store, message, conversationId, cfg, history) {
+export async function runAgentLoop(store, message, conversationId, cfg, history, onChunk) {
   const provider = getProvider(cfg.provider)
   const apiKey = cfg.apiKey || ''
   const chatHistory = history || []
@@ -71,6 +71,15 @@ export async function runAgentLoop(store, message, conversationId, cfg, history)
     // AI 没有请求工具 → 给出最终回复
     if (callList.length === 0) {
       const content = assistantMsg.content || ''
+      // 若有 onChunk（来自 runAgentChat），推送内容（非 H5 模拟逐字）
+      if (onChunk && content) {
+        const chars = content.split('')
+        const group = content.length > 100 ? 8 : 3
+        for (let i = 0; i < chars.length; i += group) {
+          onChunk(chars.slice(i, i + group).join(''))
+          await new Promise(r => setTimeout(r, 8))
+        }
+      }
       // 兼容：AI 仍可能返回 JSON action 格式（部分场景）
       const result = parseAiResponse(content, conversationId)
       return {
@@ -120,7 +129,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history)
 
   // 达到 maxRounds — 兜底：让 AI 基于已收集数据给最终回答
   logger.warn('[AgentLoop] Max rounds reached, forcing final reply')
-  const response = await callWithTools(provider, cfg, messages, apiKey)
+  const response = await callWithTools(provider, cfg, messages, apiKey, true, onChunk)
   const finalReply = response.message?.content || ''
   const result = parseAiResponse(finalReply, conversationId)
   return {
@@ -135,8 +144,14 @@ export async function runAgentLoop(store, message, conversationId, cfg, history)
 
 /**
  * 调用带 tools 参数的 AI（非流式）
+ * 当 isFinal=true 时用流式请求（最后一轮，AI 给最终回复）
  */
-function callWithTools(provider, cfg, messages, apiKey) {
+function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk = null) {
+  // 最后一轮且非工具调用 → 流式输出
+  if (isFinal && onChunk && provider.supportsStream !== false) {
+    return callWithToolsStream(provider, cfg, messages, apiKey, onChunk)
+  }
+
   const body = {
     model: cfg.model,
     messages,
@@ -165,12 +180,7 @@ function callWithTools(provider, cfg, messages, apiKey) {
       success(res) {
         if (res.statusCode === 200 && res.data?.choices?.[0]) {
           const choice = res.data.choices[0]
-          // 工具调用
-          if (choice.message?.tool_calls && choice.message.tool_calls.length) {
-            resolve({ message: choice.message, id: res.data.id })
-          } else {
-            resolve({ message: choice.message, id: res.data.id })
-          }
+          resolve({ message: choice.message, id: res.data.id })
         } else {
           const errMsg = res.data?.error?.message || res.data?.message || `HTTP ${res.statusCode}`
           logger.error('[AgentLoop] API error:', res.statusCode, errMsg)
@@ -179,6 +189,109 @@ function callWithTools(provider, cfg, messages, apiKey) {
       },
       fail(err) {
         logger.error('[AgentLoop] Network error:', err.errMsg)
+        resolve({ error: '网络连接失败，请稍后再试' })
+      }
+    })
+  })
+}
+
+/**
+ * 流式调用（最后一轮，AI 给最终回复时用）
+ * H5 用 fetch+ReadableStream，非 H5 降级为非流式 + 模拟逐字
+ */
+function callWithToolsStream(provider, cfg, messages, apiKey, onChunk) {
+  // #ifdef H5
+  return callWithToolsSSE(provider, cfg, messages, apiKey, onChunk)
+  // #endif
+  // #ifndef H5
+  // 非 H5：退回非流式，拿到完整内容后逐字推送
+  return callWithTools(provider, cfg, messages, apiKey).then(res => {
+    if (res.error) return res
+    const content = res.message?.content || ''
+    if (content && onChunk) {
+      const chars = content.split('')
+      const group = content.length > 100 ? 8 : 3
+      return (async () => {
+        for (let i = 0; i < chars.length; i += group) {
+          onChunk(chars.slice(i, i + group).join(''))
+          await new Promise(r => setTimeout(r, 8))
+        }
+        return res
+      })()
+    }
+    return res
+  })
+  // #endif
+}
+
+/** H5 SSE 流式 */
+function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
+  const body = {
+    model: cfg.model,
+    messages,
+    temperature: cfg.temperature ?? 0.7,
+    stream: true
+    // 最后一轮不传 tools，让 AI 直接回复
+  }
+
+  return new Promise((resolve) => {
+    let fullContent = ''
+    let resolved = false
+    const timer = setTimeout(() => {
+      if (!resolved) { resolved = true; resolve({ message: { content: fullContent }, id: '' }) }
+    }, 90000)
+
+    fetch(provider.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(body)
+    }).then(async (resp) => {
+      const reader = resp.body?.getReader()
+      if (!reader) {
+        const data = await resp.json()
+        clearTimeout(timer)
+        resolved = true
+        resolve({ message: data.choices?.[0]?.message || { content: '' }, id: data.id || '' })
+        return
+      }
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data:')) continue
+          const jsonStr = trimmed.slice(5).trim()
+          if (jsonStr === '[DONE]') continue
+          try {
+            const chunk = JSON.parse(jsonStr)
+            const delta = chunk.choices?.[0]?.delta?.content || ''
+            if (delta) {
+              fullContent += delta
+              onChunk(delta)
+            }
+          } catch { /* skip */ }
+        }
+      }
+      clearTimeout(timer)
+      if (!resolved) {
+        resolved = true
+        resolve({ message: { content: fullContent }, id: '' })
+      }
+    }).catch((err) => {
+      clearTimeout(timer)
+      if (!resolved) {
+        resolved = true
+        logger.error('[AgentLoop] SSE error:', err.message)
         resolve({ error: '网络连接失败，请稍后再试' })
       }
     })
@@ -197,23 +310,14 @@ function callWithTools(provider, cfg, messages, apiKey) {
  * @param {Function} onChunk - (text) => void，逐段推送最终回复
  */
 export async function runAgentChat(store, message, conversationId, cfg, history, onChunk) {
-  const result = await runAgentLoop(store, message, conversationId, cfg, history)
+  const result = await runAgentLoop(store, message, conversationId, cfg, history, onChunk)
 
   // 已执行过写入工具 → 标记，避免上层 autoExecutor 二次执行
   const hasWrites = result.execResults.some(r => r.ok && !QUERY_TOOLS.has(r.name))
   result._agentMode = true
   result._agentExecuted = hasWrites
 
-  // 流式推送最终 reply（逐段，模拟打字机）
-  const reply = result.reply || ''
-  if (onChunk && reply) {
-    const chars = reply.split('')
-    const group = reply.length > 100 ? 8 : 3
-    for (let i = 0; i < chars.length; i += group) {
-      onChunk(chars.slice(i, i + group).join(''))
-      await new Promise(r => setTimeout(r, 8))
-    }
-  }
+  // runAgentLoop 内部已处理流式推送（最后一轮 SSE 或模拟逐字），此处不再重复
   return result
 }
 

@@ -57,62 +57,61 @@ export const useDataStore = defineStore('data', () => {
   const { execCreateDecision, execUpdateDecision, execReviewDecision, execQueryDecision, execAnalyzeDecisions } = createDecisionExecutors(ctx)
   const { execStartSimulation, execEndSimulation } = createSimulationExecutors(ctx)
 
-  // ==================== AI 自动执行分发器 ====================
+  // ==================== AI 自动执行分发器（Map 路由）====================
+  const ACTION_MAP = {
+    create_diary:         execCreateDiary,
+    create_bill:          execCreateBill,
+    create_plan:          execCreatePlan,
+    create_plan_phases:   execCreatePlan,
+    update_plan:          execUpdatePlan,
+    update_plan_phase:    execUpdatePlan,
+    update_plan_subtask:  execUpdatePlanSubtask,
+    delete_plan:          execDeletePlan,
+    update_bill:          execUpdateBill,
+    delete_bill:          execDeleteBill,
+    update_diary:         execUpdateDiary,
+    delete_diary:         execDeleteDiary,
+    create_plan_template: execCreatePlanTemplate,
+    query_diary:          execQueryDiary,
+    summarize_diaries:    execSummarizeDiaries,
+    query_combined:       execQueryCombined,
+    query_bill:           execQueryBill,
+    query_plan:           execQueryPlan,
+    query_stat:           execQueryStat,
+    update_profile:       execUpdateProfile,
+    smart_update_profile: execSmartUpdateProfile,
+    get_profile:          execGetProfile,
+    clear_profile:        execClearProfile,
+    toggle_profile:       execToggleProfile,
+    create_relation:      execCreateRelation,
+    update_relation:      execUpdateRelation,
+    delete_relation:      execDeleteRelation,
+    query_relation:       execQueryRelation,
+    log_interaction:      execLogInteraction,
+    query_interaction:    execQueryInteraction,
+    create_decision:      execCreateDecision,
+    update_decision:      execUpdateDecision,
+    review_decision:      execReviewDecision,
+    query_decision:       execQueryDecision,
+    analyze_decisions:    execAnalyzeDecisions,
+    start_simulation:     execStartSimulation,
+    end_simulation:       execEndSimulation,
+  }
+
   function executeAction(action) {
     if (!action || !action.type || action.type === 'none') {
       return { success: false, message: '无需执行', detail: null }
     }
 
     const { type, payload } = action
-    const p = payload || {}
 
     try {
       if (type === 'undo_last') return execUndo()
       if (type === 'multi') return { success: false, message: '复合意图请用 executeActions', detail: null }
 
-      switch (type) {
-        case 'create_diary':       return execCreateDiary(p)
-        case 'create_bill':        return execCreateBill(p)
-        case 'create_plan':        return execCreatePlan(p)
-        case 'create_plan_phases': return execCreatePlan(p)
-        case 'update_plan':        return execUpdatePlan(p)
-        case 'update_plan_phase':  return execUpdatePlan(p)
-        case 'update_plan_subtask': return execUpdatePlanSubtask(p)
-        case 'delete_plan':        return execDeletePlan(p)
-        case 'update_bill':        return execUpdateBill(p)
-        case 'delete_bill':        return execDeleteBill(p)
-        case 'update_diary':       return execUpdateDiary(p)
-        case 'delete_diary':       return execDeleteDiary(p)
-        case 'create_plan_template': return execCreatePlanTemplate(p)
-        case 'query_diary':        return execQueryDiary(p)
-        case 'summarize_diaries':   return execSummarizeDiaries(p)
-        case 'query_combined':      return execQueryCombined(p)
-        case 'query_bill':         return execQueryBill(p)
-        case 'query_plan':         return execQueryPlan(p)
-        case 'query_stat':         return execQueryStat(p)
-        case 'update_profile':     return execUpdateProfile(p)
-        case 'smart_update_profile': return execSmartUpdateProfile(p)
-        case 'get_profile':        return execGetProfile(p)
-        case 'clear_profile':      return execClearProfile(p)
-        case 'toggle_profile':     return execToggleProfile(p)
-        // ===== 关系图谱 =====
-        case 'create_relation':    return execCreateRelation(p)
-        case 'update_relation':    return execUpdateRelation(p)
-        case 'delete_relation':    return execDeleteRelation(p)
-        case 'query_relation':     return execQueryRelation(p)
-        case 'log_interaction':    return execLogInteraction(p)
-        case 'query_interaction':  return execQueryInteraction(p)
-        // ===== 决策日志 =====
-        case 'create_decision':    return execCreateDecision(p)
-        case 'update_decision':    return execUpdateDecision(p)
-        case 'review_decision':    return execReviewDecision(p)
-        case 'query_decision':     return execQueryDecision(p)
-        case 'analyze_decisions':  return execAnalyzeDecisions(p)
-        // ===== 社交沙盘 =====
-        case 'start_simulation':   return execStartSimulation(p)
-        case 'end_simulation':     return execEndSimulation(p)
-        default:                   return { success: false, message: '未知操作类型', detail: null }
-      }
+      const handler = ACTION_MAP[type]
+      if (handler) return handler(payload || {})
+      return { success: false, message: '未知操作类型', detail: null }
     } catch (e) {
       return { success: false, message: `执行失败: ${e.message}`, detail: null }
     }

@@ -202,21 +202,10 @@ export function autoExtractMemory(userMessage, aiReply, execResult) {
   //   - "不吃X"/"预算X" → profile.dietary/budget
   // 这些信息由 AI 通过 smart_update_profile action 结构化更新，不再用正则提取
 
-  // === 规则 2：执行结果记忆（保留，属于事件类） ===
-  if (execResult && execResult.success && execResult.detail) {
-    const d = execResult.detail
-    if (d.type === 'bill' && d.amount) {
-      memories.push({
-        content: `记账：¥${d.amount} ${d.category || ''} ${d.note || ''}`.trim(),
-        category: 'event'
-      })
-    } else if (d.type === 'plan' && d.title) {
-      memories.push({
-        content: `计划：${d.title}`,
-        category: 'event'
-      })
-    }
-  }
+  // === 执行结果记忆已删除 ===
+  // 原：从 execResult 中提取记账/计划事件存入记忆
+  // 原因：chatHistoryBuilder 已在历史中追加 [执行结果: 已记账 ¥50 餐饮]，
+  // memory 再存一份是冗余。且 AI 能从历史中看到执行结果。
 
   // === 规则 3：重要关键词触发（改动6：增加情绪宣泄排除） ===
   const EMOTION_NOISE = /太|好烦|气死|受不了|崩溃|烦透|郁卒|恶心|想哭|绝望/
