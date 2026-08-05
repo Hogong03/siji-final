@@ -275,7 +275,11 @@ export function useChatEngine() {
       if (isMemoryEnabled() && !needConfirm) {
         try {
           const lastMsg = store.messages[store.messages.length - 1]
-          autoExtractMemory(message, reply, lastMsg?.execResult)
+          // AI 走神/超时/失败的回复不提取记忆
+          const isFailedReply = !reply || reply.includes('AI 走神') || reply.includes('AI 响应超时') || reply.includes('AI 未返回有效响应') || reply.includes('请求失败') || result._emptyReply
+          if (!isFailedReply) {
+            autoExtractMemory(message, reply, lastMsg?.execResult)
+          }
           const conv = store.activeConversation
           const unsavedCount = conv ? conv.messages.length - (conv.summaryIndex || 0) : 0
           if (conv && unsavedCount >= 15) {

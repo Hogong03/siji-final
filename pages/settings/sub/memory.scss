@@ -2,7 +2,7 @@
 
 .memory-page {
   min-height: 100vh;
-  background: var(--bg-card-alt);
+  background: #E4E4E7;
   padding: $spacing-md;
   padding-bottom: 120rpx;
   box-sizing: border-box;
@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 16rpx;
   padding: $spacing-md;
   margin-bottom: $spacing-sm;
@@ -28,12 +28,12 @@
   .switch-title {
     font-size: $font-lg;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #18181B;
   }
 
   .switch-desc {
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
   }
 }
 
@@ -47,7 +47,7 @@
   .stat-item {
     flex: 1;
     min-width: 120rpx;
-    background: var(--bg-card);
+    background: #FFFFFF;
     border-radius: 12rpx;
     padding: $spacing-sm $spacing-xs;
     display: flex;
@@ -59,12 +59,12 @@
   .stat-num {
     font-size: $font-xl;
     font-weight: 800;
-    color: var(--text-primary);
+    color: #18181B;
   }
 
   .stat-label {
     font-size: 18rpx;
-    color: var(--text-secondary);
+    color: #71717A;
   }
 }
 
@@ -80,13 +80,13 @@
     display: inline-flex;
     padding: 8rpx 20rpx;
     border-radius: 20rpx;
-    background: var(--bg-card);
+    background: #FFFFFF;
     font-size: $font-xs;
-    color: var(--text-secondary);
+    color: #71717A;
     flex-shrink: 0;
 
     &.active {
-      background: var(--color-ai);
+      background: #000000;
       color: #FFFFFF;
     }
   }
@@ -98,7 +98,7 @@
 }
 
 .memory-item {
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 12rpx;
   padding: $spacing-sm $spacing-md;
   margin-bottom: $spacing-xs;
@@ -111,9 +111,9 @@
   }
 
   .memory-cat-icon { font-size: 24rpx; }
-  .memory-cat-label { font-size: $font-xs; color: var(--text-secondary); font-weight: 500; }
-  .memory-time { font-size: 18rpx; color: var(--text-hint); margin-left: auto; }
-  .memory-content { font-size: $font-md; color: var(--text-primary); line-height: 1.6; word-break: break-word; }
+  .memory-cat-label { font-size: $font-xs; color: #71717A; font-weight: 500; }
+  .memory-time { font-size: 18rpx; color: #A1A1AA; margin-left: auto; }
+  .memory-content { font-size: $font-md; color: #18181B; line-height: 1.6; word-break: break-word; }
 
   .memory-actions {
     display: flex;
@@ -127,7 +127,7 @@
     padding: 4rpx 16rpx;
     border-radius: 8rpx;
 
-    &.edit { color: var(--text-secondary); background: var(--bg-btn-secondary); }
+    &.edit { color: #71717A; background: #D4D4D8; }
     &.del { color: #EF4444; }
   }
 }
@@ -141,8 +141,8 @@
   padding: 80rpx 0;
 
   .empty-icon { font-size: 64rpx; }
-  .empty-text { font-size: $font-md; color: var(--text-secondary); }
-  .empty-hint { font-size: $font-xs; color: var(--text-hint); }
+  .empty-text { font-size: $font-md; color: #71717A; }
+  .empty-hint { font-size: $font-xs; color: #A1A1AA; }
 }
 
 /* 底部操作 */
@@ -152,8 +152,8 @@
   display: flex;
   gap: $spacing-sm;
   padding: $spacing-md;
-  background: var(--bg-card);
-  border-top: 1rpx solid var(--border-color);
+  background: #FFFFFF;
+  border-top: 1rpx solid #E4E4E7;
 
   .bottom-btn {
     flex: 1;
@@ -163,8 +163,8 @@
     font-size: $font-sm;
     font-weight: 600;
 
-    &.add { background: var(--color-ai); color: var(--bg-card); }
-    &.clear { background: var(--bg-btn-secondary); color: #EF4444; }
+    &.add { background: #000000; color: #FFFFFF; }
+    &.clear { background: #D4D4D8; color: #EF4444; }
   }
 }
 
@@ -177,8 +177,8 @@
   padding: 120rpx 0;
 
   .disabled-icon { font-size: 80rpx; }
-  .disabled-text { font-size: $font-lg; color: var(--text-secondary); font-weight: 600; }
-  .disabled-sub { font-size: $font-xs; color: var(--text-hint); }
+  .disabled-text { font-size: $font-lg; color: #71717A; font-weight: 600; }
+  .disabled-sub { font-size: $font-xs; color: #A1A1AA; }
 }
 
 /* 弹窗 */
@@ -195,7 +195,7 @@
 .modal-content {
   width: 85%;
   max-width: 600rpx;
-  background: var(--bg-card);
+  background: #FFFFFF;
   border-radius: 16rpx;
   padding: $spacing-lg;
   display: flex;
@@ -206,7 +206,7 @@
 .modal-title {
   font-size: $font-lg;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #18181B;
   text-align: center;
 }
 
@@ -219,21 +219,21 @@
 .modal-cat-chip {
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
-  background: var(--bg-btn-secondary);
+  background: #D4D4D8;
   font-size: $font-xs;
-  color: var(--text-secondary);
+  color: #71717A;
 
-  &.active { background: var(--color-ai); color: var(--bg-card); }
+  &.active { background: #000000; color: #FFFFFF; }
 }
 
 .modal-input {
   width: 100%;
   min-height: 120rpx;
-  background: var(--bg-input);
+  background: #F4F4F5;
   border-radius: 12rpx;
   padding: $spacing-sm;
   font-size: $font-md;
-  color: var(--text-primary);
+  color: #18181B;
   box-sizing: border-box;
 }
 
@@ -251,8 +251,8 @@
   font-size: $font-sm;
   font-weight: 600;
 
-  &.cancel { background: var(--bg-btn-secondary); color: var(--text-secondary); }
-  &.ok { background: var(--color-ai); color: var(--bg-card); }
+  &.cancel { background: #D4D4D8; color: #71717A; }
+  &.ok { background: #000000; color: #FFFFFF; }
 }
 
 @media (prefers-color-scheme: dark) {

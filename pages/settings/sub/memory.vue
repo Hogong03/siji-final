@@ -109,7 +109,7 @@ function handleClearAll() {
   uni.showModal({
     title: '清空所有记忆',
     content: `将删除全部 ${memories.value.length} 条记忆，此操作不可撤销。`,
-    confirmColor: 'var(--color-ai)',
+    confirmColor: '#000000',
     success(res) {
       if (res.confirm) {
         clearAllMemories()
@@ -139,7 +139,7 @@ function formatTime(ts) {
         <text class="switch-title">长期记忆</text>
         <text class="switch-desc">AI 自动记住你的偏好、重要事件和事实</text>
       </view>
-      <switch :checked="enabled" @change="toggleEnabled" color="var(--color-ai)" />
+      <switch :checked="enabled" @change="toggleEnabled" color="#000000" />
     </view>
 
     <!-- 统计卡片 -->

@@ -274,7 +274,7 @@ function goDetail(id) {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: var(--bg-page); }
+.page { min-height: 100vh; background: #FAFAFA; }
 
 .filter-bar {
   display: flex; background: #FFFFFF; padding: 16rpx 24rpx;
@@ -284,14 +284,14 @@ function goDetail(id) {
   font-size: 26rpx; color: #71717A; padding: 8rpx 24rpx;
   border-radius: 20rpx; margin-right: 12rpx; white-space: nowrap;
 }
-.filter-tab.active { background: var(--color-ai); color: #FFFFFF; }
+.filter-tab.active { background: #000000; color: #FFFFFF; }
 
 .list-area { height: calc(100vh - 140rpx); padding: 16rpx 24rpx; }
 
 .empty { display: flex; flex-direction: column; align-items: center; padding-top: 200rpx; }
 .empty-icon { font-size: 80rpx; margin-bottom: 24rpx; }
 .empty-text { font-size: 32rpx; color: #71717A; }
-.empty-hint { font-size: 26rpx; color: var(--text-hint); margin-top: 8rpx; }
+.empty-hint { font-size: 26rpx; color: #A1A1AA; margin-top: 8rpx; }
 
 .decision-card {
   background: #FFFFFF; border-radius: 24rpx; padding: 28rpx; margin-bottom: 16rpx;
@@ -302,21 +302,21 @@ function goDetail(id) {
   font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; margin-left: 16rpx;
   white-space: nowrap;
 }
-.status-thinking { background: var(--color-bill-light); color: var(--color-bill-text); }
-.status-decided { background: var(--color-info-light); color: var(--color-info-text); }
-.status-acted { background: var(--color-plan-light); color: var(--color-plan-text); }
-.status-reviewed { background: var(--bg-btn-secondary); color: var(--text-mid); }
-.status-abandoned { background: var(--color-danger-light); color: var(--color-danger-text); }
+.status-thinking { background: #FEF3C7; color: #92400E; }
+.status-decided { background: #DBEAFE; color: #1E40AF; }
+.status-acted { background: #D1FAE5; color: #065F46; }
+.status-reviewed { background: #D4D4D8; color: #52525B; }
+.status-abandoned { background: #FEE2E2; color: #991B1B; }
 
 .card-category { font-size: 24rpx; color: #71717A; margin-top: 8rpx; }
 .card-options { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 16rpx; }
-.option-chip { font-size: 22rpx; padding: 4rpx 16rpx; background: var(--bg-btn-secondary); color: var(--text-strong); border-radius: 8rpx; }
-.option-more { font-size: 22rpx; color: var(--text-hint); padding: 4rpx 8rpx; }
+.option-chip { font-size: 22rpx; padding: 4rpx 16rpx; background: #D4D4D8; color: #18181B; border-radius: 8rpx; }
+.option-more { font-size: 22rpx; color: #A1A1AA; padding: 4rpx 8rpx; }
 .card-deadline { font-size: 24rpx; color: #71717A; margin-top: 12rpx; }
-.card-decision { margin-top: 12rpx; padding: 12rpx 16rpx; background: var(--bg-card-alt); border-radius: 12rpx; }
+.card-decision { margin-top: 12rpx; padding: 12rpx 16rpx; background: #E4E4E7; border-radius: 12rpx; }
 .decision-label { font-size: 24rpx; color: #71717A; }
 .decision-text { font-size: 26rpx; color: #18181B; font-weight: 500; }
-.card-time { font-size: 22rpx; color: var(--text-hint); margin-top: 12rpx; display: block; }
+.card-time { font-size: 22rpx; color: #A1A1AA; margin-top: 12rpx; display: block; }
 
 /* 操作按钮区 */
 .card-actions {
@@ -324,13 +324,13 @@ function goDetail(id) {
   margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #E4E4E7;
 }
 .action-btn { font-size: 26rpx; padding: 8rpx 24rpx; border-radius: 12rpx; }
-.edit-btn { color: #18181B; background: var(--bg-btn-secondary); }
-.delete-btn { color: #FFFFFF; background: var(--color-ai); }
+.edit-btn { color: #18181B; background: #D4D4D8; }
+.delete-btn { color: #FFFFFF; background: #000000; }
 
 .fab {
   position: fixed; right: 40rpx; bottom: 80rpx;
   width: 96rpx; height: 96rpx; border-radius: 50%;
-  background: var(--color-ai); color: #FFFFFF;
+  background: #000000; color: #FFFFFF;
   font-size: 56rpx; line-height: 96rpx; text-align: center;
   box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.2);
 }
@@ -348,18 +348,39 @@ function goDetail(id) {
 .form-label { font-size: 26rpx; color: #71717A; display: block; margin-bottom: 8rpx; }
 .form-input {
   width: 100%; height: 80rpx; padding: 0 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx; color: #18181B; line-height: 80rpx;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx; color: #18181B; line-height: 80rpx;
 }
 .form-textarea {
   width: 100%; min-height: 160rpx; padding: 16rpx 24rpx;
-  background: var(--bg-input); border-radius: 16rpx; font-size: 28rpx;
+  background: #F4F4F5; border-radius: 16rpx; font-size: 28rpx;
 }
 .modal-actions { display: flex; gap: 24rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: var(--bg-btn-secondary); color: #71717A; }
-.btn-confirm { background: var(--color-ai); color: #FFFFFF; }
+.btn-cancel { background: #D4D4D8; color: #71717A; }
+.btn-confirm { background: #000000; color: #FFFFFF; }
+
+@media (prefers-color-scheme: dark) {
+  .page { background: #09090B; }
+  .filter-bar { background: #18181B; border-bottom: 1rpx solid #27272A; }
+  .filter-tab { color: #A1A1AA; }
+  .filter-tab.active { background: #000000; color: #FFFFFF; }
+  .decision-card { background: #18181B; }
+  .card-title { color: #F4F4F5; }
+  .card-category { color: #A1A1AA; }
+  .card-deadline { color: #A1A1AA; }
+  .decision-label { color: #A1A1AA; }
+  .decision-text { color: #F4F4F5; }
+  .card-actions { border-top: 1rpx solid #27272A; }
+  .edit-btn { color: #F4F4F5; background: #3F3F46; }
+  .modal-content { background: #18181B; }
+  .modal-title { color: #F4F4F5; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #27272A; color: #F4F4F5; }
+  .form-textarea { background: #27272A; color: #F4F4F5; }
+  .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+}
 
 </style>
 

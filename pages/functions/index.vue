@@ -17,7 +17,6 @@
 		onShow
 	} from '@dcloudio/uni-app'
 	import SijiIcon from '@/components/common/SijiIcon.vue'
-	import AgentAvatar from '@/components/common/AgentAvatar.vue'
 	import {
 		useAppStore
 	} from '@/store/index.js'
@@ -33,18 +32,11 @@
 	const {
 		dashboard,
 		weekTrend,
-		memoryEnabled,
-		profileEnabled,
-		profileFilled,
-		relationsStats,
-		decisionStats,
-		simStats,
 		categoryRanking,
 		trendMax,
 		weekTotal,
 		weekCompare,
-		loadAll,
-		loadAIStats
+		loadAll
 	} = useFunctionsData()
 
 	// ─── 生活记录入口 ───
@@ -74,62 +66,11 @@
 		},
 	])
 
-	// ─── AI 面板：数据层（让 AI 更懂你）───
-	const aiDataEntries = computed(() => [{
-			id: 'profile',
-			iconName: 'user',
-			title: '我的信息',
-			desc: profileEnabled.value ? `已开启 · ${profileFilled.value} 项` : '点击开启',
-			route: '/pages/settings/sub/profile'
-		},
-		{
-			id: 'memory',
-			iconName: 'brain',
-			title: '记忆管理',
-			desc: memoryEnabled.value ? '已开启' : '已关闭',
-			route: '/pages/settings/sub/memory'
-		},
-		{
-			id: 'relations',
-			iconName: 'heart',
-			title: '关系图谱',
-			desc: `${relationsStats.value.total} 人`,
-			route: '/pages/settings/sub/relations'
-		},
-	])
-
-	// ─── AI 面板：执行层（让 AI 帮你做事）───
-	const aiActionEntries = computed(() => [{
-			id: 'decisions',
-			iconName: 'target',
-			title: '决策日志',
-			desc: `${decisionStats.value.total} 条`,
-			route: '/pages/settings/sub/decisions'
-		},
-		{
-			id: 'simulation',
-			iconName: 'chat-bubble',
-			title: '情景模拟',
-			desc: simStats.value.total > 0 ? `${simStats.value.total} 次演练` : '对话演练',
-			route: '/pages/settings/sub/simulation'
-		},
-	])
-
-	// ─── AI 面板：合并入口列表（数据层 + 执行层）───
-	const aiAllEntries = computed(() => [...aiDataEntries.value, ...aiActionEntries.value])
-
 	onShow(() => {
 		loadAll()
-		loadAIStats()
 	})
 
 	// ─── 跳转 ───
-	function goSub(url) {
-		uni.navigateTo({
-			url
-		})
-	}
-
 	function goPage(url) {
 		uni.navigateTo({
 			url
@@ -142,18 +83,6 @@
 		})
 	}
 
-	function goAgentManage() {
-		uni.navigateTo({
-			url: '/pages/settings/sub/agent'
-		})
-	}
-
-	function goAiConfig() {
-		uni.navigateTo({
-			url: '/pages/settings/sub/ai'
-		})
-	}
-
 	// ─── 搜索 ───
 	const searchKeyword = ref('')
 
@@ -161,11 +90,6 @@
 		...funcEntries.value.map(e => ({
 			...e,
 			category: 'life'
-		})),
-		...aiAllEntries.value.map(e => ({
-			...e,
-			category: 'ai',
-			route: e.route
 		})),
 		{
 			id: 'stats',
@@ -348,50 +272,6 @@
 						<text class="rank-amount">¥{{ item.amount.toFixed(0) }}</text>
 						<text class="rank-pct">{{ item.percent }}%</text>
 					</view>
-				</view>
-			</view>
-
-			<!-- ============================== -->
-			<!-- AI 面板分区（合并为单列表） -->
-			<!-- ============================== -->
-			<text class="section-label">AI 面板</text>
-
-			<!-- 当前 Agent 卡片（独立保留，有操作按钮） -->
-			<view class="agent-card card-press slide-in-left-stagger">
-				<view class="agent-card-main" @tap="goAgentManage">
-					<AgentAvatar :name="store.activeAgent.name" :icon="store.activeAgent.icon" :size="80" />
-					<view class="agent-card-info">
-						<text class="agent-card-name">{{ store.activeAgent.name }}</text>
-						<text class="agent-card-desc">{{ store.activeAgent.description || '自定义 Agent' }}</text>
-					</view>
-					<text class="entry-arrow">›</text>
-				</view>
-				<view class="agent-card-actions">
-					<view class="agent-action-btn" @tap="goAiConfig">
-						<SijiIcon name="settings" size="xs" color="#71717A" />
-						<text class="agent-action-text">AI 配置</text>
-					</view>
-					<view class="agent-action-btn" @tap="goAgentManage">
-						<SijiIcon name="user" size="xs" color="#71717A" />
-						<text class="agent-action-text">管理 Agent</text>
-					</view>
-				</view>
-			</view>
-
-			<!-- AI 入口合并列表（数据层 + 执行层） -->
-			<view class="card-list card-list-stagger">
-				<view v-for="entry in aiAllEntries" :key="entry.id" class="entry-card card-press"
-					@tap="goSub(entry.route)">
-					<view class="entry-left">
-						<view class="entry-icon-circle">
-							<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
-						</view>
-						<view class="entry-info">
-							<text class="entry-title">{{ entry.title }}</text>
-							<text class="entry-desc">{{ entry.desc }}</text>
-						</view>
-					</view>
-					<text class="entry-arrow">›</text>
 				</view>
 			</view>
 
