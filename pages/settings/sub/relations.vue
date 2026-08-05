@@ -54,8 +54,8 @@
         <view v-if="item.traits && item.traits.length > 0" class="card-tags">
           <text v-for="t in item.traits.slice(0, 3)" :key="t" class="tag">{{ t }}</text>
         </view>
-        <!-- 操作按钮区 -->
-        <view class="card-actions" @tap.stop>
+        <!-- 操作按钮区（内置角色不可编辑/删除） -->
+        <view v-if="!isBuiltinRelation(item.id)" class="card-actions" @tap.stop>
           <view class="action-btn" @tap="handleEdit(item)">
             <text class="action-icon">✏️</text>
             <text class="action-text">编辑</text>
@@ -65,6 +65,7 @@
             <text class="action-text">删除</text>
           </view>
         </view>
+        <view v-else class="builtin-tag">内置</view>
       </view>
     </scroll-view>
 
@@ -138,7 +139,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats } from '@/utils/relations.js'
+import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats, isBuiltinRelation } from '@/utils/relations.js'
 
 // ─── 关系模板 ───
 const RELATION_TEMPLATES = [

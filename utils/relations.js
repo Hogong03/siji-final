@@ -19,17 +19,49 @@ import { logger } from './logger.js'
 const RELATIONS_KEY = 'siji_relations'
 const INTERACTIONS_KEY = 'siji_interactions'
 
+// ==================== 内置关系角色（不可修改/删除）====================
+// 庚哥：理想主义(INFP) 性格特征，不出现 MBTI 字样
+const BUILTIN_RELATIONS = [
+  {
+    id: 'builtin_gengge',
+    name: '庚哥',
+    role: '自我',
+    context: '内在自我',
+    traits: ['理想主义', '内敛', '共情力强', '珍视内心真实', '感性'],
+    preferences: ['喜欢深度连接', '需要独处充电', '在意价值认同', '厌恶表面寒暄'],
+    notes: '追求意义与真实，忠于内心选择。',
+    relationship_score: 10,
+    tags: ['内置', '自我'],
+    last_interaction: 0,
+    created_at: 0,
+    updated_at: 0,
+    is_deleted: 0,
+    is_builtin: 1
+  }
+]
+
+/** 内置关系角色列表 */
+export function getBuiltinRelations() {
+  return BUILTIN_RELATIONS
+}
+
+/** 是否为内置角色（内置角色不可修改/删除） */
+export function isBuiltinRelation(id) {
+  return BUILTIN_RELATIONS.some(r => r.id === id)
+}
+
 // ==================== 关系卡片 CRUD ====================
 
-/** 获取所有关系（排除已删除） */
+/** 获取所有关系（内置角色 + 已存卡片，排除已删除） */
 export function getAllRelations() {
+  let stored = []
   try {
     const raw = uni.getStorageSync(RELATIONS_KEY)
-    if (!raw) return []
-    return JSON.parse(raw).filter(r => r.is_deleted !== 1)
+    if (raw) stored = JSON.parse(raw).filter(r => r.is_deleted !== 1)
   } catch {
-    return []
+    stored = []
   }
+  return [...BUILTIN_RELATIONS, ...stored]
 }
 
 /** 按 ID 获取单条关系 */
