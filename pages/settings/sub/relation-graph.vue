@@ -189,10 +189,6 @@ function redraw() {
   drawGraph()
 }
 
-function redraw() {
-  drawGraph()
-}
-
 function goDetail(id) {
   uni.navigateTo({ url: `/pages/settings/sub/relation-detail?id=${id}` })
 }
