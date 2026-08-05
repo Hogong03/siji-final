@@ -25,7 +25,7 @@
       <!-- 关系图 Canvas -->
       <view class="graph-wrap">
         <canvas
-          canvas-id="relationGraph"
+          type="2d"
           id="relationGraph"
           class="graph-canvas"
           :style="{ width: canvasW + 'px', height: canvasH + 'px' }"
@@ -52,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
 import { onReady, onShow } from '@dcloudio/uni-app'
 import { getAllRelations } from '@/utils/relations.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
@@ -80,6 +80,7 @@ onReady(() => {
 })
 
 const relations = ref([])
+const canvasReady = ref(false)
 
 function loadRelations() {
   relations.value = getAllRelations()
@@ -89,11 +90,40 @@ const sortedRelations = computed(() =>
   [...relations.value].sort((a, b) => (b.relationship_score || 0) - (a.relationship_score || 0))
 )
 
-function drawGraph() {
+function getCanvasNode() {
+  return new Promise((resolve) => {
+    uni.createSelectorQuery()
+      .in(getCurrentInstance())
+      .select('#relationGraph')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (res && res[0] && res[0].node) {
+          resolve(res[0])
+        } else {
+          resolve(null)
+        }
+      })
+  })
+}
+
+async function drawGraph() {
   loadRelations()
-  const ctx = uni.createCanvasContext('relationGraph', this)
-  const w = canvasW.value
-  const h = canvasH.value
+  const info = await getCanvasNode()
+  if (!info) {
+    // canvas 未就绪，稍后重试
+    setTimeout(() => { if (!canvasReady.value) drawGraph() }, 200)
+    return
+  }
+  const canvas = info.node
+  const dpr = uni.getSystemInfoSync().pixelRatio || 1
+  // 设置画布实际尺寸（物理像素）
+  canvas.width = info.width * dpr
+  canvas.height = info.height * dpr
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+
+  const w = info.width
+  const h = info.height
   const cx = w / 2
   const cy = 150
 
@@ -105,7 +135,6 @@ function drawGraph() {
   nodes.value = nodeList
 
   if (nodeList.length === 0) {
-    ctx.draw()
     return
   }
 
@@ -141,8 +170,7 @@ function drawGraph() {
     ctx.textAlign = 'center'
     ctx.fillText(r.name, nx, ny + 42)
   })
-
-  ctx.draw()
+  canvasReady.value = true
 }
 
 function drawSelf(ctx, cx, cy) {
@@ -154,6 +182,11 @@ function drawSelf(ctx, cx, cy) {
   ctx.font = '14px sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText(SELF.name.charAt(0), cx, cy + 5)
+}
+
+function redraw() {
+  canvasReady.value = false
+  drawGraph()
 }
 
 function redraw() {
