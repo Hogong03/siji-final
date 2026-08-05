@@ -8,6 +8,8 @@
  * 解密时检测前缀 "enc:" 判断是否已加密
  */
 
+import { logger } from './logger.js'
+
 const SECRET = 'siji_2026_xor_key_!@#'
 const PREFIX = 'enc:'
 
@@ -76,9 +78,20 @@ export function decryptKey(stored) {
   try {
     const b64 = stored.slice(PREFIX.length)
     const xored = fromBase64(b64)
-    return xorEncrypt(xored, SECRET) // XOR 是对称的
+    const decrypted = xorEncrypt(xored, SECRET) // XOR 是对称的
+    // 合法性校验：API Key 应为可打印 ASCII（sk-、Bearer、hex 等）
+    // 如果包含控制字符（charCode < 0x20 或 > 0x7E），说明解密失败
+    for (let i = 0; i < decrypted.length; i++) {
+      const c = decrypted.charCodeAt(i)
+      if (c < 0x20 || c > 0x7E) {
+        logger.warn('[crypto] 解密结果含非可打印字符，判定为解密失败，返回空')
+        return ''
+      }
+    }
+    return decrypted
   } catch (e) {
-    return stored // 解密失败返回原值
+    logger.warn('[crypto] 解密异常:', e)
+    return '' // 解密失败返回空，不返回乱码
   }
 }
 
