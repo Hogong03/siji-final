@@ -57,6 +57,12 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
   const apiKey = cfg.apiKey || uni.getStorageSync('siji_api_key') || ''
 
   return new Promise((resolve, reject) => {
+    // API Key 为空 — 直接走离线降级，不发无意义请求
+    if (!apiKey) {
+      logger.warn(`[${providerName}] API Key 为空，跳过请求走离线降级`)
+      resolve({ reply: '', _offline: true, _reason: 'no_api_key' })
+      return
+    }
     // 限流检查（重试请求跳过限流）
     if (retryCount === 0) {
       const { allowed, reason } = checkRateLimit()

@@ -30,6 +30,12 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
     ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
     : (config || getDefaultConfig())
 
+  // API Key 为空 — 直接走离线降级，不发无意义请求
+  if (!cfg.apiKey) {
+    logger.warn('[Stream] API Key 为空，走离线降级')
+    return Promise.resolve({ reply: '', _offline: true, _reason: 'no_api_key' })
+  }
+
   // 限流检查
   const { allowed, reason } = checkRateLimit()
   if (!allowed) {
