@@ -74,7 +74,7 @@ export default {
 		async initChart() {
 			try {
 				await loadEcharts()
-				const container = this.$el.querySelector('.echarts-container')
+				const container = document.getElementById('echarts-relation') || document.querySelector('.echarts-container')
 				if (!container) return
 				chartInstance = echartsLib.init(container)
 				// 空初始图
