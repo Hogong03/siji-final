@@ -118,13 +118,6 @@
 
 	// ─── AI 面板：数据层（让 AI 更懂你）───
 	const aiDataEntries = computed(() => [{
-			id: 'profile',
-			iconName: 'user',
-			title: '我的信息',
-			desc: profileEnabled.value ? `已开启 · ${profileFilled.value} 项 · ${relationsStats.value.total} 人` : '点击开启',
-			route: '/pages/settings/sub/profile'
-		},
-		{
 			id: 'memory',
 			iconName: 'brain',
 			title: '记忆管理',
@@ -333,13 +326,18 @@
 		<!-- ============================== -->
 		<text class="section-label">AI 面板</text>
 
-		<!-- 我的信息入口（精简单行） -->
+		<!-- 我的信息统计行 -->
 		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/profile')">
 			<view class="pa-header">
 				<view class="pa-avatar">{{ profileName.charAt(0) }}</view>
 				<view class="pa-meta">
 					<text class="pa-name">{{ profileName }}</text>
-					<text class="pa-bio">{{ profileEnabled ? `${profileTagCount} 项 · ${relationsStats.total} 人` : '点击开启' }}</text>
+					<view class="pa-stats">
+						<text class="pa-stat" v-if="profileEnabled">{{ profileFilled }} 项信息</text>
+						<text class="pa-stat" v-if="profileEnabled">{{ relationsStats.total }} 位人物</text>
+						<text class="pa-stat" v-if="memoryEnabled">{{ decisionStats.total }} 条决策</text>
+						<text class="pa-stat" v-if="!profileEnabled && !memoryEnabled">点击开启</text>
+					</view>
 				</view>
 				<text class="pa-arrow">›</text>
 			</view>
