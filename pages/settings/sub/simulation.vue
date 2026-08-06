@@ -68,12 +68,13 @@
       </view>
     </view>
 
-    <!-- 历史演练记录 -->
+    <!-- 历史演练记录（默认折叠） -->
     <view v-if="simulations.length > 0" class="history-section">
-      <view class="history-header">
-        <text class="section-title">历史演练</text>
-        <text class="history-count">{{ simulations.length }}</text>
+      <view class="history-header" @tap="historyExpanded = !historyExpanded">
+        <text class="section-title">历史演练 · {{ simulations.length }}</text>
+        <text class="history-toggle">{{ historyExpanded ? '收起' : '展开' }}</text>
       </view>
+      <template v-if="historyExpanded">
       <view class="filter-tabs">
         <text
           v-for="t in filterTabs"
@@ -111,6 +112,7 @@
       <view v-if="filteredSims.length === 0" class="empty-hint">
         <text>该分类暂无演练记录</text>
       </view>
+      </template>
     </view>
   </view>
 </template>
@@ -128,6 +130,7 @@ const modes = ref([
   { ...SIM_MODES.relationship }
 ])
 const selectedMode = ref('')
+const historyExpanded = ref(false)
 const relations = ref([])
 const simulations = ref([])
 const relationIdx = ref(-1)

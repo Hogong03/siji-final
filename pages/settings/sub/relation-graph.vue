@@ -14,36 +14,8 @@
     </view>
 
     <scroll-view scroll-y class="graph-scroll">
-      <!-- 我的画像卡片（融入 profile 信息） -->
-      <view class="profile-card">
-        <view class="profile-header">
-          <view class="profile-avatar">{{ selfName.charAt(0) }}</view>
-          <view class="profile-meta">
-            <text class="profile-name">{{ selfName }}</text>
-            <text class="profile-bio">{{ selfBio }}</text>
-          </view>
-          <view class="profile-score-badge">{{ selfScore }}/10</view>
-        </view>
-        <view class="profile-tags" v-if="profileTags.length > 0">
-          <view v-for="tag in profileTags" :key="tag" class="profile-tag">
-            <text class="tag-text">{{ tag }}</text>
-          </view>
-        </view>
-        <view class="profile-traits" v-if="selfTraits.length > 0">
-          <text class="traits-label">性格特征</text>
-          <text class="traits-text">{{ selfTraits.join(' · ') }}</text>
-        </view>
-        <view class="profile-detail-row" v-if="profileDetails.length > 0">
-          <view v-for="d in profileDetails" :key="d.label" class="detail-item">
-            <text class="detail-label">{{ d.label }}</text>
-            <text class="detail-value">{{ d.value }}</text>
-          </view>
-        </view>
-      </view>
-
       <!-- ECharts 力导向关系图 -->
       <view class="graph-section">
-        <text class="section-title">关系网络</text>
         <view class="graph-container">
           <RelationGraphECharts
             :chartOption="echartsOption"
@@ -57,40 +29,31 @@
         </view>
       </view>
 
-      <!-- 亲密度排序列表 -->
+      <!-- 人物列表（按关系分类，可折叠） -->
       <view class="rank-section">
-        <text class="rank-title">亲密度排行</text>
-        <view v-for="r in sortedRelations" :key="r.id" class="rank-row" @click="goDetail(r.id)">
-          <view class="rank-left">
-            <view class="rank-avatar" :class="{ 'rank-self': r.id === '__self__' }">{{ r.name.charAt(0) }}</view>
-            <view class="rank-info">
-              <text class="rank-name">{{ r.name }}</text>
-              <text class="rank-role">{{ r.role }}</text>
-            </view>
-          </view>
-          <view class="rank-score">{{ r.relationship_score }}</view>
+        <view class="rank-header" @click="listExpanded = !listExpanded">
+          <text class="rank-title">人物列表 · {{ relations.length }} 人</text>
+          <text class="rank-toggle">{{ listExpanded ? '收起' : '展开' }}</text>
         </view>
-      </view>
 
-      <!-- 按关系分类 -->
-      <view class="rank-section" v-if="groupedRelations.length > 0">
-        <text class="rank-title">按关系分类</text>
-        <view v-for="group in groupedRelations" :key="group.role" class="group-block">
-          <view class="group-header">
-            <text class="group-name">{{ group.role }}</text>
-            <text class="group-count">{{ group.list.length }} 人</text>
-          </view>
-          <view v-for="r in group.list" :key="r.id" class="rank-row" @click="goDetail(r.id)">
-            <view class="rank-left">
-              <view class="rank-avatar">{{ r.name.charAt(0) }}</view>
-              <view class="rank-info">
-                <text class="rank-name">{{ r.name }}</text>
-                <text class="rank-role">{{ r.context || r.role }}</text>
-              </view>
+        <template v-if="listExpanded">
+          <view v-for="group in groupedRelations" :key="group.role" class="group-block">
+            <view class="group-header">
+              <text class="group-name">{{ group.role }}</text>
+              <text class="group-count">{{ group.list.length }}</text>
             </view>
-            <view class="rank-score">{{ r.relationship_score }}</view>
+            <view v-for="r in group.list" :key="r.id" class="rank-row" @click="goDetail(r.id)">
+              <view class="rank-left">
+                <view class="rank-avatar">{{ r.name.charAt(0) }}</view>
+                <view class="rank-info">
+                  <text class="rank-name">{{ r.name }}</text>
+                  <text class="rank-role">{{ r.context || r.role }}</text>
+                </view>
+              </view>
+              <view class="rank-score">{{ r.relationship_score }}</view>
+            </view>
           </view>
-        </view>
+        </template>
       </view>
 
       <view style="height: 40rpx" />
@@ -103,7 +66,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import RelationGraphECharts from '@/components/RelationGraphECharts.vue'
 import { getAllRelations } from '@/utils/relations.js'
-import { getProfile, getCard } from '@/utils/profile.js'
+import { getProfile } from '@/utils/profile.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const statusBarHeight = ref(20)
@@ -114,66 +77,21 @@ try {
 
 // ─── 数据 ───
 const relations = ref([])
-const profile = ref({ cards: [] })
+const listExpanded = ref(false)
 
 function loadData() {
   relations.value = getAllRelations()
-  try { profile.value = getProfile() } catch { profile.value = { cards: [] } }
 }
 
 onShow(() => { loadData() })
 
-// ─── 画像数据 ───
-const basicCard = computed(() => {
-  const c = profile.value.cards.find(c => c.id === 'basic')
-  return c || { fields: {} }
-})
-
-const selfName = computed(() => basicCard.value.fields.nickname || '我')
-const selfBio = computed(() => basicCard.value.fields.bio || '点击完善个人信息')
-const selfScore = computed(() => 10) // 自己恒定满分
-
-// 从 profile cards 提取标签（性格特征/MBTI/星座等）
-const profileTags = computed(() => {
-  const tags = []
-  for (const card of profile.value.cards) {
-    if (card.id === 'basic') continue
-    for (const [key, val] of Object.entries(card.fields)) {
-      if (val == null || val === '') continue
-      if (Array.isArray(val) && val.length === 0) continue
-      if (Array.isArray(val)) {
-        val.forEach(v => tags.push(v))
-      } else {
-        tags.push(String(val))
-      }
-    }
-  }
-  return tags.slice(0, 12)
-})
-
-// 自己的性格特征（从 profile 提取或默认）
-const selfTraits = computed(() => {
-  // 从 profile cards 中提取特征类标签
-  const traits = []
-  for (const card of profile.value.cards) {
-    if (card.id === 'basic') continue
-    for (const [, val] of Object.entries(card.fields)) {
-      if (Array.isArray(val)) traits.push(...val)
-      else if (val) traits.push(String(val))
-    }
-  }
-  return traits.slice(0, 8)
-})
-
-// profile 详情行（职业/位置/生日等）
-const profileDetails = computed(() => {
-  const f = basicCard.value.fields
-  const rows = []
-  if (f.occupation) rows.push({ label: '职业', value: f.occupation })
-  if (f.location) rows.push({ label: '所在地', value: f.location })
-  if (f.birthday) rows.push({ label: '生日', value: f.birthday })
-  if (f.gender) rows.push({ label: '性别', value: f.gender })
-  return rows.slice(0, 4)
+// ─── 画像名称（从 profile 取，用于图节点）───
+const selfName = computed(() => {
+  try {
+    const p = getProfile()
+    const c = p.cards.find(c => c.id === 'basic')
+    return c?.fields?.nickname || '我'
+  } catch { return '我' }
 })
 
 // ─── ECharts 力导向图数据构建 ───
@@ -313,11 +231,6 @@ const echartsOption = computed(() => ({
     }
   }]
 }))
-
-// ─── 排行 ───
-const sortedRelations = computed(() =>
-  [...relations.value].sort((a, b) => (b.relationship_score || 0) - (a.relationship_score || 0))
-)
 
 // ─── 按角色分组 ───
 const groupedRelations = computed(() => {

@@ -4,26 +4,21 @@
   overflow: hidden;
 }
 
-/* 我的画像卡片（AI 面板顶部） */
+/* 我的画像卡片（AI 面板顶部 — 精简单行） */
 .profile-card-ai {
-  margin: 0 24rpx 20rpx; padding: 28rpx; background: #FFFFFF;
+  margin: 0 24rpx 20rpx; padding: 24rpx 28rpx; background: #FFFFFF;
   border-radius: 24rpx; box-shadow: 0 1rpx 4rpx rgba(0,0,0,0.04);
 }
 .pa-header { display: flex; align-items: center; gap: 20rpx; }
 .pa-avatar {
-  width: 88rpx; height: 88rpx; border-radius: 50%; background: #000000; color: #FFFFFF;
+  width: 72rpx; height: 72rpx; border-radius: 50%; background: #000000; color: #FFFFFF;
   display: flex; align-items: center; justify-content: center;
-  font-size: 36rpx; font-weight: 700; flex-shrink: 0;
+  font-size: 32rpx; font-weight: 700; flex-shrink: 0;
 }
-.pa-meta { flex: 1; display: flex; flex-direction: column; gap: 6rpx; min-width: 0; }
-.pa-name { font-size: 32rpx; font-weight: 700; color: #18181B; }
+.pa-meta { flex: 1; display: flex; flex-direction: column; gap: 4rpx; min-width: 0; }
+.pa-name { font-size: 30rpx; font-weight: 700; color: #18181B; }
 .pa-bio { font-size: 24rpx; color: #71717A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pa-arrow { font-size: 40rpx; color: #A1A1AA; flex-shrink: 0; }
-.pa-tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 18rpx; }
-.pa-tag { padding: 6rpx 14rpx; background: #F4F4F5; border-radius: 8rpx; }
-.pa-tag-text { font-size: 22rpx; color: #52525B; }
-.pa-stats { display: flex; gap: 24rpx; margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #F4F4F5; }
-.pa-stat { font-size: 24rpx; color: #71717A; }
 
 .func-scroll {
   height: 100%;
@@ -440,3 +435,26 @@
   font-weight: 600;
   color: #71717A;
 }
+
+/* 消费分析精简入口 */
+.analysis-link {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: 0 24rpx 20rpx;
+  padding: 20rpx 28rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+}
+.analysis-link-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #18181B;
+  font-weight: 500;
+}
+.analysis-link-arrow {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+.analysis-link-arrow.up { color: #D35D5D; }
+.analysis-link-arrow.down { color: #52525B; }

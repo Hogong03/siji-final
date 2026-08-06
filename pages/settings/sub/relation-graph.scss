@@ -12,38 +12,6 @@
 
 .graph-scroll { height: calc(100vh - 120rpx); }
 
-/* 我的画像卡片 */
-.profile-card {
-  background: #FFFFFF; border-radius: 24rpx; margin: 16rpx 24rpx; padding: 28rpx;
-}
-.profile-header { display: flex; align-items: center; gap: 20rpx; }
-.profile-avatar {
-  width: 96rpx; height: 96rpx; border-radius: 50%; background: #000000; color: #FFFFFF;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 40rpx; font-weight: 700; flex-shrink: 0;
-}
-.profile-meta { flex: 1; display: flex; flex-direction: column; gap: 6rpx; min-width: 0; }
-.profile-name { font-size: 34rpx; font-weight: 700; color: #18181B; }
-.profile-bio { font-size: 24rpx; color: #71717A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.profile-score-badge {
-  font-size: 28rpx; font-weight: 700; color: #FFFFFF; background: #000000;
-  padding: 8rpx 20rpx; border-radius: 20rpx; flex-shrink: 0;
-}
-.profile-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 20rpx; }
-.profile-tag {
-  padding: 6rpx 16rpx; background: #F4F4F5; border-radius: 8rpx;
-}
-.tag-text { font-size: 22rpx; color: #52525B; }
-.profile-traits {
-  margin-top: 20rpx; padding-top: 20rpx; border-top: 1rpx solid #F4F4F5;
-}
-.traits-label { font-size: 24rpx; color: #A1A1AA; display: block; margin-bottom: 8rpx; }
-.traits-text { font-size: 26rpx; color: #18181B; line-height: 1.5; }
-.profile-detail-row { display: flex; flex-wrap: wrap; gap: 16rpx 32rpx; margin-top: 16rpx; }
-.detail-item { display: flex; flex-direction: column; gap: 4rpx; }
-.detail-label { font-size: 22rpx; color: #A1A1AA; }
-.detail-value { font-size: 26rpx; color: #18181B; font-weight: 500; }
-
 /* 关系图区域 */
 .graph-section { margin: 16rpx 24rpx; }
 .section-title { font-size: 28rpx; font-weight: 600; color: #18181B; display: block; margin-bottom: 12rpx; }
@@ -61,7 +29,12 @@
   background: #FFFFFF; border-radius: 24rpx; margin: 16rpx 24rpx;
   padding: 24rpx;
 }
-.rank-title { font-size: 28rpx; font-weight: 600; color: #18181B; display: block; margin-bottom: 16rpx; }
+.rank-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12rpx;
+}
+.rank-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
+.rank-toggle { font-size: 24rpx; color: #A1A1AA; }
 .rank-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16rpx 0; border-bottom: 1rpx solid #F4F4F5;

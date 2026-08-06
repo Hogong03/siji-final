@@ -29,18 +29,6 @@
           <text class="card-title">{{ item.title }}</text>
           <text class="status-badge" :class="'status-' + item.status">{{ statusLabel(item.status) }}</text>
         </view>
-        <text class="card-category">{{ item.category }}</text>
-        <view v-if="item.options && item.options.length > 0" class="card-options">
-          <text v-for="opt in item.options.slice(0, 3)" :key="opt.name" class="option-chip">{{ opt.name }}</text>
-          <text v-if="item.options.length > 3" class="option-more">+{{ item.options.length - 3 }}</text>
-        </view>
-        <view v-if="item.deadline" class="card-deadline">
-          截止：{{ item.deadline }}
-        </view>
-        <view v-if="item.decision" class="card-decision">
-          <text class="decision-label">决定：</text>
-          <text class="decision-text">{{ item.decision }}</text>
-        </view>
         <text class="card-time">{{ formatTime(item.created_at) }}</text>
 
         <!-- 操作按钮区 -->

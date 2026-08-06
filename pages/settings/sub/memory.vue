@@ -14,6 +14,7 @@ const enabled = ref(true)
 const memories = ref([])
 const stats = ref({ total: 0, categories: {} })
 const filter = ref('all') // all|fact|preference|event|summary|other
+const showFilter = ref(false)
 const showAddModal = ref(false)
 const editingId = ref('')
 const inputContent = ref('')
@@ -142,21 +143,15 @@ function formatTime(ts) {
       <switch :checked="enabled" @change="toggleEnabled" color="#000000" />
     </view>
 
-    <!-- 统计卡片 -->
+    <!-- 统计精简为一行 -->
     <view class="stats-row" v-if="enabled">
-      <view class="stat-item">
-        <text class="stat-num">{{ stats.total }}</text>
-        <text class="stat-label">总记忆</text>
-      </view>
-      <view class="stat-item" v-for="(count, cat) in stats.categories" :key="cat">
-        <text class="stat-num">{{ count }}</text>
-        <text class="stat-label">{{ categoryLabels[cat] || cat }}</text>
-      </view>
+      <text class="stats-summary">{{ stats.total }} 条记忆</text>
+      <text class="stats-toggle" @tap="showFilter = !showFilter">{{ showFilter ? '收起筛选' : '筛选' }}</text>
     </view>
 
     <template v-if="enabled">
-      <!-- 筛选标签 -->
-      <scroll-view class="filter-bar" scroll-x>
+      <!-- 筛选标签（可折叠） -->
+      <scroll-view v-if="showFilter" class="filter-bar" scroll-x>
         <view class="filter-chip" :class="{ active: filter === 'all' }" @tap="filter = 'all'">
           <text>全部</text>
         </view>
@@ -167,7 +162,7 @@ function formatTime(ts) {
           :class="{ active: filter === cat }"
           @tap="filter = cat"
         >
-          <text>{{ categoryIcons[cat] }} {{ label }}</text>
+          <text>{{ label }}</text>
         </view>
       </scroll-view>
 

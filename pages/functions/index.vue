@@ -321,51 +321,11 @@
 				</view>
 			</view>
 
-			<!-- 消费分析（生活记录的延伸看板） -->
-			<view class="analysis-card" v-if="categoryRanking.length > 0 || weekTrend.length > 0">
-				<view class="ac-header">
-					<text class="ac-title">消费分析</text>
-					<view class="ac-link" @tap="goStats">
-						<text>详细</text>
-						<SijiIcon name="chevron-right" size="xs" color="#000000" />
-					</view>
-				</view>
-
-				<view class="trend-section" v-if="weekTrend.length > 0">
-					<view class="trend-meta">
-						<text class="trend-label">近 7 天</text>
-						<text class="trend-total">¥{{ weekTotal.toFixed(0) }}</text>
-						<text class="trend-compare" v-if="weekCompare !== 0" :class="weekCompare > 0 ? 'up' : 'down'">
-							{{ weekCompare > 0 ? '↑' : '↓' }}{{ Math.abs(weekCompare) }}%
-						</text>
-					</view>
-					<view class="trend-chart">
-						<view v-for="(d, i) in weekTrend" :key="i" class="trend-col">
-							<text v-if="d.amount > 0" class="trend-amount">{{ d.amount.toFixed(0) }}</text>
-							<view class="trend-bar-bg">
-								<view class="trend-bar" :style="{
-                  height: Math.max(6, (d.amount / trendMax) * 100) + '%',
-                  background: d.amount > 0 ? '#000000' : '#F4F4F5'
-                }" />
-							</view>
-							<text class="trend-day">{{ d.label }}</text>
-						</view>
-					</view>
-				</view>
-
-				<view class="ac-divider" v-if="categoryRanking.length > 0 && weekTrend.length > 0" />
-
-				<view class="rank-section" v-if="categoryRanking.length > 0">
-					<text class="rank-title">分类 TOP{{ categoryRanking.length }}</text>
-					<view v-for="item in categoryRanking" :key="item.name" class="rank-row">
-						<text class="rank-name">{{ item.name }}</text>
-						<view class="rank-bar-wrap">
-							<view class="rank-bar" :style="{ width: item.percent + '%' }" />
-						</view>
-						<text class="rank-amount">¥{{ item.amount.toFixed(0) }}</text>
-						<text class="rank-pct">{{ item.percent }}%</text>
-					</view>
-				</view>
+			<!-- 消费分析（精简为单行入口，详细数据在账单统计页） -->
+			<view class="analysis-link" v-if="categoryRanking.length > 0 || weekTrend.length > 0" @tap="goStats">
+				<text class="analysis-link-text">消费分析 · 近7天 ¥{{ weekTotal.toFixed(0) }}</text>
+				<text class="analysis-link-arrow" v-if="weekCompare !== 0" :class="weekCompare > 0 ? 'up' : 'down'">{{ weekCompare > 0 ? '↑' : '↓' }}{{ Math.abs(weekCompare) }}%</text>
+				<SijiIcon name="chevron-right" size="xs" color="#A1A1AA" />
 			</view>
 
 			<!-- ============================== -->
@@ -373,24 +333,15 @@
 		<!-- ============================== -->
 		<text class="section-label">AI 面板</text>
 
-		<!-- 我的画像卡片（点击进入我的信息） -->
+		<!-- 我的信息入口（精简单行） -->
 		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/profile')">
 			<view class="pa-header">
 				<view class="pa-avatar">{{ profileName.charAt(0) }}</view>
 				<view class="pa-meta">
 					<text class="pa-name">{{ profileName }}</text>
-					<text class="pa-bio">{{ profileBio }}</text>
+					<text class="pa-bio">{{ profileEnabled ? `${profileTagCount} 项 · ${relationsStats.total} 人` : '点击开启' }}</text>
 				</view>
 				<text class="pa-arrow">›</text>
-			</view>
-			<view class="pa-tags" v-if="profileTopTags.length > 0">
-				<view v-for="tag in profileTopTags" :key="tag" class="pa-tag">
-					<text class="pa-tag-text">{{ tag }}</text>
-				</view>
-			</view>
-			<view class="pa-stats">
-				<text class="pa-stat">{{ profileTagCount }} 项信息</text>
-				<text class="pa-stat" v-if="profileEnabled">{{ relationsStats.total }} 位人物</text>
 			</view>
 		</view>
 

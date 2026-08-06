@@ -372,7 +372,7 @@ function goRelations() {
       </view>
     </view>
 
-    <!-- 关系图谱入口（仅开启时显示） -->
+    <!-- 关系图谱入口（仅开启时显示，紧跟开关下方） -->
     <view v-if="enabled" class="relations-entry" @tap="goRelations">
       <view class="re-left">
         <view class="re-icon">
