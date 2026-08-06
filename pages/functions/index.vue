@@ -36,7 +36,7 @@
 	const profileData = ref({ cards: [] })
 	const profileName = computed(() => {
 		const c = profileData.value.cards.find(c => c.id === 'basic')
-		return c?.fields?.nickname || '庚哥'
+		return c?.fields?.nickname || '我'
 	})
 	const profileBio = computed(() => {
 		const c = profileData.value.cards.find(c => c.id === 'basic')

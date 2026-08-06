@@ -218,7 +218,7 @@ export function getDefaultHistory() {
       date: '2026-07-31',
       title: '品牌定制 + 引导系统 + 图片链路',
       summary: [
-        'Agent 系统新增庚哥、小橙子预设角色',
+        'Agent 系统新增预设角色',
         '首次使用引导 OnboardingGuide',
         '图片功能全链路 + 流式打字机优化'
       ],
@@ -226,9 +226,7 @@ export function getDefaultHistory() {
         {
           title: 'Agent 系统',
           items: [
-            '新增庚哥（🌙 温柔男友）预设角色',
-            '新增小橙子（🍊）预设角色',
-            '默认 activeAgentId 设为 gengge',
+            '新增预设角色',
             'Agent 绑定人设不绑定模型'
           ]
         },
