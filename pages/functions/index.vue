@@ -26,8 +26,45 @@
 	import {
 		useFunctionsData
 	} from '@/composables/useFunctionsData.js'
+	import {
+		getProfile
+	} from '@/utils/profile.js'
 
 	const store = useAppStore()
+
+	// ─── 我的画像（profile）───
+	const profileData = ref({ cards: [] })
+	const profileName = computed(() => {
+		const c = profileData.value.cards.find(c => c.id === 'basic')
+		return c?.fields?.nickname || '庚哥'
+	})
+	const profileBio = computed(() => {
+		const c = profileData.value.cards.find(c => c.id === 'basic')
+		return c?.fields?.bio || '点击完善个人信息'
+	})
+	const profileTagCount = computed(() => {
+		let n = 0
+		for (const card of profileData.value.cards) {
+			for (const [, val] of Object.entries(card.fields)) {
+				if (val == null || val === '') continue
+				if (Array.isArray(val) && val.length === 0) continue
+				n++
+			}
+		}
+		return n
+	})
+	const profileTopTags = computed(() => {
+		const tags = []
+		for (const card of profileData.value.cards) {
+			if (card.id === 'basic') continue
+			for (const [, val] of Object.entries(card.fields)) {
+				if (val == null || val === '') continue
+				if (Array.isArray(val)) tags.push(...val)
+				else tags.push(String(val))
+			}
+		}
+		return tags.slice(0, 4)
+	})
 
 	const {
 		dashboard,
@@ -76,6 +113,7 @@
 	onShow(() => {
 		loadAll()
 		loadAIStats()
+		try { profileData.value = getProfile() } catch { profileData.value = { cards: [] } }
 	})
 
 	// ─── AI 面板：数据层（让 AI 更懂你）───
@@ -341,6 +379,27 @@
 		<!-- AI 面板分区（合并为单列表） -->
 		<!-- ============================== -->
 		<text class="section-label">AI 面板</text>
+
+		<!-- 我的画像卡片（点击进入关系图） -->
+		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/relation-graph')">
+			<view class="pa-header">
+				<view class="pa-avatar">{{ profileName.charAt(0) }}</view>
+				<view class="pa-meta">
+					<text class="pa-name">{{ profileName }}</text>
+					<text class="pa-bio">{{ profileBio }}</text>
+				</view>
+				<text class="pa-arrow">›</text>
+			</view>
+			<view class="pa-tags" v-if="profileTopTags.length > 0">
+				<view v-for="tag in profileTopTags" :key="tag" class="pa-tag">
+					<text class="pa-tag-text">{{ tag }}</text>
+				</view>
+			</view>
+			<view class="pa-stats">
+				<text class="pa-stat">{{ profileTagCount }} 项信息</text>
+				<text class="pa-stat">{{ relationsStats.total }} 位人物</text>
+			</view>
+		</view>
 
 		<!-- AI 入口合并列表（数据层 + 执行层） -->
 		<view class="card-list card-list-stagger">
