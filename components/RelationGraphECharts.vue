@@ -5,6 +5,8 @@
 			class="echarts-container"
 			:prop="chartOption"
 			:change:prop="echartsHandler.update"
+			:opts="containerId"
+			:change:opts="echartsHandler.setContainerId"
 			:style="{ width: width, height: height }"
 		></view>
 	</view>
@@ -14,10 +16,6 @@
 /**
  * ECharts 力导向关系图组件（renderjs 渲染）
  * 仅支持 H5 + App-vue（小程序不支持 renderjs）
- *
- * Props:
- *   chartOption: ECharts option 对象
- *   width/height: 容器尺寸
  */
 export default {
 	props: {
@@ -37,20 +35,21 @@ export default {
 let chartInstance = null
 let echartsLib = null
 let loadPromise = null
+let pendingOption = null
+let currentContainerId = 'echarts-relation'
 
 function loadEcharts() {
 	if (loadPromise) return loadPromise
 	loadPromise = new Promise((resolve, reject) => {
 		if (echartsLib) { resolve(echartsLib); return }
-		// 检查全局是否已加载
 		if (typeof window !== 'undefined' && window.echarts) {
 			echartsLib = window.echarts
 			resolve(echartsLib)
 			return
 		}
-		// 动态加载 echarts.min.js
 		const script = document.createElement('script')
-		// H5 端从 static 目录加载，App 端 renderjs 也有 DOM 可加载本地文件
+		// App 端路径相对于根目录，H5 端相对于当前页面
+		// 两种路径都试一下
 		script.src = './static/js/echarts.min.js'
 		script.onload = () => {
 			echartsLib = window.echarts
@@ -60,7 +59,18 @@ function loadEcharts() {
 				reject(new Error('echarts loaded but not found in window'))
 			}
 		}
-		script.onerror = (e) => { reject(new Error('script load failed')) }
+		script.onerror = () => {
+			// fallback: 绝对路径
+			const fallback = document.createElement('script')
+			fallback.src = '/static/js/echarts.min.js'
+			fallback.onload = () => {
+				echartsLib = window.echarts
+				if (echartsLib) resolve(echartsLib)
+				else reject(new Error('echarts fallback load failed'))
+			}
+			fallback.onerror = () => reject(new Error('echarts script load failed'))
+			document.head.appendChild(fallback)
+		}
 		document.head.appendChild(script)
 	})
 	return loadPromise
@@ -71,27 +81,41 @@ export default {
 		this.initChart()
 	},
 	methods: {
+		setContainerId(val) {
+			if (val) currentContainerId = val
+		},
 		async initChart() {
 			try {
 				await loadEcharts()
-				const container = document.getElementById('echarts-relation') || document.querySelector('.echarts-container')
-				if (!container) return
+				// 等待 DOM 完全渲染
+				await new Promise(r => setTimeout(r, 100))
+				const container = document.getElementById(currentContainerId)
+					|| document.querySelector('.echarts-container')
+				if (!container) {
+					console.error('[echarts] container not found:', currentContainerId)
+					return
+				}
 				chartInstance = echartsLib.init(container)
-				// 空初始图
-				chartInstance.setOption({
-					series: [{
-						type: 'graph',
-						layout: 'force',
-						data: [],
-						links: []
-					}]
-				})
+				if (pendingOption) {
+					chartInstance.setOption(pendingOption, true)
+					pendingOption = null
+				}
 			} catch (e) {
 				console.error('[echarts] init failed:', e)
 			}
 		},
 		update(newValue) {
-			if (!chartInstance || !newValue) return
+			if (!newValue) return
+			if (!chartInstance) {
+				pendingOption = newValue
+				this.initChart().then(() => {
+					if (chartInstance && pendingOption) {
+						chartInstance.setOption(pendingOption, true)
+						pendingOption = null
+					}
+				})
+				return
+			}
 			chartInstance.setOption(newValue, true)
 		}
 	},

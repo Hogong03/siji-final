@@ -3,12 +3,12 @@
     <!-- 自定义导航栏 -->
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-back" @tap="goBack">
+        <view class="nav-back" @click="goBack">
           <text class="nav-back-icon">‹</text>
         </view>
         <text class="nav-title">人物关系图</text>
         <view class="nav-actions">
-          <view class="nav-btn" @tap="goProfile"><text class="nav-btn-text">画像</text></view>
+          <view class="nav-btn" @click="goProfile"><text class="nav-btn-text">画像</text></view>
         </view>
       </view>
     </view>
@@ -60,7 +60,7 @@
       <!-- 亲密度排序列表 -->
       <view class="rank-section">
         <text class="rank-title">亲密度排行</text>
-        <view v-for="r in sortedRelations" :key="r.id" class="rank-row" @tap="goDetail(r.id)">
+        <view v-for="r in sortedRelations" :key="r.id" class="rank-row" @click="goDetail(r.id)">
           <view class="rank-left">
             <view class="rank-avatar" :class="{ 'rank-self': r.id === '__self__' }">{{ r.name.charAt(0) }}</view>
             <view class="rank-info">
