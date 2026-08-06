@@ -58,11 +58,8 @@
       <!-- 操作按钮 -->
       <view class="actions">
         <button class="btn-action" @tap="startSimulation">模拟演练</button>
-        <template v-if="!isBuiltinRelation(relation.id)">
-          <button class="btn-action" @tap="openEditForm">编辑</button>
-          <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
-        </template>
-        <text v-else class="builtin-hint">内置角色 · 不可修改</text>
+        <button class="btn-action" @tap="openEditForm">编辑</button>
+        <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
       </view>
     </view>
 
@@ -143,7 +140,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getRelationById, getInteractions, logInteraction, deleteRelation, updateRelation, isBuiltinRelation } from '@/utils/relations.js'
+import { getRelationById, getInteractions, logInteraction, deleteRelation, updateRelation } from '@/utils/relations.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const relationId = ref('')
@@ -329,11 +326,6 @@ function handleDelete() {
   background: #000000; color: #FFFFFF;
 }
 .btn-danger { background: #FEE2E2; color: #DC2626; }
-.builtin-hint {
-  flex: 1; height: 88rpx; display: flex; align-items: center; justify-content: center;
-  font-size: 26rpx; color: #A1A1AA; border: 1rpx solid #E4E4E7; border-radius: 16rpx;
-}
-
 .empty { display: flex; justify-content: center; padding-top: 200rpx; color: #A1A1AA; }
 
 .modal-mask {

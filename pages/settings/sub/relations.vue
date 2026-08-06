@@ -8,7 +8,7 @@
         </view>
         <text class="nav-title">关系图谱</text>
         <view class="nav-actions">
-          <view class="nav-btn" @tap="goMyself">
+          <view class="nav-btn" @tap="goProfile">
             <text class="nav-btn-text">自己</text>
           </view>
           <view class="nav-btn" @tap="goGraph">
@@ -72,8 +72,8 @@
         <view v-if="item.traits && item.traits.length > 0" class="card-tags">
           <text v-for="t in item.traits.slice(0, 3)" :key="t" class="tag">{{ t }}</text>
         </view>
-        <!-- 操作按钮区（内置角色不可编辑/删除） -->
-        <view v-if="!isBuiltinRelation(item.id)" class="card-actions" @tap.stop>
+        <!-- 操作按钮区 -->
+        <view class="card-actions" @tap.stop>
           <view class="action-btn" @tap="handleEdit(item)">
             <text class="action-icon">✏️</text>
             <text class="action-text">编辑</text>
@@ -83,7 +83,6 @@
             <text class="action-text">删除</text>
           </view>
         </view>
-        <view v-else class="builtin-tag">内置</view>
       </view>
     </scroll-view>
 
@@ -157,7 +156,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats, isBuiltinRelation } from '@/utils/relations.js'
+import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats } from '@/utils/relations.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const statusBarHeight = ref(20)
@@ -170,14 +169,14 @@ function goBack() {
   safeNavigateBack()
 }
 
-// 跳转「自己」（内置角色）
-function goMyself() {
-  uni.navigateTo({ url: '/pages/settings/sub/relation-detail?id=builtin_gengge' })
-}
-
 // 跳转「人物关系图」
 function goGraph() {
   uni.navigateTo({ url: '/pages/settings/sub/relation-graph' })
+}
+
+// 跳转「我的画像」
+function goProfile() {
+  uni.navigateTo({ url: '/pages/settings/sub/profile' })
 }
 
 // ─── 关系模板 ───
