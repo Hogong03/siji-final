@@ -8,7 +8,7 @@
         </view>
         <text class="nav-title">人物关系图</text>
         <view class="nav-actions">
-          <view class="nav-btn" @click="goProfile"><text class="nav-btn-text">画像</text></view>
+          <view class="nav-btn" @click="goRelationList"><text class="nav-btn-text">管理</text></view>
         </view>
       </view>
     </view>
@@ -69,6 +69,27 @@
             </view>
           </view>
           <view class="rank-score">{{ r.relationship_score }}</view>
+        </view>
+      </view>
+
+      <!-- 按关系分类 -->
+      <view class="rank-section" v-if="groupedRelations.length > 0">
+        <text class="rank-title">按关系分类</text>
+        <view v-for="group in groupedRelations" :key="group.role" class="group-block">
+          <view class="group-header">
+            <text class="group-name">{{ group.role }}</text>
+            <text class="group-count">{{ group.list.length }} 人</text>
+          </view>
+          <view v-for="r in group.list" :key="r.id" class="rank-row" @click="goDetail(r.id)">
+            <view class="rank-left">
+              <view class="rank-avatar">{{ r.name.charAt(0) }}</view>
+              <view class="rank-info">
+                <text class="rank-name">{{ r.name }}</text>
+                <text class="rank-role">{{ r.context || r.role }}</text>
+              </view>
+            </view>
+            <view class="rank-score">{{ r.relationship_score }}</view>
+          </view>
         </view>
       </view>
 
@@ -156,8 +177,45 @@ const profileDetails = computed(() => {
 })
 
 // ─── ECharts 力导向图数据构建 ───
-// 悲惨世界风格：节点大小按亲密度，颜色按分组，连线粗细按关系
+// 按人物关系角色分类（同事/朋友/家人/伴侣等）
 const SELF_NODE_ID = '__self__'
+
+// 动态构建分类列表（自己 + 按角色去重）
+const graphCategories = computed(() => {
+  const cats = [{ name: '自己' }]
+  const roleSet = new Set()
+  for (const r of relations.value) {
+    if (r.role && !roleSet.has(r.role)) {
+      roleSet.add(r.role)
+      cats.push({ name: r.role })
+    }
+  }
+  return cats
+})
+
+// 角色颜色映射（灰阶系）
+const ROLE_COLORS = {
+  '家人': '#18181B',
+  '伴侣': '#27272A',
+  '朋友': '#52525B',
+  '同事': '#71717A',
+  '领导': '#71717A',
+  '客户': '#A1A1AA',
+  '老师': '#A1A1AA',
+  '其他': '#D4D4D8'
+}
+
+function getRoleColor(role) {
+  return ROLE_COLORS[role] || '#A1A1AA'
+}
+
+function getRoleCategoryIndex(role) {
+  const cats = graphCategories.value
+  for (let i = 1; i < cats.length; i++) {
+    if (cats[i].name === role) return i
+  }
+  return cats.length - 1 // fallback 到最后一项
+}
 
 const graphNodes = computed(() => {
   const nodes = [{
@@ -171,14 +229,15 @@ const graphNodes = computed(() => {
   }]
   for (const r of relations.value) {
     const score = r.relationship_score || 5
+    const catIdx = getRoleCategoryIndex(r.role || '其他')
     nodes.push({
       id: r.id,
       name: r.name,
       symbolSize: 20 + score * 4,
-      category: score >= 8 ? 1 : (score >= 5 ? 2 : 3),
+      category: catIdx,
       value: score,
       itemStyle: {
-        color: score >= 8 ? '#18181B' : (score >= 5 ? '#71717A' : '#D4D4D8'),
+        color: getRoleColor(r.role || '其他'),
         borderColor: '#FFFFFF',
         borderWidth: 2
       },
@@ -205,13 +264,6 @@ const graphLinks = computed(() => {
   })
 })
 
-const graphCategories = [
-  { name: '自己' },
-  { name: '高亲密度' },
-  { name: '中亲密度' },
-  { name: '低亲密度' }
-]
-
 const echartsOption = computed(() => ({
   tooltip: {
     formatter: (params) => {
@@ -219,7 +271,8 @@ const echartsOption = computed(() => ({
         const r = relations.value.find(r => r.id === params.data.id)
         if (!r) return params.data.name
         const parts = [params.data.name]
-        if (r.role) parts.push(`角色: ${r.role}`)
+        if (r.role) parts.push(`关系: ${r.role}`)
+        if (r.context) parts.push(`场景: ${r.context}`)
         if (r.traits?.length) parts.push(`特征: ${r.traits.join('、')}`)
         parts.push(`亲密度: ${r.relationship_score}/10`)
         return parts.join('<br/>')
@@ -231,7 +284,7 @@ const echartsOption = computed(() => ({
     }
   },
   legend: {
-    data: graphCategories.map(c => c.name),
+    data: graphCategories.value.map(c => c.name),
     textStyle: { color: '#71717A', fontSize: 11 },
     bottom: 5
   },
@@ -240,17 +293,17 @@ const echartsOption = computed(() => ({
     layout: 'force',
     data: graphNodes.value,
     links: graphLinks.value,
-    categories: graphCategories,
-    roam: true, // 拖拽 + 缩放
+    categories: graphCategories.value,
+    roam: true,
     draggable: true,
     force: {
-      repulsion: 300, // 节点间斥力
-      edgeLength: [80, 200], // 连线长度范围
-      gravity: 0.08, // 向心力
+      repulsion: 300,
+      edgeLength: [80, 200],
+      gravity: 0.08,
       layoutAnimation: true
     },
     emphasis: {
-      focus: 'adjacency', // 高亮关联节点
+      focus: 'adjacency',
       lineStyle: { width: 4 }
     },
     lineStyle: { opacity: 0.7 },
@@ -266,12 +319,26 @@ const sortedRelations = computed(() =>
   [...relations.value].sort((a, b) => (b.relationship_score || 0) - (a.relationship_score || 0))
 )
 
+// ─── 按角色分组 ───
+const groupedRelations = computed(() => {
+  const map = {}
+  for (const r of relations.value) {
+    const role = r.role || '其他'
+    if (!map[role]) map[role] = []
+    map[role].push(r)
+  }
+  // 每组内按亲密度排序
+  return Object.entries(map)
+    .map(([role, list]) => ({ role, list: list.sort((a, b) => (b.relationship_score || 0) - (a.relationship_score || 0)) }))
+    .sort((a, b) => b.list.length - a.list.length) // 按人数排序
+})
+
 // ─── 跳转 ───
 function goDetail(id) {
   uni.navigateTo({ url: `/pages/settings/sub/relation-detail?id=${id}` })
 }
-function goProfile() {
-  uni.navigateTo({ url: '/pages/settings/sub/profile' })
+function goRelationList() {
+  uni.navigateTo({ url: '/pages/settings/sub/relations' })
 }
 function goBack() { safeNavigateBack() }
 </script>

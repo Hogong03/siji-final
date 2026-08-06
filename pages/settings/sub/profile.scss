@@ -292,3 +292,54 @@
   color: #A1A1AA;
   font-size: 26rpx;
 }
+
+/* ---- 关系图谱入口 ---- */
+.relations-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 32rpx;
+  padding: 32rpx;
+  background: #FFFFFF;
+  border-radius: $radius-lg;
+  border: 2rpx solid #E4E4E7;
+}
+
+.re-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.re-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #F4F4F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #18181B;
+}
+
+.re-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.re-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #18181B;
+}
+
+.re-desc {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+
+.re-arrow {
+  font-size: 40rpx;
+  color: #D4D4D8;
+}

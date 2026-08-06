@@ -14,6 +14,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { getProfile, saveProfile, setProfileEnabled, clearProfile, getFilledCount,
          createCard, updateCardTitle, deleteCard, setCardField, removeCardField,
          addArrayItem, removeArrayItem } from '@/utils/profile.js'
+import { getRelationsStats } from '@/utils/relations.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { logger } from '@/utils/logger.js'
 
@@ -28,6 +29,7 @@ const showAddCard = ref(false)
 const newCardTitle = ref('')
 const chipInputField = ref(null) // { cardId, field } 正在输入 chip 的数组字段
 const chipInputValue = ref('')
+const relationsStats = ref({ total: 0, interactionCount: 0, avgScore: 0 })
 
 /* ---- 计算属性 ---- */
 const filledCount = computed(() => {
@@ -49,11 +51,13 @@ onMounted(() => {
   // 确保数据最新
   profile.value = getProfile()
   enabled.value = profile.value.enabled
+  if (enabled.value) relationsStats.value = getRelationsStats()
 })
 
 onShow(() => {
   profile.value = getProfile()
   enabled.value = profile.value.enabled
+  if (enabled.value) relationsStats.value = getRelationsStats()
 })
 
 /* ---- 开关 ---- */
@@ -61,6 +65,7 @@ function toggleEnabled() {
   enabled.value = !enabled.value
   setProfileEnabled(enabled.value)
   profile.value.enabled = enabled.value
+  if (enabled.value) relationsStats.value = getRelationsStats()
 }
 
 /* ---- 字段编辑 ---- */
@@ -237,6 +242,10 @@ function getFieldLabel(key) {
 function isFixedCard(card) {
   return card.id === 'basic' || card.id === 'lifestyle'
 }
+
+function goRelations() {
+  uni.navigateTo({ url: '/pages/settings/sub/relation-graph' })
+}
 </script>
 
 <template>
@@ -361,6 +370,20 @@ function isFixedCard(card) {
           <view class="btn-confirm" @tap="handleCreateCard">创建</view>
         </view>
       </view>
+    </view>
+
+    <!-- 关系图谱入口（仅开启时显示） -->
+    <view v-if="enabled" class="relations-entry" @tap="goRelations">
+      <view class="re-left">
+        <view class="re-icon">
+          <SijiIcon name="heart" :size="20" />
+        </view>
+        <view class="re-info">
+          <text class="re-title">关系图谱</text>
+          <text class="re-desc">{{ relationsStats.total }} 人 · {{ relationsStats.interactionCount }} 次互动</text>
+        </view>
+      </view>
+      <text class="re-arrow">›</text>
     </view>
 
     <!-- 底部操作 -->

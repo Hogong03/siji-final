@@ -79,3 +79,12 @@
 .rank-name { font-size: 28rpx; font-weight: 500; color: #18181B; }
 .rank-role { font-size: 24rpx; color: #A1A1AA; margin-top: 4rpx; }
 .rank-score { font-size: 32rpx; font-weight: 700; color: #18181B; }
+
+/* 按关系分类 */
+.group-block { margin-bottom: 8rpx; }
+.group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12rpx 0; border-bottom: 2rpx solid #18181B; margin-bottom: 4rpx;
+}
+.group-name { font-size: 26rpx; font-weight: 700; color: #18181B; }
+.group-count { font-size: 22rpx; color: #A1A1AA; }

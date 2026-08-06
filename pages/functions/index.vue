@@ -121,7 +121,7 @@
 			id: 'profile',
 			iconName: 'user',
 			title: '我的信息',
-			desc: profileEnabled.value ? `已开启 · ${profileFilled.value} 项` : '点击开启',
+			desc: profileEnabled.value ? `已开启 · ${profileFilled.value} 项 · ${relationsStats.value.total} 人` : '点击开启',
 			route: '/pages/settings/sub/profile'
 		},
 		{
@@ -130,13 +130,6 @@
 			title: '记忆管理',
 			desc: memoryEnabled.value ? '已开启' : '已关闭',
 			route: '/pages/settings/sub/memory'
-		},
-		{
-			id: 'relations',
-			iconName: 'heart',
-			title: '关系图谱',
-			desc: `${relationsStats.value.total} 人`,
-			route: '/pages/settings/sub/relations'
 		},
 	])
 
@@ -380,8 +373,8 @@
 		<!-- ============================== -->
 		<text class="section-label">AI 面板</text>
 
-		<!-- 我的画像卡片（点击进入关系图） -->
-		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/relation-graph')">
+		<!-- 我的画像卡片（点击进入我的信息） -->
+		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/profile')">
 			<view class="pa-header">
 				<view class="pa-avatar">{{ profileName.charAt(0) }}</view>
 				<view class="pa-meta">
@@ -397,7 +390,7 @@
 			</view>
 			<view class="pa-stats">
 				<text class="pa-stat">{{ profileTagCount }} 项信息</text>
-				<text class="pa-stat">{{ relationsStats.total }} 位人物</text>
+				<text class="pa-stat" v-if="profileEnabled">{{ relationsStats.total }} 位人物</text>
 			</view>
 		</view>
 
