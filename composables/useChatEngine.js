@@ -151,9 +151,11 @@ export function useChatEngine() {
 
       // === 流式请求 + 空回复重试 ===
       resetStreamParser()
-      if (startStream) startStream()
+      // 流式期间不做 startStreamScroll（旧方案盲加 400px 不可靠），
+      // 改为 pumpDisplay 每帧后调 scrollToBottomAnchor 走锚点定位
 
       // 逐字推送函数 — 用 rAF 节流，每帧推一个字符组
+      let scrollTickCounter = 0
       function pumpDisplay() {
         if (!displayQueue) { rafId = null; return }
         // 每帧推送 1-3 个字符（模拟打字机效果）
@@ -161,6 +163,11 @@ export function useChatEngine() {
         lastDisplayed += displayQueue.slice(0, n)
         displayQueue = displayQueue.slice(n)
         store.updateLastMessage({ content: lastDisplayed, loading: true })
+        // 每 3 帧滚一次到底部（避免每帧 scrollIntoView 性能开销）
+        scrollTickCounter++
+        if (scrollTickCounter % 3 === 0 && scrollHelpers?.scrollToBottomAnchor) {
+          scrollHelpers.scrollToBottomAnchor(false)
+        }
         if (displayQueue) {
           rafId = raf(pumpDisplay)
         } else {

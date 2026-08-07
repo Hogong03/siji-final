@@ -58,7 +58,7 @@ const {
   showRetryBar, retryMessage, retryImage, pendingRetryData, retryTitle,
   showOfflineBanner, showReconnectedBanner,
   handleRetrySend: _handleRetrySend, handleRetryWithModel: _handleRetryWithModel, handleRetryEdit: _handleRetryEdit
-} = useRetryBar(store, isSending, engineRetry, inputAreaRef, { startStreamScroll, stopStreamScroll, scrollToBottom })
+} = useRetryBar(store, isSending, engineRetry, inputAreaRef, { startStreamScroll, stopStreamScroll, scrollToBottom, scrollToBottomAnchor })
 
 function handleRetrySend() { _handleRetrySend() }
 function handleRetryWithModel() { _handleRetryWithModel(showModelSwitch) }
@@ -136,7 +136,7 @@ function handleSend(text) {
   showRetryBar.value = false
   forceShouldAutoScroll()
   const img = pendingImage.value
-  engineSend(message, inputAreaRef, scrollToBottom, img, { startStreamScroll, stopStreamScroll })
+  engineSend(message, inputAreaRef, scrollToBottom, img, { startStreamScroll, stopStreamScroll, scrollToBottomAnchor })
   pendingImage.value = null
 }
 
@@ -204,7 +204,7 @@ function exitSimulation() {
 watch(showModelSwitch, (v, prev) => {
   if (!v && prev && pendingRetryData.value) {
     pendingRetryData.value = null
-    engineRetry({}, inputAreaRef, scrollToBottom, { startStreamScroll, stopStreamScroll })
+    engineRetry({}, inputAreaRef, scrollToBottom, { startStreamScroll, stopStreamScroll, scrollToBottomAnchor })
   }
 })
 
