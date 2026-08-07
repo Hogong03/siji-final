@@ -38,11 +38,15 @@ export function useChatEngine() {
     const execResults = result.execResults || []
     const successCards = execResults.filter(r => r.ok && r.detail && !QUERY_TOOLS.has(r.name))
     const execCard = execResults.find(r => r.ok && r.detail)
+    // 单个成功卡片用单卡格式（ROUTR_MAP 需要 type 为具体 action 名），多个用 multi
+    const actionCard = successCards.length > 1
+      ? { type: 'multi', payload: successCards.map(r => r.detail) }
+      : successCards.length === 1
+        ? { type: successCards[0].name, payload: successCards[0].detail }
+        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null)
     store.updateLastMessage({
       content: reply, loading: false, aiReply: reply,
-      actionCard: successCards.length
-        ? { type: 'multi', payload: successCards.map(r => r.detail) }
-        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null),
+      actionCard,
       execResult: execCard ? { success: true, message: execCard.message || '', detail: execCard.detail } : null,
       execResults: successCards
     })

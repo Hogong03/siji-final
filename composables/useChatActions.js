@@ -165,10 +165,12 @@ export function handleConfirmAction(store, pendingAction, pendingActions, pendin
     const multiResult = store.executeActions(pendingActions.value)
     let content = pendingReply.value + `\n\n${multiResult.message}`
     execResult = { success: multiResult.allSuccess, message: multiResult.message, detail: multiResult.detail?.[0] }
+    const successResults = multiResult.results.filter(r => r.success && r.detail)
     store.updateLastMessage({
       content, pendingAction: null, pendingActions: [],
       aiReply: pendingReply.value, execResult,
-      execResults: multiResult.results.filter(r => r.success && r.detail)
+      execResults: successResults,
+      actionCard: successResults.length > 0 ? { type: 'multi', payload: successResults.map(r => r.detail) } : null
     })
   } else if (pendingAction.value) {
     execResult = store.executeAction(pendingAction.value)

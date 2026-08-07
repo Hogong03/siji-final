@@ -21,6 +21,17 @@ export function useChatNavigation() {
   function handleConfirmActionCard(card) {
     if (!card) return
     const detail = card.payload || {}
+    // multi 类型：取第一个 detail 的类型决定路由
+    if (card.type === 'multi' && Array.isArray(detail) && detail.length > 0) {
+      const firstDetail = detail[0]
+      const firstType = Object.keys(ROUTE_MAP).find(k =>
+        firstDetail?.type && (k === `create_${firstDetail.type}` || k === `update_${firstDetail.type}`)
+      )
+      if (firstType) {
+        uni.navigateTo({ url: ROUTE_MAP[firstType](firstDetail) })
+      }
+      return
+    }
     const builder = ROUTE_MAP[card.type]
     if (builder) {
       const url = builder(detail)
