@@ -1,11 +1,9 @@
 <script setup>
 	/**
-	 * 功能中心 v5 — 极简布局 + 横纵切换
+	 * 功能中心 v6 — Tab 内嵌分区（Segmented Control）
 	 *
-	 * 三分区：
-	 *  1. 生活记录（记录/记账/计划）— 统计行 + 横纵切换
-	 *  2. AI 面板（画像 + 数据层 + 执行层）— 统计行 + 横纵切换
-	 *  3. 搜索 — 点击跳转独立搜索页（含搜索历史）
+	 * 顶部 segmented control 切换「生活记录 / AI 面板」
+	 * 同屏只显示一个分区，空间翻倍
 	 */
 	import {
 		ref,
@@ -16,24 +14,14 @@
 	} from '@dcloudio/uni-app'
 	import SijiIcon from '@/components/common/SijiIcon.vue'
 	import {
-		useAppStore
-	} from '@/store/index.js'
-	import {
 		useFunctionsData
 	} from '@/composables/useFunctionsData.js'
 	import {
 		getProfile
 	} from '@/utils/profile.js'
 
-	const store = useAppStore()
-
-	// ─── 布局模式 ───
-	const layoutMode = ref('vertical') // 'vertical' | 'horizontal'
-
-	function toggleLayout() {
-		layoutMode.value = layoutMode.value === 'vertical' ? 'horizontal' : 'vertical'
-		uni.setStorageSync('siji_func_layout', layoutMode.value)
-	}
+	// ─── Tab 切换 ───
+	const activeTab = ref('life') // 'life' | 'ai'
 
 	// ─── 我的画像 ───
 	const profileData = ref({ cards: [] })
@@ -106,7 +94,6 @@
 	])
 
 	onShow(() => {
-		layoutMode.value = uni.getStorageSync('siji_func_layout') || 'vertical'
 		loadAll()
 		loadAIStats()
 		try { profileData.value = getProfile() } catch { profileData.value = { cards: [] } }
@@ -163,6 +150,12 @@
 		uni.navigateTo({ url: '/pages/search/result' })
 	}
 
+	// ─── Tab 切换动画 ───
+	function switchTab(tab) {
+		if (activeTab.value === tab) return
+		activeTab.value = tab
+	}
+
 	function formatAmount(val) {
 		if (val >= 10000) return (val / 10000).toFixed(1) + 'w'
 		return val.toFixed(0)
@@ -180,109 +173,101 @@
 			</view>
 
 			<!-- ============================== -->
-			<!-- 生活记录分区 -->
+			<!-- Segmented Control              -->
 			<!-- ============================== -->
-			<view class="section-header">
-				<text class="section-label">生活记录</text>
-				<view class="section-stats">
-					<text v-for="s in lifeStats" :key="s.label" class="section-stat">
-						<text class="stat-val">{{ s.value }}</text>
-						<text class="stat-lbl">{{ s.label }}</text>
-					</text>
+			<view class="seg-control">
+				<view
+					class="seg-item"
+					:class="{ active: activeTab === 'life' }"
+					@tap="switchTab('life')"
+				>
+					<text class="seg-text">生活记录</text>
 				</view>
-				<view class="layout-toggle" @tap="toggleLayout">
-					<text class="toggle-icon" :class="{ active: layoutMode === 'horizontal' }">⊞</text>
-					<text class="toggle-icon" :class="{ active: layoutMode === 'vertical' }">≣</text>
+				<view
+					class="seg-item"
+					:class="{ active: activeTab === 'ai' }"
+					@tap="switchTab('ai')"
+				>
+					<text class="seg-text">AI 面板</text>
+				</view>
+				<!-- 滑块指示器 -->
+				<view class="seg-slider" :class="{ right: activeTab === 'ai' }" />
+			</view>
+
+			<!-- ============================== -->
+			<!-- 生活记录 Tab                    -->
+			<!-- ============================== -->
+			<view v-if="activeTab === 'life'" class="tab-panel">
+				<!-- 统计行 -->
+				<view class="stats-bar">
+					<view v-for="s in lifeStats" :key="s.label" class="stats-item">
+						<text class="stats-val">{{ s.value }}</text>
+						<text class="stats-lbl">{{ s.label }}</text>
+					</view>
+				</view>
+
+				<!-- 功能入口列表 -->
+				<view class="card-list">
+					<view v-for="card in funcEntries" :key="card.id" class="entry-card card-press"
+						@tap="goPage(card.listPage)">
+						<view class="entry-left">
+							<view class="entry-icon-circle">
+								<SijiIcon :name="card.iconName" size="md" color="#18181B" />
+							</view>
+							<view class="entry-info">
+								<text class="entry-title">{{ card.title }}</text>
+								<text class="entry-desc">{{ card.desc }}</text>
+							</view>
+						</view>
+						<view class="entry-right">
+							<view class="entry-new-btn btn-tactile" @tap.stop="goPage(card.newPage)">
+								<text class="entry-new-text">+</text>
+							</view>
+							<text class="entry-arrow">›</text>
+						</view>
+					</view>
+				</view>
+
+				<!-- 消费分析入口 -->
+				<view class="analysis-link" v-if="weekTrend.length > 0" @tap="goStats">
+					<text class="analysis-link-text">消费分析 · 近7天 ¥{{ weekTotal.toFixed(0) }}</text>
+					<text class="analysis-link-arrow" v-if="weekCompare !== 0" :class="weekCompare > 0 ? 'up' : 'down'">{{ weekCompare > 0 ? '↑' : '↓' }}{{ Math.abs(weekCompare) }}%</text>
+					<SijiIcon name="chevron-right" size="xs" color="#A1A1AA" />
 				</view>
 			</view>
 
-			<!-- 横向布局 -->
-			<scroll-view v-if="layoutMode === 'horizontal'" class="card-list-h" scroll-x>
-				<view v-for="card in funcEntries" :key="card.id" class="entry-card-h card-press"
-					@tap="goPage(card.listPage)">
-					<view class="entry-icon-circle">
-						<SijiIcon :name="card.iconName" size="md" color="#18181B" />
+			<!-- ============================== -->
+			<!-- AI 面板 Tab                     -->
+			<!-- ============================== -->
+			<view v-else class="tab-panel">
+				<!-- 统计行 -->
+				<view class="stats-bar">
+					<view v-for="s in aiStats" :key="s.label" class="stats-item">
+						<text class="stats-val">{{ s.value }}</text>
+						<text class="stats-lbl">{{ s.label }}</text>
 					</view>
-					<text class="entry-title-h">{{ card.title }}</text>
-					<text class="entry-desc-h">{{ card.desc }}</text>
-					<view class="entry-new-h btn-tactile" @tap.stop="goPage(card.newPage)">
-						<text class="entry-new-text">+</text>
+					<!-- 未开启时引导 -->
+					<view v-if="!profileEnabled && !memoryEnabled" class="stats-item stats-guide">
+						<text class="stats-val">点击开启</text>
+						<text class="stats-lbl">AI 记忆</text>
 					</view>
 				</view>
-			</scroll-view>
 
-			<!-- 纵向布局 -->
-			<view v-else class="card-list card-list-stagger">
-				<view v-for="card in funcEntries" :key="card.id" class="entry-card card-press"
-					@tap="goPage(card.listPage)">
-					<view class="entry-left">
-						<view class="entry-icon-circle">
-							<SijiIcon :name="card.iconName" size="md" color="#18181B" />
-						</view>
-						<view class="entry-info">
-							<text class="entry-title">{{ card.title }}</text>
-							<text class="entry-desc">{{ card.desc }}</text>
-						</view>
-					</view>
-					<view class="entry-right">
-						<view class="entry-new-btn btn-tactile" @tap.stop="goPage(card.newPage)">
-							<text class="entry-new-text">+</text>
+				<!-- AI 入口列表 -->
+				<view class="card-list">
+					<view v-for="entry in aiEntries" :key="entry.id" class="entry-card card-press"
+						@tap="goSub(entry.route)">
+						<view class="entry-left">
+							<view class="entry-icon-circle">
+								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+							</view>
+							<view class="entry-info">
+								<text class="entry-title">{{ entry.title }}</text>
+								<text class="entry-desc">{{ entry.desc }}</text>
+							</view>
 						</view>
 						<text class="entry-arrow">›</text>
 					</view>
-				</view>
-			</view>
-
-			<!-- 消费分析入口 -->
-			<view class="analysis-link" v-if="weekTrend.length > 0" @tap="goStats">
-				<text class="analysis-link-text">消费分析 · 近7天 ¥{{ weekTotal.toFixed(0) }}</text>
-				<text class="analysis-link-arrow" v-if="weekCompare !== 0" :class="weekCompare > 0 ? 'up' : 'down'">{{ weekCompare > 0 ? '↑' : '↓' }}{{ Math.abs(weekCompare) }}%</text>
-				<SijiIcon name="chevron-right" size="xs" color="#A1A1AA" />
-			</view>
-
-			<!-- ============================== -->
-			<!-- AI 面板分区 -->
-			<!-- ============================== -->
-			<view class="section-header">
-				<text class="section-label">AI 面板</text>
-				<view class="section-stats">
-					<text v-for="s in aiStats" :key="s.label" class="section-stat">
-						<text class="stat-val">{{ s.value }}</text>
-						<text class="stat-lbl">{{ s.label }}</text>
-					</text>
-				</view>
-				<view class="layout-toggle" @tap="toggleLayout">
-					<text class="toggle-icon" :class="{ active: layoutMode === 'horizontal' }">⊞</text>
-					<text class="toggle-icon" :class="{ active: layoutMode === 'vertical' }">≣</text>
-				</view>
-			</view>
-
-			<!-- 横向布局 -->
-			<scroll-view v-if="layoutMode === 'horizontal'" class="card-list-h" scroll-x>
-				<view v-for="entry in aiEntries" :key="entry.id" class="entry-card-h card-press"
-					@tap="goSub(entry.route)">
-					<view class="entry-icon-circle">
-						<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
-					</view>
-					<text class="entry-title-h">{{ entry.title }}</text>
-					<text class="entry-desc-h">{{ entry.desc }}</text>
-				</view>
-			</scroll-view>
-
-			<!-- 纵向布局 -->
-			<view v-else class="card-list card-list-stagger">
-				<view v-for="entry in aiEntries" :key="entry.id" class="entry-card card-press"
-					@tap="goSub(entry.route)">
-					<view class="entry-left">
-						<view class="entry-icon-circle">
-							<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
-						</view>
-						<view class="entry-info">
-							<text class="entry-title">{{ entry.title }}</text>
-							<text class="entry-desc">{{ entry.desc }}</text>
-						</view>
-					</view>
-					<text class="entry-arrow">›</text>
 				</view>
 			</view>
 
