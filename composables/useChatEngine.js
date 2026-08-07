@@ -27,6 +27,7 @@ import {
   handleConfirmAction as _handleConfirmAction,
   handleCancelAction as _handleCancelAction
 } from '@/composables/useChatActions.js'
+import { recognizeImage } from '@/utils/ai/vision-bridge.js'
 
 export function useChatEngine() {
   const store = useAppStore()
@@ -142,6 +143,30 @@ export function useChatEngine() {
         return
       }
 
+      // === 两步组合模式：图片+文字同时输入时，先识别图片再走文字模型 ===
+      // Step 1: vision 模型识别图片内容，返回纯文本描述
+      // Step 2: 把「图片描述 + 用户文字」拼接，走文字模型处理（action/工具调用）
+      let combinedMessage = message
+      if (imageData && message && message !== '请识别并分析这张截图') {
+        // 用户同时输入了图片和有意义的文字 → 两步组合
+        logger.info('[ChatEngine] 图片+文字组合模式，先识别图片')
+        store.updateLastMessage({ content: '正在识别图片…', loading: true })
+
+        const imageDesc = await recognizeImage(imageData, message, cfg)
+        if (imageDesc) {
+          // 拼接：用户原始文字 + 图片识别结果
+          combinedMessage = `${message}\n\n[图片识别结果]\n${imageDesc}`
+          logger.info('[ChatEngine] 图片识别完成，组合消息长度:', combinedMessage.length)
+        } else {
+          // 识别失败，降级为原单步模式（vision 模型直接处理）
+          logger.warn('[ChatEngine] 图片识别失败，降级为单步 vision 模式')
+        }
+      }
+      // 两步组合后不再传 image 给文字模型（已转为文本描述）
+      if (imageData && combinedMessage !== message) {
+        delete cfg.image
+      }
+
       // 检测结束演练信号
       const simEnd = await handleSimulationEnd(message, cfg, chatHistory)
       if (simEnd) {
@@ -190,7 +215,7 @@ export function useChatEngine() {
 
       const { result, streamedText: retryText } = await retryStreamWithBackoff(
         (msg) => chatRequestStream(
-          msg || message, store.conversationId, cfg,
+          msg || combinedMessage, store.conversationId, cfg,
           (chunk) => {
             streamedText += chunk
             // 每次 chunk 到达都尝试提取
