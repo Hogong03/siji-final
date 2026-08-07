@@ -1,10 +1,10 @@
 <script setup>
 /**
- * ConversationPanel - 会话列表底部抽屉组件 v3
+ * ConversationPanel - 会话列表底部抽屉组件 v4
  *
- * 筛选改为按钮触发：header 右侧筛选按钮，点击弹出 ActionSheet
- * - 全部 / 按时间 / 按标签 三种模式
- * - 选「按标签」后再弹标签选择
+ * 筛选改为展开折叠区：header 右侧「筛选 ▾」按钮，点击展开/收起
+ * - 展开后显示：全部 / 按时间 / 按标签 三个 chip + 标签列表（仅按标签模式）
+ * - 选中后自动收起
  * - 时间分组：今天 / 昨天 / 本周 / 更早
  * - 对话项支持打标签（点击 more 图标）
  *
@@ -28,6 +28,33 @@ const emit = defineEmits([
   'set-filter', 'select-tag', 'add-tag'
 ])
 
+import { ref } from 'vue'
+const filterExpanded = ref(false)
+
+function toggleFilter() {
+  filterExpanded.value = !filterExpanded.value
+}
+
+function getFilterLabel() {
+  if (props.activeFilter === 'time') return '按时间'
+  if (props.activeFilter === 'tag') {
+    return props.activeTag ? props.activeTag : '按标签'
+  }
+  return '筛选'
+}
+
+function handleSelectFilter(mode) {
+  emit('set-filter', mode)
+  if (mode !== 'tag') {
+    filterExpanded.value = false
+  }
+}
+
+function handleSelectTag(tag) {
+  emit('select-tag', tag)
+  filterExpanded.value = false
+}
+
 function formatConvTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
@@ -42,51 +69,6 @@ function formatConvTime(ts) {
 function getConvTags(conv) {
   return (conv && conv.tags) ? conv.tags : []
 }
-
-// 筛选按钮文案
-function getFilterLabel() {
-  if (props.activeFilter === 'time') return '按时间'
-  if (props.activeFilter === 'tag') {
-    return props.activeTag ? props.activeTag : '按标签'
-  }
-  return '筛选'
-}
-
-// 点击筛选按钮 → 弹 ActionSheet
-function handleFilterTap() {
-  const items = ['全部', '按时间分组', '按标签筛选']
-  uni.showActionSheet({
-    itemList: items,
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        emit('set-filter', 'all')
-      } else if (res.tapIndex === 1) {
-        emit('set-filter', 'time')
-      } else if (res.tapIndex === 2) {
-        emit('set-filter', 'tag')
-        // 如果有标签，延迟弹标签选择
-        if (props.allTags.length > 0) {
-          setTimeout(() => showTagSelector(), 300)
-        }
-      }
-    }
-  })
-}
-
-function showTagSelector() {
-  if (props.allTags.length === 0) return
-  const items = ['全部', ...props.allTags]
-  uni.showActionSheet({
-    itemList: items,
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        emit('select-tag', null)
-      } else {
-        emit('select-tag', props.allTags[res.tapIndex - 1])
-      }
-    }
-  })
-}
 </script>
 
 <template>
@@ -94,8 +76,67 @@ function showTagSelector() {
     <view class="conv-drawer" @tap.stop>
       <view class="conv-drawer-header">
         <text class="conv-drawer-title">对话列表</text>
-        <view class="conv-filter-btn" :class="{ active: activeFilter !== 'all' }" @tap="handleFilterTap">
+        <view
+          class="conv-filter-btn"
+          :class="{ active: activeFilter !== 'all', expanded: filterExpanded }"
+          @tap="toggleFilter"
+        >
           <text class="conv-filter-label">{{ getFilterLabel() }}</text>
+          <text class="conv-filter-arrow">{{ filterExpanded ? '▴' : '▾' }}</text>
+        </view>
+      </view>
+
+      <!-- 筛选展开折叠区 -->
+      <view v-if="filterExpanded" class="conv-filter-panel">
+        <view class="filter-chips-row">
+          <view
+            class="filter-chip"
+            :class="{ active: activeFilter === 'all' }"
+            @tap="handleSelectFilter('all')"
+          >
+            <text>全部</text>
+          </view>
+          <view
+            class="filter-chip"
+            :class="{ active: activeFilter === 'time' }"
+            @tap="handleSelectFilter('time')"
+          >
+            <text>按时间</text>
+          </view>
+          <view
+            class="filter-chip"
+            :class="{ active: activeFilter === 'tag' }"
+            @tap="handleSelectFilter('tag')"
+          >
+            <text>按标签</text>
+          </view>
+        </view>
+
+        <!-- 标签列表（仅按标签模式展开后显示） -->
+        <view v-if="activeFilter === 'tag'" class="tag-select-row">
+          <view v-if="allTags.length === 0" class="tag-empty-hint">
+            <text>暂无标签，点击对话右侧图标添加</text>
+          </view>
+          <scroll-view v-else scroll-x class="tag-scroll-view">
+            <view class="tag-select-list">
+              <view
+                class="tag-select-chip"
+                :class="{ active: !activeTag }"
+                @tap="handleSelectTag(null)"
+              >
+                <text>全部</text>
+              </view>
+              <view
+                v-for="tag in allTags"
+                :key="tag"
+                class="tag-select-chip"
+                :class="{ active: activeTag === tag }"
+                @tap="handleSelectTag(tag)"
+              >
+                <text>{{ tag }}</text>
+              </view>
+            </view>
+          </scroll-view>
         </view>
       </view>
 
@@ -262,7 +303,8 @@ function showTagSelector() {
 .conv-filter-btn {
   display: flex;
   align-items: center;
-  padding: 8rpx 24rpx;
+  gap: 6rpx;
+  padding: 8rpx 20rpx;
   border-radius: 32rpx;
   background: #F4F4F5;
   transition: all 0.2s;
@@ -270,6 +312,11 @@ function showTagSelector() {
   &.active {
     background: #18181B;
     .conv-filter-label { color: #FFFFFF; }
+    .conv-filter-arrow { color: #FFFFFF; }
+  }
+
+  &.expanded {
+    border-radius: 32rpx 32rpx 0 0;
   }
 
   &:active { opacity: 0.7; }
@@ -279,6 +326,89 @@ function showTagSelector() {
   font-size: $font-sm;
   color: #71717A;
   font-weight: 500;
+}
+
+.conv-filter-arrow {
+  font-size: 20rpx;
+  color: #71717A;
+  line-height: 1;
+}
+
+/* 筛选展开面板 */
+.conv-filter-panel {
+  flex-shrink: 0;
+  border-bottom: 1rpx solid #E4E4E7;
+  overflow: hidden;
+  animation: filterExpand 0.2s ease-out;
+}
+
+@keyframes filterExpand {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 400rpx; opacity: 1; }
+}
+
+.filter-chips-row {
+  display: flex;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+}
+
+.filter-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 0;
+  border-radius: 12rpx;
+  background: #F4F4F5;
+  font-size: $font-sm;
+  color: #71717A;
+  transition: all 0.2s;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
+/* 标签选择行 */
+.tag-select-row {
+  padding: 0 $spacing-md $spacing-sm;
+}
+
+.tag-empty-hint {
+  padding: $spacing-xs 0;
+  text-align: center;
+  font-size: $font-xs;
+  color: #A1A1AA;
+}
+
+.tag-scroll-view {
+  white-space: nowrap;
+}
+
+.tag-select-list {
+  display: inline-flex;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+}
+
+.tag-select-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 24rpx;
+  border-radius: 32rpx;
+  background: #F4F4F5;
+  font-size: $font-xs;
+  color: #71717A;
+  white-space: nowrap;
+  transition: all 0.2s;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+  }
 }
 
 /* 时间分组 */
@@ -503,10 +633,36 @@ function showTagSelector() {
     &.active {
       background: #FAFAFA;
       .conv-filter-label { color: #18181B; }
+      .conv-filter-arrow { color: #18181B; }
     }
   }
   .conv-filter-label {
     color: #A1A1AA;
+  }
+  .conv-filter-arrow {
+    color: #A1A1AA;
+  }
+  .conv-filter-panel {
+    border-bottom-color: #27272A;
+  }
+  .filter-chip {
+    background: #27272A;
+    color: #A1A1AA;
+    &.active {
+      background: #FAFAFA;
+      color: #18181B;
+    }
+  }
+  .tag-empty-hint {
+    color: #52525B;
+  }
+  .tag-select-chip {
+    background: #27272A;
+    color: #A1A1AA;
+    &.active {
+      background: #FAFAFA;
+      color: #18181B;
+    }
   }
   .conv-group-header {
     .conv-group-label { color: #52525B; }
