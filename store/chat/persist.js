@@ -112,7 +112,8 @@ export function persistConversations(conversations, activeConversationId) {
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
       summary: conv.summary || null,
-      summaryIndex: conv.summaryIndex || 0
+      summaryIndex: conv.summaryIndex || 0,
+      tags: conv.tags || []
     }
     conv._slimCache = result
     return result

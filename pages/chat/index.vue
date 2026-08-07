@@ -48,9 +48,11 @@ const {
 
 // ===== 会话管理 =====
 const {
-  showConvList, sortedConversations,
-  toggleConvList, handleNewConversation,
-  handleSwitchConversation, handleDeleteConversation, handleRenameConversation
+  showConvList, activeFilter, activeTag, allTags,
+  sortedConversations, filteredConversations, groupedConversations, hasTags,
+  toggleConvList, setFilter, selectTag, refreshTags,
+  handleNewConversation, handleSwitchConversation, handleDeleteConversation,
+  handleRenameConversation, handleAddTag
 } = useConversationManager(store, getWelcomeMessage, resetScrollState)
 
 // ===== 重试栏 + 网络横幅 =====
@@ -377,13 +379,21 @@ function handleWelcomeChip(text) {
     <!-- 会话列表抽屉 -->
     <ConversationPanel
       :show="showConvList"
-      :conversations="sortedConversations"
+      :conversations="filteredConversations"
+      :grouped-conversations="groupedConversations"
       :active-id="store.activeConversationId"
+      :active-filter="activeFilter"
+      :active-tag="activeTag"
+      :all-tags="allTags"
+      :has-tags="hasTags"
       @close="toggleConvList"
       @switch="handleSwitchConversation"
       @delete="handleDeleteConversation"
       @rename="handleRenameConversation"
       @new="handleNewConversation"
+      @set-filter="setFilter"
+      @select-tag="selectTag"
+      @add-tag="handleAddTag"
       @navigate="(url) => { toggleConvList(); uni.navigateTo({ url }) }"
     />
   </view>

@@ -1,19 +1,32 @@
-﻿<script setup>
+<script setup>
 /**
- * ConversationPanel - 会话列表底部抽屉组件
+ * ConversationPanel - 会话列表底部抽屉组件 v2
+ *
+ * 新增分类功能：
+ * - 三个筛选维度：全部 / 时间分组 / 标签筛选
+ * - 时间分组：今天 / 昨天 / 本周 / 更早
+ * - 标签筛选：点击标签 chip 筛选，长按删除标签
+ * - 对话项支持打标签（点击 tag 图标）
  *
  * 职责: 纯展示 + 事件上报，不直接访问 store
- * 入口: 聊天页底部 Sheet 抽屉
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 
-defineProps({
+const props = defineProps({
   show: { type: Boolean, default: false },
-  conversations: { type: Array, default: () => [] },
-  activeId: { type: String, default: '' }
+  conversations: { type: Array, default: () => [] },        // 已筛选+排序后的列表
+  groupedConversations: { type: Array, default: () => [] }, // 时间分组结果
+  activeId: { type: String, default: '' },
+  activeFilter: { type: String, default: 'all' },
+  activeTag: { type: String, default: null },
+  allTags: { type: Array, default: () => [] },
+  hasTags: { type: Boolean, default: false }
 })
 
-defineEmits(['close', 'switch', 'delete', 'rename', 'new'])
+const emit = defineEmits([
+  'close', 'switch', 'delete', 'rename', 'new',
+  'set-filter', 'select-tag', 'add-tag'
+])
 
 function formatConvTime(ts) {
   if (!ts) return ''
@@ -25,6 +38,10 @@ function formatConvTime(ts) {
   if (today === that) return time
   return that.substring(5)
 }
+
+function getConvTags(conv) {
+  return (conv && conv.tags) ? conv.tags : []
+}
 </script>
 
 <template>
@@ -33,25 +50,138 @@ function formatConvTime(ts) {
       <view class="conv-drawer-header">
         <text class="conv-drawer-title">对话列表</text>
       </view>
-      <scroll-view class="conv-list-scroll" scroll-y>
+
+      <!-- 筛选切换栏 -->
+      <view class="conv-filter-bar">
         <view
-          v-for="conv in conversations" :key="conv.id"
-          class="conv-item"
-          :class="{ active: conv.id === activeId }"
-          @tap="$emit('switch', conv.id)"
-          @longpress="$emit('delete', conv)"
+          class="filter-tab"
+          :class="{ active: activeFilter === 'all' }"
+          @tap="$emit('set-filter', 'all')"
         >
-          <view class="conv-item-info">
-            <view class="conv-item-title-row">
-              <text class="conv-item-title">{{ conv.title }}</text>
-            </view>
-            <text class="conv-item-time">{{ formatConvTime(conv.updatedAt) }}</text>
-          </view>
-          <view class="conv-item-actions">
-            <view class="conv-item-rename" @tap.stop="$emit('rename', conv)"><SijiIcon name="edit" size="sm" /></view>
-            <text class="conv-item-msgs">{{ conv.messages.length }} 条</text>
-          </view>
+          <text>全部</text>
         </view>
+        <view
+          class="filter-tab"
+          :class="{ active: activeFilter === 'time' }"
+          @tap="$emit('set-filter', 'time')"
+        >
+          <text>按时间</text>
+        </view>
+        <view
+          class="filter-tab"
+          :class="{ active: activeFilter === 'tag' }"
+          @tap="$emit('set-filter', 'tag')"
+        >
+          <text>按标签</text>
+        </view>
+      </view>
+
+      <!-- 标签筛选区（仅在 tag 模式下显示） -->
+      <view v-if="activeFilter === 'tag'" class="tag-chips-bar">
+        <view v-if="allTags.length === 0" class="tag-empty-hint">
+          <text>暂无标签，点击对话右侧标签图标添加</text>
+        </view>
+        <view v-else class="tag-chips-scroll" scroll-x>
+          <scroll-view scroll-x class="tag-scroll-view">
+            <view class="tag-chips-list">
+              <view
+                class="tag-chip"
+                :class="{ active: !activeTag }"
+                @tap="$emit('select-tag', null)"
+              >
+                <text>全部</text>
+              </view>
+              <view
+                v-for="tag in allTags"
+                :key="tag"
+                class="tag-chip"
+                :class="{ active: activeTag === tag }"
+                @tap="$emit('select-tag', tag)"
+              >
+                <text>{{ tag }}</text>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <scroll-view class="conv-list-scroll" scroll-y>
+        <!-- 时间分组模式 -->
+        <template v-if="activeFilter === 'time'">
+          <view v-for="group in groupedConversations" :key="group.label" class="conv-group">
+            <view class="conv-group-header">
+              <text class="conv-group-label">{{ group.label }}</text>
+              <text class="conv-group-count">{{ group.items.length }}</text>
+            </view>
+            <view
+              v-for="conv in group.items"
+              :key="conv.id"
+              class="conv-item"
+              :class="{ active: conv.id === activeId }"
+              @tap="$emit('switch', conv.id)"
+              @longpress="$emit('delete', conv)"
+            >
+              <view class="conv-item-info">
+                <view class="conv-item-title-row">
+                  <text class="conv-item-title">{{ conv.title }}</text>
+                  <view v-if="getConvTags(conv).length > 0" class="conv-item-tags">
+                    <text
+                      v-for="t in getConvTags(conv)"
+                      :key="t"
+                      class="conv-item-tag"
+                    >{{ t }}</text>
+                  </view>
+                </view>
+                <text class="conv-item-time">{{ formatConvTime(conv.updatedAt) }}</text>
+              </view>
+              <view class="conv-item-actions">
+                <view class="conv-item-tag-btn" @tap.stop="$emit('add-tag', conv)">
+                  <SijiIcon name="more" size="sm" />
+                </view>
+                <view class="conv-item-rename" @tap.stop="$emit('rename', conv)">
+                  <SijiIcon name="edit" size="sm" />
+                </view>
+                <text class="conv-item-msgs">{{ conv.messages.length }} 条</text>
+              </view>
+            </view>
+          </view>
+        </template>
+
+        <!-- 全部 / 标签模式（平铺列表） -->
+        <template v-else>
+          <view
+            v-for="conv in conversations"
+            :key="conv.id"
+            class="conv-item"
+            :class="{ active: conv.id === activeId }"
+            @tap="$emit('switch', conv.id)"
+            @longpress="$emit('delete', conv)"
+          >
+            <view class="conv-item-info">
+              <view class="conv-item-title-row">
+                <text class="conv-item-title">{{ conv.title }}</text>
+                <view v-if="getConvTags(conv).length > 0" class="conv-item-tags">
+                  <text
+                    v-for="t in getConvTags(conv)"
+                    :key="t"
+                    class="conv-item-tag"
+                  >{{ t }}</text>
+                </view>
+              </view>
+              <text class="conv-item-time">{{ formatConvTime(conv.updatedAt) }}</text>
+            </view>
+            <view class="conv-item-actions">
+              <view class="conv-item-tag-btn" @tap.stop="$emit('add-tag', conv)">
+                <SijiIcon name="more" size="sm" />
+              </view>
+              <view class="conv-item-rename" @tap.stop="$emit('rename', conv)">
+                <SijiIcon name="edit" size="sm" />
+              </view>
+              <text class="conv-item-msgs">{{ conv.messages.length }} 条</text>
+            </view>
+          </view>
+        </template>
+
         <view v-if="conversations.length === 0" class="conv-empty">
           <text class="conv-empty-text">暂无对话</text>
         </view>
@@ -89,7 +219,7 @@ function formatConvTime(ts) {
 
 .conv-drawer {
   width: 100%;
-  height: 70vh;
+  height: 75vh;
   background: #FFFFFF;
   display: flex;
   flex-direction: column;
@@ -121,7 +251,6 @@ function formatConvTime(ts) {
   }
 }
 
-/* 底部 Sheet 拖拽指示器 */
 .conv-drawer-header::before {
   content: '';
   position: absolute;
@@ -135,31 +264,113 @@ function formatConvTime(ts) {
   opacity: 0.3;
 }
 
-.conv-new-divider {
+/* 筛选切换栏 */
+.conv-filter-bar {
+  display: flex;
+  padding: 0 $spacing-md;
+  border-bottom: 1rpx solid #E4E4E7;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.filter-tab {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: $spacing-sm;
-  padding: $spacing-md $spacing-lg;
-  margin-top: $spacing-sm;
-  box-sizing: border-box;
+  padding: $spacing-sm 0;
+  font-size: $font-sm;
+  color: #71717A;
+  position: relative;
+  transition: color 0.2s;
 
-  .conv-divider-line {
-    flex: 1;
-    height: 1rpx;
-    border-top: 2rpx dashed #E4E4E7;
-  }
-
-  .conv-new-divider-text {
-    font-size: $font-sm;
-    color: #71717A;
-    white-space: nowrap;
-    padding: 0 $spacing-xs;
-  }
-
-  &:active .conv-new-divider-text {
+  &.active {
     color: #18181B;
     font-weight: 600;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48rpx;
+      height: 4rpx;
+      background: #18181B;
+      border-radius: 2rpx;
+    }
+  }
+}
+
+/* 标签 chips 区 */
+.tag-chips-bar {
+  flex-shrink: 0;
+  padding: $spacing-xs $spacing-md;
+  border-bottom: 1rpx solid #E4E4E7;
+  box-sizing: border-box;
+}
+
+.tag-empty-hint {
+  padding: $spacing-sm 0;
+  text-align: center;
+  font-size: $font-xs;
+  color: #A1A1AA;
+}
+
+.tag-scroll-view {
+  white-space: nowrap;
+}
+
+.tag-chips-list {
+  display: inline-flex;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 24rpx;
+  border-radius: 32rpx;
+  background: #F4F4F5;
+  font-size: $font-xs;
+  color: #71717A;
+  white-space: nowrap;
+  transition: all 0.2s;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+  }
+}
+
+/* 时间分组 */
+.conv-group {
+  margin-bottom: $spacing-xs;
+}
+
+.conv-group-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  padding-top: $spacing-md;
+  box-sizing: border-box;
+
+  .conv-group-label {
+    font-size: $font-xs;
+    font-weight: 600;
+    color: #A1A1AA;
+    text-transform: uppercase;
+    letter-spacing: 1rpx;
+  }
+
+  .conv-group-count {
+    font-size: 20rpx;
+    color: #A1A1AA;
+    background: #F4F4F5;
+    padding: 2rpx 12rpx;
+    border-radius: 16rpx;
   }
 }
 
@@ -199,6 +410,7 @@ function formatConvTime(ts) {
   gap: $spacing-xs;
   min-width: 0;
   overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .conv-item-actions {
@@ -206,6 +418,14 @@ function formatConvTime(ts) {
   align-items: center;
   gap: $spacing-sm;
   flex-shrink: 0;
+}
+
+.conv-item-tag-btn {
+  font-size: 32rpx;
+  color: #A1A1AA;
+  padding: 4rpx 8rpx;
+
+  &:active { color: #18181B; }
 }
 
 .conv-item-rename {
@@ -223,6 +443,23 @@ function formatConvTime(ts) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.conv-item-tags {
+  display: inline-flex;
+  gap: 4rpx;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.conv-item-tag {
+  font-size: 20rpx;
+  color: #71717A;
+  background: #F4F4F5;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .conv-item-time {
@@ -246,6 +483,34 @@ function formatConvTime(ts) {
   .conv-empty-text {
     font-size: $font-sm;
     color: #A1A1AA;
+  }
+}
+
+.conv-new-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-md $spacing-lg;
+  margin-top: $spacing-sm;
+  box-sizing: border-box;
+
+  .conv-divider-line {
+    flex: 1;
+    height: 1rpx;
+    border-top: 2rpx dashed #E4E4E7;
+  }
+
+  .conv-new-divider-text {
+    font-size: $font-sm;
+    color: #71717A;
+    white-space: nowrap;
+    padding: 0 $spacing-xs;
+  }
+
+  &:active .conv-new-divider-text {
+    color: #18181B;
+    font-weight: 600;
   }
 }
 
@@ -296,6 +561,39 @@ function formatConvTime(ts) {
   .conv-drawer-header::before {
     background: #52525B;
   }
+  .conv-filter-bar {
+    border-bottom-color: #27272A;
+  }
+  .filter-tab {
+    color: #71717A;
+    &.active {
+      color: #FAFAFA;
+      &::after {
+        background: #FAFAFA;
+      }
+    }
+  }
+  .tag-chips-bar {
+    border-bottom-color: #27272A;
+  }
+  .tag-chip {
+    background: #27272A;
+    color: #A1A1AA;
+    &.active {
+      background: #FAFAFA;
+      color: #18181B;
+    }
+  }
+  .tag-empty-hint {
+    color: #52525B;
+  }
+  .conv-group-header {
+    .conv-group-label { color: #52525B; }
+    .conv-group-count {
+      color: #52525B;
+      background: #27272A;
+    }
+  }
   .conv-new-divider .conv-divider-line {
     border-top-color: #27272A;
   }
@@ -311,12 +609,20 @@ function formatConvTime(ts) {
       border-left-color: #FAFAFA;
     }
   }
+  .conv-item-tag-btn {
+    color: #52525B;
+    &:active { color: #FAFAFA; }
+  }
   .conv-item-rename {
     color: #52525B;
     &:active { color: #FAFAFA; }
   }
   .conv-item-title {
     color: #FAFAFA;
+  }
+  .conv-item-tag {
+    color: #A1A1AA;
+    background: #27272A;
   }
   .conv-shortcut-item {
     background: #18181B;

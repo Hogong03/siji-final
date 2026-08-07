@@ -13,6 +13,7 @@ import { generateConversationId } from '@/utils/uuid.js'
 import { logger } from '@/utils/logger.js'
 import { debouncedPersist, flushPersist, persistConversations as _persist, persistActiveId } from './chat/persist.js'
 import { restoreHistory as _restoreHistory } from './chat/restore.js'
+import { setConvTags, getConvTags, addConvTag } from '@/utils/conv-tags.js'
 
 export const useChatStore = defineStore('chat', () => {
   // ==================== State ====================
@@ -100,6 +101,36 @@ export const useChatStore = defineStore('chat', () => {
     return true
   }
 
+  // ==================== 标签操作 ====================
+
+  function addTagToConversation(id, tag) {
+    const conv = conversations.value.find(c => c.id === id)
+    if (!conv) return
+    const tags = getConvTags(conv)
+    if (!tags.includes(tag)) {
+      tags.push(tag)
+      setConvTags(conv, tags)
+      addConvTag(tag)
+      debouncedPersistConversations()
+    }
+  }
+
+  function removeTagFromConversation(id, tag) {
+    const conv = conversations.value.find(c => c.id === id)
+    if (!conv) return
+    const tags = getConvTags(conv).filter(t => t !== tag)
+    setConvTags(conv, tags)
+    debouncedPersistConversations()
+  }
+
+  function setConversationTags(id, tags) {
+    const conv = conversations.value.find(c => c.id === id)
+    if (!conv) return
+    setConvTags(conv, tags)
+    tags.forEach(t => addConvTag(t))
+    debouncedPersistConversations()
+  }
+
   function clearMessages() {
     const conv = conversations.value.find(c => c.id === activeConversationId.value)
     if (!conv) return
@@ -169,6 +200,7 @@ export const useChatStore = defineStore('chat', () => {
     setCurrentMode, setConversationId,
     createConversation, switchConversation, deleteConversation, renameConversation,
     addMessage, updateLastMessage, updateConversationSummary, clearMessages,
+    addTagToConversation, removeTagFromConversation, setConversationTags,
     persistHistory, restoreHistory,
     flushPersist: flushHistory,
   }
