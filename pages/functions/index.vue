@@ -1,13 +1,11 @@
-﻿<script setup>
+<script setup>
 	/**
-	 * 功能中心 v4 — 方案 E
+	 * 功能中心 v5 — 极简布局 + 横纵切换
 	 *
-	 * 三分区清晰职责：
-	 *  1. 生活记录（概览看板 + 消费分析）
-	 *  2. AI 面板（当前 Agent + 数据层 + 执行层）
-	 *  3. 搜索（全局入口）
-	 *
-	 * 聊天页保留 UnifiedSwitcher 负责快速切换，此页负责详细配置入口
+	 * 三分区：
+	 *  1. 生活记录（记录/记账/计划）— 统计行 + 横纵切换
+	 *  2. AI 面板（画像 + 数据层 + 执行层）— 统计行 + 横纵切换
+	 *  3. 搜索 — 点击跳转独立搜索页（含搜索历史）
 	 */
 	import {
 		ref,
@@ -21,9 +19,6 @@
 		useAppStore
 	} from '@/store/index.js'
 	import {
-		searchConversations
-	} from '@/utils/conversation-search.js'
-	import {
 		useFunctionsData
 	} from '@/composables/useFunctionsData.js'
 	import {
@@ -32,38 +27,19 @@
 
 	const store = useAppStore()
 
-	// ─── 我的画像（profile）───
+	// ─── 布局模式 ───
+	const layoutMode = ref('vertical') // 'vertical' | 'horizontal'
+
+	function toggleLayout() {
+		layoutMode.value = layoutMode.value === 'vertical' ? 'horizontal' : 'vertical'
+		uni.setStorageSync('siji_func_layout', layoutMode.value)
+	}
+
+	// ─── 我的画像 ───
 	const profileData = ref({ cards: [] })
 	const profileName = computed(() => {
 		const c = profileData.value.cards.find(c => c.id === 'basic')
 		return c?.fields?.nickname || '我'
-	})
-	const profileBio = computed(() => {
-		const c = profileData.value.cards.find(c => c.id === 'basic')
-		return c?.fields?.bio || '点击完善个人信息'
-	})
-	const profileTagCount = computed(() => {
-		let n = 0
-		for (const card of profileData.value.cards) {
-			for (const [, val] of Object.entries(card.fields)) {
-				if (val == null || val === '') continue
-				if (Array.isArray(val) && val.length === 0) continue
-				n++
-			}
-		}
-		return n
-	})
-	const profileTopTags = computed(() => {
-		const tags = []
-		for (const card of profileData.value.cards) {
-			if (card.id === 'basic') continue
-			for (const [, val] of Object.entries(card.fields)) {
-				if (val == null || val === '') continue
-				if (Array.isArray(val)) tags.push(...val)
-				else tags.push(String(val))
-			}
-		}
-		return tags.slice(0, 4)
 	})
 
 	const {
@@ -75,13 +51,32 @@
 		relationsStats,
 		decisionStats,
 		simStats,
-		categoryRanking,
-		trendMax,
 		weekTotal,
 		weekCompare,
 		loadAll,
 		loadAIStats
 	} = useFunctionsData()
+
+	// ─── 生活记录统计行 ───
+	const lifeStats = computed(() => [
+		{ label: '记录', value: `${dashboard.value.diaryCount} 篇` },
+		{ label: '支出', value: `¥${formatAmount(dashboard.value.monthExpense)}` },
+		{ label: '计划', value: `${dashboard.value.planActive} 进行` },
+	])
+
+	// ─── AI 面板统计行 ───
+	const aiStats = computed(() => {
+		const stats = []
+		if (profileEnabled.value) {
+			stats.push({ label: '信息', value: `${profileFilled.value} 项` })
+			stats.push({ label: '人物', value: `${relationsStats.value.total} 人` })
+		}
+		if (memoryEnabled.value) {
+			stats.push({ label: '决策', value: `${decisionStats.value.total} 条` })
+		}
+		stats.push({ label: '演练', value: `${simStats.value.total} 次` })
+		return stats
+	})
 
 	// ─── 生活记录入口 ───
 	const funcEntries = computed(() => [{
@@ -111,128 +106,61 @@
 	])
 
 	onShow(() => {
+		layoutMode.value = uni.getStorageSync('siji_func_layout') || 'vertical'
 		loadAll()
 		loadAIStats()
 		try { profileData.value = getProfile() } catch { profileData.value = { cards: [] } }
 	})
 
-	// ─── AI 面板：数据层（让 AI 更懂你）───
-	const aiDataEntries = computed(() => [{
-			id: 'memory',
-			iconName: 'brain',
-			title: '记忆管理',
-			desc: memoryEnabled.value ? '已开启' : '已关闭',
-			route: '/pages/settings/sub/memory'
-		},
-	])
+	// ─── AI 面板入口 ───
+	const aiEntries = computed(() => {
+		const list = [{
+			id: 'profile',
+			iconName: 'user',
+			title: '我的信息',
+			desc: profileEnabled.value
+				? `${profileFilled.value} 项 · ${relationsStats.value.total} 人`
+				: '点击开启',
+			route: '/pages/settings/sub/profile'
+		}]
 
-	// ─── AI 面板：执行层（让 AI 帮你做事）───
-	const aiActionEntries = computed(() => [{
+		if (memoryEnabled.value) {
+			list.push({
+				id: 'memory',
+				iconName: 'brain',
+				title: '记忆管理',
+				desc: '已开启',
+				route: '/pages/settings/sub/memory'
+			})
+		}
+
+		list.push({
 			id: 'decisions',
 			iconName: 'target',
 			title: '决策日志',
 			desc: `${decisionStats.value.total} 条`,
 			route: '/pages/settings/sub/decisions'
-		},
-		{
+		})
+
+		list.push({
 			id: 'simulation',
 			iconName: 'chat-bubble',
 			title: '情景模拟',
 			desc: simStats.value.total > 0 ? `${simStats.value.total} 次演练` : '对话演练',
 			route: '/pages/settings/sub/simulation'
-		},
-	])
+		})
 
-	// ─── AI 面板：合并入口列表（数据层 + 执行层）───
-	const aiAllEntries = computed(() => [...aiDataEntries.value, ...aiActionEntries.value])
+		return list
+	})
 
 	// ─── 跳转 ───
-	function goSub(url) {
-		uni.navigateTo({
-			url
-		})
-	}
-	function goPage(url) {
-		uni.navigateTo({
-			url
-		})
-	}
+	function goSub(url) { uni.navigateTo({ url }) }
+	function goPage(url) { uni.navigateTo({ url }) }
+	function goStats() { uni.navigateTo({ url: '/pages/bill/stats' }) }
 
-	function goStats() {
-		uni.navigateTo({
-			url: '/pages/bill/stats'
-		})
-	}
-
-	// ─── 搜索 ───
-	const searchKeyword = ref('')
-
-	const allFuncEntries = computed(() => [
-		...funcEntries.value.map(e => ({
-			...e,
-			category: 'life'
-		})),
-		...aiAllEntries.value.map(e => ({
-			...e,
-			category: 'ai',
-			route: e.route
-		})),
-		{
-			id: 'stats',
-			iconName: 'trend',
-			title: '消费分析',
-			desc: '账单统计与趋势',
-			category: 'life',
-			listPage: '/pages/bill/stats'
-		}
-	])
-
-	const filteredFuncEntries = computed(() => {
-		const kw = searchKeyword.value.trim().toLowerCase()
-		if (!kw) return []
-		return allFuncEntries.value.filter(e => {
-			return e.title.toLowerCase().includes(kw) ||
-				e.desc.toLowerCase().includes(kw) ||
-				e.id.toLowerCase().includes(kw)
-		})
-	})
-
-	const conversationResults = computed(() => {
-		const kw = searchKeyword.value.trim()
-		if (!kw || kw.length < 1) return []
-		return searchConversations(kw, {
-			limit: 10
-		})
-	})
-
-	function onSearchInput(e) {
-		searchKeyword.value = e.detail.value || ''
-	}
-
-	function onSearchConfirm() {
-		const kw = searchKeyword.value.trim()
-		if (!kw) return
-		if (filteredFuncEntries.value.length === 0 && conversationResults.value.length === 0) {
-			uni.navigateTo({
-				url: '/pages/search/result?keyword=' + kw
-			})
-		}
-	}
-
-	function clearSearch() {
-		searchKeyword.value = ''
-	}
-
-	function goToEntry(entry) {
-		const url = entry.listPage || entry.route
-		if (url) goPage(url)
-	}
-
-	function goToConversation(convId) {
-		store.switchConversation(convId)
-		uni.switchTab({
-			url: '/pages/chat/index'
-		})
+	// ─── 搜索（跳转独立页）───
+	function goSearch() {
+		uni.navigateTo({ url: '/pages/search/result' })
 	}
 
 	function formatAmount(val) {
@@ -245,55 +173,46 @@
 	<view class="functions-page">
 		<scroll-view class="func-scroll" scroll-y>
 
-			<!-- 搜索栏（紧凑） -->
-			<view class="search-box">
+			<!-- 搜索栏（点击跳转独立搜索页） -->
+			<view class="search-box" @tap="goSearch">
 				<SijiIcon name="search" size="sm" color="#A1A1AA" />
-				<input class="search-input" v-model="searchKeyword" placeholder="搜索功能、记录、账单、计划..." confirm-type="search"
-					@input="onSearchInput" @confirm="onSearchConfirm" />
-				<text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
-			</view>
-
-			<!-- 功能搜索结果 -->
-			<view v-if="searchKeyword && filteredFuncEntries.length > 0" class="search-results">
-				<text class="section-label">功能匹配</text>
-				<view class="card-list card-list-stagger">
-					<view v-for="entry in filteredFuncEntries" :key="entry.id" class="entry-card card-press"
-						@tap="goToEntry(entry)">
-						<view class="entry-left">
-							<view class="entry-icon-circle">
-								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
-							</view>
-							<view class="entry-info">
-								<text class="entry-title">{{ entry.title }}</text>
-								<text class="entry-desc">{{ entry.desc }}</text>
-							</view>
-						</view>
-						<text class="entry-arrow">›</text>
-					</view>
-				</view>
-			</view>
-
-			<!-- 对话搜索结果 -->
-			<view v-if="searchKeyword && conversationResults.length > 0" class="search-results">
-				<text class="section-label">对话内容 · {{ conversationResults.length }} 条</text>
-				<view class="card-list">
-					<view v-for="msg in conversationResults" :key="msg.convId + '-' + msg.messageIndex"
-						class="conv-result-card card-press" @tap="goToConversation(msg.convId)">
-						<view class="conv-result-top">
-							<text class="conv-role-tag" :class="msg.role">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
-							<text class="conv-title">{{ msg.convTitle }}</text>
-							<SijiIcon name="chevron-right" size="sm" class="conv-arrow" />
-						</view>
-						<text class="conv-preview">{{ msg.preview }}</text>
-					</view>
-				</view>
+				<text class="search-placeholder">搜索记录、账单、计划、对话...</text>
 			</view>
 
 			<!-- ============================== -->
 			<!-- 生活记录分区 -->
 			<!-- ============================== -->
-			<text class="section-label">生活记录</text>
-			<view class="card-list card-list-stagger">
+			<view class="section-header">
+				<text class="section-label">生活记录</text>
+				<view class="section-stats">
+					<text v-for="s in lifeStats" :key="s.label" class="section-stat">
+						<text class="stat-val">{{ s.value }}</text>
+						<text class="stat-lbl">{{ s.label }}</text>
+					</text>
+				</view>
+				<view class="layout-toggle" @tap="toggleLayout">
+					<text class="toggle-icon" :class="{ active: layoutMode === 'horizontal' }">⊞</text>
+					<text class="toggle-icon" :class="{ active: layoutMode === 'vertical' }">≣</text>
+				</view>
+			</view>
+
+			<!-- 横向布局 -->
+			<scroll-view v-if="layoutMode === 'horizontal'" class="card-list-h" scroll-x>
+				<view v-for="card in funcEntries" :key="card.id" class="entry-card-h card-press"
+					@tap="goPage(card.listPage)">
+					<view class="entry-icon-circle">
+						<SijiIcon :name="card.iconName" size="md" color="#18181B" />
+					</view>
+					<text class="entry-title-h">{{ card.title }}</text>
+					<text class="entry-desc-h">{{ card.desc }}</text>
+					<view class="entry-new-h btn-tactile" @tap.stop="goPage(card.newPage)">
+						<text class="entry-new-text">+</text>
+					</view>
+				</view>
+			</scroll-view>
+
+			<!-- 纵向布局 -->
+			<view v-else class="card-list card-list-stagger">
 				<view v-for="card in funcEntries" :key="card.id" class="entry-card card-press"
 					@tap="goPage(card.listPage)">
 					<view class="entry-left">
@@ -314,53 +233,60 @@
 				</view>
 			</view>
 
-			<!-- 消费分析（精简为单行入口，详细数据在账单统计页） -->
-			<view class="analysis-link" v-if="categoryRanking.length > 0 || weekTrend.length > 0" @tap="goStats">
+			<!-- 消费分析入口 -->
+			<view class="analysis-link" v-if="weekTrend.length > 0" @tap="goStats">
 				<text class="analysis-link-text">消费分析 · 近7天 ¥{{ weekTotal.toFixed(0) }}</text>
 				<text class="analysis-link-arrow" v-if="weekCompare !== 0" :class="weekCompare > 0 ? 'up' : 'down'">{{ weekCompare > 0 ? '↑' : '↓' }}{{ Math.abs(weekCompare) }}%</text>
 				<SijiIcon name="chevron-right" size="xs" color="#A1A1AA" />
 			</view>
 
 			<!-- ============================== -->
-		<!-- AI 面板分区（合并为单列表） -->
-		<!-- ============================== -->
-		<text class="section-label">AI 面板</text>
-
-		<!-- 我的信息统计行 -->
-		<view class="profile-card-ai" @tap="goSub('/pages/settings/sub/profile')">
-			<view class="pa-header">
-				<view class="pa-avatar">{{ profileName.charAt(0) }}</view>
-				<view class="pa-meta">
-					<text class="pa-name">{{ profileName }}</text>
-					<view class="pa-stats">
-						<text class="pa-stat" v-if="profileEnabled">{{ profileFilled }} 项信息</text>
-						<text class="pa-stat" v-if="profileEnabled">{{ relationsStats.total }} 位人物</text>
-						<text class="pa-stat" v-if="memoryEnabled">{{ decisionStats.total }} 条决策</text>
-						<text class="pa-stat" v-if="!profileEnabled && !memoryEnabled">点击开启</text>
-					</view>
+			<!-- AI 面板分区 -->
+			<!-- ============================== -->
+			<view class="section-header">
+				<text class="section-label">AI 面板</text>
+				<view class="section-stats">
+					<text v-for="s in aiStats" :key="s.label" class="section-stat">
+						<text class="stat-val">{{ s.value }}</text>
+						<text class="stat-lbl">{{ s.label }}</text>
+					</text>
 				</view>
-				<text class="pa-arrow">›</text>
+				<view class="layout-toggle" @tap="toggleLayout">
+					<text class="toggle-icon" :class="{ active: layoutMode === 'horizontal' }">⊞</text>
+					<text class="toggle-icon" :class="{ active: layoutMode === 'vertical' }">≣</text>
+				</view>
 			</view>
-		</view>
 
-		<!-- AI 入口合并列表（数据层 + 执行层） -->
-		<view class="card-list card-list-stagger">
-			<view v-for="entry in aiAllEntries" :key="entry.id" class="entry-card card-press"
-				@tap="goSub(entry.route)">
-				<view class="entry-left">
+			<!-- 横向布局 -->
+			<scroll-view v-if="layoutMode === 'horizontal'" class="card-list-h" scroll-x>
+				<view v-for="entry in aiEntries" :key="entry.id" class="entry-card-h card-press"
+					@tap="goSub(entry.route)">
 					<view class="entry-icon-circle">
 						<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
 					</view>
-					<view class="entry-info">
-						<text class="entry-title">{{ entry.title }}</text>
-						<text class="entry-desc">{{ entry.desc }}</text>
-					</view>
+					<text class="entry-title-h">{{ entry.title }}</text>
+					<text class="entry-desc-h">{{ entry.desc }}</text>
 				</view>
-				<text class="entry-arrow">›</text>
-			</view>
-		</view>
+			</scroll-view>
 
-		<view style="height: 40rpx" />
+			<!-- 纵向布局 -->
+			<view v-else class="card-list card-list-stagger">
+				<view v-for="entry in aiEntries" :key="entry.id" class="entry-card card-press"
+					@tap="goSub(entry.route)">
+					<view class="entry-left">
+						<view class="entry-icon-circle">
+							<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+						</view>
+						<view class="entry-info">
+							<text class="entry-title">{{ entry.title }}</text>
+							<text class="entry-desc">{{ entry.desc }}</text>
+						</view>
+					</view>
+					<text class="entry-arrow">›</text>
+				</view>
+			</view>
+
+			<view style="height: 40rpx" />
 		</scroll-view>
 	</view>
 </template>
