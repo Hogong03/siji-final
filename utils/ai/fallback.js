@@ -46,9 +46,9 @@ export function extractFallbackAction(userMessage, aiReply) {
     }
   }
 
-  // === 画像更新 ===
-  const profileKeywords = /名字|叫|姓名|性别|男|女|生日|出生|职业|工作|在哪|住在|城市|爱好|喜欢|喜欢吃|不吃|过敏|预算|作息|睡觉|MBTI|血型|星座/
-  if (profileKeywords.test(userMessage) && /记下|更新|帮|已/.test(reply)) {
+  // === 画像更新 — 仅在用户明确告知个人信息时触发 ===
+  const profileExplicit = /(?:记一下|帮我记|更新|我的)(?:名字|叫|姓名|性别|生日|出生|职业|工作|在哪|住在|城市|爱好|喜欢|喜欢吃|不吃|过敏|预算|作息|睡觉|MBTI|血型|星座)/
+  if (profileExplicit.test(userMessage) && OP_CLAIM_RE_FALLBACK.test(reply)) {
     const updates = []
     let m = userMessage.match(/我(?:叫|名字(?:是|叫)?|姓名(?:是)?)\s*([\u4e00-\u9fa5a-zA-Z]{2,10})/)
     if (m) updates.push({ card: 'basic', field: 'nickname', value: m[1] })

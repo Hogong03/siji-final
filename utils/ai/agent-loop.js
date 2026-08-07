@@ -74,10 +74,13 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       // 若有 onChunk（来自 runAgentChat），推送内容（非 H5 模拟逐字）
       if (onChunk && content) {
         const chars = content.split('')
-        const group = content.length > 100 ? 8 : 3
-        for (let i = 0; i < chars.length; i += group) {
-          onChunk(chars.slice(i, i + group).join(''))
-          await new Promise(r => setTimeout(r, 8))
+        const baseGroup = content.length > 150 ? 12 : 5
+        for (let i = 0; i < chars.length; i += baseGroup + Math.floor(Math.random() * 4)) {
+          const groupSize = Math.min(baseGroup + Math.floor(Math.random() * 4), chars.length - i)
+          onChunk(chars.slice(i, i + groupSize).join(''))
+          const lastChar = chars[Math.min(i + groupSize - 1, chars.length - 1)]
+          const delay = /[。！？\n]/.test(lastChar) ? 40 : /[，、；：]/.test(lastChar) ? 25 : 8
+          await new Promise(r => setTimeout(r, delay))
         }
       }
       // 兼容：AI 仍可能返回 JSON action 格式（部分场景）
@@ -146,6 +149,12 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
  * 调用带 tools 参数的 AI（非流式）
  * 当 isFinal=true 时用流式请求（最后一轮，AI 给最终回复）
  */
+/** 工具调用轮次超时（ms）——工具轮次 30s，最终回复 45s */
+const TOOL_CALL_TIMEOUT = 30000
+const FINAL_REPLY_TIMEOUT = 45000
+const MAX_API_RETRIES = 2
+
+/** 带重试的非流式工具调用 */
 function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk = null) {
   // 最后一轮且非工具调用 → 流式输出
   if (isFinal && onChunk && provider.supportsStream !== false) {
@@ -167,6 +176,13 @@ function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk
     tool_choice: 'auto'
   }
 
+  const timeout = isFinal ? FINAL_REPLY_TIMEOUT : TOOL_CALL_TIMEOUT
+
+  return callWithRetry(provider, cfg, body, apiKey, timeout, 0)
+}
+
+/** 带指数退避重试的 uni.request 封装 */
+function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
   return new Promise((resolve) => {
     uni.request({
       url: provider.endpoint,
@@ -176,7 +192,7 @@ function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk
         'Authorization': `Bearer ${apiKey}`
       },
       data: body,
-      timeout: 60000,
+      timeout,
       success(res) {
         if (res.statusCode === 200 && res.data?.choices?.[0]) {
           const choice = res.data.choices[0]
@@ -184,11 +200,39 @@ function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk
         } else {
           const errMsg = res.data?.error?.message || res.data?.message || `HTTP ${res.statusCode}`
           logger.error('[AgentLoop] API error:', res.statusCode, errMsg)
+
+          // 429/500+ 可重试
+          if ((res.statusCode === 429 || res.statusCode >= 500) && retryCount < MAX_API_RETRIES) {
+            const retryAfter = res.header?.['Retry-After'] || res.header?.['retry-after']
+            const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, retryCount) * 1500
+            logger.warn(`[AgentLoop] HTTP ${res.statusCode}, retry ${retryCount + 1}/${MAX_API_RETRIES} in ${delay}ms`)
+            setTimeout(() => {
+              callWithRetry(provider, cfg, body, apiKey, timeout, retryCount + 1).then(resolve)
+            }, delay)
+            return
+          }
+
+          // 401 不重试
+          if (res.statusCode === 401) {
+            resolve({ error: `${provider.name} API Key 无效，请在设置页检查配置` })
+            return
+          }
+
           resolve({ error: errMsg })
         }
       },
       fail(err) {
         logger.error('[AgentLoop] Network error:', err.errMsg)
+
+        if (retryCount < MAX_API_RETRIES) {
+          const delay = Math.pow(2, retryCount) * 1500
+          logger.warn(`[AgentLoop] Network retry ${retryCount + 1}/${MAX_API_RETRIES} in ${delay}ms`)
+          setTimeout(() => {
+            callWithRetry(provider, cfg, body, apiKey, timeout, retryCount + 1).then(resolve)
+          }, delay)
+          return
+        }
+
         resolve({ error: '网络连接失败，请稍后再试' })
       }
     })
@@ -210,11 +254,16 @@ function callWithToolsStream(provider, cfg, messages, apiKey, onChunk) {
     const content = res.message?.content || ''
     if (content && onChunk) {
       const chars = content.split('')
-      const group = content.length > 100 ? 8 : 3
+      const baseGroup = content.length > 150 ? 12 : 5
       return (async () => {
-        for (let i = 0; i < chars.length; i += group) {
-          onChunk(chars.slice(i, i + group).join(''))
-          await new Promise(r => setTimeout(r, 8))
+        let i = 0
+        while (i < chars.length) {
+          const groupSize = Math.min(baseGroup + Math.floor(Math.random() * 4), chars.length - i)
+          onChunk(chars.slice(i, i + groupSize).join(''))
+          i += groupSize
+          const lastChar = chars[i - 1]
+          const delay = /[。！？\n]/.test(lastChar) ? 40 : /[，、；：]/.test(lastChar) ? 25 : 8
+          await new Promise(r => setTimeout(r, delay))
         }
         return res
       })()

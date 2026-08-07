@@ -88,12 +88,13 @@ describe('executeTool', () => {
     expect(r.text).toContain('缺少记录ID')
   })
 
-  it('破坏性工具 → confirm 标记，不执行', () => {
-    const store = { executeAction: vi.fn() }
+  it('CONFIRM_TOOLS 为空集 — Agent 不做删除，undo_last 可直接执行', () => {
+    // undo_last 是安全操作，不需要 confirm
+    const store = { executeAction: vi.fn(() => ({ success: true, message: '已撤销', detail: { undone: true } })) }
     const r = executeTool(store, 'undo_last', {})
-    expect(r.confirm).toBe(true)
-    expect(r.ok).toBe(false)
-    expect(store.executeAction).not.toHaveBeenCalled()
+    expect(r.confirm).toBeUndefined()
+    expect(r.ok).toBe(true)
+    expect(store.executeAction).toHaveBeenCalled()
   })
 
   it('查询无数据 → 友好提示', () => {

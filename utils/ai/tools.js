@@ -299,14 +299,15 @@ export const TOOL_DEFINITIONS = [
 /** 工具名 → 对应的 action type（多数同名，个别映射） */
 const TOOL_ACTION_MAP = {}
 
-/** 破坏性/需确认工具 — agent 不自动执行，改为提示用户确认 */
-const CONFIRM_TOOLS = new Set(['undo_last', 'delete_diary', 'delete_bill', 'delete_plan', 'delete_relation', 'clear_profile'])
+/** 需确认工具 — agent 不自动执行，改为提示用户确认
+ * 当前 TOOL_DEFINITIONS 未定义 delete_* 等破坏性工具（Agent 不做删除），故此集合为空。
+ * 若未来在 TOOL_DEFINITIONS 中加入 delete_* 工具，需在此添加对应名称。 */
+export const CONFIRM_TOOLS = new Set()
 
 /** 查询类工具（只读，安全自动执行） */
 export const QUERY_TOOLS = new Set([
   'query_diary', 'query_bill', 'query_stat', 'query_plan', 'query_relation',
-  'query_decision', 'query_combined', 'get_profile', 'summarize_diaries',
-  'analyze_decisions'
+  'query_decision', 'query_combined', 'get_profile', 'summarize_diaries'
 ])
 
 // ==================== 执行器分发 ====================

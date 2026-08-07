@@ -5,9 +5,14 @@
 
 /**
  * 核心 action schema（始终注入，已压缩字段注释）
- * 注意：此 schema 与 tools.js 的 TOOL_DEFINITIONS 描述同一能力，
- * 但格式不同（此处为紧凑文本供路径 A JSON action，tools.js 为 OpenAI function schema 供路径 B）。
- * 新增 action 时两处都要改。
+ *
+ * ⚠️ 一致性维护：此 schema 与 tools.js 的 TOOL_DEFINITIONS 描述同一能力集，
+ * 但格式不同（此处为紧凑文本供 JSON action 路径，tools.js 为 OpenAI function schema 供 Agent 路径）。
+ * CORE_ACTIONS 是超集（含 delete_*/update_* 等破坏性操作），TOOL_DEFINITIONS 是 Agent 子集（仅安全操作）。
+ * 新增 action 时：
+ *   - 查询/创建类 → 两处都加
+ *   - 更新/删除类 → 只加 CORE_ACTIONS（Agent 不做删除/更新）
+ *   - 跑 tests/action-schema-consistency.test.js 校验一致性
  */
 export const CORE_ACTIONS = `记录:
 - create_diary: {content,tags?}  // 自由文本，首行自动作为标题。tags 尽量从用户历史标签中选

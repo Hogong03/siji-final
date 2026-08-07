@@ -70,7 +70,7 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
 /** 判断消息是否可能涉及数据查询（触发 agent 工具循环） */
 function looksDataQuery(msg) {
   if (!msg) return false
-  // 原 `花` 单字过宽（"花好看""花时间"误触发），改为词组
+  // 避免单字误触发："花好看""今天好累"等不进入 agent 循环
   return /(?:花了|花掉|账单|消费|记录|日记|计划|目标|人物|朋友|决策|纠结|查一下|多少|几个|几次|哪些|上次|之前|上个月|这个月|本月|最近|预算|总结|周报|月报)/.test(msg)
 }
 
