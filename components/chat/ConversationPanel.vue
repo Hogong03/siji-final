@@ -1,12 +1,12 @@
 <script setup>
 /**
- * ConversationPanel - 会话列表底部抽屉组件 v2
+ * ConversationPanel - 会话列表底部抽屉组件 v3
  *
- * 新增分类功能：
- * - 三个筛选维度：全部 / 时间分组 / 标签筛选
+ * 筛选改为按钮触发：header 右侧筛选按钮，点击弹出 ActionSheet
+ * - 全部 / 按时间 / 按标签 三种模式
+ * - 选「按标签」后再弹标签选择
  * - 时间分组：今天 / 昨天 / 本周 / 更早
- * - 标签筛选：点击标签 chip 筛选，长按删除标签
- * - 对话项支持打标签（点击 tag 图标）
+ * - 对话项支持打标签（点击 more 图标）
  *
  * 职责: 纯展示 + 事件上报，不直接访问 store
  */
@@ -14,8 +14,8 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  conversations: { type: Array, default: () => [] },        // 已筛选+排序后的列表
-  groupedConversations: { type: Array, default: () => [] }, // 时间分组结果
+  conversations: { type: Array, default: () => [] },
+  groupedConversations: { type: Array, default: () => [] },
   activeId: { type: String, default: '' },
   activeFilter: { type: String, default: 'all' },
   activeTag: { type: String, default: null },
@@ -42,6 +42,51 @@ function formatConvTime(ts) {
 function getConvTags(conv) {
   return (conv && conv.tags) ? conv.tags : []
 }
+
+// 筛选按钮文案
+function getFilterLabel() {
+  if (props.activeFilter === 'time') return '按时间'
+  if (props.activeFilter === 'tag') {
+    return props.activeTag ? props.activeTag : '按标签'
+  }
+  return '筛选'
+}
+
+// 点击筛选按钮 → 弹 ActionSheet
+function handleFilterTap() {
+  const items = ['全部', '按时间分组', '按标签筛选']
+  uni.showActionSheet({
+    itemList: items,
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        emit('set-filter', 'all')
+      } else if (res.tapIndex === 1) {
+        emit('set-filter', 'time')
+      } else if (res.tapIndex === 2) {
+        emit('set-filter', 'tag')
+        // 如果有标签，延迟弹标签选择
+        if (props.allTags.length > 0) {
+          setTimeout(() => showTagSelector(), 300)
+        }
+      }
+    }
+  })
+}
+
+function showTagSelector() {
+  if (props.allTags.length === 0) return
+  const items = ['全部', ...props.allTags]
+  uni.showActionSheet({
+    itemList: items,
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        emit('select-tag', null)
+      } else {
+        emit('select-tag', props.allTags[res.tapIndex - 1])
+      }
+    }
+  })
+}
 </script>
 
 <template>
@@ -49,59 +94,8 @@ function getConvTags(conv) {
     <view class="conv-drawer" @tap.stop>
       <view class="conv-drawer-header">
         <text class="conv-drawer-title">对话列表</text>
-      </view>
-
-      <!-- 筛选切换栏 -->
-      <view class="conv-filter-bar">
-        <view
-          class="filter-tab"
-          :class="{ active: activeFilter === 'all' }"
-          @tap="$emit('set-filter', 'all')"
-        >
-          <text>全部</text>
-        </view>
-        <view
-          class="filter-tab"
-          :class="{ active: activeFilter === 'time' }"
-          @tap="$emit('set-filter', 'time')"
-        >
-          <text>按时间</text>
-        </view>
-        <view
-          class="filter-tab"
-          :class="{ active: activeFilter === 'tag' }"
-          @tap="$emit('set-filter', 'tag')"
-        >
-          <text>按标签</text>
-        </view>
-      </view>
-
-      <!-- 标签筛选区（仅在 tag 模式下显示） -->
-      <view v-if="activeFilter === 'tag'" class="tag-chips-bar">
-        <view v-if="allTags.length === 0" class="tag-empty-hint">
-          <text>暂无标签，点击对话右侧标签图标添加</text>
-        </view>
-        <view v-else class="tag-chips-scroll" scroll-x>
-          <scroll-view scroll-x class="tag-scroll-view">
-            <view class="tag-chips-list">
-              <view
-                class="tag-chip"
-                :class="{ active: !activeTag }"
-                @tap="$emit('select-tag', null)"
-              >
-                <text>全部</text>
-              </view>
-              <view
-                v-for="tag in allTags"
-                :key="tag"
-                class="tag-chip"
-                :class="{ active: activeTag === tag }"
-                @tap="$emit('select-tag', tag)"
-              >
-                <text>{{ tag }}</text>
-              </view>
-            </view>
-          </scroll-view>
+        <view class="conv-filter-btn" :class="{ active: activeFilter !== 'all' }" @tap="handleFilterTap">
+          <text class="conv-filter-label">{{ getFilterLabel() }}</text>
         </view>
       </view>
 
@@ -183,7 +177,7 @@ function getConvTags(conv) {
         </template>
 
         <view v-if="conversations.length === 0" class="conv-empty">
-          <text class="conv-empty-text">暂无对话</text>
+          <text class="conv-empty-text">{{ activeFilter === 'tag' && activeTag ? '该标签下暂无对话' : '暂无对话' }}</text>
         </view>
         <view class="conv-new-divider" @tap="$emit('new')">
           <view class="conv-divider-line" />
@@ -264,84 +258,27 @@ function getConvTags(conv) {
   opacity: 0.3;
 }
 
-/* 筛选切换栏 */
-.conv-filter-bar {
+/* 筛选按钮 */
+.conv-filter-btn {
   display: flex;
-  padding: 0 $spacing-md;
-  border-bottom: 1rpx solid #E4E4E7;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.filter-tab {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-sm 0;
-  font-size: $font-sm;
-  color: #71717A;
-  position: relative;
-  transition: color 0.2s;
-
-  &.active {
-    color: #18181B;
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 48rpx;
-      height: 4rpx;
-      background: #18181B;
-      border-radius: 2rpx;
-    }
-  }
-}
-
-/* 标签 chips 区 */
-.tag-chips-bar {
-  flex-shrink: 0;
-  padding: $spacing-xs $spacing-md;
-  border-bottom: 1rpx solid #E4E4E7;
-  box-sizing: border-box;
-}
-
-.tag-empty-hint {
-  padding: $spacing-sm 0;
-  text-align: center;
-  font-size: $font-xs;
-  color: #A1A1AA;
-}
-
-.tag-scroll-view {
-  white-space: nowrap;
-}
-
-.tag-chips-list {
-  display: inline-flex;
-  gap: $spacing-xs;
-  padding: $spacing-xs 0;
-}
-
-.tag-chip {
-  display: inline-flex;
   align-items: center;
   padding: 8rpx 24rpx;
   border-radius: 32rpx;
   background: #F4F4F5;
-  font-size: $font-xs;
-  color: #71717A;
-  white-space: nowrap;
   transition: all 0.2s;
 
   &.active {
     background: #18181B;
-    color: #FFFFFF;
+    .conv-filter-label { color: #FFFFFF; }
   }
+
+  &:active { opacity: 0.7; }
+}
+
+.conv-filter-label {
+  font-size: $font-sm;
+  color: #71717A;
+  font-weight: 500;
 }
 
 /* 时间分组 */
@@ -561,31 +498,15 @@ function getConvTags(conv) {
   .conv-drawer-header::before {
     background: #52525B;
   }
-  .conv-filter-bar {
-    border-bottom-color: #27272A;
-  }
-  .filter-tab {
-    color: #71717A;
-    &.active {
-      color: #FAFAFA;
-      &::after {
-        background: #FAFAFA;
-      }
-    }
-  }
-  .tag-chips-bar {
-    border-bottom-color: #27272A;
-  }
-  .tag-chip {
+  .conv-filter-btn {
     background: #27272A;
-    color: #A1A1AA;
     &.active {
       background: #FAFAFA;
-      color: #18181B;
+      .conv-filter-label { color: #18181B; }
     }
   }
-  .tag-empty-hint {
-    color: #52525B;
+  .conv-filter-label {
+    color: #A1A1AA;
   }
   .conv-group-header {
     .conv-group-label { color: #52525B; }
