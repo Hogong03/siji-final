@@ -1,6 +1,10 @@
 .feedback-page {
   min-height: 100vh;
   background: #F4F4F5;
+}
+
+.feedback-scroll {
+  height: 100vh;
   padding: 24rpx;
   padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;

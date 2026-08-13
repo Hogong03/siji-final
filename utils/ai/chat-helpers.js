@@ -5,6 +5,7 @@
  */
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
+import { buildSkillsPrompt } from './skills.js'
 import { buildMemoryContext } from '@/utils/memory.js'
 import { buildRelationsContext } from '@/utils/relations.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
@@ -50,6 +51,14 @@ export function buildChatMessages(userMessage, history, cfg) {
   const decisionsCtx = buildDecisionsContext()
   if (decisionsCtx) {
     system += decisionsCtx
+  }
+
+  // Agent 模式：注入技能 prompt
+  if (cfg && cfg.agentMode && cfg.skills && cfg.skills.length > 0) {
+    const skillsPrompt = buildSkillsPrompt(cfg.skills)
+    if (skillsPrompt) {
+      system += skillsPrompt
+    }
   }
 
   // 关系上下文已包含被提到的人物详情（buildRelationsContext 内部处理）

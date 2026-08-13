@@ -71,6 +71,7 @@ function handleDelete(item) {
 
 <template>
   <view class="feedback-page">
+    <scroll-view class="feedback-scroll" scroll-y>
     <!-- 统计概览 -->
     <view class="stats-bar">
       <view class="stat-item">
@@ -132,8 +133,9 @@ function handleDelete(item) {
 
     <!-- 底部安全区占位 -->
     <view class="bottom-spacer" />
+    </scroll-view>
 
-    <!-- FAB 新建 -->
+    <!-- FAB 新建（放在 scroll-view 外面） -->
     <view class="fab" @tap="goAdd">
       <text class="fab-icon">+</text>
     </view>

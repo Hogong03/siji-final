@@ -159,6 +159,7 @@ export const useAppStore = defineStore('app', () => {
     // ==================== Agent ====================
     agents, activeAgentId, activeAgent, customAgents, agentCount,
     getAgentSystemPrompt: agent.getAgentSystemPrompt,
+    getAgentSkills: agent.getAgentSkills,
     createAgent: agent.createAgent,
     updateAgent: agent.updateAgent,
     deleteAgent: agent.deleteAgent,

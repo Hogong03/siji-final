@@ -219,3 +219,75 @@ $spacing-lg: 32rpx;
 
   &:active { opacity: 0.85; }
 }
+
+/* 技能选择 */
+.skill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.skill-option {
+  width: calc(33.33% - 11rpx);
+  background: #F4F4F5;
+  border: 2rpx solid transparent;
+  border-radius: 16rpx;
+  padding: 20rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  transition: all 0.2s;
+
+  &.active {
+    background: #18181B;
+    border-color: #000000;
+  }
+}
+
+.skill-icon {
+  font-size: 36rpx;
+}
+
+.skill-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #18181B;
+}
+
+.skill-desc {
+  font-size: 20rpx;
+  color: #71717A;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.skill-option.active .skill-name,
+.skill-option.active .skill-icon {
+  color: #FFFFFF;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-option {
+    background: #27272A;
+
+    &.active {
+      background: #FAFAFA;
+      border-color: #FAFAFA;
+    }
+  }
+
+  .skill-name {
+    color: #FAFAFA;
+  }
+
+  .skill-desc {
+    color: #71717A;
+  }
+
+  .skill-option.active .skill-name,
+  .skill-option.active .skill-icon {
+    color: #000000;
+  }
+}

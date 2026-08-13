@@ -9,8 +9,14 @@
 import { useAppStore } from '@/store/index.js'
 import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import { SKILL_REGISTRY } from '@/utils/ai/skills.js'
 
 const store = useAppStore()
+
+function getSkillIcon(id) {
+  const s = SKILL_REGISTRY.find(x => x.id === id)
+  return s ? s.icon : ''
+}
 
 /* ---- 预设 Agent 模板 ---- */
 const PRESET_TEMPLATES = [
@@ -19,6 +25,7 @@ const PRESET_TEMPLATES = [
     avatar: '🧘',
     icon: '/static/icons/agent-psychologist.png',
     description: '温暖共情,帮你梳理情绪、觉察内在模式',
+    skills: ['memory', 'relation', 'decision'],
     systemPrompt: `你是思迹的心理咨询师 Agent,融合了人本主义倾听、认知行为疗法(CBT)和正念觉察的视角。
 
 ## 核心定位
@@ -44,6 +51,7 @@ const PRESET_TEMPLATES = [
     avatar: '🏋️',
     icon: '/static/icons/agent-fitness.png',
     description: '科学制定训练计划,饮食监督+进度跟踪',
+    skills: ['memory', 'plan_phases', 'summary'],
     systemPrompt: `你是思迹的私人健身教练 Agent,具备运动科学、营养学和行为改变的专业视角。
 
 ## 核心定位
@@ -70,6 +78,7 @@ const PRESET_TEMPLATES = [
     avatar: '💰',
     icon: '/static/icons/agent-finance.png',
     description: '消费趋势分析、预算规划、理财思维启蒙',
+    skills: ['memory', 'summary'],
     systemPrompt: `你是思迹的私人财务顾问 Agent,具备个人理财规划、消费行为分析和财务教育的专业视角。
 
 ## 核心定位
@@ -95,6 +104,7 @@ const PRESET_TEMPLATES = [
     avatar: '📚',
     icon: '/static/icons/agent-study.png',
     description: '将复杂知识拆解为可执行的渐进式学习路径',
+    skills: ['memory', 'plan_phases', 'summary'],
     systemPrompt: `你是思迹的学习伙伴 Agent,融合了费曼学习法、间隔重复和番茄工作法的实践框架。
 
 ## 核心定位
@@ -122,6 +132,7 @@ const PRESET_TEMPLATES = [
     avatar: '✨',
     icon: '/static/icons/agent-minimal.png',
     description: '每句话都在刀刃上,零废话的极致效率助手',
+    skills: ['memory'],
     systemPrompt: `你是思迹的极简助手 Agent,追求极致的信息密度和零冗余表达。
 
 ## 核心规则(不可违反)
@@ -200,6 +211,10 @@ function handleActivate(agent) {
         <view class="agent-info">
           <text class="agent-name">{{ agent.name }}</text>
           <text class="agent-desc">{{ agent.description || '暂无描述' }}</text>
+          <view v-if="agent.skills && agent.skills.length" class="agent-skills">
+            <text v-for="sid in agent.skills.slice(0, 4)" :key="sid" class="skill-tag">{{ getSkillIcon(sid) }}</text>
+            <text v-if="agent.skills.length > 4" class="skill-more">+{{ agent.skills.length - 4 }}</text>
+          </view>
         </view>
         <view v-if="store.activeAgentId === agent.id" class="agent-badge">
           <text class="badge-dot">●</text>

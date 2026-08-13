@@ -15,6 +15,7 @@
  */
 import { buildProfileContext } from '../profile.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES, isLiteChatMode } from './prompt-actions.js'
+import { buildSkillsPrompt } from './skills.js'
 
 // 重新导出（保持向后兼容）
 export { isLiteChatMode }
@@ -193,10 +194,10 @@ export function getTopCategory(expenseBills) {
  * 动态段(问候/日期/extActions/profileCtx) → 每次重新拼
  */
 export function buildSystemPrompt(forceRefresh = false, opts = {}) {
-  const { agentMode = false, lite = false } = opts  // lite: 精简 action schema（闲聊模式）
+  const { agentMode = false, lite = false, skills = [] } = opts  // lite: 精简 action schema（闲聊模式）；skills: agent 技能 prompt
   const cacheNow = Date.now()
-  // lite 模式不缓存（依赖每次用户消息判断）
-  if (!lite && !forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
+  // lite 模式和 agent 模式不缓存
+  if (!lite && !agentMode && !forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
     return _cache.systemPrompt
   }
 
@@ -258,9 +259,10 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
   const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
   const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
-  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}`
+  const skillsPrompt = buildSkillsPrompt(skills)
+  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}${skillsPrompt ? '\n\n' + skillsPrompt : ''}`
 
-  if (!lite) {
+  if (!lite && !agentMode) {
     _cache.systemPrompt = result
     _cache.systemPromptTime = cacheNow
   }

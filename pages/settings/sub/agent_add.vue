@@ -9,6 +9,7 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import { SKILL_REGISTRY } from '@/utils/ai/skills.js'
 
 const store = useAppStore()
 
@@ -21,7 +22,8 @@ const editForm = ref({
   avatar: '🤖',
   icon: '/static/icons/agent-custom.png',
   description: '',
-  systemPrompt: ''
+  systemPrompt: '',
+  skills: ['memory']
 })
 
 /* ---- 预设头像图标 ---- */
@@ -45,6 +47,7 @@ const PRESET_TEMPLATES = [
     avatar: '🧘',
     icon: '/static/icons/agent-psychologist.png',
     description: '温暖共情,帮你梳理情绪、觉察内在模式',
+    skills: ['memory', 'relation', 'decision'],
     systemPrompt: `你是思迹的心理咨询师 Agent,融合了人本主义倾听、认知行为疗法(CBT)和正念觉察的视角。
 
 ## 核心定位
@@ -71,6 +74,7 @@ const PRESET_TEMPLATES = [
     avatar: '🏋️',
     icon: '/static/icons/agent-fitness.png',
     description: '科学制定训练计划,饮食监督+进度跟踪',
+    skills: ['memory', 'plan_phases', 'summary'],
     systemPrompt: `你是思迹的私人健身教练 Agent,具备运动科学、营养学和行为改变的专业视角。
 
 ## 核心定位
@@ -98,6 +102,7 @@ const PRESET_TEMPLATES = [
     avatar: '💰',
     icon: '/static/icons/agent-finance.png',
     description: '消费趋势分析、预算规划、理财思维启蒙',
+    skills: ['memory', 'summary'],
     systemPrompt: `你是思迹的私人财务顾问 Agent,具备个人理财规划、消费行为分析和财务教育的专业视角。
 
 ## 核心定位
@@ -124,6 +129,7 @@ const PRESET_TEMPLATES = [
     avatar: '📚',
     icon: '/static/icons/agent-study.png',
     description: '将复杂知识拆解为可执行的渐进式学习路径',
+    skills: ['memory', 'plan_phases', 'summary'],
     systemPrompt: `你是思迹的学习伙伴 Agent,融合了费曼学习法、间隔重复和番茄工作法的实践框架。
 
 ## 核心定位
@@ -152,6 +158,7 @@ const PRESET_TEMPLATES = [
     avatar: '✨',
     icon: '/static/icons/agent-minimal.png',
     description: '每句话都在刀刃上,零废话的极致效率助手',
+    skills: ['memory'],
     systemPrompt: `你是思迹的极简助手 Agent,追求极致的信息密度和零冗余表达。
 
 ## 核心规则(不可违反)
@@ -191,7 +198,8 @@ onLoad((options) => {
         avatar: agent.avatar,
         icon: agent.icon || '',
         description: agent.description,
-        systemPrompt: agent.systemPrompt
+        systemPrompt: agent.systemPrompt,
+        skills: agent.skills || ['memory']
       }
       uni.setNavigationBarTitle({ title: '编辑 Agent' })
     } else {
@@ -204,7 +212,8 @@ onLoad((options) => {
       editForm.value = {
         id: '', name: tpl.name, avatar: tpl.avatar,
         icon: tpl.icon || '',
-        description: tpl.description, systemPrompt: tpl.systemPrompt
+        description: tpl.description, systemPrompt: tpl.systemPrompt,
+        skills: tpl.skills || ['memory']
       }
     }
     uni.setNavigationBarTitle({ title: '创建 Agent' })
@@ -214,6 +223,15 @@ onLoad((options) => {
 })
 
 /* ---- 操作 ---- */
+function toggleSkill(id) {
+  const idx = editForm.value.skills.indexOf(id)
+  if (idx >= 0) {
+    editForm.value.skills.splice(idx, 1)
+  } else {
+    editForm.value.skills.push(id)
+  }
+}
+
 function saveAgent() {
   if (!editForm.value.name.trim()) {
     uni.showToast({ title: '请输入名称', icon: 'none' })
@@ -224,7 +242,8 @@ function saveAgent() {
     avatar: editForm.value.avatar,
     icon: editForm.value.icon || '/static/icons/agent-custom.png',
     description: editForm.value.description.trim(),
-    systemPrompt: editForm.value.systemPrompt.trim()
+    systemPrompt: editForm.value.systemPrompt.trim(),
+    skills: editForm.value.skills
   }
   if (editMode.value === 'create') {
     const agent = store.createAgent(data)
@@ -287,6 +306,24 @@ function saveAgent() {
             :auto-height="true"
           />
           <text class="char-count">{{ editForm.description.length }}/100</text>
+        </view>
+
+        <!-- 技能选择 -->
+        <view class="form-section">
+          <text class="form-label">技能</text>
+          <text class="form-hint">选择 Agent 具备的能力，选中后对应的工具和行为规则会注入系统提示词</text>
+          <view class="skill-grid">
+            <view
+              v-for="skill in SKILL_REGISTRY" :key="skill.id"
+              class="skill-option"
+              :class="{ active: editForm.skills.includes(skill.id) }"
+              @tap="toggleSkill(skill.id)"
+            >
+              <text class="skill-icon">{{ skill.icon }}</text>
+              <text class="skill-name">{{ skill.name }}</text>
+              <text class="skill-desc">{{ skill.description }}</text>
+            </view>
+          </view>
         </view>
 
         <!-- 系统提示词 -->

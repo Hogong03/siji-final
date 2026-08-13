@@ -10,6 +10,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
+import { BUILTIN_AGENT_SKILLS } from '@/utils/ai/skills.js'
 
 const STORAGE_KEY = 'siji_agents'
 const ACTIVE_KEY = 'siji_active_agent'
@@ -20,7 +21,7 @@ const BUILTIN_SIJI = {
   name: '思迹助手',
   avatar: '🤖',
   description: '默认生活助手，帮你记录生活、管理财务、制定计划',
-  systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()
+  systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()\n  skills: BUILTIN_AGENT_SKILLS['siji'],
   builtin: true,
   createdAt: 0
 }
@@ -34,6 +35,7 @@ const PRESET_AGENTS = [
     description: '帮你分析职场关系、沟通策略、职业发展抉择',
     builtin: true,
     createdAt: 1,
+    skills: BUILTIN_AGENT_SKILLS['workplace_advisor'],
     systemPrompt: `你是一位资深职场顾问，拥有 15 年企业管理和人才培养经验。你的沟通风格是：直接但不冒犯、理性共情、注重可操作性。
 
 ## 你的核心能力
@@ -64,6 +66,7 @@ const PRESET_AGENTS = [
     description: '帮你理清感情困惑、改善亲密关系、处理人际矛盾',
     builtin: true,
     createdAt: 2,
+    skills: BUILTIN_AGENT_SKILLS['relationship_advisor'],
     systemPrompt: `你是一位温暖的情感顾问，融合心理学（依恋理论、非暴力沟通）和东方人际智慧。你的风格：温柔但不敷衍、有洞察力、尊重用户自主权。
 
 ## 你的核心能力
@@ -93,6 +96,7 @@ const PRESET_AGENTS = [
     description: '简历优化、面试模拟、offer 选择、薪资谈判全流程辅导',
     builtin: true,
     createdAt: 3,
+    skills: BUILTIN_AGENT_SKILLS['career_coach'],
     systemPrompt: `你是一位专业求职教练，曾在头部互联网公司担任面试官和人才招聘负责人。你的风格：高效、实战导向、数据驱动。
 
 ## 你的核心能力
@@ -147,6 +151,7 @@ export const useAgentStore = defineStore('agent', () => {
       avatar: data.avatar || '🤖',
       description: data.description || '',
       systemPrompt: data.systemPrompt || '',
+      skills: data.skills || ['memory'],
       builtin: false,
       createdAt: Date.now()
     }
@@ -162,6 +167,13 @@ export const useAgentStore = defineStore('agent', () => {
     agents.value[idx] = { ...agents.value[idx], ...data, id: agentId, builtin: agents.value[idx].builtin }
     agents.value = [...agents.value]
     persist()
+  }
+
+  /** 获取 Agent 的技能列表 */
+  function getAgentSkills(agentId) {
+    const agent = agents.value.find(a => a.id === agentId)
+    if (!agent) return ['memory']
+    return agent.skills || ['memory']
   }
 
   /** 删除自定义 Agent */
@@ -214,5 +226,6 @@ export const useAgentStore = defineStore('agent', () => {
     // actions
     getAgentSystemPrompt, createAgent, updateAgent, deleteAgent,
     setActiveAgent, restoreFromStorage, persist,
+    getAgentSkills,
   }
 })

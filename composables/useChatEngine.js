@@ -110,6 +110,7 @@ export function useChatEngine() {
     let streamedText = ''
     let lastDisplayed = ''
     let displayQueue = ''
+    let queuedTotal = 0
     let rafId = null
     const raf = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (fn) => setTimeout(fn, 16)
     const caf = typeof cancelAnimationFrame !== 'undefined' ? cancelAnimationFrame : (id) => clearTimeout(id)
@@ -220,9 +221,10 @@ export function useChatEngine() {
             streamedText += chunk
             // 每次 chunk 到达都尝试提取
             const displayText = extractReplyFromStream(streamedText)
-            // 把新增部分加入队列
-            if (displayText.length > lastDisplayed.length) {
-              displayQueue += displayText.slice(lastDisplayed.length)
+            // 把新增部分加入队列（用 queuedTotal 而非 lastDisplayed.length，避免队列中未推出内容被重复 append）
+            if (displayText.length > queuedTotal) {
+              displayQueue += displayText.slice(queuedTotal)
+              queuedTotal = displayText.length
               if (!rafId) rafId = raf(pumpDisplay)
             }
           },
@@ -235,6 +237,7 @@ export function useChatEngine() {
           streamedText = ''
           lastDisplayed = ''
           displayQueue = ''
+          queuedTotal = 0
           if (rafId) { caf(rafId); rafId = null }
         }
       )
@@ -244,6 +247,7 @@ export function useChatEngine() {
       if (rafId) { caf(rafId); rafId = null }
       const finalText = extractReplyFromStream(streamedText)
       lastDisplayed = finalText
+      queuedTotal = finalText.length
       store.updateLastMessage({ content: finalText, loading: true })
       if (retryText) streamedText = retryText
 
