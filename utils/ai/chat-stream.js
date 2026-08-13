@@ -51,10 +51,11 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
       // 仅对可能涉及数据的消息启用 agent 循环，纯闲聊走原路径（避免多余延迟）
       if (looksDataQuery(message) || isCommandMessage(message)) {
         logger.log('[AgentMode] Enabling tool loop for message')
-        // 注入 agent skills
+        // 注入 agent skills + agentId（内置 Agent 使用定制化技能 prompt）
         if (store.getAgentSkills) {
           cfg.skills = store.getAgentSkills(store.activeAgentId)
         }
+        cfg.agentId = store.activeAgentId
         cfg.agentMode = true
         return runAgentChat(store, message, conversationId, cfg, history || getRecentHistory(), onChunk)
       }

@@ -194,7 +194,7 @@ export function getTopCategory(expenseBills) {
  * 动态段(问候/日期/extActions/profileCtx) → 每次重新拼
  */
 export function buildSystemPrompt(forceRefresh = false, opts = {}) {
-  const { agentMode = false, lite = false, skills = [] } = opts  // lite: 精简 action schema（闲聊模式）；skills: agent 技能 prompt
+  const { agentMode = false, lite = false, skills = [], agentId = null } = opts  // lite: 精简 action schema（闲聊模式）；skills: agent 技能 prompt
   const cacheNow = Date.now()
   // lite 模式和 agent 模式不缓存
   if (!lite && !agentMode && !forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
@@ -259,7 +259,7 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
   const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
   const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
-  const skillsPrompt = buildSkillsPrompt(skills)
+  const skillsPrompt = buildSkillsPrompt(skills, agentId)
   const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}${skillsPrompt ? '\n\n' + skillsPrompt : ''}`
 
   if (!lite && !agentMode) {

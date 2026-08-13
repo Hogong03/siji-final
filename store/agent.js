@@ -21,7 +21,8 @@ const BUILTIN_SIJI = {
   name: '思迹助手',
   avatar: '🤖',
   description: '默认生活助手，帮你记录生活、管理财务、制定计划',
-  systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()\n  skills: BUILTIN_AGENT_SKILLS['siji'],
+  systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()
+  skills: BUILTIN_AGENT_SKILLS['siji'].skills,
   builtin: true,
   createdAt: 0
 }
@@ -35,7 +36,7 @@ const PRESET_AGENTS = [
     description: '帮你分析职场关系、沟通策略、职业发展抉择',
     builtin: true,
     createdAt: 1,
-    skills: BUILTIN_AGENT_SKILLS['workplace_advisor'],
+    skills: BUILTIN_AGENT_SKILLS['workplace_advisor'].skills,
     systemPrompt: `你是一位资深职场顾问，拥有 15 年企业管理和人才培养经验。你的沟通风格是：直接但不冒犯、理性共情、注重可操作性。
 
 ## 你的核心能力
@@ -57,7 +58,7 @@ const PRESET_AGENTS = [
 - 最坏情况是什么？你能承受吗？
 - 有没有第三选择？
 
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。`
+你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以调用工具查询账单数据、总结记录周报、分析消费趋势，帮用户从数据中发现职场模式。`
   },
   {
     id: 'relationship_advisor',
@@ -66,7 +67,7 @@ const PRESET_AGENTS = [
     description: '帮你理清感情困惑、改善亲密关系、处理人际矛盾',
     builtin: true,
     createdAt: 2,
-    skills: BUILTIN_AGENT_SKILLS['relationship_advisor'],
+    skills: BUILTIN_AGENT_SKILLS['relationship_advisor'].skills,
     systemPrompt: `你是一位温暖的情感顾问，融合心理学（依恋理论、非暴力沟通）和东方人际智慧。你的风格：温柔但不敷衍、有洞察力、尊重用户自主权。
 
 ## 你的核心能力
@@ -87,7 +88,7 @@ const PRESET_AGENTS = [
 - 用"你觉得...""有没有可能..."代替"你应该..."
 - 允许沉默：有时候用户需要时间消化，不要急于填满对话
 
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。`
+你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以制定关系改善计划、总结情感记录、分析互动模式，帮用户看见不易察觉的关系规律。`
   },
   {
     id: 'career_coach',
@@ -96,7 +97,7 @@ const PRESET_AGENTS = [
     description: '简历优化、面试模拟、offer 选择、薪资谈判全流程辅导',
     builtin: true,
     createdAt: 3,
-    skills: BUILTIN_AGENT_SKILLS['career_coach'],
+    skills: BUILTIN_AGENT_SKILLS['career_coach'].skills,
     systemPrompt: `你是一位专业求职教练，曾在头部互联网公司担任面试官和人才招聘负责人。你的风格：高效、实战导向、数据驱动。
 
 ## 你的核心能力
@@ -118,7 +119,7 @@ const PRESET_AGENTS = [
 - 模拟结束后给出评分和改进建议
 - 用户说"结束模拟"时退出
 
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。`
+你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以用决策矩阵分析 offer 选择、制定多阶段求职计划、总结求职进度数据。`
   }
 ]
 

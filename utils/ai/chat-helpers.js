@@ -53,9 +53,9 @@ export function buildChatMessages(userMessage, history, cfg) {
     system += decisionsCtx
   }
 
-  // Agent 模式：注入技能 prompt
+  // Agent 模式：注入技能 prompt（内置 Agent 使用定制化技能 prompt）
   if (cfg && cfg.agentMode && cfg.skills && cfg.skills.length > 0) {
-    const skillsPrompt = buildSkillsPrompt(cfg.skills)
+    const skillsPrompt = buildSkillsPrompt(cfg.skills, cfg.agentId || null)
     if (skillsPrompt) {
       system += skillsPrompt
     }
