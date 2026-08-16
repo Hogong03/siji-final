@@ -164,9 +164,9 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 }
 .shortcut-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx;
-  padding: 12rpx 8rpx; border-radius: 12rpx; background: #D4D4D8;
+  padding: 12rpx 8rpx; border-radius: 12rpx; background: #FFFFFF;
   transition: transform 0.12s;
-  &:active { transform: scale(0.92); background: #C4C4C8; }
+  &:active { transform: scale(0.92); background: #F4F4F5; }
 }
 .shortcut-label { font-size: 22rpx; color: #71717A; }
 .shortcut-toggle { font-size: 36rpx; color: #71717A; font-weight: 300; line-height: 1; }
@@ -174,7 +174,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 /* ─── 图片预览 ─── */
 .img-preview {
   display: flex; align-items: center; gap: $spacing-sm; padding: 8rpx 16rpx;
-  background: #F4F4F5; border-radius: 16rpx; margin-bottom: $spacing-sm;
+  background: #E4E4E7; border-radius: 16rpx; margin-bottom: $spacing-sm;
 }
 .img-preview-thumb { width: 80rpx; height: 80rpx; border-radius: 8rpx; flex-shrink: 0; }
 .img-preview-label { flex: 1; font-size: 26rpx; color: #71717A; }
@@ -198,11 +198,10 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
   background: #D4D4D8; border-radius: 36rpx; border: 1rpx solid #C4C4C8;
   display: flex; align-items: center; overflow-y: auto;
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   &:focus-within {
     border-color: #000000;
     background: #E4E4E7;
-    box-shadow: 0 0 0 4rpx rgba(0, 0, 0, 0.1);
   }
 }
 .text-input {
@@ -218,7 +217,6 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
   background: #A1A1AA; opacity: .5;
   &.active {
     background: #000000; opacity: 1;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
     &:active { transform: scale(1.05); }
   }
 }
@@ -237,14 +235,12 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
     &:focus-within {
       border-color: #FAFAFA;
       background: #18181B;
-      box-shadow: 0 0 0 4rpx rgba(250, 250, 250, 0.1);
     }
   }
   .send-btn {
     background: #3F3F46; opacity: .6;
     &.active {
       background: #FAFAFA; opacity: 1;
-      box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
     }
   }
   .send-icon { color: #000000; }
