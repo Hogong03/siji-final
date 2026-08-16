@@ -69,22 +69,8 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset) {
       showConvList.value = false
       return
     }
-    const count = store.conversations.length
-    const defaultName = count === 0 ? '对话' : `对话${count + 1}`
-    uni.showModal({
-      title: '新建对话',
-      editable: true,
-      placeholderText: `输入对话名称（留空则用「${defaultName}」）`,
-      content: '',
-      success(res) {
-        const title = (res.confirm && res.content && res.content.trim())
-          ? res.content.trim()
-          : defaultName
-        store.createConversation(title)
-        showConvList.value = false
-        uni.showToast({ title: '对话已创建', icon: 'none' })
-      }
-    })
+    store.createConversation()
+    showConvList.value = false
   }
 
   function handleSwitchConversation(id) {
