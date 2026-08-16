@@ -301,7 +301,8 @@ const TOOL_ACTION_MAP = {}
 
 /** 需确认工具 — agent 不自动执行，改为提示用户确认
  * 当前 TOOL_DEFINITIONS 未定义 delete_* 等破坏性工具（Agent 不做删除），故此集合为空。
- * 若未来在 TOOL_DEFINITIONS 中加入 delete_* 工具，需在此添加对应名称。 */
+ * 若未来在 TOOL_DEFINITIONS 中加入 delete_* 工具，需在此添加对应名称。
+ * 注意：写入类工具的确认在 executeTool 内按 payload 动态判断（如金额>=500），不在此静态集合。 */
 export const CONFIRM_TOOLS = new Set()
 
 /** 查询类工具（只读，安全自动执行） */
@@ -309,6 +310,25 @@ export const QUERY_TOOLS = new Set([
   'query_diary', 'query_bill', 'query_stat', 'query_plan', 'query_relation',
   'query_decision', 'query_combined', 'get_profile', 'summarize_diaries'
 ])
+
+/** 写入类工具的确认阈值（payload 内字段值超过此阈值需确认） */
+const CONFIRM_THRESHOLDS = {
+  create_bill: { field: 'amount', min: 500 },
+  update_bill: { field: 'amount', min: 500 }
+}
+
+/** 检查工具调用是否需要用户确认（按 payload 动态判断） */
+function needsConfirmation(name, args) {
+  // 静态确认集
+  if (CONFIRM_TOOLS.has(name)) return true
+  // 动态阈值检查（如 create_bill 金额>=500）
+  const rule = CONFIRM_THRESHOLDS[name]
+  if (rule && args) {
+    const val = args[rule.field]
+    if (typeof val === 'number' && val >= rule.min) return true
+  }
+  return false
+}
 
 // ==================== 执行器分发 ====================
 
@@ -321,12 +341,16 @@ export const QUERY_TOOLS = new Set([
  */
 export function executeTool(store, name, args = {}) {
   try {
-    if (CONFIRM_TOOLS.has(name)) {
+    // 确认检查：金额>=500 或破坏性操作需用户确认
+    if (needsConfirmation(name, args)) {
+      const reason = name === 'create_bill' || name === 'update_bill'
+        ? `金额 ¥${args.amount} 较大，需要你确认后再执行`
+        : `操作 ${name} 需要用户确认`
       return {
         ok: false,
         confirm: true,
-        text: `工具 ${name} 需要用户确认，请先向用户说明并等待确认，不要直接执行。`,
-        detail: null
+        text: reason + '。请向用户说明并等待确认，不要直接执行。',
+        detail: { type: name, payload: args, confirmReason: reason }
       }
     }
 

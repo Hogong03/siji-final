@@ -25,6 +25,23 @@ export class ApiError extends Error {
   }
 }
 
+/** token 估算 — CJK 字符约 2 token，ASCII 约 0.25 token */
+function estimateTokens(text) {
+  if (!text) return 0
+  let tokens = 0
+  for (const ch of text) {
+    tokens += /[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/.test(ch) ? 2 : 0.25
+  }
+  return Math.ceil(tokens) + 10
+}
+
+/** 按需注入上下文 — 根据用户消息内容决定注入哪些上下文，节省 token */
+const CONTEXT_KEYWORDS = {
+  relations: /(?:朋友|同事|女朋友|男朋友|女友|男友|老婆|老公|妻子|丈夫|家人|爸爸|妈妈|爸|妈|领导|老板|老师|同学|室友|人脉|关系|认识|介绍|是谁|叫什么)/,
+  decisions: /(?:纠结|选择|决定|决策|要不要|该不该|选哪个|两难|权衡|纠结|犯难)/,
+  memorySummary: /(?:总结|周报|月报|复盘|回顾|最近怎么样|这段时间)/
+}
+
 // ==================== buildChatMessages ====================
 
 export function buildChatMessages(userMessage, history, cfg) {
@@ -33,24 +50,32 @@ export function buildChatMessages(userMessage, history, cfg) {
     system = cfg.systemPrompt + '\n\n---\n\n' + system
   }
 
+  // 基础上下文：profile 始终注入（用户画像是高频引用数据）
   const profile = getUserProfile()
   if (profile) {
     system += `\n\n---\n用户近期数据：\n${profile}`
   }
 
+  // 长期记忆：始终注入精简版（最近 3 条），完整版按需
   const memoryContext = buildMemoryContext()
   if (memoryContext) {
     system += memoryContext
   }
 
-  const relationsCtx = buildRelationsContext(userMessage)
-  if (relationsCtx) {
-    system += relationsCtx
+  // 关系上下文：仅在用户消息含人名/关系词时注入
+  if (CONTEXT_KEYWORDS.relations.test(userMessage)) {
+    const relationsCtx = buildRelationsContext(userMessage)
+    if (relationsCtx) {
+      system += relationsCtx
+    }
   }
 
-  const decisionsCtx = buildDecisionsContext()
-  if (decisionsCtx) {
-    system += decisionsCtx
+  // 决策上下文：仅在用户消息含决策相关词时注入
+  if (CONTEXT_KEYWORDS.decisions.test(userMessage)) {
+    const decisionsCtx = buildDecisionsContext()
+    if (decisionsCtx) {
+      system += decisionsCtx
+    }
   }
 
   // Agent 模式：注入技能 prompt（内置 Agent 使用定制化技能 prompt）
@@ -86,7 +111,7 @@ export function buildChatMessages(userMessage, history, cfg) {
     for (let i = history.length - 1; i >= 0; i--) {
       const msg = history[i]
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-      const msgTokens = content.length * 2 + 10
+      const msgTokens = estimateTokens(content)
       if (tokenEstimate + msgTokens > MAX_HISTORY_TOKENS && truncated.length >= MIN_KEEP) break
       truncated.unshift(msg)
       tokenEstimate += msgTokens

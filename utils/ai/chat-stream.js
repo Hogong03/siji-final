@@ -57,7 +57,7 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
         }
         cfg.agentId = store.activeAgentId
         cfg.agentMode = true
-        return runAgentChat(store, message, conversationId, cfg, history || getRecentHistory(), onChunk)
+        return runAgentChat(store, message, conversationId, cfg, history || getRecentHistory(), onChunk, cfg.onStatus)
       }
     }
   }
@@ -75,15 +75,16 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
 
 /** 判断消息是否可能涉及数据查询（触发 agent 工具循环） */
 function looksDataQuery(msg) {
-  if (!msg) return false
-  // 避免单字误触发："花好看""今天好累"等不进入 agent 循环
-  return /(?:花了|花掉|账单|消费|记录|日记|计划|目标|人物|朋友|决策|纠结|查一下|多少|几个|几次|哪些|上次|之前|上个月|这个月|本月|最近|预算|总结|周报|月报)/.test(msg)
+  if (!msg || msg.length < 4) return false
+  // 收窄：需要明确的查询意图词+数据域词组合，避免"今天好累想记录一下"误触发
+  return /(?:花了多少|花掉|查一下.*(?:账单|消费|记录|计划|账)|多少.*(?:钱|笔|个|次|条)|几个|几次|哪些|上次.*(?:说|记|聊|写)|之前.*(?:说|记|聊|写)|上个月|这个月|本月|最近.*(?:花了|消费|支出|收入|记|写|计划)|预算|总结|周报|月报|消费记录|账单明细)/.test(msg)
 }
 
 /** 判断消息是否含明确指令（触发 agent 工具循环） */
 function isCommandMessage(msg) {
   if (!msg) return false
-  return /(?:帮我|记一下|查一下|建一个|写一篇|创建|修改|更新|删除|撤销|记录|记账|计划)/.test(msg)
+  // 收窄：需要"动作词+对象"组合，避免"我想记录一下心情"误触发（应为闲聊）
+  return /(?:帮我(?:记|查|建|写|创建|修改|更新|删除|撤销)|记一下(?:账|消费|支出|收入|记录)|查一下(?:账|账单|消费|记录|计划|人)|建一个(?:计划|记录)|写一篇(?:记录|日记|周报|月报)|创建(?:计划|记录|账单|决策)|修改(?:计划|记录|账单)|更新(?:计划|记录|画像)|删除(?:计划|记录|账单)|撤销)/.test(msg)
 }
 
 // ==================== 真实 SSE 流式（H5）====================

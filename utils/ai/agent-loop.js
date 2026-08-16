@@ -12,13 +12,46 @@
 
 import { getProvider } from './providers.js'
 import { buildChatMessages } from './chat-helpers.js'
-import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS } from './tools.js'
+import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS, CONFIRM_TOOLS } from './tools.js'
 import { parseAiResponse } from './response-parser.js'
 import { logger } from '../logger.js'
 
+/** 写入类工具的确认阈值（与 tools.js 保持一致） */
+const CONFIRM_THRESHOLDS_AGENT = {
+  create_bill: { field: 'amount', min: 500 },
+  update_bill: { field: 'amount', min: 500 }
+}
+
+/** 检查工具调用是否需要用户确认（agent-loop 内部预判，避免执行后才发现需确认） */
+function needsToolConfirmation(name, args) {
+  if (CONFIRM_TOOLS.has(name)) return true
+  const rule = CONFIRM_THRESHOLDS_AGENT[name]
+  if (rule && args) {
+    const val = args[rule.field]
+    if (typeof val === 'number' && val >= rule.min) return true
+  }
+  return false
+}
+
 const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
 const MAX_QUERY_RESULTS = 20  // 查询类工具最多返回条数（防 token 爆炸）
-const TOOL_RESULT_TRUNCATE = 2000 // 单条 tool_result 最大字符数
+
+/** 按工具类型动态截断 tool_result（防 token 爆炸但保留关键数据） */
+const TOOL_RESULT_TRUNCATE_MAP = {
+  query_stat: 800,       // 统计数据精简
+  query_bill: 1500,      // 账单列表
+  query_diary: 2000,     // 记录内容较长
+  query_plan: 1500,      // 计划列表
+  query_combined: 2500,  // 跨类型查询需要更多空间
+  query_relation: 1200,  // 人物关系 JSON
+  query_decision: 1500,  // 决策日志
+  get_profile: 1000,     // 用户画像
+  summarize_diaries: 2000, // 总结报告
+  default: 2000
+}
+function getTruncateLimit(toolName) {
+  return TOOL_RESULT_TRUNCATE_MAP[toolName] || TOOL_RESULT_TRUNCATE_MAP.default
+}
 
 /**
  * 运行 Agent 循环
@@ -29,7 +62,7 @@ const TOOL_RESULT_TRUNCATE = 2000 // 单条 tool_result 最大字符数
  * @param {Array} history - 对话历史
  * @returns {Promise<Object>} { reply, toolCalls, execResults, action, actions, conversation_id }
  */
-export async function runAgentLoop(store, message, conversationId, cfg, history, onChunk) {
+export async function runAgentLoop(store, message, conversationId, cfg, history, onChunk, onStatus) {
   const provider = getProvider(cfg.provider)
   const apiKey = cfg.apiKey || ''
   const chatHistory = history || []
@@ -44,6 +77,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
 - 用户问涉及数据的问题（账单/记录/计划/人物/决策）时，先调用对应 query_* 工具拿到真实数据，再基于数据回答。禁止凭记忆瞎编数字。
 - 一个查询不够时，可连续调用多个工具（例如先 query_stat 再看 query_plan）。
 - 用户明确要求创建/修改时，调用对应 create_*/update_* 工具。
+- 用户说「撤销/撤回/取消刚才」时，调用 undo_last 工具。
 - 所有工具调用完成后，用自然语言总结回答用户。
 - 若用户消息是纯闲聊，不调用任何工具，直接回复。`
 
@@ -96,37 +130,95 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       }
     }
 
-    // 执行本轮所有工具调用
+    // 执行本轮所有工具调用（查询类并行，写入类串行）
     const assistantTurn = { role: 'assistant', content: assistantMsg.content || '', tool_calls: callList }
     messages.push(assistantTurn)
 
-    for (const call of callList) {
+    // 进度反馈：通知 UI 正在执行哪些工具
+    if (onStatus && callList.length > 0) {
+      const toolNames = callList.map(c => c.function?.name).filter(Boolean)
+      onStatus(toolNames)
+    }
+
+    // 分离查询类和写入类：查询类可并行执行，写入类串行执行防顺序依赖
+    const queryCalls = callList.filter(c => QUERY_TOOLS.has(c.function?.name))
+    const writeCalls = callList.filter(c => !QUERY_TOOLS.has(c.function?.name))
+
+    // 处理确认需求：如果有工具需要确认，立即退出循环返回待确认信息
+    for (const call of writeCalls) {
       const fnName = call.function?.name
       let fnArgs = {}
-      try {
-        fnArgs = JSON.parse(call.function?.arguments || '{}')
-      } catch { fnArgs = {} }
+      try { fnArgs = JSON.parse(call.function?.arguments || '{}') } catch { fnArgs = {} }
+      if (needsToolConfirmation(fnName, fnArgs)) {
+        const reason = fnName === 'create_bill' || fnName === 'update_bill'
+          ? `金额 ¥${fnArgs.amount} 较大`
+          : `操作 ${fnName}`
+        toolCalls.push({ name: fnName, args: fnArgs })
+        execResults.push({
+          name: fnName, ok: false, confirm: true,
+          message: `${reason}，需要你确认一下再执行`,
+          detail: { type: fnName, payload: fnArgs, confirmReason: reason }
+        })
+        // 返回待确认结果，上层 useChatEngine 走 pendingAction 流程
+        return {
+          reply: `我需要确认一下：${reason}，确认执行吗？`,
+          action: { type: fnName, payload: fnArgs, needConfirm: true },
+          actions: [],
+          toolCalls,
+          execResults,
+          conversation_id: conversationId,
+          _agentMode: true,
+          _agentExecuted: false
+        }
+      }
+    }
+
+    // 并行执行查询类工具
+    if (queryCalls.length > 0) {
+      const queryResults = await Promise.all(queryCalls.map(async (call) => {
+        const fnName = call.function?.name
+        let fnArgs = {}
+        try { fnArgs = JSON.parse(call.function?.arguments || '{}') } catch { fnArgs = {} }
+        const toolResult = executeTool(store, fnName, fnArgs)
+        return { call, fnName, fnArgs, toolResult }
+      }))
+      for (const { call, fnName, fnArgs, toolResult } of queryResults) {
+        toolCalls.push({ name: fnName, args: fnArgs })
+        execResults.push({
+          name: fnName, ok: toolResult.ok,
+          message: toolResult.message || null,
+          detail: toolResult.detail || null,
+          confirm: !!toolResult.confirm
+        })
+        let resultText = toolResult.text || '（无返回）'
+        const truncateLimit = getTruncateLimit(fnName)
+        if (resultText.length > truncateLimit) {
+          resultText = resultText.substring(0, truncateLimit) + '…（已截断）'
+        }
+        messages.push({ role: 'tool', tool_call_id: call.id, content: resultText })
+      }
+    }
+
+    // 串行执行写入类工具
+    for (const call of writeCalls) {
+      const fnName = call.function?.name
+      let fnArgs = {}
+      try { fnArgs = JSON.parse(call.function?.arguments || '{}') } catch { fnArgs = {} }
 
       const toolResult = executeTool(store, fnName, fnArgs)
       toolCalls.push({ name: fnName, args: fnArgs })
       execResults.push({
-        name: fnName,
-        ok: toolResult.ok,
+        name: fnName, ok: toolResult.ok,
         message: toolResult.message || null,
         detail: toolResult.detail || null,
         confirm: !!toolResult.confirm
       })
-
-      // 截断 tool_result，防 token 爆炸
       let resultText = toolResult.text || '（无返回）'
-      if (resultText.length > TOOL_RESULT_TRUNCATE) {
-        resultText = resultText.substring(0, TOOL_RESULT_TRUNCATE) + '…（已截断）'
+      const truncateLimit = getTruncateLimit(fnName)
+      if (resultText.length > truncateLimit) {
+        resultText = resultText.substring(0, truncateLimit) + '…（已截断）'
       }
-      messages.push({
-        role: 'tool',
-        tool_call_id: call.id,
-        content: resultText
-      })
+      messages.push({ role: 'tool', tool_call_id: call.id, content: resultText })
     }
   }
 
@@ -358,8 +450,8 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
  * @param {Array} history
  * @param {Function} onChunk - (text) => void，逐段推送最终回复
  */
-export async function runAgentChat(store, message, conversationId, cfg, history, onChunk) {
-  const result = await runAgentLoop(store, message, conversationId, cfg, history, onChunk)
+export async function runAgentChat(store, message, conversationId, cfg, history, onChunk, onStatus) {
+  const result = await runAgentLoop(store, message, conversationId, cfg, history, onChunk, onStatus)
 
   // 已执行过写入工具 → 标记，避免上层 autoExecutor 二次执行
   const hasWrites = result.execResults.some(r => r.ok && !QUERY_TOOLS.has(r.name))

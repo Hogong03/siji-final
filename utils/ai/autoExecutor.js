@@ -15,12 +15,33 @@ import { OP_CLAIM_RE_EXT, OP_CLAIM_REPLACE_RE } from '@/utils/ai/constants.js'
  * @param {Object} result - AI 返回结果
  * @param {string} reply - AI 回复文本
  * @param {string} userMessage - 用户原始消息
+ * @param {Object} options - { source: 'agent' | 'json' }，agent 模式跳过执行步骤
  */
-export function autoExecuteAndDisplay(store, result, reply, userMessage) {
+export function autoExecuteAndDisplay(store, result, reply, userMessage, options = {}) {
+  const { source = 'json' } = options
+  // === Agent 模式：工具已在循环内执行，仅渲染结果卡片 ===
+  if (source === 'agent') {
+    const execResults = result.execResults || []
+    const successCards = execResults.filter(r => r.ok && r.detail && !r.name?.startsWith('query_'))
+    const execCard = execResults.find(r => r.ok && r.detail)
+    const actionCard = successCards.length > 1
+      ? { type: 'multi', payload: successCards.map(r => r.detail) }
+      : successCards.length === 1
+        ? { type: successCards[0].name, payload: successCards[0].detail }
+        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null)
+    store.updateLastMessage({
+      content: reply, loading: false, aiReply: reply,
+      actionCard,
+      execResult: execCard ? { success: true, message: execCard.message || '', detail: execCard.detail } : null,
+      execResults: successCards
+    })
+    return
+  }
+
+  // === JSON 模式：解析 action 并执行 ===
   let execResults = []
   let displayContent = reply
 
-  // === 多 action 执行 ===
   if (result.actions && result.actions.length > 1) {
     const multiResult = store.executeActions(result.actions)
     execResults = multiResult.results || []

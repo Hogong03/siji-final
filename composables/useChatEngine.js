@@ -11,7 +11,7 @@ import { useSimulationManager } from '@/composables/useSimulationManager.js'
 import { buildChatHistory } from '@/utils/ai/chatHistoryBuilder.js'
 import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
 import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
-import { QUERY_TOOLS } from '@/utils/ai/tools.js'
+import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
 import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
@@ -33,24 +33,10 @@ export function useChatEngine() {
   const store = useAppStore()
 
   /**
-   * Agent 模式结果渲染 — 工具已在循环内执行，这里只展示结果卡片，不重复执行
+   * Agent 模式结果渲染 — 通过 autoExecuteAndDisplay 统一入口，传 source='agent' 跳过执行步骤
    */
   function renderAgentResults(store, result, reply) {
-    const execResults = result.execResults || []
-    const successCards = execResults.filter(r => r.ok && r.detail && !QUERY_TOOLS.has(r.name))
-    const execCard = execResults.find(r => r.ok && r.detail)
-    // 单个成功卡片用单卡格式（ROUTR_MAP 需要 type 为具体 action 名），多个用 multi
-    const actionCard = successCards.length > 1
-      ? { type: 'multi', payload: successCards.map(r => r.detail) }
-      : successCards.length === 1
-        ? { type: successCards[0].name, payload: successCards[0].detail }
-        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null)
-    store.updateLastMessage({
-      content: reply, loading: false, aiReply: reply,
-      actionCard,
-      execResult: execCard ? { success: true, message: execCard.message || '', detail: execCard.detail } : null,
-      execResults: successCards
-    })
+    autoExecuteAndDisplay(store, result, reply, '', { source: 'agent' })
   }
 
   const isSending = ref(false)
@@ -131,7 +117,15 @@ export function useChatEngine() {
         convSummary: activeConv?.summary || null,
         summaryIndex: activeConv?.summaryIndex || 0,
         image: imageData || null,
-        store: store
+        store: store,
+        onStatus: (toolNames) => {
+          // 工具执行进度反馈 — 更新当前消息的临时状态
+          if (toolNames && toolNames.length > 0) {
+            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', create_relation: '创建关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', undo_last: '撤销操作' }
+            const label = toolNames.map(n => labels[n] || n).join('、')
+            store.updateLastMessage({ loading: true, statusHint: `正在${label}…` })
+          }
+        }
       }
 
       validateModel(cfg, store)
