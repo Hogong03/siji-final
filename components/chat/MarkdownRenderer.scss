@@ -325,3 +325,32 @@
   text-decoration: line-through;
   color: #A1A1AA;
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .md-h { color: #F4F4F5; }
+  .md-h1 { border-bottom-color: #F4F4F5; }
+  .md-h2 { border-left-color: #FAFAFA; }
+  .md-h4 { color: #A1A1AA; }
+  .md-text { color: #F4F4F5; }
+  .md-bold { color: #F4F4F5; }
+  .md-italic { color: #F4F4F5; }
+  .md-strike { color: #52525B; }
+  .md-mark { color: #FAFAFA; background: rgba(255,255,255,0.1); }
+  .md-inline-code { background: #27272A; color: #FAFAFA; }
+  .md-link { color: #FAFAFA; border-bottom-color: #FAFAFA; }
+  .md-blockquote { background: #18181B; border-left-color: #52525B; &::before { color: #27272A; } }
+  .md-quote-text { color: #A1A1AA; }
+  .md-hr { border-top-color: #27272A; }
+  .md-table { border-color: #27272A; }
+  .md-table-header { background: #27272A; border-bottom-color: #3F3F46; }
+  .md-table-row { border-top-color: #27272A; &:active { background: #18181B; } }
+  .md-table-row:nth-child(odd) { background: rgba(255,255,255,0.03); }
+  .md-th { color: #F4F4F5; }
+  .md-td { color: #A1A1AA; }
+  .md-li-bullet-dot { background: #52525B; }
+  .md-li-num-text { color: #FAFAFA; background: #27272A; }
+  .md-task-checkbox { border-color: #3F3F46; background: #18181B; &.checked { background: #FAFAFA; border-color: #FAFAFA; } }
+  .md-task-check { color: #000000; }
+  .md-task-done { color: #52525B; }
+}
