@@ -541,7 +541,7 @@
 @media (prefers-color-scheme: dark) {
   .bill-page { background: #18181B; }
   .summary-card { background: #27272A; }
-  .sum-value { &.expense { color: #FAFAFA; } &.income { color: #D4D4D8; } }
+  .sum-value { &.expense { color: #FAFAFA; } &.income { color: #F4F4F5; } }
   .balance-divider { background: #3F3F46; }
   .balance-label { color: #71717A; }
   .balance-num { &.positive { color: #FAFAFA; } }
@@ -551,33 +551,33 @@
   .budget-set-hint { border-top-color: #3F3F46; }
   .budget-hint-text { color: #71717A; }
   .stats-link { border-top-color: #3F3F46; }
-  .stats-link-text, .stats-link-arrow { color: #D4D4D8; }
+  .stats-link-text, .stats-link-arrow { color: #F4F4F5; }
 
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-input-wrap { background: #3F3F46; }
   .search-icon { color: #71717A; }
   .search-input { color: #FAFAFA; }
   .search-clear { color: #71717A; }
-  .tool-label { color: #D4D4D8; }
+  .tool-label { color: #F4F4F5; }
   .tool-arrow { color: #71717A; }
 
   .picker-panel { background: #27272A; border-bottom-color: #3F3F46; }
-  .type-chip { background: #3F3F46; color: #D4D4D8; &.active { background: #FAFAFA; color: #18181B; } }
-  .chip { background: #3F3F46; color: #D4D4D8; &.active { background: #FAFAFA; color: #18181B; } }
+  .type-chip { background: #3F3F46; color: #F4F4F5; &.active { background: #FAFAFA; color: #18181B; } }
+  .chip { background: #3F3F46; color: #F4F4F5; &.active { background: #FAFAFA; color: #18181B; } }
 
   .filter-status { background: #27272A; border-bottom-color: #3F3F46; }
-  .fs-tag { background: #3F3F46; color: #D4D4D8; }
+  .fs-tag { background: #3F3F46; color: #F4F4F5; }
   .fs-x { color: #71717A; }
   .fs-clear { color: #71717A; }
 
   .date-label { color: #A1A1AA; }
   .ds-expense { color: #FAFAFA; }
-  .ds-income { color: #D4D4D8; }
+  .ds-income { color: #F4F4F5; }
 
   .bill-item { background: #27272A; &:active { background: #3F3F46; } }
   .bill-category { color: #FAFAFA; }
   .bill-note { color: #71717A; }
-  .bill-amount { &.expense { color: #FAFAFA; } &.income { color: #D4D4D8; } }
+  .bill-amount { &.expense { color: #FAFAFA; } &.income { color: #F4F4F5; } }
 
   .fab-expense { background: #FAFAFA; .fab-icon, .fab-label { color: #18181B; } }
   .fab-income { background: #A1A1AA; .fab-icon, .fab-label { color: #18181B; } }
@@ -587,6 +587,6 @@
   .modal-input-row { background: #3F3F46; }
   .modal-prefix { color: #71717A; }
   .modal-input { color: #FAFAFA; }
-  .quick-val { background: #3F3F46; color: #D4D4D8; }
+  .quick-val { background: #3F3F46; color: #F4F4F5; }
   .modal-btn { &.cancel { background: #3F3F46; color: #71717A; } &.confirm { background: #FAFAFA; color: #18181B; } }
 }

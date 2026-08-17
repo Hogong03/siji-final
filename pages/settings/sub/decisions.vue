@@ -293,12 +293,12 @@ function goDetail(id) {
 .status-thinking { background: #FEF3C7; color: #92400E; }
 .status-decided { background: #DBEAFE; color: #1E40AF; }
 .status-acted { background: #D1FAE5; color: #065F46; }
-.status-reviewed { background: #D4D4D8; color: #52525B; }
+.status-reviewed { background: #F4F4F5; color: #52525B; }
 .status-abandoned { background: #FEE2E2; color: #991B1B; }
 
 .card-category { font-size: 24rpx; color: #71717A; margin-top: 8rpx; }
 .card-options { display: flex; flex-wrap: wrap; gap: 8rpx; margin-top: 16rpx; }
-.option-chip { font-size: 22rpx; padding: 4rpx 16rpx; background: #D4D4D8; color: #18181B; border-radius: 8rpx; }
+.option-chip { font-size: 22rpx; padding: 4rpx 16rpx; background: #F4F4F5; color: #18181B; border-radius: 8rpx; }
 .option-more { font-size: 22rpx; color: #A1A1AA; padding: 4rpx 8rpx; }
 .card-deadline { font-size: 24rpx; color: #71717A; margin-top: 12rpx; }
 .card-decision { margin-top: 12rpx; padding: 12rpx 16rpx; background: #E4E4E7; border-radius: 12rpx; }
@@ -312,7 +312,7 @@ function goDetail(id) {
   margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #E4E4E7;
 }
 .action-btn { font-size: 26rpx; padding: 8rpx 24rpx; border-radius: 12rpx; }
-.edit-btn { color: #18181B; background: #D4D4D8; }
+.edit-btn { color: #18181B; background: #F4F4F5; }
 .delete-btn { color: #FFFFFF; background: #000000; }
 
 .fab {
@@ -346,7 +346,7 @@ function goDetail(id) {
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: #D4D4D8; color: #71717A; }
+.btn-cancel { background: #F4F4F5; color: #71717A; }
 .btn-confirm { background: #000000; color: #FFFFFF; }
 
 @media (prefers-color-scheme: dark) {

@@ -39,7 +39,7 @@ const emit = defineEmits(['action'])
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: #D4D4D8;
+  background: #F4F4F5;
   align-items: center;
   justify-content: center;
   margin-bottom: $spacing-md;

@@ -108,7 +108,7 @@ function goToAiConfig() { emit('close'); uni.navigateTo({ url: '/pages/settings/
   gap: 16rpx;
   padding: 16rpx;
   border-radius: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   border: 2rpx solid transparent;
   box-sizing: border-box;
   overflow: hidden;
@@ -157,7 +157,7 @@ function goToAiConfig() { emit('close'); uni.navigateTo({ url: '/pages/settings/
   padding: 16rpx;
   text-align: center;
   border-radius: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   box-sizing: border-box;
   overflow: hidden;
   @include flex-row;

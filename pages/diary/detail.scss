@@ -102,7 +102,7 @@
   font-size: 24rpx;
   color: #A1A1AA;
   padding: 6rpx 16rpx;
-  border: 1rpx dashed #D4D4D8;
+  border: 1rpx dashed #E4E4E7;
   border-radius: 20rpx;
 }
 
@@ -386,14 +386,14 @@
   .textarea-field { background: #27272A; color: #FAFAFA; }
   .ta-btn { background: #3F3F46; }
   .ai-menu { background: #27272A; }
-  .ai-menu-item { background: #3F3F46; color: #D4D4D8; }
+  .ai-menu-item { background: #3F3F46; color: #F4F4F5; }
   .cat-chip { color: #A1A1AA; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
   .meta-add { color: #71717A; border-color: #52525B; }
-  .emotion-badge { background: #27272A; color: #D4D4D8; }
+  .emotion-badge { background: #27272A; color: #F4F4F5; }
   .ai-section { background: #27272A; }
   .ai-section-title { color: #A1A1AA; }
   .ai-refresh { color: #71717A; }
-  .ai-text { color: #D4D4D8; }
+  .ai-text { color: #F4F4F5; }
   .related-header { background: #27272A; }
   .related-title-text { color: #A1A1AA; }
   .related-arrow { color: #71717A; }
@@ -406,7 +406,7 @@
   .tag-picker { background: #27272A; }
   .tp-title { color: #FAFAFA; }
   .tp-item { border-bottom-color: #3F3F46; }
-  .tp-name { color: #D4D4D8; }
+  .tp-name { color: #F4F4F5; }
   .tp-input { background: #3F3F46; color: #FAFAFA; }
   .tp-add { background: #FAFAFA; color: #18181B; }
   .tp-done { color: #FAFAFA; }

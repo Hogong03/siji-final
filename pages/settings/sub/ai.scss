@@ -87,7 +87,7 @@
     flex-shrink: 0;
 
     &.ok { background: #059669; }
-    &.none { background: #D4D4D8; }
+    &.none { background: #F4F4F5; }
   }
   .key-label {
     font-size: $font-xs;
@@ -190,7 +190,7 @@
     white-space: nowrap;
 
     &.save {
-      background: #D4D4D8;
+      background: #F4F4F5;
       color: #000000;
     }
     &.test {
@@ -212,7 +212,7 @@
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-sm $spacing-md;
-  background: #D4D4D8;
+  background: #F4F4F5;
   border-radius: $radius-md;
   border: 2rpx solid transparent;
   transition: all $transition-fast;
@@ -259,7 +259,7 @@
     .model-no-vision-badge {
       font-size: 16rpx;
       color: #A1A1AA;
-      background: #D4D4D8;
+      background: #F4F4F5;
       padding: 0 6rpx;
       border-radius: 4rpx;
       flex-shrink: 0;
@@ -329,7 +329,7 @@
   padding: $spacing-md;
   background: #FFFFFF;
   border-radius: $radius-md;
-  border: 1rpx dashed #D4D4D8;
+  border: 1rpx dashed #E4E4E7;
   text-align: center;
   box-sizing: border-box;
 
@@ -409,7 +409,7 @@
   height: 72rpx;
   line-height: 72rpx;
   text-align: center;
-  background: #D4D4D8;
+  background: #F4F4F5;
   color: #18181B;
   font-size: $font-sm;
   font-weight: 600;

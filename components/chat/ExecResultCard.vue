@@ -397,7 +397,7 @@ const {
           :class="{ selected: isTagOn(t.name) }"
           @tap="toggleTag(t.name)"
         >
-          <text class="tp-dot" :style="{ background: isTagOn(t.name) ? t.color : '#D4D4D8' }">{{ isTagOn(t.name) ? '✓' : '' }}</text>
+          <text class="tp-dot" :style="{ background: isTagOn(t.name) ? t.color : '#E4E4E7' }">{{ isTagOn(t.name) ? '✓' : '' }}</text>
           <text class="tp-name">{{ t.name }}</text>
           <text class="tp-count">{{ t.count }}</text>
         </view>

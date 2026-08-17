@@ -151,7 +151,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 }
 
 .os-sep {
-	color: #D4D4D8;
+	color: #F4F4F5;
 }
 
 .priority-bar {

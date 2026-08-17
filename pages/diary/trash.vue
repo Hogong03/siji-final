@@ -264,10 +264,10 @@ function handlePurge(item) {
   .search-icon { color: #71717A; }
   .search-input { color: #FAFAFA; }
   .search-clear { color: #71717A; }
-  .tool-label { color: #D4D4D8; }
+  .tool-label { color: #F4F4F5; }
   .tool-arrow { color: #71717A; }
   .time-picker { background: #27272A; border-bottom-color: #3F3F46; }
-  .time-chip { color: #D4D4D8; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .time-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
   .search-status { background: #27272A; border-bottom-color: #3F3F46; }
   .status-text { color: #A1A1AA; }
   .status-clear { color: #71717A; }

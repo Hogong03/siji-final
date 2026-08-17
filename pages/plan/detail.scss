@@ -177,7 +177,7 @@
   gap: 6rpx;
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
-  border: 1rpx solid #D4D4D8;
+  border: 1rpx solid #E4E4E7;
   font-size: 22rpx;
   background: #F4F4F5;
   color: #52525B;
@@ -306,9 +306,9 @@
   .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
   .ai-result { background: #27272A; border-left-color: #FAFAFA; }
   .ai-result-title { color: #FAFAFA; }
-  .ai-result-text { color: #D4D4D8; }
+  .ai-result-text { color: #F4F4F5; }
   .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
-  .tag-chip { background: #3F3F46; border-color: #52525B; color: #D4D4D8; }
+  .tag-chip { background: #3F3F46; border-color: #52525B; color: #F4F4F5; }
   .tag-add-btn { border-color: #52525B; color: #71717A; }
   .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
   .bottom-bar .btn-delete { background: #3F3F46; }
@@ -322,7 +322,7 @@
   .phase-pct { color: #FAFAFA; }
   .phase-toggle { color: #A1A1AA; }
   .phase-input { background: #27272A; border-color: #3F3F46; color: #FAFAFA; }
-  .date-picker-text { color: #D4D4D8; }
+  .date-picker-text { color: #F4F4F5; }
   .ms-bullet { color: #FAFAFA; }
   .ms-input { background: #27272A; border-color: #3F3F46; color: #FAFAFA; }
   .st-check { border-color: #52525B; &.done { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
@@ -508,7 +508,7 @@
 .st-check {
   width: 32rpx;
   height: 32rpx;
-  border: 2rpx solid #D4D4D8;
+  border: 2rpx solid #E4E4E7;
   border-radius: 6rpx;
   display: flex;
   align-items: center;
@@ -556,7 +556,7 @@
 }
 
 .phase-add-btn {
-  border: 1rpx dashed #D4D4D8;
+  border: 1rpx dashed #E4E4E7;
   border-radius: 8rpx;
   padding: 12rpx;
   font-size: 24rpx;

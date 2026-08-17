@@ -123,7 +123,7 @@ const totalChanges = computed(() => {
 .vh-title {
   font-size: 28rpx;
   font-weight: 600;
-  color: #D4D4D8;
+  color: #F4F4F5;
   display: block;
   margin-bottom: 8rpx;
 }

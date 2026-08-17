@@ -457,7 +457,7 @@ function handleDelete() {
   .edit-page { background: #18181B; }
   .type-switch { background: #27272A; }
   .ts-btn { color: #A1A1AA; &.active { color: #18181B; &.expense { background: #FAFAFA; } &.income { background: #A1A1AA; } } }
-  .amount-display { &.expense .currency, &.expense .amount-num { color: #FAFAFA; } &.income .currency, &.income .amount-num { color: #D4D4D8; } }
+  .amount-display { &.expense .currency, &.expense .amount-num { color: #FAFAFA; } &.income .currency, &.income .amount-num { color: #F4F4F5; } }
   .detail-section { background: #27272A; }
   .detail-row { border-bottom-color: #3F3F46; }
   .d-label { color: #71717A; }
@@ -471,7 +471,7 @@ function handleDelete() {
   .action-btn { &.save { background: #FAFAFA; color: #18181B; } &.delete { background: rgba(239, 68, 68, 0.15); } }
   .dp-content { background: #27272A; }
   .dp-title { color: #FAFAFA; }
-  .dp-quick { background: #3F3F46; color: #D4D4D8; &:active { background: #52525B; } }
+  .dp-quick { background: #3F3F46; color: #F4F4F5; &:active { background: #52525B; } }
   .dp-pick-text { color: #FAFAFA; }
   .dp-btn { &.cancel { background: #3F3F46; color: #71717A; } &.confirm { background: #FAFAFA; color: #18181B; } }
 }

@@ -146,7 +146,7 @@ function submit() {
   .pin-key {
     width: calc(33.33% - 12rpx); height: 80rpx; margin: 6rpx;
     display: flex; align-items: center; justify-content: center;
-    background: #D4D4D8; border-radius: $radius-md;
+    background: #F4F4F5; border-radius: $radius-md;
     font-size: $font-lg; font-weight: 600; color: #18181B;
     box-sizing: border-box;
     &:active { background: rgba(99,102,241,0.15); transform: scale(0.95); }

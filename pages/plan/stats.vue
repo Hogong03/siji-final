@@ -37,7 +37,7 @@ const rangeOptions = [
 
 function heatmapColor(count) {
   if (count === 0) return '#E4E4E7'
-  if (count === 1) return '#D4D4D8'
+  if (count === 1) return '#F4F4F5'
   if (count <= 2) return '#A1A1AA'
   if (count <= 4) return '#52525B'
   return '#18181B'
@@ -201,7 +201,7 @@ function heatmapColor(count) {
         <view class="hm-legend">
           <text class="hm-label">少</text>
           <view class="hm-scale" style="background:#E4E4E7" />
-          <view class="hm-scale" style="background:#D4D4D8" />
+          <view class="hm-scale" style="background:#F4F4F5" />
           <view class="hm-scale" style="background:#A1A1AA" />
           <view class="hm-scale" style="background:#52525B" />
           <view class="hm-scale" style="background:#18181B" />

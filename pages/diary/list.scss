@@ -410,7 +410,7 @@
   height: 6rpx;
   border-radius: 3rpx;
   margin-top: 4rpx;
-  &.heat-1 { background: #D4D4D8; }
+  &.heat-1 { background: #F4F4F5; }
   &.heat-2 { background: #A1A1AA; }
   &.heat-3 { background: #52525B; }
   &.heat-4 { background: #18181B; }
@@ -481,28 +481,28 @@
   .search-icon { color: #71717A; }
   .search-input { color: #FAFAFA; }
   .search-clear { color: #71717A; }
-  .tool-btn { color: #D4D4D8; }
-  .tool-label { color: #D4D4D8; }
+  .tool-btn { color: #F4F4F5; }
+  .tool-label { color: #F4F4F5; }
   .tool-arrow { color: #71717A; }
   .tool-filter .filter-dot { background: #FAFAFA; }
   .time-picker { background: #27272A; border-bottom-color: #3F3F46; }
-  .time-chip { color: #D4D4D8; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .time-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
   .active-filters { background: #27272A; border-bottom-color: #3F3F46; }
-  .filter-tag { background: #3F3F46; color: #D4D4D8; }
+  .filter-tag { background: #3F3F46; color: #F4F4F5; }
   .filter-clear-all { color: #71717A; }
   .filter-overlay { background: rgba(0, 0, 0, 0.5); }
   .filter-panel { background: #27272A; }
   .fp-title { color: #FAFAFA; }
   .fp-close { color: #71717A; }
   .fp-section-label { color: #71717A; }
-  .fp-chip { color: #D4D4D8; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .fp-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
   .fp-view-btn { color: #A1A1AA; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
   .fp-stats-text { color: #71717A; }
   .fp-stats-arrow { color: #71717A; }
   .fp-stats-detail { background: #3F3F46; }
-  .fp-stat-line { color: #D4D4D8; }
+  .fp-stat-line { color: #F4F4F5; }
   .emo-开心 { background: #92400E; color: #FEF3C7; }
-  .emo-平静 { background: #3F3F46; color: #D4D4D8; }
+  .emo-平静 { background: #3F3F46; color: #F4F4F5; }
   .emo-焦虑 { background: #991B1B; color: #FEE2E2; }
   .emo-低落 { background: #3F3F46; color: #A1A1AA; }
   .emo-愤怒 { background: #991B1B; color: #FEE2E2; }

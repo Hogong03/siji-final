@@ -135,7 +135,7 @@ const expanded = ref(false)
 @media (prefers-color-scheme: dark) {
 	.filter-bar { background: #27272A; border-bottom-color: #3F3F46; }
 	.filter-ext { border-top-color: #3F3F46; }
-	.ftag { background: #3F3F46; color: #D4D4D8; }
+	.ftag { background: #3F3F46; color: #F4F4F5; }
 	.ftag.active { background: #FAFAFA; color: #18181B; }
 	.ftag.danger.active { background: #EF4444; color: #FFFFFF; }
 	.ftag.warn.active { background: #E8A838; color: #FFFFFF; }

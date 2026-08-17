@@ -77,7 +77,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
   gap: 16rpx;
   padding: 16rpx;
   border-radius: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   border: 2rpx solid transparent;
   box-sizing: border-box;
   overflow: hidden;
@@ -92,7 +92,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: #D4D4D8;
+    background: #F4F4F5;
     @include flex-center;
   }
   .agent-avatar-img {
@@ -104,7 +104,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
     width: 56rpx;
     height: 56rpx;
     border-radius: 50%;
-    background: #D4D4D8;
+    background: #F4F4F5;
     @include flex-center;
   }
   .agent-avatar-text {
@@ -140,7 +140,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
   padding: 16rpx;
   text-align: center;
   border-radius: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   box-sizing: border-box;
   overflow: hidden;
   @include flex-row;

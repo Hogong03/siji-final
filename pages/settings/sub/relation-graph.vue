@@ -120,7 +120,7 @@ const ROLE_COLORS = {
   '领导': '#71717A',
   '客户': '#A1A1AA',
   '老师': '#A1A1AA',
-  '其他': '#D4D4D8'
+  '其他': '#F4F4F5'
 }
 
 function getRoleColor(role) {

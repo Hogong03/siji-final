@@ -118,7 +118,7 @@
     padding: 4rpx 16rpx;
     border-radius: 8rpx;
 
-    &.edit { color: #71717A; background: #D4D4D8; }
+    &.edit { color: #71717A; background: #F4F4F5; }
     &.del { color: #EF4444; }
   }
 }
@@ -155,7 +155,7 @@
     font-weight: 600;
 
     &.add { background: #000000; color: #FFFFFF; }
-    &.clear { background: #D4D4D8; color: #EF4444; }
+    &.clear { background: #F4F4F5; color: #EF4444; }
   }
 }
 
@@ -210,7 +210,7 @@
 .modal-cat-chip {
   padding: 6rpx 16rpx;
   border-radius: 20rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   font-size: $font-xs;
   color: #71717A;
 
@@ -242,7 +242,7 @@
   font-size: $font-sm;
   font-weight: 600;
 
-  &.cancel { background: #D4D4D8; color: #71717A; }
+  &.cancel { background: #F4F4F5; color: #71717A; }
   &.ok { background: #000000; color: #FFFFFF; }
 }
 

@@ -159,7 +159,7 @@
 		--bg-input: $bg-input;
 		--bg-btn-secondary: $bg-btn-secondary;
 		--bg-subtle: #E4E4E7;
-		--bg-muted: #D4D4D8;
+		--bg-muted: #F4F4F5;
 		--text-primary: $text-primary;
 		--text-secondary: $text-secondary;
 		--text-tertiary: $text-hint;

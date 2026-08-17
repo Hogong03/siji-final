@@ -308,7 +308,7 @@
   .insights-card { background: #27272A; }
   .insights-title { color: #FAFAFA; }
   .insight-dot { color: #71717A; }
-  .insight-text { color: #D4D4D8; }
+  .insight-text { color: #F4F4F5; }
 
   .chart-card { background: #27272A; }
   .chart-title { color: #FAFAFA; }
@@ -320,15 +320,15 @@
   .ts-value { color: #FAFAFA; }
 
   .top5-row { border-bottom-color: #3F3F46; }
-  .top5-rank { background: #3F3F46; color: #D4D4D8; }
+  .top5-rank { background: #3F3F46; color: #F4F4F5; }
   .top5-cat { color: #FAFAFA; }
   .top5-date { color: #71717A; }
   .top5-amount { color: #FAFAFA; }
 
   .legend-name { color: #FAFAFA; }
-  .legend-amount { color: #D4D4D8; }
+  .legend-amount { color: #F4F4F5; }
 
-  .cat-trend-chip { background: #3F3F46; color: #D4D4D8; &.active { background: #FAFAFA; color: #18181B; } }
-  .cat-trend-title { color: #D4D4D8; }
+  .cat-trend-chip { background: #3F3F46; color: #F4F4F5; &.active { background: #FAFAFA; color: #18181B; } }
+  .cat-trend-title { color: #F4F4F5; }
   .no-data { color: #71717A; }
 }

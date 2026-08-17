@@ -104,7 +104,7 @@ function formatEst(ds) {
 
 	&.card-done {
 		opacity: 0.5;
-		border-left-color: #D4D4D8;
+		border-left-color: #E4E4E7;
 		.card-title { text-decoration: line-through; color: #A1A1AA; }
 	}
 	&.card-urg { border-left-color: #EF4444; }
@@ -230,7 +230,7 @@ function formatEst(ds) {
 	}
 	.st-bar { background: #3F3F46; }
 	.st-fill { background: #FAFAFA; }
-	.st-text { color: #D4D4D8; }
+	.st-text { color: #F4F4F5; }
 	.date-text { color: #71717A; &.due { color: #FAFAFA; } &.danger { color: #F87171; } }
 	.nested-badge { background: #3F3F46; color: #71717A; }
 }

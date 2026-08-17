@@ -218,7 +218,7 @@ function goDetail(version) {
   .v-card.latest { border-color: #FAFAFA; }
   .v-version { color: #FAFAFA; }
   .v-date { color: #71717A; }
-  .v-title { color: #D4D4D8; }
+  .v-title { color: #F4F4F5; }
   .s-dot { color: #71717A; }
   .s-text { color: #A1A1AA; }
   .v-footer { border-top-color: #27272A; }

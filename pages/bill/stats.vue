@@ -98,7 +98,7 @@ const expenseChange = computed(() => {
 })
 
 // ==================== 分类统计 ====================
-const pieColors = ['#18181B', '#3F3F46', '#71717A', '#A1A1AA', '#D4D4D8', '#E8A838', '#D35D5D', '#5B8BD4', '#8BC34A', '#FF9800', '#9C27B0', '#607D8B', '#795548', '#00BCD4', '#E91E63', '#AB47BC']
+const pieColors = ['#18181B', '#3F3F46', '#71717A', '#A1A1AA', '#F4F4F5', '#E8A838', '#D35D5D', '#5B8BD4', '#8BC34A', '#FF9800', '#9C27B0', '#607D8B', '#795548', '#00BCD4', '#E91E63', '#AB47BC']
 
 const expenseByCategory = computed(() => {
   const map = {}

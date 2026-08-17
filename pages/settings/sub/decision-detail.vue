@@ -197,7 +197,7 @@ function handleDelete() {
 .status-thinking { background: #FEF3C7; color: #92400E; }
 .status-decided { background: #DBEAFE; color: #1E40AF; }
 .status-acted { background: #D1FAE5; color: #065F46; }
-.status-reviewed { background: #D4D4D8; color: #52525B; }
+.status-reviewed { background: #F4F4F5; color: #52525B; }
 .status-abandoned { background: #FEE2E2; color: #991B1B; }
 .hero-deadline, .hero-emotion { font-size: 26rpx; color: #71717A; margin-top: 12rpx; display: block; }
 
@@ -218,7 +218,7 @@ function handleDelete() {
 .pc-text { font-size: 24rpx; color: #3F3F46; }
 
 .tag-wrap { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
-.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #D4D4D8; color: #3F3F46; border-radius: 12rpx; }
+.tag { font-size: 24rpx; padding: 6rpx 20rpx; background: #F4F4F5; color: #3F3F46; border-radius: 12rpx; }
 .tag-alt { background: #E4E4E7; color: #52525B; }
 
 .section-decision { background: #E4E4E7; }
@@ -260,7 +260,7 @@ function handleDelete() {
 .btn-cancel, .btn-confirm {
   flex: 1; height: 88rpx; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; border: none;
 }
-.btn-cancel { background: #D4D4D8; color: #71717A; }
+.btn-cancel { background: #F4F4F5; color: #71717A; }
 .btn-confirm { background: #000000; color: #FFFFFF; }
 
 </style>
