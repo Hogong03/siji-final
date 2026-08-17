@@ -197,7 +197,7 @@
 		--glass-border: 1rpx solid $glass-border-color;
 		--shadow-color: rgba(0, 0, 0, 0.06);
 
-		background-color: var(--bg-page);
+		background-color: #FFFFFF;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
 			'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
 		font-size: $font-md;
@@ -348,7 +348,7 @@
 	}
 
 	.text-hint {
-		color: var(--text-hint);
+		color: #A1A1AA;
 	}
 
 	.text-success {
@@ -364,7 +364,7 @@
 	}
 
 	.text-ai {
-		color: var(--color-ai);
+		color: #000000;
 	}
 
 	.text-center {

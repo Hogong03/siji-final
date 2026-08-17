@@ -40,10 +40,9 @@ function drawRing(ctx, w, h, pad, props, rpx2px) {
   if (total === 0) {
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-    ctx.setStrokeStyle('var(--border-color)')
-    ctx.setLineWidth(rpx2px(28))
+    ctx.setStrokeStyle('#E4E4E7')
     ctx.stroke()
-    ctx.setFillStyle('var(--text-tertiary)')
+    ctx.setFillStyle('#A1A1AA')
     ctx.setFontSize(rpx2px(26))
     ctx.setTextAlign('center')
     ctx.setTextBaseline('middle')
@@ -68,16 +67,16 @@ function drawRing(ctx, w, h, pad, props, rpx2px) {
 
   ctx.beginPath()
   ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2)
-  ctx.setFillStyle('var(--bg-card)')
+  ctx.setFillStyle('#FFFFFF')
   ctx.fill()
 
-  ctx.setFillStyle('var(--text-primary)')
+  ctx.setFillStyle('#18181B')
   ctx.setFontSize(rpx2px(36))
   ctx.setTextAlign('center')
   ctx.setTextBaseline('middle')
   ctx.fillText(props.label || '', cx, cy - rpx2px(10))
 
-  ctx.setFillStyle('var(--text-secondary)')
+  ctx.setFillStyle('#71717A')
   ctx.setFontSize(rpx2px(22))
   ctx.fillText(data.length + ' 项', cx, cy + rpx2px(20))
 }
@@ -99,7 +98,7 @@ function drawBar(ctx, w, h, pad, props, rpx2px) {
   }), 1)
 
   if (props.showAxis) {
-    ctx.setStrokeStyle('var(--border-color)')
+    ctx.setStrokeStyle('#E4E4E7')
     ctx.setLineWidth(1)
     ctx.beginPath()
     ctx.moveTo(pad.left, h - pad.bottom)
@@ -139,7 +138,7 @@ function drawBar(ctx, w, h, pad, props, rpx2px) {
     }
 
     if (props.showAxis && item.label) {
-      ctx.setFillStyle('var(--text-tertiary)')
+      ctx.setFillStyle('#A1A1AA')
       ctx.setFontSize(rpx2px(18))
       ctx.setTextAlign('center')
       ctx.fillText(item.label, x + groupWidth / 2, h - pad.bottom + rpx2px(20))
@@ -162,7 +161,7 @@ function drawLine(ctx, w, h, pad, props, rpx2px) {
   const stepX = chartW / (data.length - 1)
 
   if (props.showAxis) {
-    ctx.setStrokeStyle('var(--border-color)')
+    ctx.setStrokeStyle('#E4E4E7')
     ctx.setLineWidth(1)
     ctx.beginPath()
     ctx.moveTo(pad.left, h - pad.bottom)
@@ -201,7 +200,7 @@ function drawLine(ctx, w, h, pad, props, rpx2px) {
     const y = h - pad.bottom - ((d.value || 0) / maxVal) * chartH
     ctx.beginPath()
     ctx.arc(x, y, 3, 0, Math.PI * 2)
-    ctx.setFillStyle('var(--bg-card)')
+    ctx.setFillStyle('#FFFFFF')
     ctx.fill()
     ctx.setStrokeStyle(props.colors[0])
     ctx.setLineWidth(2)
@@ -214,7 +213,7 @@ function drawLine(ctx, w, h, pad, props, rpx2px) {
     data.forEach((d, i) => {
       if (i % labelInterval !== 0 && i !== data.length - 1) return
       const x = pad.left + i * stepX
-      ctx.setFillStyle('var(--text-tertiary)')
+      ctx.setFillStyle('#A1A1AA')
       ctx.setFontSize(rpx2px(18))
       ctx.setTextAlign('center')
       ctx.fillText(d.label || '', x, h - pad.bottom + rpx2px(20))
@@ -235,7 +234,7 @@ function drawGauge(ctx, w, h, pad, props, rpx2px) {
 
   ctx.beginPath()
   ctx.arc(cx, cy, radius, startAngle, endAngle)
-  ctx.setStrokeStyle('var(--border-color)')
+  ctx.setStrokeStyle('#E4E4E7')
   ctx.setLineWidth(lineWidth)
   ctx.setLineCap('round')
   ctx.stroke()
@@ -247,14 +246,14 @@ function drawGauge(ctx, w, h, pad, props, rpx2px) {
   ctx.setLineWidth(lineWidth)
   ctx.stroke()
 
-  ctx.setFillStyle('var(--text-primary)')
+  ctx.setFillStyle('#18181B')
   ctx.setFontSize(rpx2px(40))
   ctx.setTextAlign('center')
   ctx.setTextBaseline('middle')
   ctx.fillText(val + '%', cx, cy - rpx2px(10))
 
   if (props.label) {
-    ctx.setFillStyle('var(--text-secondary)')
+    ctx.setFillStyle('#71717A')
     ctx.setFontSize(rpx2px(22))
     ctx.fillText(props.label, cx, cy + rpx2px(24))
   }
@@ -274,7 +273,7 @@ function drawRoundRect(ctx, x, y, w, h, r) {
 }
 
 function drawEmpty(ctx, w, h, rpx2px) {
-  ctx.setFillStyle('var(--text-tertiary)')
+  ctx.setFillStyle('#A1A1AA')
   ctx.setFontSize(rpx2px(24))
   ctx.setTextAlign('center')
   ctx.setTextBaseline('middle')

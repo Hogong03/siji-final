@@ -186,7 +186,7 @@ export function useDiaryList() {
 
   function tagColor(name) {
     const t = filterTags.value.find(t => t.name === name)
-    return t?.color || 'var(--color-ai)'
+    return t?.color || '#000000'
   }
 
   function formatDate(ts) {

@@ -66,8 +66,8 @@ export function useTagPicker(formRef) {
     const registry = getTags('diary')
     const regItem = registry.find(t => t.name === name)
     if (regItem?.color) { tagColorCache[name] = regItem.color; return regItem.color }
-    tagColorCache[name] = 'var(--color-ai)'
-    return 'var(--color-ai)'
+    tagColorCache[name] = '#000000'
+    return '#000000'
   }
 
   return {
