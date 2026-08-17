@@ -73,7 +73,9 @@ onLoad((query) => {
       recordType.value = query.type
       showTypePicker.value = false
     } else {
-      showTypePicker.value = true
+      // 默认直接进随手记，不弹选择器
+      recordType.value = 'note'
+      showTypePicker.value = false
     }
     applyTypeDefaults()
     initialSnapshot.value = JSON.stringify({ c: '', tags: [], cat: '', rt: recordType.value })
