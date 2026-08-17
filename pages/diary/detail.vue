@@ -106,6 +106,11 @@ function selectType(key) {
   initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: key })
 }
 
+function closeTypePicker() {
+  showTypePicker.value = false
+  goBack()
+}
+
 function goBack() {
   uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/diary/list' }) })
 }
@@ -222,7 +227,7 @@ const emotionLabel = computed(() => {
             <text class="tp-type-desc">{{ t.desc }}</text>
           </view>
         </view>
-        <text class="tp-cancel" @tap="goBack">取消</text>
+        <text class="tp-cancel" @tap="closeTypePicker">取消</text>
       </view>
     </view>
 
