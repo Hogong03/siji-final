@@ -150,8 +150,8 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 <style lang="scss" scoped>
 .input-area {
-  background: #F4F4F5;
-  border-top: 1rpx solid #D4D4D8;
+  background: #FFFFFF;
+  border-top: 1rpx solid #E4E4E7;
   padding: $spacing-sm $spacing-md;
   padding-bottom: calc($spacing-sm + env(safe-area-inset-bottom));
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -159,12 +159,13 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 .shortcut-panel {
   display: flex; gap: $spacing-sm; padding: 12rpx 16rpx;
-  background: #E4E4E7; border-radius: 16rpx; margin-bottom: $spacing-sm;
-  border: 1rpx solid #D4D4D8;
+  background: #F4F4F5; border-radius: 16rpx; margin-bottom: $spacing-sm;
+  border: 1rpx solid #E4E4E7;
 }
 .shortcut-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx;
   padding: 12rpx 8rpx; border-radius: 12rpx; background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
   transition: transform 0.12s;
   &:active { transform: scale(0.92); background: #F4F4F5; }
 }
@@ -174,7 +175,8 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 /* ─── 图片预览 ─── */
 .img-preview {
   display: flex; align-items: center; gap: $spacing-sm; padding: 8rpx 16rpx;
-  background: #E4E4E7; border-radius: 16rpx; margin-bottom: $spacing-sm;
+  background: #F4F4F5; border-radius: 16rpx; margin-bottom: $spacing-sm;
+  border: 1rpx solid #E4E4E7;
 }
 .img-preview-thumb { width: 80rpx; height: 80rpx; border-radius: 8rpx; flex-shrink: 0; }
 .img-preview-label { flex: 1; font-size: 26rpx; color: #71717A; }
@@ -187,16 +189,16 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 .input-row { display: flex; align-items: flex-end; gap: $spacing-sm; }
 
 .side-btn {
-  width: 48rpx; height: 48rpx; border-radius: 50%; background: #E4E4E7; border: 1rpx solid #D4D4D8;
+  width: 48rpx; height: 48rpx; border-radius: 50%; background: #F4F4F5; border: 1rpx solid #E4E4E7;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   margin-bottom: 12rpx;
   transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s;
-  &:active { transform: scale(0.9); background: #D4D4D8; }
+  &:active { transform: scale(0.9); background: #E4E4E7; }
 }
 
 .input-wrap {
   flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
-  background: #D4D4D8; border-radius: 36rpx; border: 1rpx solid #C4C4C8;
+  background: #F4F4F5; border-radius: 36rpx; border: 1rpx solid #E4E4E7;
   display: flex; align-items: center; overflow-y: auto;
   transition: border-color 0.2s ease, background-color 0.2s ease;
   &:focus-within {
@@ -226,6 +228,7 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
 
 /* ─── 深色模式 ─── */
 @media (prefers-color-scheme: dark) {
+  .input-area { background: #18181B; border-top-color: #27272A; }
   .side-btn {
     background: #27272A; border-color: #3F3F46;
     &:active { background: #3F3F46; }
@@ -248,11 +251,11 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
     background: #27272A; border-color: #3F3F46;
   }
   .shortcut-item {
-    background: #18181B;
+    background: #18181B; border-color: #27272A;
     &:active { background: #27272A; }
   }
   .shortcut-label { color: #A1A1AA; }
-  .img-preview { background: #27272A; }
+  .img-preview { background: #27272A; border-color: #3F3F46; }
   .img-preview-label { color: #A1A1AA; }
   .text-input { color: #F4F4F5; }
 }
