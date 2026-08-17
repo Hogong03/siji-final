@@ -115,7 +115,7 @@
   min-width: 0;
   @include flex-row;
   gap: 6rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   padding: 4rpx 14rpx 4rpx 4rpx;
   border-radius: 24rpx;
   border: 1rpx solid #E4E4E7;
@@ -152,7 +152,7 @@
   min-width: 0;
   @include flex-row;
   gap: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   padding: 4rpx 16rpx 4rpx 4rpx;
   border-radius: 24rpx;
   border: 1rpx solid #E4E4E7;
@@ -179,7 +179,7 @@
 .nav-guide-btn {
   @include circular-btn;
   margin-left: auto;
-  background: #D4D4D8;
+  background: #F4F4F5;
 
   .guide-icon {
     font-size: 32rpx;
@@ -326,12 +326,12 @@
     min-width: 56rpx;
     text-align: center;
 
-    &.bill { background: #D4D4D8; color: #F59E0B; }
-    &.diary { background: #D4D4D8; color: #D97706; }
-    &.plan { background: #D4D4D8; color: #10B981; }
-    &.multi { background: #D4D4D8; color: #000000; }
-    &.query { background: #D4D4D8; color: #0EA5E9; }
-    &.undo { background: #D4D4D8; color: #EF4444; }
+    &.bill { background: #F4F4F5; color: #F59E0B; }
+    &.diary { background: #F4F4F5; color: #D97706; }
+    &.plan { background: #F4F4F5; color: #10B981; }
+    &.multi { background: #F4F4F5; color: #000000; }
+    &.query { background: #F4F4F5; color: #0EA5E9; }
+    &.undo { background: #F4F4F5; color: #EF4444; }
   }
 
   .gi-text {
@@ -357,7 +357,7 @@
   padding: $spacing-xs $spacing-sm;
   text-align: center;
   border-radius: 8rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
 
   text {
     font-size: $font-xs;
@@ -395,7 +395,7 @@
   gap: 4rpx;
   padding: $spacing-xs $spacing-sm;
   border-radius: $radius-sm;
-  background: #D4D4D8;
+  background: #F4F4F5;
   border: 2rpx solid transparent;
   min-width: 100rpx;
   max-width: calc(50% - #{$spacing-xs} / 2);
@@ -427,7 +427,7 @@
   gap: $spacing-sm;
   padding: $spacing-sm;
   border-radius: $radius-sm;
-  background: #D4D4D8;
+  background: #F4F4F5;
   border: 2rpx solid transparent;
   box-sizing: border-box;
   overflow: hidden;
@@ -485,7 +485,7 @@
   padding: $spacing-sm;
   text-align: center;
   border-radius: $radius-sm;
-  background: #D4D4D8;
+  background: #F4F4F5;
   box-sizing: border-box;
   overflow: hidden;
 
@@ -538,7 +538,7 @@
   flex-shrink: 0;
   padding: 10rpx 24rpx;
   border-radius: 24rpx;
-  background: #D4D4D8;
+  background: #F4F4F5;
   font-size: $font-xs;
   color: #18181B;
   border: 1rpx solid #E4E4E7;
@@ -603,7 +603,7 @@
 }
 
 .retry-btn-secondary {
-  background: #D4D4D8;
+  background: #F4F4F5;
 }
 
 @keyframes slideUp {

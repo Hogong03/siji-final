@@ -9,9 +9,9 @@
 .exec-header-actions { display: flex; gap: 8rpx; }
 .exec-action-btn {
   width: 48rpx; height: 48rpx; border-radius: 12rpx;
-  background: #D4D4D8; display: flex; align-items: center; justify-content: center;
+  background: #F4F4F5; border: 1rpx solid #E4E4E7; display: flex; align-items: center; justify-content: center;
   transition: transform 0.12s, background 0.15s;
-  &:active { transform: scale(0.9); background: #F4F4F5; }
+  &:active { transform: scale(0.9); background: #E4E4E7; }
 }
 .exec-action-icon { font-size: 24rpx; color: #71717A; font-weight: 600; }
 .exec-type-icon {
@@ -21,7 +21,7 @@
   &.type-bill { background: rgba(239, 68, 68, 0.1); }
   &.type-diary { background: rgba(59, 130, 246, 0.1); }
   &.type-plan { background: rgba(34, 197, 94, 0.1); }
-  &.type-query { background: #D4D4D8; }
+  &.type-query { background: #F4F4F5; }
 }
 .eti-text { font-size: 22rpx; font-weight: 700; color: #18181B; }
 
@@ -82,7 +82,7 @@
 .plan-subtask-count { font-size: 22rpx; color: #A1A1AA; }
 .plan-date-row { display: flex; gap: 8rpx; flex-wrap: wrap; }
 .plan-date-chip { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 6rpx; }
-.plan-date-chip.est { background: #D4D4D8; color: #71717A; }
+.plan-date-chip.est { background: #F4F4F5; color: #71717A; }
 .plan-date-chip.due { background: rgba(239, 68, 68, 0.08); color: #EF4444; }
 .plan-subtasks { margin-top: 4rpx; display: flex; flex-direction: column; gap: 4rpx; }
 .subtask-row { display: flex; align-items: center; gap: 8rpx; }
@@ -231,7 +231,7 @@
 .edit-picker { display: block; padding: 16rpx; border: 1rpx solid #E4E4E7; border-radius: 12rpx; font-size: 28rpx; color: #18181B; }
 .edit-actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
 .edit-btn { flex: 1; text-align: center; padding: 20rpx; border-radius: 12rpx; }
-.edit-btn.cancel { background: #D4D4D8; color: #71717A; }
+.edit-btn.cancel { background: #F4F4F5; color: #71717A; border: 1rpx solid #E4E4E7; }
 .edit-btn.save { background: #000000; color: #FFFFFF; }
 
 /* 深色模式覆盖 */
@@ -242,9 +242,12 @@
   .exec-body { background: #18181B; }
   .exec-title { color: #F4F4F5; }
   .exec-sub { color: #A1A1AA; }
-  .exec-action-btn { background: #27272A; &:active { background: #3F3F46; } }
+  .exec-action-btn { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
   .exec-action-icon { color: #A1A1AA; }
   .bct-text { color: #F4F4F5; }
+  .bill-date { color: #52525B; }
+  .bill-note { color: #A1A1AA; }
+  .diary-date { color: #52525B; }
   .diary-title { color: #F4F4F5; }
   .diary-preview { color: #A1A1AA; }
   .plan-title { color: #F4F4F5; }
@@ -254,31 +257,40 @@
   .plan-progress-text { color: #71717A; }
   .plan-subtask-count { color: #71717A; }
   .plan-date-chip.est { background: #27272A; color: #A1A1AA; }
+  .subtask-dot { color: #71717A; &.done { color: #F4F4F5; } }
   .subtask-title { color: #A1A1AA; &.done { color: #71717A; } }
   .stat-cell { background: #18181B; }
   .stat-num { color: #F4F4F5; }
+  .stat-label { color: #71717A; }
   .stat-finance-row { background: #27272A; }
+  .sfr-label { color: #71717A; }
   .bar-track { background: #27272A; }
   .bar-fill { background: #FAFAFA; }
   .bar-label { color: #A1A1AA; }
   .bar-amount { color: #71717A; }
   .query-summary { background: #27272A; }
+  .qs-label { color: #71717A; }
   .qs-value { color: #F4F4F5; }
   .qs-divider { background: #27272A; }
   .query-item { border-bottom-color: #27272A; &:active { background: #18181B; } }
+  .query-empty-text { color: #71717A; }
   .qi-title { color: #F4F4F5; }
   .qi-cat { color: #A1A1AA; }
   .qi-note { color: #71717A; }
   .qi-amount.expense { color: #EF4444; }
   .exec-multi-text { color: #F4F4F5; }
   .exec-multi-sub { color: #A1A1AA; }
+  .exec-multi-arrow { color: #71717A; }
   .tag-section { border-top-color: #27272A; }
+  .tag-section-label { color: #71717A; }
+  .tag-section-count { color: #71717A; }
   .tag-add-chip { border-color: #71717A; }
   .tag-add-text { color: #A1A1AA; }
   .tag-panel { background: #18181B; }
   .tp-title { color: #F4F4F5; }
   .tp-item { border-bottom-color: #27272A; }
   .tp-name { color: #F4F4F5; }
+  .tp-count { color: #71717A; }
   .tp-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
   .tp-add { color: #F4F4F5; }
   .tp-done { border-top-color: #27272A; color: #F4F4F5; }
@@ -286,6 +298,6 @@
   .edit-title { color: #F4F4F5; }
   .edit-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
   .edit-picker { border-color: #27272A; background: #18181B; color: #F4F4F5; }
-  .edit-btn.cancel { background: #27272A; color: #A1A1AA; }
+  .edit-btn.cancel { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
   .edit-btn.save { background: #FAFAFA; color: #000000; }
 }
