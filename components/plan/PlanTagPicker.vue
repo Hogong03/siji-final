@@ -147,7 +147,7 @@ watch(() => props.visible, (v) => {
   padding: $spacing-md;
   display: flex;
   flex-direction: column;
-  box-shadow: $shadow-lg;
+  box-shadow: none;
 }
 
 .tp-title {

@@ -25,7 +25,7 @@
 }
 .eti-text { font-size: 22rpx; font-weight: 700; color: #18181B; }
 
-.exec-body { padding: 0 20rpx 16rpx; border-radius: 16rpx; background: #FFFFFF; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06); }
+.exec-body { padding: 0 20rpx 16rpx; border-radius: 16rpx; background: #FFFFFF; }
 .exec-title { display: block; font-size: 28rpx; font-weight: 600; color: #18181B; margin-bottom: 4rpx; }
 .exec-sub { display: block; font-size: 24rpx; color: #71717A; margin-top: 4rpx; }
 
@@ -234,4 +234,58 @@
 .edit-btn.cancel { background: #D4D4D8; color: #71717A; }
 .edit-btn.save { background: #000000; color: #FFFFFF; }
 
-/* 深色模式覆盖已移除 — 功能色深浅一致，背景色由父组件控制 */
+/* 深色模式覆盖 */
+@media (prefers-color-scheme: dark) {
+  .exec-header { background: #18181B; }
+  .exec-type-icon { background: #27272A; }
+  .eti-text { color: #F4F4F5; }
+  .exec-body { background: #18181B; }
+  .exec-title { color: #F4F4F5; }
+  .exec-sub { color: #A1A1AA; }
+  .exec-action-btn { background: #27272A; &:active { background: #3F3F46; } }
+  .exec-action-icon { color: #A1A1AA; }
+  .bct-text { color: #F4F4F5; }
+  .diary-title { color: #F4F4F5; }
+  .diary-preview { color: #A1A1AA; }
+  .plan-title { color: #F4F4F5; }
+  .plan-desc { color: #A1A1AA; }
+  .plan-progress-bar { background: #27272A; }
+  .plan-progress-fill { background: #FAFAFA; }
+  .plan-progress-text { color: #71717A; }
+  .plan-subtask-count { color: #71717A; }
+  .plan-date-chip.est { background: #27272A; color: #A1A1AA; }
+  .subtask-title { color: #A1A1AA; &.done { color: #71717A; } }
+  .stat-cell { background: #18181B; }
+  .stat-num { color: #F4F4F5; }
+  .stat-finance-row { background: #27272A; }
+  .bar-track { background: #27272A; }
+  .bar-fill { background: #FAFAFA; }
+  .bar-label { color: #A1A1AA; }
+  .bar-amount { color: #71717A; }
+  .query-summary { background: #27272A; }
+  .qs-value { color: #F4F4F5; }
+  .qs-divider { background: #27272A; }
+  .query-item { border-bottom-color: #27272A; &:active { background: #18181B; } }
+  .qi-title { color: #F4F4F5; }
+  .qi-cat { color: #A1A1AA; }
+  .qi-note { color: #71717A; }
+  .qi-amount.expense { color: #EF4444; }
+  .exec-multi-text { color: #F4F4F5; }
+  .exec-multi-sub { color: #A1A1AA; }
+  .tag-section { border-top-color: #27272A; }
+  .tag-add-chip { border-color: #71717A; }
+  .tag-add-text { color: #A1A1AA; }
+  .tag-panel { background: #18181B; }
+  .tp-title { color: #F4F4F5; }
+  .tp-item { border-bottom-color: #27272A; }
+  .tp-name { color: #F4F4F5; }
+  .tp-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
+  .tp-add { color: #F4F4F5; }
+  .tp-done { border-top-color: #27272A; color: #F4F4F5; }
+  .edit-card { background: #18181B; }
+  .edit-title { color: #F4F4F5; }
+  .edit-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
+  .edit-picker { border-color: #27272A; background: #18181B; color: #F4F4F5; }
+  .edit-btn.cancel { background: #27272A; color: #A1A1AA; }
+  .edit-btn.save { background: #FAFAFA; color: #000000; }
+}

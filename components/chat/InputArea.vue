@@ -244,5 +244,16 @@ function setText(t) { if (t) { text.value = t; emit('update:modelValue', t) } }
     }
   }
   .send-icon { color: #000000; }
+  .shortcut-panel {
+    background: #27272A; border-color: #3F3F46;
+  }
+  .shortcut-item {
+    background: #18181B;
+    &:active { background: #27272A; }
+  }
+  .shortcut-label { color: #A1A1AA; }
+  .img-preview { background: #27272A; }
+  .img-preview-label { color: #A1A1AA; }
+  .text-input { color: #F4F4F5; }
 }
 </style>

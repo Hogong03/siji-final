@@ -15,12 +15,12 @@
   background: #FFFFFF;
   border-radius: $radius-lg;
   border: 2rpx solid transparent;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s;
 }
 
 .header-enabled {
   border-color: #3F3F46;
-  box-shadow: $shadow-sm;
+  box-shadow: none;
 }
 
 .header-left {
@@ -56,7 +56,7 @@
   background: #FFFFFF;
   border-radius: $radius-lg;
   overflow: hidden;
-  box-shadow: $shadow-sm;
+  box-shadow: none;
 }
 
 .profile-card.card-basic {

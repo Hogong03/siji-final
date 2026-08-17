@@ -365,7 +365,7 @@
 		height: 112rpx;
 		border-radius: 50%;
 		background: #000000;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+		box-shadow: none;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -410,7 +410,7 @@
 		.bc-empty { color: #52525B; }
 		.fab {
 			background: #FAFAFA;
-			box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+			box-shadow: none;
 		}
 		.fab .fab-icon {
 			color: #18181B;

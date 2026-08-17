@@ -223,7 +223,7 @@ const dots = computed(() => {
   &.filled {
     background: #FFFFFF;
     border-color: #FFFFFF;
-    box-shadow: 0 0 12rpx rgba(255, 255, 255, 0.5);
+    box-shadow: none;
   }
 }
 

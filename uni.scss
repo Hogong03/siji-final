@@ -57,11 +57,11 @@ $radius-lg: 24rpx;
 $radius-xl: 32rpx;
 $radius-round: 50%;
 
-// ─── 阴影（微层次 — 有呼吸感） ───
-$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
-$shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-$shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.10);
-$shadow-ai: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+// ─── 阴影（零阴影设计语言） ───
+$shadow-sm: none;
+$shadow-md: none;
+$shadow-lg: none;
+$shadow-ai: none;
 $shadow-glow: none;
 $shadow-none: none;
 
@@ -71,7 +71,7 @@ $glass-border-color: #E4E4E7;
 $border-color: #E4E4E7;
 $glass-blur: none;
 $glass-bg: #FFFFFF;
-$glass-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.04);
+$glass-shadow: none;
 
 // ─── 渐变（极简模式 — 全部纯色，无渐变） ───
 $gradient-ai: #000000;

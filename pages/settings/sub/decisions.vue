@@ -320,7 +320,7 @@ function goDetail(id) {
   width: 96rpx; height: 96rpx; border-radius: 50%;
   background: #000000; color: #FFFFFF;
   font-size: 56rpx; line-height: 96rpx; text-align: center;
-  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.2);
+  box-shadow: none;
 }
 
 .modal-mask {

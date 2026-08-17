@@ -210,7 +210,6 @@
   background: #FFFFFF;
   border: 2rpx solid #E4E4E7;
   @include flex-center;
-  box-shadow: $shadow-md;
   z-index: 5;
   opacity: 0;
   animation: bbFadeIn 0.3s ease 0.3s forwards;

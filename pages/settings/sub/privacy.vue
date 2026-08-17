@@ -105,7 +105,7 @@ function submit() {
   background: #FFFFFF;
   border-radius: $radius-lg;
   padding: $spacing-md;
-  box-shadow: $shadow-sm;
+  box-shadow: none;
 
   .card-title { font-size: $font-lg; font-weight: 700; color: #18181B; display: block; margin-bottom: $spacing-xs; }
   .card-desc { font-size: $font-xs; color: #A1A1AA; display: block; margin-bottom: $spacing-md; }
@@ -131,7 +131,7 @@ function submit() {
   background: #FFFFFF; border-radius: $radius-xl;
   padding: $spacing-lg $spacing-md; width: 80%; max-width: 500rpx;
   display: flex; flex-direction: column; align-items: center;
-  box-shadow: $shadow-lg;
+  box-shadow: none;
   box-sizing: border-box;
   overflow: hidden;
 

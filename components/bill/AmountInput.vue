@@ -93,8 +93,8 @@ function tapDelete() {
     &.active {
       color: #FFFFFF;
 
-      &.expense { background: #000000; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.12); }
-      &.income { background: #3F3F46; box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08); }
+      &.expense { background: #000000; box-shadow: none; }
+      &.income { background: #3F3F46; box-shadow: none; }
     }
   }
 }

@@ -62,12 +62,11 @@
   position: relative;
   transition: background 0.2s ease, border-color 0.2s ease;
 
-  /* 用户气泡 — 加阴影提升层次 */
+  /* 用户气泡 */
   &.user {
     background: #000000;
     color: #FFFFFF;
     border-radius: 24rpx 24rpx 8rpx 24rpx;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
   }
 
   /* AI 气泡基础 */
@@ -332,6 +331,50 @@
   }
   .bubble.assistant.streaming::after {
     color: #FAFAFA;
+  }
+  .bubble.assistant {
+    background: #27272A;
+    color: #F4F4F5;
+    border-left-color: #27272A;
+    &.plain, &.short { background: #27272A; border-left: none; }
+    &.is-welcome { background: #18181B; border-color: #27272A; }
+    &.code { background: #27272A; }
+    &.quote { background: #18181B; }
+    &.rich { border-left-color: #FAFAFA; }
+    &.list { border-left-color: #A1A1AA; }
+    &.long { border-left-color: #FAFAFA; }
+    &.table { border-top-color: #FAFAFA; }
+    &.is-continuation { border-left-color: #18181B; }
+  }
+  .bubble.user {
+    background: #FAFAFA;
+    color: #000000;
+  }
+  .bubble-text { color: #F4F4F5; }
+  .welcome-chip {
+    background: #27272A;
+    border-color: #3F3F46;
+    text { color: #F4F4F5; }
+    &:active { background: #3F3F46; }
+  }
+  .confirm-card {
+    background: #18181B;
+    border-color: #FAFAFA;
+  }
+  .confirm-title { color: #FAFAFA; }
+  .confirm-detail { color: #A1A1AA; }
+  .confirm-btn {
+    &.cancel { background: #27272A; color: #A1A1AA; }
+    &.ok { background: #FAFAFA; color: #000000; }
+  }
+  .exec-card {
+    background: #18181B;
+    border-color: #27272A;
+    &.failed { border-color: #DC2626; background: rgba(239, 68, 68, 0.08); }
+  }
+  .bubble-action-btn {
+    color: #71717A;
+    &:active { color: #FAFAFA; }
   }
 }
 

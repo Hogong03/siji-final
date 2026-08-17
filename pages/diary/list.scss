@@ -465,7 +465,7 @@
   align-items: center;
   justify-content: center;
   z-index: 100;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.2);
+  box-shadow: none;
 }
 .fab-icon {
   color: #FFFFFF;
@@ -518,7 +518,7 @@
   .cal-heatmap { background: #FAFAFA; }
   .cal-count { background: #FAFAFA; color: #18181B; }
   .timeline-date { color: #A1A1AA; border-left-color: #FAFAFA; }
-  .fab { background: #FAFAFA; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.4); }
+  .fab { background: #FAFAFA; box-shadow: none; }
   .fab-icon { color: #18181B; }
   .empty-btn { background: #FAFAFA; color: #18181B; }
 }

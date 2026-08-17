@@ -201,7 +201,7 @@ function go(target) {
 .row-arrow { font-size: $font-lg; color: #A1A1AA; font-weight: 300; flex-shrink: 0; }
 
 .dot { width: 16rpx; height: 16rpx; border-radius: 50%; flex-shrink: 0;
-  &.ok { background: #059669; box-shadow: 0 0 0 6rpx rgba(16, 185, 129, 0.12); }
-  &.warn { background: #F59E0B; box-shadow: 0 0 0 6rpx rgba(245, 158, 11, 0.12); }
+  &.ok { background: #059669; box-shadow: none; }
+  &.warn { background: #F59E0B; box-shadow: none; }
 }
 </style>

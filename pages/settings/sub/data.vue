@@ -101,7 +101,7 @@ function clearAll() {
   border-radius: $radius-lg;
   padding: $spacing-md;
   margin-bottom: $spacing-md;
-  box-shadow: $shadow-sm;
+  box-shadow: none;
   box-sizing: border-box;
   overflow: hidden;
 
