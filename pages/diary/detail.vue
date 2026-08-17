@@ -233,7 +233,8 @@ const emotionLabel = computed(() => {
 
     <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
       <!-- 类型标识条 -->
-      <view class="type-bar" v-if="isNew || recordType !== 'note'">
+      <view class="type-bar">
+        <!-- 始终显示类型标识条 -->
         <text class="type-bar-icon">{{ currentType.icon }}</text>
         <text class="type-bar-label">{{ currentType.label }}</text>
         <text class="type-bar-switch" v-if="isNew" @tap="showTypePicker = true">切换</text>
