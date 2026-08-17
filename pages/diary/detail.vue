@@ -1,7 +1,8 @@
 <script setup>
 /**
- * 记录详情 / 新建页（精简版）
- * 编辑区 → 标签&分类(合并一行) → 图片(有才显示) → AI菜单(收起) → 摘要(有才显示) → 关联(折叠)
+ * 记录详情 / 新建页
+ * 新建时可选 5 种记录类型，每种不同 placeholder/视觉/行为
+ * 编辑区 → 标签&分类 → 图片 → AI菜单 → 摘要 → 关联
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed } from 'vue'
@@ -19,10 +20,25 @@ const month = ref('')
 const originalCreatedAt = ref(null)
 const isPinned = ref(false)
 const categories = ref([])
-const showAIMenu = ref(false)     // AI 菜单默认收起
-const showRelated = ref(false)     // 关联区域默认折叠
+const showAIMenu = ref(false)
+const showRelated = ref(false)
+const recordType = ref('note')  // note|diary|idea|todo|flash
+const showTypePicker = ref(false)
 
-const form = ref({ content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '' })
+const RECORD_TYPES = [
+  { key: 'note',  icon: '✏️', label: '随手记', placeholder: '随手记点什么…',  color: '#18181B', desc: '快速记录' },
+  { key: 'diary', icon: '📖', label: '日记',   placeholder: '今天发生了什么…',  color: '#0EA5E9', desc: '心情 + 摘要' },
+  { key: 'idea',  icon: '💡', label: '灵感',   placeholder: '突然想到…',       color: '#F59E0B', desc: '自动标签' },
+  { key: 'todo',  icon: '☑️', label: '待办',   placeholder: '要做什么？每行一个…', color: '#059669', desc: '可勾选' },
+  { key: 'flash', icon: '⚡', label: '闪念',   placeholder: '一闪而过的念头…',   color: '#71717A', desc: '极简模式' },
+]
+
+const currentType = computed(() => RECORD_TYPES.find(t => t.key === recordType.value) || RECORD_TYPES[0])
+
+// 闪念模式：隐藏标签/分类/图片/AI，只留 textarea + 保存
+const isFlashMode = computed(() => recordType.value === 'flash' && isNew.value)
+
+const form = ref({ content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
 
 const { showTagPicker, newTagInput, allUsedTags, allCategories, selectedCategory, filteredTagList,
   openTagPicker, toggleTag, isTagSelected, addNewTag, removeTag, tagColor } = useTagPicker(form)
@@ -41,7 +57,7 @@ const hasRelated = computed(() => relatedRecords.value.length > 0 || relatedBill
 
 const initialSnapshot = ref('')
 const isDirty = computed(() => {
-  return JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category }) !== initialSnapshot.value
+  return JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value }) !== initialSnapshot.value
 })
 
 onLoad((query) => {
@@ -53,17 +69,47 @@ onLoad((query) => {
     loadDiary()
   } else if (query?.id === 'new') {
     isNew.value = true
-    initialSnapshot.value = JSON.stringify({ c: '', tags: [], cat: '' })
+    if (query.type && RECORD_TYPES.find(t => t.key === query.type)) {
+      recordType.value = query.type
+      showTypePicker.value = false
+    } else {
+      showTypePicker.value = true
+    }
+    applyTypeDefaults()
+    initialSnapshot.value = JSON.stringify({ c: '', tags: [], cat: '', rt: recordType.value })
     if (query.tag) form.value.tags = [decodeURIComponent(query.tag)]
     if (query.cat) form.value.category = decodeURIComponent(query.cat)
   }
 })
+
+function applyTypeDefaults() {
+  if (recordType.value === 'idea') {
+    if (!form.value.tags.includes('灵感')) form.value.tags.unshift('灵感')
+  } else if (recordType.value === 'diary') {
+    const now = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+    const weather = '晴'  // 静态占位，后续可接入天气 API
+    if (!form.value.content) {
+      form.value.content = `${dateStr} 星期${weekdays[now.getDay()]} ${weather}\n`
+    }
+  }
+}
+
+function selectType(key) {
+  recordType.value = key
+  showTypePicker.value = false
+  applyTypeDefaults()
+  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: key })
+}
 
 function goBack() {
   uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/diary/list' }) })
 }
 
 onBackPress(() => {
+  if (showTypePicker.value) { showTypePicker.value = false; return true }
   if (isDirty.value) {
     uni.showModal({ title: '放弃编辑？', content: '当前修改未保存', confirmText: '放弃', cancelText: '继续编辑', success: (res) => { if (res.confirm) goBack() } })
     return true
@@ -82,13 +128,15 @@ function loadDiary() {
   if (!item) return
   originalCreatedAt.value = item.created_at || null
   isPinned.value = !!item.pinned
+  recordType.value = item.record_type || 'note'
   form.value = {
     content: (item.title ? item.title + '\n' : '') + (item.content || ''),
     tags: safeParseArray(item.tags), category: item.category || '',
     images: safeParseArray(item.images),
-    emotion: item.emotion || '', ai_summary: item.ai_summary || '', ai_advice: item.ai_advice || ''
+    emotion: item.emotion || '', ai_summary: item.ai_summary || '', ai_advice: item.ai_advice || '',
+    record_type: recordType.value
   }
-  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category })
+  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
   loadRelatedRecords()
   loadRelatedBills()
 }
@@ -124,9 +172,10 @@ async function handleSave() {
     tags: [...form.value.tags], category: form.value.category,
     images: form.value.images || [], emotion: form.value.emotion || '',
     ai_summary: form.value.ai_summary, ai_advice: form.value.ai_advice,
+    record_type: recordType.value,
     pinned: isPinned.value, created_at: createdAt, updated_at: Date.now(), is_deleted: 0
   })
-  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category })
+  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => { goBack() }, 800)
 }
@@ -139,7 +188,6 @@ function handleDelete() {
 
 function generateAISummary() { _genSummary(isNew.value, diaryId.value, month.value, getDiaryById, saveDiary) }
 
-// AI 菜单操作
 function doAI(action) {
   showAIMenu.value = false
   if (action === 'summary') generateAISummary()
@@ -155,12 +203,46 @@ const emotionLabel = computed(() => {
 </script>
 
 <template>
-  <view class="detail-page">
-    <scroll-view class="detail-scroll" scroll-y>
+  <view class="detail-page" :class="'type-' + recordType">
+    <!-- 记录类型选择器（新建时） -->
+    <view class="type-picker-overlay" v-if="showTypePicker && isNew" @tap.self="goBack">
+      <view class="type-picker">
+        <text class="tp-title">选择记录类型</text>
+        <view class="tp-grid">
+          <view
+            v-for="t in RECORD_TYPES" :key="t.key"
+            class="tp-type-card"
+            :class="{ active: recordType === t.key }"
+            @tap="selectType(t.key)"
+          >
+            <text class="tp-type-icon">{{ t.icon }}</text>
+            <text class="tp-type-label">{{ t.label }}</text>
+            <text class="tp-type-desc">{{ t.desc }}</text>
+          </view>
+        </view>
+        <text class="tp-cancel" @tap="goBack">取消</text>
+      </view>
+    </view>
+
+    <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
+      <!-- 类型标识条 -->
+      <view class="type-bar" v-if="isNew || recordType !== 'note'">
+        <text class="type-bar-icon">{{ currentType.icon }}</text>
+        <text class="type-bar-label">{{ currentType.label }}</text>
+        <text class="type-bar-switch" v-if="isNew" @tap="showTypePicker = true">切换</text>
+      </view>
+
       <!-- 编辑区 -->
-      <view class="textarea-section">
-        <textarea v-model="form.content" class="textarea-field" placeholder="随手记点什么…" :maxlength="5000" :auto-height="true" :focus="isNew" />
-        <view class="textarea-actions">
+      <view class="textarea-section" :class="{ 'flash-mode': isFlashMode }">
+        <textarea
+          v-model="form.content"
+          class="textarea-field"
+          :placeholder="currentType.placeholder"
+          :maxlength="5000"
+          :auto-height="true"
+          :focus="isNew && !showTypePicker"
+        />
+        <view class="textarea-actions" v-if="!isFlashMode">
           <!-- #ifdef APP-PLUS -->
           <text class="ta-btn" :class="{ recording: isRecording }" @tap="startVoice">{{ isRecording ? '⏹' : '🎤' }}</text>
           <!-- #endif -->
@@ -169,16 +251,16 @@ const emotionLabel = computed(() => {
         </view>
       </view>
 
-      <!-- AI 菜单（收起态，点击展开） -->
-      <view class="ai-menu" v-if="showAIMenu && form.content.trim()">
+      <!-- AI 菜单 -->
+      <view class="ai-menu" v-if="showAIMenu && form.content.trim() && !isFlashMode">
         <view class="ai-menu-item" @tap="doAI('summary')"><text>{{ generating ? '⏳ 生成中…' : '📋 生成摘要' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('rewrite')"><text>{{ Rewriting ? '⏳ 润色中…' : '✏️ 润色文本' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('todos')"><text>{{ extractingTodos ? '⏳ 提取中…' : '☑️ 提取待办' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('emotion')"><text>{{ analyzingEmotion ? '⏳ 分析中…' : '💭 情绪分析' }}</text></view>
       </view>
 
-      <!-- 标签 & 分类合并一行 -->
-      <view class="meta-row">
+      <!-- 标签 & 分类（闪念模式隐藏） -->
+      <view class="meta-row" v-if="!isFlashMode">
         <view class="meta-chips">
           <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
           <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
@@ -187,8 +269,8 @@ const emotionLabel = computed(() => {
         </view>
       </view>
 
-      <!-- 图片（有才显示） -->
-      <view class="image-section" v-if="form.images && form.images.length > 0">
+      <!-- 图片（闪念模式隐藏） -->
+      <view class="image-section" v-if="!isFlashMode && form.images && form.images.length > 0">
         <view class="image-grid">
           <view v-for="(img, i) in form.images" :key="i" class="image-item" @tap="previewImage(i)">
             <image :src="img" mode="aspectFill" class="img-thumb" />
@@ -197,11 +279,11 @@ const emotionLabel = computed(() => {
         </view>
       </view>
 
-      <!-- 情绪标签（有才显示） -->
-      <view class="emotion-badge" v-if="emotionLabel"><text>{{ emotionLabel }}</text></view>
+      <!-- 情绪标签 -->
+      <view class="emotion-badge" v-if="emotionLabel && !isFlashMode"><text>{{ emotionLabel }}</text></view>
 
-      <!-- AI 摘要（有才显示） -->
-      <view v-if="form.ai_summary" class="ai-section">
+      <!-- AI 摘要 -->
+      <view v-if="!isFlashMode && form.ai_summary" class="ai-section">
         <view class="ai-section-header">
           <text class="ai-section-title">摘要</text>
           <text class="ai-refresh" @tap="generateAISummary">{{ generating ? '⏳' : '↻' }}</text>
@@ -209,13 +291,13 @@ const emotionLabel = computed(() => {
         <text class="ai-text">{{ form.ai_summary }}</text>
       </view>
 
-      <view v-if="form.ai_advice" class="ai-section">
+      <view v-if="!isFlashMode && form.ai_advice" class="ai-section">
         <text class="ai-section-title">建议</text>
         <text class="ai-text">{{ form.ai_advice }}</text>
       </view>
 
-      <!-- 关联区域（折叠态） -->
-      <view class="related-section" v-if="!isNew && hasRelated">
+      <!-- 关联区域 -->
+      <view class="related-section" v-if="!isNew && !isFlashMode && hasRelated">
         <view class="related-header" @tap="showRelated = !showRelated">
           <text class="related-title-text">关联内容</text>
           <text class="related-arrow">{{ showRelated ? '▲' : '▼' }}</text>
@@ -255,8 +337,8 @@ const emotionLabel = computed(() => {
       </view>
     </view>
 
-    <!-- 底部操作栏（精简） -->
-    <view class="bottom-bar safe-area-bottom">
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar safe-area-bottom" v-if="!showTypePicker || !isNew">
       <text v-if="!isNew" class="bar-btn" @tap="handlePin">{{ isPinned ? '📌' : '📍' }}</text>
       <text v-if="!isNew" class="bar-btn bar-delete" @tap="handleDelete">删除</text>
       <view class="bar-save" @tap="handleSave"><text>保存</text></view>
