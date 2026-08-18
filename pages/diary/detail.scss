@@ -423,9 +423,8 @@
   .type-bar { background: #27272A; border-bottom-color: #3F3F46; }
   .type-bar-label { color: #F4F4F5; }
   .type-bar-switch { color: #A1A1AA; }
-  .type-bar-collapse { color: #A1A1AA; }
+  .type-bar-toggle { color: #71717A; }
   .type-bar-collapsed { background: #27272A; border-bottom-color: #3F3F46; }
-  .type-bar-expand { color: #A1A1AA; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
 
@@ -520,10 +519,10 @@
   background: #F4F4F5;
   border-radius: 12rpx;
 }
-.type-bar-collapse {
-  font-size: 24rpx;
-  color: #71717A;
-  padding: 4rpx 16rpx;
+.type-bar-toggle {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  padding: 4rpx 12rpx;
 }
 .type-bar-collapsed {
   display: flex;
@@ -534,12 +533,6 @@
   border-bottom: 1rpx solid #E4E4E7;
   margin-bottom: 16rpx;
 }
-.type-bar-expand {
-  font-size: 24rpx;
-  color: #71717A;
-  padding: 4rpx 16rpx;
-}
-
 /* ─── 闪念模式 ─── */
 .flash-mode .textarea-field {
   min-height: 400rpx;

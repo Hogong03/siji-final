@@ -237,12 +237,12 @@ const emotionLabel = computed(() => {
         <text class="type-bar-icon">{{ currentType.icon }}</text>
         <text class="type-bar-label">{{ currentType.label }}</text>
         <text class="type-bar-switch" v-if="isNew" @tap="showTypePicker = true">切换</text>
-        <text class="type-bar-collapse" @tap="showMetaPanel = false">收起</text>
+        <text class="type-bar-toggle" @tap="showMetaPanel = false">▲</text>
       </view>
       <view class="type-bar-collapsed" v-if="!showMetaPanel" @tap="showMetaPanel = true">
         <text class="type-bar-icon">{{ currentType.icon }}</text>
         <text class="type-bar-label">{{ currentType.label }}</text>
-        <text class="type-bar-expand">展开</text>
+        <text class="type-bar-toggle">▼</text>
       </view>
 
       <!-- 编辑区 -->
