@@ -232,17 +232,12 @@ const emotionLabel = computed(() => {
     </view>
 
     <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
-      <!-- 类型标识条 + 标签（可收起） -->
-      <view class="type-bar" v-if="showMetaPanel">
+      <!-- 类型标识条（可收起，整条可点击切换） -->
+      <view class="type-bar" @tap="showMetaPanel = !showMetaPanel">
         <text class="type-bar-icon">{{ currentType.icon }}</text>
         <text class="type-bar-label">{{ currentType.label }}</text>
-        <text class="type-bar-switch" v-if="isNew" @tap="showTypePicker = true">切换</text>
-        <text class="type-bar-toggle" @tap="showMetaPanel = false">▲</text>
-      </view>
-      <view class="type-bar-collapsed" v-if="!showMetaPanel" @tap="showMetaPanel = true">
-        <text class="type-bar-icon">{{ currentType.icon }}</text>
-        <text class="type-bar-label">{{ currentType.label }}</text>
-        <text class="type-bar-toggle">▼</text>
+        <text class="type-bar-switch" v-if="isNew && showMetaPanel" @tap.stop="showTypePicker = true">切换</text>
+        <text class="type-bar-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
       </view>
 
       <!-- 编辑区 -->

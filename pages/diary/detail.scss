@@ -424,7 +424,6 @@
   .type-bar-label { color: #F4F4F5; }
   .type-bar-switch { color: #A1A1AA; }
   .type-bar-toggle { color: #71717A; }
-  .type-bar-collapsed { background: #27272A; border-bottom-color: #3F3F46; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
 
@@ -523,15 +522,6 @@
   font-size: 20rpx;
   color: #A1A1AA;
   padding: 4rpx 12rpx;
-}
-.type-bar-collapsed {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 12rpx 24rpx;
-  background: #FFFFFF;
-  border-bottom: 1rpx solid #E4E4E7;
-  margin-bottom: 16rpx;
 }
 /* ─── 闪念模式 ─── */
 .flash-mode .textarea-field {
