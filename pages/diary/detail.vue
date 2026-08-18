@@ -232,12 +232,27 @@ const emotionLabel = computed(() => {
     </view>
 
     <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
-      <!-- 类型标识条（可收起，整条可点击切换） -->
-      <view class="type-bar" @tap="showMetaPanel = !showMetaPanel">
-        <text class="type-bar-icon">{{ currentType.icon }}</text>
-        <text class="type-bar-label">{{ currentType.label }}</text>
-        <text class="type-bar-switch" v-if="isNew && showMetaPanel" @tap.stop="showTypePicker = true">切换</text>
-        <text class="type-bar-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
+      <!-- 顶部筛选行 -->
+      <view class="filter-bar">
+        <view class="filter-left" @tap="showTypePicker = true">
+          <text class="filter-type-icon">{{ currentType.icon }}</text>
+          <text class="filter-type-label">{{ currentType.label }}</text>
+          <text class="filter-type-arrow">›</text>
+        </view>
+        <view class="filter-right" @tap="showMetaPanel = !showMetaPanel">
+          <text class="filter-tag-icon">🏷</text>
+          <text class="filter-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
+        </view>
+      </view>
+
+      <!-- 筛选条件行（标签/分类，点击右侧按钮展开） -->
+      <view class="meta-row" v-if="!isFlashMode && showMetaPanel">
+        <view class="meta-chips">
+          <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
+          <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
+          <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @longpress="removeTag(t)"><text>{{ t }}</text></view>
+          <text class="meta-add" @tap="openTagPicker">+ 标签</text>
+        </view>
       </view>
 
       <!-- 编辑区 -->
@@ -265,16 +280,6 @@ const emotionLabel = computed(() => {
         <view class="ai-menu-item" @tap="doAI('rewrite')"><text>{{ Rewriting ? '⏳ 润色中…' : '✏️ 润色文本' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('todos')"><text>{{ extractingTodos ? '⏳ 提取中…' : '☑️ 提取待办' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('emotion')"><text>{{ analyzingEmotion ? '⏳ 分析中…' : '💭 情绪分析' }}</text></view>
-      </view>
-
-      <!-- 标签 & 分类（闪念模式隐藏） -->
-      <view class="meta-row" v-if="!isFlashMode && showMetaPanel">
-        <view class="meta-chips">
-          <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
-          <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
-          <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @longpress="removeTag(t)"><text>{{ t }}</text></view>
-          <text class="meta-add" @tap="openTagPicker">+ 标签</text>
-        </view>
       </view>
 
       <!-- 图片（闪念模式隐藏） -->

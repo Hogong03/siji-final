@@ -420,10 +420,10 @@
   .tp-type-label { color: #F4F4F5; }
   .tp-type-desc { color: #A1A1AA; }
   .tp-cancel { color: #A1A1AA; }
-  .type-bar { background: #27272A; border-bottom-color: #3F3F46; }
-  .type-bar-label { color: #F4F4F5; }
-  .type-bar-switch { color: #A1A1AA; }
-  .type-bar-toggle { color: #71717A; }
+  .filter-bar { background: #18181B; border-bottom-color: #27272A; }
+  .filter-type-label { color: #F4F4F5; }
+  .filter-type-arrow { color: #71717A; }
+  .filter-toggle { color: #71717A; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
 
@@ -491,37 +491,46 @@
   color: #A1A1AA;
 }
 
-/* ─── 类型标识条 ─── */
-.type-bar {
+/* ─── 顶部筛选行 ─── */
+.filter-bar {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  justify-content: space-between;
   padding: 12rpx 24rpx;
   background: #FFFFFF;
   border-bottom: 1rpx solid #E4E4E7;
   margin-bottom: 16rpx;
-  border-radius: 12rpx 12rpx 0 0;
 }
-.type-bar-icon {
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.filter-type-icon {
   font-size: 28rpx;
 }
-.type-bar-label {
+.filter-type-label {
   font-size: 26rpx;
   font-weight: 500;
   color: #18181B;
-  flex: 1;
 }
-.type-bar-switch {
+.filter-type-arrow {
+  font-size: 28rpx;
+  color: #A1A1AA;
+  margin-left: 4rpx;
+}
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.filter-tag-icon {
   font-size: 24rpx;
-  color: #71717A;
-  padding: 4rpx 16rpx;
-  background: #F4F4F5;
-  border-radius: 12rpx;
 }
-.type-bar-toggle {
+.filter-toggle {
   font-size: 20rpx;
   color: #A1A1AA;
-  padding: 4rpx 12rpx;
+  padding: 4rpx 8rpx;
 }
 /* ─── 闪念模式 ─── */
 .flash-mode .textarea-field {
