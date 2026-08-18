@@ -244,7 +244,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 筛选条件（收展按钮控制，分类与标签独立分行） -->
-      <view class="meta-panel" v-if="!isFlashMode && showMetaPanel">
+      <view class="meta-panel" v-if="showMetaPanel">
         <!-- 类型选择 -->
         <view class="meta-section">
           <text class="meta-section-title">类型</text>
@@ -253,7 +253,7 @@ const emotionLabel = computed(() => {
           </view>
         </view>
         <!-- 分类选择 -->
-        <view class="meta-section">
+        <view class="meta-section" v-if="!isFlashMode">
           <text class="meta-section-title">分类</text>
           <view class="meta-chips">
             <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无</text></view>
@@ -261,7 +261,7 @@ const emotionLabel = computed(() => {
           </view>
         </view>
         <!-- 标签 -->
-        <view class="meta-section">
+        <view class="meta-section" v-if="!isFlashMode">
           <text class="meta-section-title">标签</text>
           <view class="meta-chips">
             <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @tap="removeTag(t)"><text>{{ t }}</text><text class="tag-remove">✕</text></view>
