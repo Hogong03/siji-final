@@ -37,6 +37,7 @@ const currentType = computed(() => RECORD_TYPES.find(t => t.key === recordType.v
 
 // 闪念模式：隐藏标签/分类/图片/AI，只留 textarea + 保存
 const isFlashMode = computed(() => recordType.value === 'flash' && isNew.value)
+const showMetaPanel = ref(true) // 类型条+标签区域可收起
 
 const form = ref({ content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
 
@@ -231,12 +232,17 @@ const emotionLabel = computed(() => {
     </view>
 
     <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
-      <!-- 类型标识条 -->
-      <view class="type-bar">
-        <!-- 始终显示类型标识条 -->
+      <!-- 类型标识条 + 标签（可收起） -->
+      <view class="type-bar" v-if="showMetaPanel">
         <text class="type-bar-icon">{{ currentType.icon }}</text>
         <text class="type-bar-label">{{ currentType.label }}</text>
         <text class="type-bar-switch" v-if="isNew" @tap="showTypePicker = true">切换</text>
+        <text class="type-bar-collapse" @tap="showMetaPanel = false">收起</text>
+      </view>
+      <view class="type-bar-collapsed" v-if="!showMetaPanel" @tap="showMetaPanel = true">
+        <text class="type-bar-icon">{{ currentType.icon }}</text>
+        <text class="type-bar-label">{{ currentType.label }}</text>
+        <text class="type-bar-expand">展开</text>
       </view>
 
       <!-- 编辑区 -->
@@ -267,7 +273,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 标签 & 分类（闪念模式隐藏） -->
-      <view class="meta-row" v-if="!isFlashMode">
+      <view class="meta-row" v-if="!isFlashMode && showMetaPanel">
         <view class="meta-chips">
           <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
           <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
