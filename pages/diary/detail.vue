@@ -108,7 +108,6 @@ function selectType(key) {
 
 function closeTypePicker() {
   showTypePicker.value = false
-  goBack()
 }
 
 function goBack() {
