@@ -249,14 +249,14 @@ const emotionLabel = computed(() => {
         <view class="meta-section">
           <text class="meta-section-title">类型</text>
           <view class="meta-chips">
-            <view v-for="t in RECORD_TYPES" :key="t.key" class="meta-chip cat-chip" :class="{ active: recordType === t.key }" @tap="selectType(t.key)"><text>{{ t.icon }} {{ t.label }}</text></view>
+            <view v-for="t in RECORD_TYPES" :key="t.key" class="meta-chip cat-chip" :class="{ active: recordType === t.key }" @tap="selectType(t.key)"><text>{{ t.icon }}{{ t.label }}</text></view>
           </view>
         </view>
         <!-- 分类选择 -->
         <view class="meta-section">
           <text class="meta-section-title">分类</text>
           <view class="meta-chips">
-            <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
+            <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无</text></view>
             <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
           </view>
         </view>
@@ -264,8 +264,8 @@ const emotionLabel = computed(() => {
         <view class="meta-section">
           <text class="meta-section-title">标签</text>
           <view class="meta-chips">
-            <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @longpress="removeTag(t)"><text>{{ t }}</text></view>
-            <text class="meta-add" @tap="openTagPicker">+ 标签</text>
+            <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @tap="removeTag(t)"><text>{{ t }}</text><text class="tag-remove">✕</text></view>
+            <text class="meta-add" @tap="openTagPicker">+</text>
           </view>
         </view>
       </view>

@@ -77,14 +77,17 @@
 .meta-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8rpx;
+  gap: 6rpx;
   align-items: center;
 }
 .meta-chip {
-  padding: 6rpx 20rpx;
-  border-radius: 20rpx;
-  font-size: 24rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 16rpx;
+  font-size: 20rpx;
   border: 1rpx solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
 }
 .cat-chip {
   color: #71717A;
@@ -98,12 +101,17 @@
   border: 1rpx solid;
   background: transparent;
 }
+.tag-remove {
+  font-size: 18rpx;
+  opacity: 0.5;
+  margin-left: 2rpx;
+}
 .meta-add {
-  font-size: 24rpx;
+  font-size: 20rpx;
   color: #A1A1AA;
-  padding: 6rpx 16rpx;
+  padding: 4rpx 12rpx;
   border: 1rpx dashed #E4E4E7;
-  border-radius: 20rpx;
+  border-radius: 16rpx;
 }
 
 /* 图片 */
@@ -507,10 +515,10 @@
   gap: 8rpx;
 }
 .filter-type-icon {
-  font-size: 28rpx;
+  font-size: 24rpx;
 }
 .filter-type-label {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 500;
   color: #18181B;
 }
@@ -528,15 +536,15 @@
   padding: 0 24rpx 16rpx;
 }
 .meta-section {
-  margin-bottom: 12rpx;
+  margin-bottom: 8rpx;
 }
 .meta-section:last-child {
   margin-bottom: 0;
 }
 .meta-section-title {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: #A1A1AA;
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
   display: block;
 }
 /* ─── 闪念模式 ─── */
