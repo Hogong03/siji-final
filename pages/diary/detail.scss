@@ -422,8 +422,8 @@
   .tp-cancel { color: #A1A1AA; }
   .filter-bar { background: #18181B; border-bottom-color: #27272A; }
   .filter-type-label { color: #F4F4F5; }
-  .filter-type-arrow { color: #71717A; }
   .filter-toggle { color: #71717A; }
+  .meta-section-title { color: #71717A; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
 
@@ -514,23 +514,30 @@
   font-weight: 500;
   color: #18181B;
 }
-.filter-type-arrow {
-  font-size: 28rpx;
-  color: #A1A1AA;
-  margin-left: 4rpx;
-}
 .filter-right {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-}
-.filter-tag-icon {
-  font-size: 24rpx;
 }
 .filter-toggle {
-  font-size: 20rpx;
+  font-size: 24rpx;
   color: #A1A1AA;
-  padding: 4rpx 8rpx;
+  padding: 4rpx 12rpx;
+}
+/* ─── 筛选面板（分类/标签独立分行） ─── */
+.meta-panel {
+  padding: 0 24rpx 16rpx;
+}
+.meta-section {
+  margin-bottom: 12rpx;
+}
+.meta-section:last-child {
+  margin-bottom: 0;
+}
+.meta-section-title {
+  font-size: 22rpx;
+  color: #A1A1AA;
+  margin-bottom: 8rpx;
+  display: block;
 }
 /* ─── 闪念模式 ─── */
 .flash-mode .textarea-field {

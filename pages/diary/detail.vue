@@ -234,24 +234,39 @@ const emotionLabel = computed(() => {
     <scroll-view class="detail-scroll" scroll-y v-if="!showTypePicker || !isNew">
       <!-- 顶部筛选行 -->
       <view class="filter-bar">
-        <view class="filter-left" @tap="showTypePicker = true">
+        <view class="filter-left">
           <text class="filter-type-icon">{{ currentType.icon }}</text>
           <text class="filter-type-label">{{ currentType.label }}</text>
-          <text class="filter-type-arrow">›</text>
         </view>
         <view class="filter-right" @tap="showMetaPanel = !showMetaPanel">
-          <text class="filter-tag-icon">🏷</text>
           <text class="filter-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
         </view>
       </view>
 
-      <!-- 筛选条件行（标签/分类，点击右侧按钮展开） -->
-      <view class="meta-row" v-if="!isFlashMode && showMetaPanel">
-        <view class="meta-chips">
-          <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
-          <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
-          <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @longpress="removeTag(t)"><text>{{ t }}</text></view>
-          <text class="meta-add" @tap="openTagPicker">+ 标签</text>
+      <!-- 筛选条件（收展按钮控制，分类与标签独立分行） -->
+      <view class="meta-panel" v-if="!isFlashMode && showMetaPanel">
+        <!-- 类型选择 -->
+        <view class="meta-section">
+          <text class="meta-section-title">类型</text>
+          <view class="meta-chips">
+            <view v-for="t in RECORD_TYPES" :key="t.key" class="meta-chip cat-chip" :class="{ active: recordType === t.key }" @tap="selectType(t.key)"><text>{{ t.icon }} {{ t.label }}</text></view>
+          </view>
+        </view>
+        <!-- 分类选择 -->
+        <view class="meta-section">
+          <text class="meta-section-title">分类</text>
+          <view class="meta-chips">
+            <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无分类</text></view>
+            <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
+          </view>
+        </view>
+        <!-- 标签 -->
+        <view class="meta-section">
+          <text class="meta-section-title">标签</text>
+          <view class="meta-chips">
+            <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @longpress="removeTag(t)"><text>{{ t }}</text></view>
+            <text class="meta-add" @tap="openTagPicker">+ 标签</text>
+          </view>
         </view>
       </view>
 
