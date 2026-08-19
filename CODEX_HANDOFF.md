@@ -17,7 +17,7 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 15 文件 / 94 用例全通过，Vitest 框架 |
+| 测试 | 17 文件 / 119 用例全通过，Vitest 框架 |
 | 版本 | v2.1.0+（Agent 系统优化已落地） |
 
 ---
@@ -63,7 +63,7 @@
 ├── utils/              # 工具层
 │   ├── ai/             # AI 核心引擎
 │   │   ├── agent-loop.js       # Agent 工具循环引擎（402 行）
-│   │   ├── tools.js            # Agent 工具注册表（595 行，34 个工具）
+│   │   ├── tools.js            # Agent 工具注册表 facade（拆分自 640 行）
 │   │   ├── prompt-builder.js   # 系统提示词构建（缓存 120s）
 │   │   ├── prompt-actions.js   # Action schema + 行为准则
 │   │   ├── response-parser.js  # AI 输出解析 + 清洗 + 兜底
@@ -120,7 +120,7 @@
 
 ### 3.2 工具注册表（tools.js）
 
-- **34 个工具**：记录(6) + 账单(5) + 计划(5) + 个人信息(5) + 关系(5) + 决策(4) + 通用(1) + 反馈(5) + 标签(4)
+- **31 个工具**：记录(5) + 账单(4) + 计划(4) + 个人信息(2) + 关系(3) + 决策(3) + 通用(1) + 反馈(5) + 标签(4)；schema 按领域拆到 `utils/ai/tools/{domain}.js`，执行器在 `utils/ai/tools/executor.js`
 - **QUERY_TOOLS**（只读自动执行）：query_diary/bill/stat/plan/relation/decision/combined + get_profile + summarize_diaries + query_feedback/feedback_stats + query_tags
 - **CONFIRM_TOOLS**（需确认）：空集（delete_* 未注册到 Agent）
 - **动态确认阈值**：create_bill/update_bill 的 amount >= 500 需确认
@@ -286,14 +286,14 @@ npx vitest run
 
 ### P1（高优先）
 
-- [ ] 补核心业务测试（executors/prompt-builder/stream-parser/chat-store）
+- [x] 补核心业务测试（executors 14 例 + prompt-builder 11 例；stream-parser/chat-store 待补）
 - [ ] 拆分 reminder.js（426 行，ROI 最高）
 - [ ] 标签种类管理 UI 适配（detail.vue 标签选择器增加种类分组）
 - [ ] 真机验证 AI 纠错流程（先 query 再 update 的完整链路）
 
 ### P2
 
-- [ ] 26 个超标文件按影响面拆分
+- [x] 拆分 tools.js（640→facade 12 行 + tools/ 目录）与 ConversationPanel.vue（712→284 + 3 子组件）；其余超标文件待拆
 - [ ] H3 Markdown 编辑器
 - [ ] 补全 SijiIcon 图标映射（缺 more/chat 等）
 - [ ] 真机验证清单 20 项
@@ -303,8 +303,8 @@ npx vitest run
 
 ### 安全 / 工程
 
-- [ ] 恢复 git sslVerify（当前 false，安全风险）
-- [ ] scripts/ 空目录清理
+- [x] 恢复 git sslVerify（2026-08-20 已置 true）
+- [x] scripts/ 已清理（仅剩 gen-icons.cjs）
 - [ ] vite build 验证重复导出
 - [ ] 用户重新输入 DeepSeek API Key（损坏的 storage）
 - [ ] aiConfig.js 旧格式迁移逻辑（确认所有用户迁移后可删）
@@ -329,9 +329,9 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `7d21e2a` (feat: AI纠错+反馈管理+标签分类体系)
-- **GitHub push 长期阻塞**（443 超时），累计 20+ commit 待推
-- 需手动 `git push origin main` 或等网络恢复
+- 当前 HEAD: `673e0b1` (chore: 新增 AGENTS.md 供 Codex 接手开发)
+- GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
 
@@ -341,7 +341,7 @@ npx vitest run
 - 编译前删 `unpackage/dist` 缓存强制重编译
 - 内置浏览器 ≠ 真机行为，必须真机验证
 - Tab 缩进（非空格）
-- `http.sslVerify` 当前为 false（需恢复）
+- `http.sslVerify` 已恢复为 true
 
 ---
 

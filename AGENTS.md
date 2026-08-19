@@ -15,7 +15,7 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 15 文件 / 94 用例，Vitest，`npx vitest run`（退出码 1 是正常的，stderr 日志来自 op-claim-guard 测试） |
+| 测试 | 17 文件 / 119 用例，Vitest，`npx vitest run`（退出码 1 是正常的，stderr 日志来自 op-claim-guard 测试） |
 | 版本 | v2.2.0（AI 纠错 + 反馈管理 + 标签分类 + 记录类型 + 样式重构） |
 
 ---
@@ -163,7 +163,7 @@
 
 ### 工具注册表
 
-- 34 个工具：记录(6) + 账单(5) + 计划(5) + 个人信息(5) + 关系(5) + 决策(4) + 通用(1) + 反馈(5) + 标签(4)
+- 31 个工具：记录(5) + 账单(4) + 计划(4) + 个人信息(2) + 关系(3) + 决策(3) + 通用(1) + 反馈(5) + 标签(4)
 - QUERY_TOOLS（只读自动执行）：query_diary/bill/stat/plan/relation/decision/combined + get_profile + summarize_diaries + query_feedback/feedback_stats + query_tags
 - CONFIRM_TOOLS：空集
 - 动态确认阈值：amount >= 500 需确认
@@ -242,9 +242,9 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `32c6d60` (feat: 版本历史更新)
-- **GitHub push 长期阻塞**（443 超时），累计 20+ commit 待推
-- `http.sslVerify` 当前为 false（安全风险，需恢复）
+- 当前 HEAD: `673e0b1` (chore: 新增 AGENTS.md 供 Codex 接手开发)
+- GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
 

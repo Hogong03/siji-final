@@ -1,6 +1,6 @@
 {
   "name": "siji",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "思迹 - AI 个人生活助手",
   "scripts": {
     "dev:h5": "npx uni",
@@ -27,6 +27,7 @@
     "@dcloudio/uni-cli-shared": "3.0.0-alpha-4010120250109001",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-4010120250109001",
     "sass": "^1.71.1",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^4.1.11"
   }
 }

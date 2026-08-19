@@ -15,6 +15,9 @@ global.uni = {
   setStorageSync(key, data) {
     _storage[key] = typeof data === 'string' ? data : JSON.stringify(data)
   },
+  setStorage({ key, data }) {
+    _storage[key] = typeof data === 'string' ? data : JSON.stringify(data)
+  },
   removeStorageSync(key) {
     delete _storage[key]
   },

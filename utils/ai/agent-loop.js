@@ -12,26 +12,9 @@
 
 import { getProvider } from './providers.js'
 import { buildChatMessages } from './chat-helpers.js'
-import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS, CONFIRM_TOOLS } from './tools.js'
+import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS, needsConfirmation } from './tools.js'
 import { parseAiResponse } from './response-parser.js'
 import { logger } from '../logger.js'
-
-/** 写入类工具的确认阈值（与 tools.js 保持一致） */
-const CONFIRM_THRESHOLDS_AGENT = {
-  create_bill: { field: 'amount', min: 500 },
-  update_bill: { field: 'amount', min: 500 }
-}
-
-/** 检查工具调用是否需要用户确认（agent-loop 内部预判，避免执行后才发现需确认） */
-function needsToolConfirmation(name, args) {
-  if (CONFIRM_TOOLS.has(name)) return true
-  const rule = CONFIRM_THRESHOLDS_AGENT[name]
-  if (rule && args) {
-    const val = args[rule.field]
-    if (typeof val === 'number' && val >= rule.min) return true
-  }
-  return false
-}
 
 const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
 const MAX_QUERY_RESULTS = 20  // 查询类工具最多返回条数（防 token 爆炸）
@@ -152,7 +135,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       const fnName = call.function?.name
       let fnArgs = {}
       try { fnArgs = JSON.parse(call.function?.arguments || '{}') } catch { fnArgs = {} }
-      if (needsToolConfirmation(fnName, fnArgs)) {
+      if (needsConfirmation(fnName, fnArgs)) {
         const reason = fnName === 'create_bill' || fnName === 'update_bill'
           ? `金额 ¥${fnArgs.amount} 较大`
           : `操作 ${fnName}`
