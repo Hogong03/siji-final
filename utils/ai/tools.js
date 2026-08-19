@@ -8,6 +8,7 @@
  */
 
 import { logger } from '../logger.js'
+import { getUsedTags, addCustomTag, updateTagCategory, removeCustomTag, getTagsByCategory } from '../storage/tags.js'
 
 // ==================== 工具定义（OpenAI function schema）====================
 
@@ -293,6 +294,113 @@ export const TOOL_DEFINITIONS = [
     name: 'undo_last',
     description: '撤销上一步操作。用户说"撤销/撤回"时调用。',
     parameters: { type: 'object', properties: {} }
+  },
+
+  // ===== 体验反馈 =====
+  {
+    name: 'create_feedback',
+    description: '创建体验反馈。用户说"我要反馈/提个建议/反馈个bug"时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        rating: { type: 'integer', minimum: 1, maximum: 5, description: '评分 1-5' },
+        category: { type: 'string', enum: ['功能建议', 'Bug反馈', '体验感受', '功能需求'], description: '反馈分类' },
+        content: { type: 'string', description: '反馈内容' },
+        contact: { type: 'string', description: '联系方式（可选）' }
+      },
+      required: ['content']
+    }
+  },
+  {
+    name: 'update_feedback',
+    description: '修改一条已有反馈。用户说“改一下反馈/修改反馈”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        client_id: { type: 'string', description: '反馈ID' },
+        rating: { type: 'integer', minimum: 1, maximum: 5 },
+        category: { type: 'string' },
+        content: { type: 'string' },
+        contact: { type: 'string' }
+      },
+      required: ['client_id']
+    }
+  },
+  {
+    name: 'delete_feedback',
+    description: '删除一条反馈。用户说“删掉那个反馈”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        client_id: { type: 'string', description: '反馈ID' }
+      },
+      required: ['client_id']
+    }
+  },
+  {
+    name: 'query_feedback',
+    description: '查询体验反馈列表。用户问“有哪些反馈/反馈了什么”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: '按分类筛选' }
+      }
+    }
+  },
+  {
+    name: 'query_feedback_stats',
+    description: '查询反馈统计（总数/平均评分/分类分布）。',
+    parameters: { type: 'object', properties: {} }
+  },
+
+  // ===== 标签管理 =====
+  {
+    name: 'query_tags',
+    description: '查询标签列表（按种类分组）。用户问“有哪些标签/标签分类”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['diary', 'plan'], description: '标签类型，默认 diary' }
+      }
+    }
+  },
+  {
+    name: 'add_tag',
+    description: '添加自定义标签。可指定种类。',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '标签名' },
+        type: { type: 'string', enum: ['diary', 'plan'], description: '标签类型，默认 diary' },
+        categoryId: { type: 'string', enum: ['life', 'work', 'mood', 'study', 'social', 'other'], description: '标签种类' }
+      },
+      required: ['name']
+    }
+  },
+  {
+    name: 'update_tag_category',
+    description: '修改标签所属种类。用户说“把XX标签归到工作类”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '标签名' },
+        type: { type: 'string', enum: ['diary', 'plan'] },
+        categoryId: { type: 'string', enum: ['life', 'work', 'mood', 'study', 'social', 'other'] }
+      },
+      required: ['name', 'categoryId']
+    }
+  },
+  {
+    name: 'remove_tag',
+    description: '从注册表删除标签。用户说“删掉XX标签”时调用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        type: { type: 'string', enum: ['diary', 'plan'] }
+      },
+      required: ['name']
+    }
   }
 ]
 
@@ -308,7 +416,8 @@ export const CONFIRM_TOOLS = new Set()
 /** 查询类工具（只读，安全自动执行） */
 export const QUERY_TOOLS = new Set([
   'query_diary', 'query_bill', 'query_stat', 'query_plan', 'query_relation',
-  'query_decision', 'query_combined', 'get_profile', 'summarize_diaries'
+  'query_decision', 'query_combined', 'get_profile', 'summarize_diaries',
+  'query_feedback', 'query_feedback_stats', 'query_tags'
 ])
 
 /** 写入类工具的确认阈值（payload 内字段值超过此阈值需确认） */
@@ -341,6 +450,49 @@ function needsConfirmation(name, args) {
  */
 export function executeTool(store, name, args = {}) {
   try {
+    // 标签管理工具 — 直接调用 tags.js，不走 store.executeAction
+    if (name === 'query_tags') {
+      const type = args.type || 'diary'
+      const grouped = getTagsByCategory(type)
+      const lines = []
+      for (const [catId, group] of Object.entries(grouped)) {
+        if (group.tags.length === 0) continue
+        lines.push(`${group.name}（${group.tags.length}）: ${group.tags.map(t => t.name).join('、')}`)
+      }
+      return {
+        ok: true,
+        text: lines.length ? `标签列表（${type}）：\n${lines.join('\n')}` : `暂无${type}标签`,
+        detail: { type: 'query_tags', grouped }
+      }
+    }
+    if (name === 'add_tag') {
+      const type = args.type || 'diary'
+      const result = addCustomTag(type, args.name, null, null, args.categoryId || 'other')
+      return {
+        ok: true,
+        text: `标签「${args.name}」已添加`,
+        detail: { type: 'add_tag', name: args.name, categoryId: args.categoryId }
+      }
+    }
+    if (name === 'update_tag_category') {
+      const type = args.type || 'diary'
+      const ok = updateTagCategory(type, args.name, args.categoryId)
+      return {
+        ok: ok,
+        text: ok ? `标签「${args.name}」已修改种类` : `标签「${args.name}」不存在`,
+        detail: { type: 'update_tag_category', name: args.name, categoryId: args.categoryId }
+      }
+    }
+    if (name === 'remove_tag') {
+      const type = args.type || 'diary'
+      removeCustomTag(type, args.name)
+      return {
+        ok: true,
+        text: `标签「${args.name}」已从注册表删除`,
+        detail: { type: 'remove_tag', name: args.name }
+      }
+    }
+
     // 确认检查：金额>=500 或破坏性操作需用户确认
     if (needsConfirmation(name, args)) {
       const reason = name === 'create_bill' || name === 'update_bill'
@@ -402,6 +554,10 @@ function formatToolResult(name, detail) {
     case 'query_relation':
       return JSON.stringify(detail)
     case 'query_decision':
+      return JSON.stringify(detail)
+    case 'query_feedback':
+    case 'query_feedback_stats':
+    case 'query_tags':
       return JSON.stringify(detail)
     default:
       return JSON.stringify(detail)

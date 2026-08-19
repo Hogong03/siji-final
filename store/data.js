@@ -19,6 +19,7 @@ import { createProfileExecutors } from './executors/profile.js'
 import { createRelationExecutors } from './executors/relation.js'
 import { createDecisionExecutors } from './executors/decision.js'
 import { createSimulationExecutors } from './executors/simulation.js'
+import { createFeedbackExecutors } from './executors/feedback.js'
 
 export const useDataStore = defineStore('data', () => {
   // ==================== 撤销栈 ====================
@@ -56,6 +57,7 @@ export const useDataStore = defineStore('data', () => {
   const { execCreateRelation, execUpdateRelation, execDeleteRelation, execQueryRelation, execLogInteraction, execQueryInteraction } = createRelationExecutors(ctx)
   const { execCreateDecision, execUpdateDecision, execReviewDecision, execQueryDecision, execAnalyzeDecisions } = createDecisionExecutors(ctx)
   const { execStartSimulation, execEndSimulation } = createSimulationExecutors(ctx)
+  const { execCreateFeedback, execUpdateFeedback, execDeleteFeedback, execQueryFeedback, execQueryFeedbackStats } = createFeedbackExecutors(ctx)
 
   // ==================== AI 自动执行分发器（Map 路由）====================
   const ACTION_MAP = {
@@ -96,6 +98,12 @@ export const useDataStore = defineStore('data', () => {
     analyze_decisions:    execAnalyzeDecisions,
     start_simulation:     execStartSimulation,
     end_simulation:       execEndSimulation,
+    // Feedback
+    create_feedback:      execCreateFeedback,
+    update_feedback:      execUpdateFeedback,
+    delete_feedback:      execDeleteFeedback,
+    query_feedback:       execQueryFeedback,
+    query_feedback_stats: execQueryFeedbackStats,
   }
 
   function executeAction(action) {

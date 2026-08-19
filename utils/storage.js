@@ -95,7 +95,13 @@ export {
   getTags,
   getUsedTags,
   addCustomTag,
-  removeCustomTag
+  removeCustomTag,
+  getTagsByCategory,
+  updateTagCategory,
+  getAllCategories,
+  addCustomCategory,
+  removeCustomCategory,
+  TAG_CATEGORIES
 } from './storage/tags.js'
 
 // 版本历史

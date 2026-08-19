@@ -74,10 +74,13 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   const toolInstruction = `
 ## Agent 模式
 你是「思迹」的智能助手，可以调用工具读取本地数据后再回答用户。规则：
-- 用户问涉及数据的问题（账单/记录/计划/人物/决策）时，先调用对应 query_* 工具拿到真实数据，再基于数据回答。禁止凭记忆瞎编数字。
+- 用户问涉及数据的问题（账单/记录/计划/人物/决策/反馈/标签）时，先调用对应 query_* 工具拿到真实数据，再基于数据回答。禁止凭记忆瞎编数字。
 - 一个查询不够时，可连续调用多个工具（例如先 query_stat 再看 query_plan）。
 - 用户明确要求创建/修改时，调用对应 create_*/update_* 工具。
 - 用户说「撤销/撤回/取消刚才」时，调用 undo_last 工具。
+- 纠错：用户指出数据有误（"记错了/不对/金额错了"）或你发现矛盾时，先 query 确认目标记录，再 update_* 直接修正本地数据，不要只说"建议手动修改"
+- 标签管理：用户提到标签分类/归类时，调用 add_tag/update_tag_category/query_tags 直接操作
+- 体验反馈可直接增删改查：create_feedback/update_feedback/delete_feedback/query_feedback
 - 所有工具调用完成后，用自然语言总结回答用户。
 - 若用户消息是纯闲聊，不调用任何工具，直接回复。`
 

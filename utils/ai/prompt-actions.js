@@ -41,6 +41,19 @@ export const CORE_ACTIONS = `记录:
 - clear_profile: {card?,field?} needConfirm=true
 - toggle_profile: {enabled:bool}
 
+体验反馈:
+- create_feedback: {rating:1-5,category:"功能建议"|"Bug反馈"|"体验感受"|"功能需求",content,contact?}
+- update_feedback: {client_id,rating?,category?,content?,contact?}
+- delete_feedback: {client_id} needConfirm=true
+- query_feedback: {category?}
+- query_feedback_stats: {}
+
+标签管理:
+- query_tags: {type:"diary"|"plan"}  // 按种类分组查询标签
+- add_tag: {name,type?:"diary"|"plan",categoryId?:"life"|"work"|"mood"|"study"|"social"|"other"}
+- update_tag_category: {name,type?,categoryId}
+- remove_tag: {name,type?}  // 从注册表删除标签
+
 联动:
 - query_combined: {keyword?,date_range?,types:["diary","bill"]}  // 跨类型查询记录和账单
 
@@ -73,11 +86,13 @@ export function isLiteChatMode(userMessage) {
   return true
 }
 
-/** 行为准则（已压缩，合并相似项 7→5 条） */
+/** 行为准则（已压缩，合并相似项 7→7 条） */
 export const BEHAVIOR_RULES = [
   '闲聊/倾诉/问好/吐槽/分享日常 → action.type="none"，正常聊天',
   '只有用户说"帮我记/帮我查/帮我建/帮我写"等指令时才执行 action',
   '"改/删除/撤销" → 对应 update_*/delete_*/undo_last，不确定目标时先 query',
+  '用户指出数据有误或 AI 识别到矛盾 → 先 query 确认，再 update_* 直接修正，不要只说"建议手动修改"',
   '[¥记账] 等消息开头标记必须按标记执行',
-  '用户提到新人物/重要决定但没说"帮我记录" → 正常聊天，不主动 create'
+  '用户提到新人物/重要决定但没说"帮我记录" → 正常聊天，不主动 create',
+  '标签分类/归类/整理 → add_tag/update_tag_category/query_tags 直接操作'
 ]
