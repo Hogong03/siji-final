@@ -7,6 +7,125 @@
 export function getDefaultHistory() {
   return [
     {
+      version: '2.2.0',
+      date: '2026-08-20',
+      title: 'AI 纠错 + 反馈管理 + 标签分类体系 + 记录类型选择器 + 样式重构',
+      summary: [
+        'AI 纠错主动权：用户指出错误或 AI 识别矛盾时，先 query 再 update 直接修正本地数据',
+        '体验反馈 CRUD：AI 可在对话中创建/修改/删除/查询反馈',
+        '标签分类体系：6 预定义种类（生活/工作/心情/学习/社交/其他），按种类分组管理',
+        '记录 5 种类型：随手记/日记/灵感/待办/闪念，各有独立视觉与行为',
+        '样式重构：零阴影清零 + 四级灰阶色值体系 + var() 消除 + 深色模式补全'
+      ],
+      categories: [
+        {
+          title: 'AI 纠错与反馈管理',
+          items: [
+            '核心铁律第 8 条：用户指出数据有误或 AI 识别矛盾时，必须先 query 确认再 update_* 直接修正，禁止只说"建议手动修改"',
+            '核心铁律第 9 条：用户提到标签分类/归类时，调用 add_tag/update_tag_category/query_tags 直接操作',
+            'BEHAVIOR_RULES 增至 7 条（纠错 + 标签管理）',
+            'Agent-loop 指令增强：纠错/标签/反馈全覆盖',
+            '新建 store/executors/feedback.js：create/update/delete/query/stats 五个 executor',
+            'tools.js 新增 8 个工具：feedback CRUD(5) + 标签管理(4)，QUERY_TOOLS 增 3 个只读工具',
+            'store/data.js ACTION_MAP 注册 5 个 feedback action',
+            '体验反馈存储 key siji_feedback，不分片'
+          ]
+        },
+        {
+          title: '标签分类体系',
+          items: [
+            '6 预定义种类（kind=system 不可删）：生活/工作/心情/学习/社交/其他',
+            '自定义种类（kind=user 可增删）：存储 key siji_tag_categories',
+            '每个标签增加 categoryId 字段，默认 other',
+            'getTagsByCategory() 按种类分组返回标签映射',
+            'updateTagCategory() 修改标签所属种类',
+            'addCustomCategory/removeCustomCategory 自定义种类 CRUD',
+            'storage.js 导出新 API'
+          ]
+        },
+        {
+          title: '记录类型选择器',
+          items: [
+            'detail.vue 重写为 5 类型：随手记（✏️ 默认）、日记（📖 自动日期+天气+AI 情绪）、灵感（💡 黄色左边框+自动 #灵感 标签）、待办（☑️ 行解析+自动 □ 前缀）、闪念（⚡ 极简只留 textarea）',
+            '新建直接进随手记模式，类型选择器改为手动「切换」按钮触发',
+            '类型条与标签区域可收起/展开（▲/▼ 图标）',
+            '筛选面板统一右侧按钮控制收展，左侧类型仅展示',
+            '展开后分三段独立分行：类型/分类/标签，每段有小标题',
+            '字体缩小保持一行：筛选栏 24rpx、chips 20rpx、gap 6rpx',
+            '标签删除改为 @tap 直接点击删除，chip 右侧加 ✕ 小按钮',
+            '闪念模式 Bug 修复：面板整体只受 showMetaPanel 控制，分类/标签段各自 v-if="!isFlashMode"'
+          ]
+        },
+        {
+          title: '样式重构',
+          items: [
+            '零阴影清理：uni.scss 中 $shadow-sm/md/lg/ai/$glass-shadow 全置 none，15 文件 26 处硬编码阴影批量清除',
+            '四级灰阶色值体系：页面 #F4F4F5 → 卡片/输入区 #FFFFFF → 次级 #F4F4F5 → 边框/focus #E4E4E7',
+            '全局 41 文件 111 处 #D4D4D8 全部替换为零残留',
+            'var() 消除：Canvas 2D 不解析 CSS 变量，chart-renderer.js 等 5 文件 21 处硬编码',
+            'MarkdownRenderer 深色模式补全：标题/段落/代码/引用/表格/列表全覆盖',
+            'InputArea 样式整改：零阴影+快捷面板白底+图片预览层次区分',
+            'MessageBubble/ExecResultCard/chat.scss 深色模式补全'
+          ]
+        },
+        {
+          title: 'Agent 系统优化（v2.1.0 延续）',
+          items: [
+            '内置 Agent 技能定制化：siji(7 技能) / workplace_advisor(5) / relationship_advisor(5) / career_coach(5)',
+            'skills.js 新增 BUILTIN_AGENT_SKILLS 结构，prompt-builder.js 支持 opts 参数',
+            'v2.1.0 十一项优化全部落地（写入确认/触发收窄/动态截断/按需注入/并行执行/技能精简/渲染统一/进度反馈等）',
+            '新建对话去强制命名弹窗，默认名自动生成'
+          ]
+        }
+      ]
+    },
+    {
+      version: '2.1.0',
+      date: '2026-08-16',
+      title: 'Agent 系统优化 — 写入确认+触发收窄+动态截断+并行执行+技能精简',
+      summary: [
+        'P0: 写入确认（金额≥500）/ 触发收窄（多词组合匹配）/ 动态截断（按工具查表）',
+        'P1: 上下文按需注入 / 并行工具执行 / 技能 prompt 精简 / 渲染统一',
+        'P2: token 估算 / undo_last 暴露 / 进度反馈 / MAX_ROUNDS 降级'
+      ],
+      categories: [
+        {
+          title: 'P0 核心优化',
+          items: [
+            '写入确认：create_bill 金额≥500 时 Agent 退出循环等待用户确认',
+            '触发收窄：looksDataQuery/isCommandMessage 改多词组合匹配，避免单字误触发',
+            '动态截断：TOOL_RESULT_TRUNCATE_MAP 按工具查表——query_bill:1500、query_diary:2000、query_stat:800、query_combined:2500'
+          ]
+        },
+        {
+          title: 'P1 性能与体验',
+          items: [
+            '上下文按需注入：CONTEXT_KEYWORDS 正则条件注入 relations/decisions，省 30-50% token',
+            '并行工具执行：查询类 Promise.all 并行（3s→~1s），写入类串行',
+            '技能 prompt 精简：7 技能 systemPromptSection 压缩到 1 句',
+            '渲染统一：renderAgentResults 合并到 autoExecuteAndDisplay，加 source 参数'
+          ]
+        },
+        {
+          title: 'P2 增强',
+          items: [
+            'token 估算：estimateTokens() CJK 2 token / ASCII 0.25 token',
+            'undo_last 暴露：toolInstruction 补充 undo_last Agent 工具说明',
+            '进度反馈：runAgentLoop/runAgentChat 签名加 onStatus 参数，工具执行前回调 + UI statusHint',
+            'MAX_ROUNDS 降级确认：兜底已存在（MAX_ROUNDS=5 退出时降级处理）'
+          ]
+        },
+        {
+          title: '不执行项（P3）',
+          items: [
+            '双路径合并：需厂商稳定性验证，暂不执行',
+            '自定义技能编辑：需新页面，暂不执行',
+            '记忆差异化：需架构变更，暂不执行'
+          ]
+        }
+      ]
+    },
+    {
       version: '2.0.0',
       date: '2026-08-05',
       title: 'Agentic Loop 智能体 + 计划全面升级 + 阶段化计划',
