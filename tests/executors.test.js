@@ -103,6 +103,25 @@ describe('计划 executor', () => {
     expect(q2.detail.items.length).toBe(2)
   })
 
+  it('阶段化创建：phase_count 生成对应数量阶段', () => {
+    const p = store.executeAction({ type: 'create_plan_phases', payload: { title: '大目标', phase_count: 3 } })
+    expect(p.success).toBe(true)
+    expect(p.detail.phaseCount).toBe(3)
+    expect(p.detail.phases).toHaveLength(3)
+    expect(p.detail.phases[0].id).toBe(1)
+    expect(p.detail.phases[0].title).toBe('第1阶段')
+    expect(p.detail.phases[2].title).toBe('第3阶段')
+  })
+
+  it('阶段数超界钳制到 2-6，缺失时不生成', () => {
+    const over = store.executeAction({ type: 'create_plan_phases', payload: { title: '超界', phase_count: 99 } })
+    expect(over.detail.phaseCount).toBe(6)
+    const under = store.executeAction({ type: 'create_plan_phases', payload: { title: '不足', phase_count: 1 } })
+    expect(under.detail.phaseCount).toBe(2)
+    const none = store.executeAction({ type: 'create_plan_phases', payload: { title: '无数量' } })
+    expect(none.detail.phaseCount).toBe(0)
+  })
+
   it('子任务更新', () => {
     const c = store.executeAction({ type: 'create_plan', payload: { title: '带子任务', subtasks: [{ title: '第一步' }] } })
     expect(c.detail.subtasks).toHaveLength(1)

@@ -140,14 +140,13 @@ function formatBills(d) {
 }
 
 function formatBillStats(d) {
-  if (!d || !d.summary) return JSON.stringify(d)
-  const s = d.summary
+  if (!d) return JSON.stringify(d)
   const parts = []
-  if (s.totalExpense != null) parts.push(`总支出¥${s.totalExpense}`)
-  if (s.totalIncome != null) parts.push(`总收入¥${s.totalIncome}`)
-  if (s.count) parts.push(`共${s.count}笔`)
-  if (s.topCategories && s.topCategories.length) {
-    parts.push('主要分类：' + s.topCategories.map(c => `${c.category}¥${c.amount}`).join('、'))
+  if (d.totalExpense != null) parts.push(`总支出¥${d.totalExpense}`)
+  if (d.totalIncome != null) parts.push(`总收入¥${d.totalIncome}`)
+  if (d.billCount != null) parts.push(`共${d.billCount}笔`)
+  if (d.topCategory && d.topCategory !== '无') {
+    parts.push(`主要分类：${d.topCategory}¥${d.topCategoryAmount ?? 0}`)
   }
   return `${d.month || ''}${parts.length ? '：' + parts.join('，') : ''}`
 }

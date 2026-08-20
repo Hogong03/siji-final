@@ -118,4 +118,27 @@ describe('executeTool', () => {
     expect(r.ok).toBe(true)
     expect(r.text).toBe('（无返回数据）')
   })
+  it('query_stat 平坦 detail 格式化为统计文本', () => {
+    const store = {
+      executeAction: vi.fn(() => ({
+        success: true,
+        message: '2026-08 概览',
+        detail: {
+          type: 'query_stat', month: '2026-08', billCount: 3, diaryCount: 2,
+          activePlanCount: 1, completedPlanCount: 0,
+          totalExpense: 100, totalIncome: 50, netIncome: -50,
+          topCategory: '餐饮', topCategoryAmount: 60,
+          topMood: '平静', categoryBreakdown: { '餐饮': 60, '交通': 40 }
+        }
+      }))
+    }
+    const r = executeTool(store, 'query_stat', { month: '2026-08' })
+    expect(r.ok).toBe(true)
+    expect(r.text).toContain('总支出¥100')
+    expect(r.text).toContain('总收入¥50')
+    expect(r.text).toContain('共3笔')
+    expect(r.text).toContain('主要分类：餐饮¥60')
+    expect(r.text).not.toMatch(/^\s*\{/)
+  })
+
 })

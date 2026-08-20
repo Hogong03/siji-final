@@ -9,6 +9,22 @@ import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 export function createPlanExecutors(ctx) {
   // ==================== 创建操作 ====================
 
+  // 阶段数生成：AI 只给 phase_count 时产出空阶段骨架（schema 约束 2-6）
+  function buildPhases(phaseCount) {
+    if (phaseCount == null) return []
+    const n = parseInt(phaseCount, 10)
+    if (!Number.isFinite(n) || n <= 0) return []
+    const count = Math.min(Math.max(n, 2), 6)
+    return Array.from({ length: count }, (_, i) => ({
+      id: i + 1,
+      title: `第${i + 1}阶段`,
+      description: '',
+      start_date: '',
+      end_date: '',
+      milestones: [],
+      subtasks: []
+    }))
+  }
   function execCreatePlan(p) {
     const now = Date.now()
     const plan = {
@@ -35,7 +51,7 @@ export function createPlanExecutors(ctx) {
           title: typeof s === 'string' ? s : (s.title || s || ''),
           done: false
         })) : []
-      })) : [],
+      })) : buildPhases(p.phase_count),
       // 父计划ID — 支持计划嵌套
       parent_id: p.parent_id || '',
       // 精确到秒的时间（YYYY-MM-DD HH:mm:ss 格式）
