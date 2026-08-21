@@ -103,28 +103,82 @@ describe('计划 executor', () => {
     expect(q2.detail.items.length).toBe(2)
   })
 
-  it('阶段化创建：phase_count 生成对应数量阶段', () => {
+  it('创建：subtasks 自动转为子计划', () => {
+    const c = store.executeAction({ type: 'create_plan', payload: { title: '带子任务', subtasks: [{ title: '第一步' }, { title: '第二步' }] } })
+    expect(c.success).toBe(true)
+    expect(c.detail.childCount).toBe(2)
+    expect(c.detail.children).toHaveLength(2)
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    const children = q.detail.items.filter(i => i.parent_id === c.detail.id)
+    expect(children).toHaveLength(2)
+    expect(children.map(x => x.title).sort()).toEqual(['第一步', '第二步'])
+    expect(children.find(x => x.title === '第一步').status).toBe(0)
+  })
+
+  it('创建：subtasks done 映射为已完成子计划', () => {
+    const c = store.executeAction({ type: 'create_plan', payload: { title: '带完成', subtasks: [{ title: '做完', done: true }, { title: '未做' }] } })
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    const children = q.detail.items.filter(i => i.parent_id === c.detail.id)
+    expect(children.find(x => x.title === '做完').status).toBe(2)
+    expect(children.find(x => x.title === '未做').status).toBe(0)
+  })
+
+  it('阶段化创建：phase_count 生成多个子计划', () => {
     const p = store.executeAction({ type: 'create_plan_phases', payload: { title: '大目标', phase_count: 3 } })
     expect(p.success).toBe(true)
-    expect(p.detail.phaseCount).toBe(3)
-    expect(p.detail.phases).toHaveLength(3)
-    expect(p.detail.phases[0].id).toBe(1)
-    expect(p.detail.phases[0].title).toBe('第1阶段')
-    expect(p.detail.phases[2].title).toBe('第3阶段')
+    expect(p.detail.childCount).toBe(3)
+    expect(p.detail.children).toHaveLength(3)
+    expect(p.detail.children.map(x => x.title).sort()).toEqual(['第1阶段', '第2阶段', '第3阶段'])
   })
 
   it('阶段数超界钳制到 2-6，缺失时不生成', () => {
     const over = store.executeAction({ type: 'create_plan_phases', payload: { title: '超界', phase_count: 99 } })
-    expect(over.detail.phaseCount).toBe(6)
+    expect(over.detail.childCount).toBe(6)
     const under = store.executeAction({ type: 'create_plan_phases', payload: { title: '不足', phase_count: 1 } })
-    expect(under.detail.phaseCount).toBe(2)
+    expect(under.detail.childCount).toBe(2)
     const none = store.executeAction({ type: 'create_plan_phases', payload: { title: '无数量' } })
-    expect(none.detail.phaseCount).toBe(0)
+    expect(none.detail.childCount).toBe(0)
   })
 
-  it('子任务更新', () => {
-    const c = store.executeAction({ type: 'create_plan', payload: { title: '带子任务', subtasks: [{ title: '第一步' }] } })
-    expect(c.detail.subtasks).toHaveLength(1)
+  it('更新：subtasks 增量创建子计划（按标题去重）', () => {
+    const c = store.executeAction({ type: 'create_plan', payload: { title: '读书' } })
+    const u1 = store.executeAction({ type: 'update_plan', payload: { client_id: c.detail.id, subtasks: [{ title: '选书' }, { title: '笔记' }] } })
+    expect(u1.success).toBe(true)
+    expect(u1.detail.childCount).toBe(2)
+    const u2 = store.executeAction({ type: 'update_plan', payload: { client_id: c.detail.id, subtasks: [{ title: '选书' }, { title: '复盘' }] } })
+    expect(u2.detail.childCount).toBe(1)
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    const children = q.detail.items.filter(i => i.parent_id === c.detail.id)
+    expect(children.map(x => x.title).sort()).toEqual(['复盘', '选书', '笔记'].sort())
+  })
+
+  it('update_plan_phase：按子计划 id 更新并生成孙计划', () => {
+    const c = store.executeAction({ type: 'create_plan', payload: { title: '项目', subtasks: [{ title: '阶段一' }] } })
+    const childId = c.detail.children[0].client_id
+    const u = store.executeAction({ type: 'update_plan_phase', payload: { client_id: c.detail.id, phase_id: childId, title: '新阶段', subtasks: [{ title: '动作1' }] } })
+    expect(u.success).toBe(true)
+    expect(u.detail.title).toBe('新阶段')
+    expect(u.detail.childCount).toBe(1)
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    expect(q.detail.items.filter(i => i.parent_id === childId)).toHaveLength(1)
+  })
+
+  it('删除：execDeletePlan 级联软删除子计划', () => {
+    const c = store.executeAction({ type: 'create_plan', payload: { title: '父', subtasks: [{ title: '子1' }] } })
+    const d = store.executeAction({ type: 'delete_plan', payload: { client_id: c.detail.id } })
+    expect(d.success).toBe(true)
+    expect(d.message).toContain('子计划')
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    expect(q.detail.count).toBe(0)
+    const raw = JSON.parse(uni.getStorageSync('plan_all'))
+    expect(raw.filter(p => p.is_deleted === 1)).toHaveLength(2)
+  })
+
+  it('查询：带截止时间排序且截断提示', () => {
+    store.executeAction({ type: 'create_plan', payload: { title: '早截止', deadline: '2026-01-01' } })
+    store.executeAction({ type: 'create_plan', payload: { title: '晚截止', deadline: '2026-06-01' } })
+    const q = store.executeAction({ type: 'query_plan', payload: {} })
+    expect(q.detail.items[0].title).toBe('早截止')
   })
 })
 

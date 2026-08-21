@@ -46,23 +46,12 @@ export function triggerSummaryIfNeeded(store) {
  * @param {Object} store - app store
  * @param {string} targetConvId - 发送时的会话 ID
  */
-export function saveImageAsync(imageData, store, targetConvId) {
+export function saveImageAsync(imageData, store, targetMsg) {
   if (!imageData?.base64) return
   saveImageToLocal(imageData.base64).then(localPath => {
     if (!localPath) return
-    const currentConv = store.activeConversation
-    if (currentConv?.id !== targetConvId) {
-      // 会话已切换 — 在目标会话中查找消息并更新
-      const targetConv = store.conversations.find(c => c.id === targetConvId)
-      if (targetConv) {
-        const msg = targetConv.messages.find(m => m.role === 'user' && m.image)
-        if (msg && msg.image) msg.image.localPath = localPath
-      }
-    } else {
-      // 仍在同一会话 — 直接更新最后一条用户消息
-      const lastUserMsg = store.messages[store.messages.length - 2]
-      if (lastUserMsg && lastUserMsg.image) lastUserMsg.image.localPath = localPath
-    }
+    // 直接回写消息引用 — 跨会话切换也不受影响
+    if (targetMsg && targetMsg.image) targetMsg.image.localPath = localPath
     store.persistConversations()
     logger.info('Image saved to', localPath)
   }).catch(e => logger.warn('saveImage failed', e))

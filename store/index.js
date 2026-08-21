@@ -33,7 +33,7 @@ export const useAppStore = defineStore('app', () => {
   } = storeToRefs(aiConfig)
 
   const {
-    currentMode, conversationId, messages, isStreaming,
+    currentMode, conversationId, messages,
     modeLabel, conversations, activeConversationId, activeConversation, conversationCount,
   } = storeToRefs(chat)
 
@@ -141,7 +141,7 @@ export const useAppStore = defineStore('app', () => {
     getAvailableModels: aiConfig.getAvailableModels,
 
     // ==================== 对话状态 ====================
-    currentMode, conversationId, messages, isStreaming,
+    currentMode, conversationId, messages,
     modeLabel, conversations, activeConversationId, activeConversation, conversationCount,
     setCurrentMode: chat.setCurrentMode,
     setConversationId: chat.setConversationId,
@@ -151,6 +151,7 @@ export const useAppStore = defineStore('app', () => {
     renameConversation: chat.renameConversation,
     addMessage: chat.addMessage,
     updateLastMessage: chat.updateLastMessage,
+    updateLastMessageFor: chat.updateLastMessageFor,
     clearMessages: chat.clearMessages,
     persistHistory: chat.persistHistory,
     restoreHistory: chat.restoreHistory,

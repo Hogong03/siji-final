@@ -16,7 +16,7 @@ import { ref, watch, computed } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { useExecTags } from '@/composables/useExecTags.js'
 import {
-  priorityClass, planProgressPercent, planDoneCount,
+  priorityClass, planProgressPercent, planDoneCount, planListCount,
   topCategories, formatTs, execIcon, CATEGORIES
 } from '@/composables/useExecCardHelpers.js'
 
@@ -170,13 +170,16 @@ const {
             <text class="plan-title">{{ message.execResult.detail.title }}</text>
           </view>
           <text class="plan-desc" v-if="message.execResult.detail.description">{{ message.execResult.detail.description }}</text>
-          <!-- 进度条 -->
-          <view class="plan-progress" v-if="message.execResult.detail.subtasks?.length > 0">
+          <!-- 进度条（子计划优先，历史子任务兜底） -->
+          <view class="plan-progress" v-if="planListCount(message.execResult.detail) > 0">
             <view class="plan-progress-bar">
               <view class="plan-progress-fill" :style="{ width: planProgressPercent(message.execResult.detail) + '%' }" />
             </view>
-            <text class="plan-progress-text">{{ planDoneCount(message.execResult.detail) }}/{{ message.execResult.detail.subtasks.length }}</text>
+            <text class="plan-progress-text">{{ planDoneCount(message.execResult.detail) }}/{{ planListCount(message.execResult.detail) }}</text>
           </view>
+          <text class="plan-subtask-count" v-else-if="message.execResult.detail.childCount > 0">
+            {{ message.execResult.detail.childCount }} 个子计划
+          </text>
           <text class="plan-subtask-count" v-else-if="message.execResult.detail.subtaskCount > 0">
             {{ message.execResult.detail.subtaskCount }} 个子任务
           </text>
@@ -184,7 +187,13 @@ const {
             <text v-if="message.execResult.detail.estimated_time" class="plan-date-chip est">预计 {{ message.execResult.detail.estimated_time }}</text>
             <text v-if="message.execResult.detail.due_date || message.execResult.detail.deadline" class="plan-date-chip due">截止 {{ message.execResult.detail.due_date || message.execResult.detail.deadline }}</text>
           </view>
-          <view class="plan-subtasks" v-if="message.execResult.detail.subtasks?.length > 0 && message.execResult.detail.subtasks.length <= 5">
+          <view class="plan-subtasks" v-if="message.execResult.detail.children?.length > 0 && message.execResult.detail.children.length <= 5">
+            <view class="subtask-row" v-for="(st, idx) in message.execResult.detail.children" :key="idx">
+              <text class="subtask-dot" :class="{ done: st.status === 2 }">{{ st.status === 2 ? '✓' : '○' }}</text>
+              <text class="subtask-title" :class="{ done: st.status === 2 }">{{ st.title }}</text>
+            </view>
+          </view>
+          <view class="plan-subtasks" v-else-if="message.execResult.detail.subtasks?.length > 0 && message.execResult.detail.subtasks.length <= 5">
             <view class="subtask-row" v-for="(st, idx) in message.execResult.detail.subtasks" :key="idx">
               <text class="subtask-dot" :class="{ done: st.done }">{{ st.done ? '✓' : '○' }}</text>
               <text class="subtask-title" :class="{ done: st.done }">{{ st.title }}</text>

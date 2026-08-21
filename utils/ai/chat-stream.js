@@ -13,6 +13,7 @@ import { chatRequest as chatRequestNonStream } from './chat-request.js'
 import { logger } from '../logger.js'
 import { checkRateLimit, recordRequest } from './rate-limiter.js'
 import { runAgentChat } from './agent-loop.js'
+import { chatRequestChunkedStream } from './chat-chunked.js'
 
 // ==================== 公开入口 ====================
 
@@ -67,10 +68,18 @@ export function chatRequestStream(message, conversationId, config, onChunk, hist
   if (typeof fetch !== 'undefined' && typeof ReadableStream !== 'undefined') {
     return chatRequestRealStream(message, conversationId, cfg, onChunk, history)
   }
+  return simulatedStream(message, conversationId, cfg, onChunk, history)
   // #endif
 
-  // 非 H5 环境降级为模拟流式
+  // App 端使用 enableChunked 真实流式；异常自动降级模拟流式
+  // #ifdef APP-PLUS
+  return chatRequestChunkedStream(message, conversationId, cfg, onChunk, history)
+  // #endif
+
+  // 其余平台（小程序）降级为模拟流式
+  // #ifndef H5 || APP-PLUS
   return simulatedStream(message, conversationId, cfg, onChunk, history)
+  // #endif
 }
 
 /** 判断消息是否可能涉及数据查询（触发 agent 工具循环） */

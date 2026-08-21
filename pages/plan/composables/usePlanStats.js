@@ -96,23 +96,24 @@ export function usePlanStats() {
     return { avg, fastest, slowest, count: done.length }
   })
 
-  // 子任务统计（含阶段化子任务）
+  // 子计划统计（新模型：计划包含子计划；历史子任务兜底）
   const subtaskStats = computed(() => {
     let total = 0, done = 0
+    const childMap = {}
     rangePlans.value.forEach(p => {
-      // 普通子任务
-      if (Array.isArray(p.subtasks) && (!p.phases || p.phases.length === 0)) {
+      if (p.parent_id) {
+        if (!childMap[p.parent_id]) childMap[p.parent_id] = []
+        childMap[p.parent_id].push(p)
+      }
+    })
+    rangePlans.value.forEach(p => {
+      const kids = childMap[p.client_id]
+      if (kids && kids.length > 0) {
+        total += kids.length
+        done += kids.filter(k => k.status === 2).length
+      } else if (Array.isArray(p.subtasks) && p.subtasks.length > 0) {
         total += p.subtasks.length
         done += p.subtasks.filter(s => s.done).length
-      }
-      // 阶段化子任务
-      if (Array.isArray(p.phases)) {
-        p.phases.forEach(ph => {
-          if (Array.isArray(ph.subtasks)) {
-            total += ph.subtasks.length
-            done += ph.subtasks.filter(s => s.done).length
-          }
-        })
       }
     })
     return { total, done, rate: total > 0 ? Math.round(done / total * 100) : 0 }

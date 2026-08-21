@@ -16,12 +16,22 @@ function formatDateTime(str) {
 }
 
 function subProgress(item) {
+	// 子计划进度（优先）；历史子任务兜底
+	if (item._childStats && item._childStats.total > 0) {
+		return {
+			done: item._childStats.done,
+			total: item._childStats.total,
+			pct: Math.round(item._childStats.done / item._childStats.total * 100),
+			kind: 'child'
+		}
+	}
 	if (!item.subtasks || item.subtasks.length === 0) return null
 	const done = item.subtasks.filter(s => s.done).length
 	return {
 		done,
 		total: item.subtasks.length,
-		pct: Math.round(done / item.subtasks.length * 100)
+		pct: Math.round(done / item.subtasks.length * 100),
+		kind: 'sub'
 	}
 }
 
@@ -74,6 +84,7 @@ function formatEst(ds) {
 
 		<!-- 子任务进度 -->
 		<view v-if="subProgress(item)" class="subtask-row">
+			<text class="st-kind">{{ subProgress(item).kind === 'child' ? '子计划' : '子任务' }}</text>
 			<view class="st-bar">
 				<view class="st-fill" :style="{ width: subProgress(item).pct + '%' }" />
 			</view>
@@ -164,6 +175,12 @@ function formatEst(ds) {
 	margin-top: 8rpx;
 }
 
+.st-kind {
+	font-size: 18rpx;
+	color: #A1A1AA;
+	flex-shrink: 0;
+}
+
 .st-bar {
 	flex: 1;
 	height: 6rpx;
@@ -228,6 +245,7 @@ function formatEst(ds) {
 		&.status-1 { background: #FAFAFA; color: #18181B; }
 		&.status-2 { background: rgba(16, 185, 129, 0.15); color: #34D399; }
 	}
+	.st-kind { color: #71717A; }
 	.st-bar { background: #3F3F46; }
 	.st-fill { background: #FAFAFA; }
 	.st-text { color: #F4F4F5; }

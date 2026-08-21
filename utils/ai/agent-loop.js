@@ -78,7 +78,16 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
 
   while (rounds < MAX_ROUNDS) {
     rounds++
+    // 用户停止 — 立即退出工具循环
+    if (cfg.stopSignal?.stopped) {
+      logger.warn('[AgentLoop] Stopped by user, exiting loop')
+      return { reply: '', action: null, actions: [], toolCalls, execResults, conversation_id: conversationId, _agentMode: true, _stopped: true }
+    }
     const response = await callWithTools(provider, cfg, messages, apiKey)
+    if (response.stopped || cfg.stopSignal?.stopped) {
+      logger.warn('[AgentLoop] Stopped by user, exiting loop')
+      return { reply: '', action: null, actions: [], toolCalls, execResults, conversation_id: conversationId, _agentMode: true, _stopped: true }
+    }
 
     // API 错误/网络失败 → 直接抛给上层处理
     if (response.error) {
@@ -208,6 +217,12 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
     }
   }
 
+  // 用户停止 — 不再请求最终回复
+  if (cfg.stopSignal?.stopped) {
+    logger.warn('[AgentLoop] Stopped by user')
+    return { reply: '', action: null, actions: [], toolCalls, execResults, conversation_id: conversationId, _agentMode: true, _stopped: true }
+  }
+
   // 达到 maxRounds — 兜底：让 AI 基于已收集数据给最终回答
   logger.warn('[AgentLoop] Max rounds reached, forcing final reply')
   const response = await callWithTools(provider, cfg, messages, apiKey, true, onChunk)
@@ -312,22 +327,33 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
         }
 
         resolve({ error: '网络连接失败，请稍后再试' })
+      },
+      complete() {
+        if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
       }
     })
+    if (stopSignal) {
+      stopCheckId = setInterval(() => {
+        if (stopSignal.stopped) {
+          if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
+          try { if (task && task.abort) task.abort() } catch (e) { /* ignore */ }
+        }
+      }, 200)
+    }
   })
 }
 
 /**
  * 流式调用（最后一轮，AI 给最终回复时用）
- * H5 用 fetch+ReadableStream，非 H5 降级为非流式 + 模拟逐字
+ * H5 用 fetch+ReadableStream，App 用 enableChunked，其余降级为非流式 + 模拟逐字
  */
 function callWithToolsStream(provider, cfg, messages, apiKey, onChunk) {
   // #ifdef H5
   return callWithToolsSSE(provider, cfg, messages, apiKey, onChunk)
   // #endif
   // #ifndef H5
-  // 非 H5：退回非流式，拿到完整内容后逐字推送
-  return callWithTools(provider, cfg, messages, apiKey).then(res => {
+  // 非流式降级：拿到完整内容后逐字推送
+  const fallbackToNonStream = () => callWithTools(provider, cfg, messages, apiKey).then(res => {
     if (res.error) return res
     const content = res.message?.content || ''
     if (content && onChunk) {
@@ -348,6 +374,18 @@ function callWithToolsStream(provider, cfg, messages, apiKey, onChunk) {
     }
     return res
   })
+  // #ifdef APP-PLUS
+  // App 端：enableChunked 真流式，失败降级非流式
+  return chatRequestChunkedStream('', '', cfg, onChunk, [], { messages, raw: true })
+    .then(res => {
+      if (res._error && !res.content) return fallbackToNonStream()
+      return { message: { content: res.content || '' }, id: res.conversation_id || '' }
+    })
+    .catch(() => fallbackToNonStream())
+  // #endif
+  // #ifndef APP-PLUS
+  return fallbackToNonStream()
+  // #endif
   // #endif
 }
 

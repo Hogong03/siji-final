@@ -166,3 +166,59 @@ export function getPlanTree(rootId) {
   }
   return buildTree(rootId || null)
 }
+// ==================== 子计划模型（v2.3+：计划只包含子计划，子任务/阶段统一迁移为子计划） ====================
+
+/** 子任务 → 子计划规格（AI 传入 subtasks 时自动转换） */
+export function convertSubtasksToChildPlans(subtasks, base = {}) {
+  if (!Array.isArray(subtasks)) return []
+  return subtasks.filter(Boolean).map((s, i) => {
+    const obj = typeof s === 'string' ? { title: s } : (s || {})
+    const title = String(obj.title || obj.name || '').trim()
+    return {
+      title: title || ('子计划' + (i + 1)),
+      description: obj.description || '',
+      status: obj.done === true ? 2 : 0,
+      priority: base.priority != null ? base.priority : 2,
+      estimated_time: base.estimated_time || '',
+      due_date: base.due_date || '',
+      deadline: base.deadline || '',
+      children: Array.isArray(obj.children) ? convertSubtasksToChildPlans(obj.children, base) : []
+    }
+  })
+}
+
+/** 阶段 → 子计划规格（历史 phases 数据迁移，阶段内子任务降为下一级子计划） */
+export function convertPhasesToChildPlans(phases) {
+  if (!Array.isArray(phases)) return []
+  return phases.filter(Boolean).map((ph, i) => {
+    const title = String(ph.title || '').trim()
+    const subs = Array.isArray(ph.subtasks) ? ph.subtasks : []
+    return {
+      title: title || ('第' + (i + 1) + '阶段'),
+      description: ph.description || '',
+      status: subs.length > 0 && subs.every(s => s && s.done === true) ? 2 : 0,
+      priority: 2,
+      estimated_time: ph.start_date || '',
+      due_date: ph.end_date || '',
+      deadline: ph.end_date || '',
+      children: convertSubtasksToChildPlans(subs)
+    }
+  })
+}
+
+/** 旧数据迁移：读取计划上的 subtasks/phases，产出子计划规格（优先子任务，其次阶段） */
+export function buildChildrenSpecsFromLegacy(plan) {
+  if (!plan) return []
+  if (Array.isArray(plan.subtasks) && plan.subtasks.length > 0) {
+    return convertSubtasksToChildPlans(plan.subtasks, {
+      priority: plan.priority,
+      estimated_time: plan.estimated_time || '',
+      due_date: plan.due_date || plan.deadline || '',
+      deadline: plan.deadline || ''
+    })
+  }
+  if (Array.isArray(plan.phases) && plan.phases.length > 0) {
+    return convertPhasesToChildPlans(plan.phases)
+  }
+  return []
+}

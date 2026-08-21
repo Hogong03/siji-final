@@ -51,7 +51,7 @@ const {
   showConvList, activeFilter, activeTag, allTags,
   sortedConversations, filteredConversations, groupedConversations, hasTags,
   toggleConvList, setFilter, selectTag, refreshTags,
-  handleNewConversation, handleSwitchConversation, handleDeleteConversation,
+  handleNewConversation: _handleNewConversation, handleSwitchConversation: _handleSwitchConversation, handleDeleteConversation: _handleDeleteConversation,
   handleRenameConversation, handleAddTag
 } = useConversationManager(store, getWelcomeMessage, resetScrollState)
 
@@ -65,6 +65,20 @@ const {
 function handleRetrySend() { _handleRetrySend() }
 function handleRetryWithModel() { _handleRetryWithModel(showModelSwitch) }
 function handleRetryEdit() { _handleRetryEdit(inputAreaRef) }
+
+// 发送中切换/新建/删除会话 — 先停止当前请求，防止流式内容串写会话
+function handleNewConversation() {
+  if (isSending.value) handleStop()
+  _handleNewConversation()
+}
+function handleSwitchConversation(id) {
+  if (isSending.value) handleStop()
+  _handleSwitchConversation(id)
+}
+function handleDeleteConversation(conv) {
+  if (isSending.value) handleStop()
+  _handleDeleteConversation(conv)
+}
 
 // ===== 编辑/标签 =====
 const {
@@ -240,6 +254,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   uni.$off('welcome-chip-tap', handleWelcomeChip)
+  uni.$off('init-simulation', _simHandler)
 })
 
 function handleWelcomeChip(text) {

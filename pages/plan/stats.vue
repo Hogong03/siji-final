@@ -9,7 +9,7 @@
  *  ④ 状态分布（环形图）
  *  ⑤ 近30天创建趋势
  *  ⑥ 完成速度分析
- *  ⑦ 子任务完成率
+ *  ⑦ 子计划完成率
  *  ⑧ 各优先级完成率
  *  ⑨ 标签统计（新增）
  *  ⑩ 过期分析（新增）
@@ -140,10 +140,10 @@ function heatmapColor(count) {
 
       <!-- ⑥ 子任务完成率 -->
       <view class="card">
-        <text class="card-title">子任务完成率</text>
+        <text class="card-title">子计划完成率</text>
         <view class="gauge-row">
-          <SijiChart type="gauge" :value="subtaskStats.rate" label="子任务" :colors="['#18181B']" :height="200" />
-          <view class="gauge-info"><text class="ri-text">已完成 {{ subtaskStats.done }} / {{ subtaskStats.total }} 个子任务</text></view>
+          <SijiChart type="gauge" :value="subtaskStats.rate" label="子计划" :colors="['#18181B']" :height="200" />
+          <view class="gauge-info"><text class="ri-text">已完成 {{ subtaskStats.done }} / {{ subtaskStats.total }} 个子计划</text></view>
         </view>
       </view>
 

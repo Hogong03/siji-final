@@ -37,7 +37,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 			<text class="os-item"><text class="os-num">{{ stats.completed }}</text> 完成</text>
 			<text class="os-sep">·</text>
 			<text class="os-item" v-if="stats.subTotal > 0">
-				<text class="os-num">{{ stats.subDone }}/{{ stats.subTotal }}</text> 子任务
+				<text class="os-num">{{ stats.subDone }}/{{ stats.subTotal }}</text> 子计划
 			</text>
 		</view>
 

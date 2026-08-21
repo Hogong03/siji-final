@@ -11,6 +11,7 @@
 	import { usePlanList } from './composables/usePlanList.js'
 	import { usePlanSwipe } from './composables/usePlanSwipe.js'
 	import PlanOverview from './components/PlanOverview.vue'
+import PlanTimeline from './components/PlanTimeline.vue'
 	import PlanFilter from './components/PlanFilter.vue'
 	import PlanList from './components/PlanList.vue'
 
@@ -74,6 +75,9 @@
 		<!-- 概览卡（含模板/统计入口） -->
 		<PlanOverview :stats="stats" :priorityBar="priorityBar"
 			@go-templates="goTemplates" @go-stats="goStats" />
+
+		<!-- 时间轴预览：滑动平移 / 双指缩放 / 点击节点进入详情 -->
+		<PlanTimeline :plans="filteredPlans" @select="goDetail" />
 
 		<!-- 工具栏：搜索 + 回收站入口 -->
 		<view class="toolbar" @tap.stop>

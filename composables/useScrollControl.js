@@ -22,6 +22,13 @@ export function useScrollControl() {
   const navScrolled = ref(false)
 
   let shouldAutoScroll = false
+  let _windowHeightCache = 0
+  function getWindowHeight() {
+    if (!_windowHeightCache) {
+      try { _windowHeightCache = uni.getSystemInfoSync().windowHeight || 600 } catch (e) { _windowHeightCache = 600 }
+    }
+    return _windowHeightCache
+  }
   let isProgrammaticScroll = false
   let lastScrollHeight = 0
   let scrollTick = 0
@@ -91,7 +98,7 @@ export function useScrollControl() {
     lastScrollHeight = sh
     const clientH = e.target && e.target.clientHeight
       ? e.target.clientHeight
-      : (typeof window !== 'undefined' ? window.innerHeight : (uni.getSystemInfoSync().windowHeight || 600))
+      : (typeof window !== 'undefined' ? window.innerHeight : getWindowHeight())
     const distanceFromBottom = sh - scrollTop - clientH
     isAtBottom.value = distanceFromBottom <= 80
     const hasScrolledEnough = sh > clientH * 1.5 && distanceFromBottom > 300

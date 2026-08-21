@@ -3,7 +3,7 @@
  * 计划详情 / 新建页
  * 路由: /pages/plan/detail?id=new | ?clientId=xxx
  *
- * 子任务管理 → composables/usePlanSubtasks.js
+ * 子计划管理 → components/plan/PlanChildPlans.vue
  * 标签管理 → composables/usePlanTags.js
  * 日期工具 → utils/datetime.js
  */
@@ -12,19 +12,17 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 import PlanTimeSection from '@/components/plan/PlanTimeSection.vue'
 import PlanReminderSection from '@/components/plan/PlanReminderSection.vue'
 import PlanChildPlans from '@/components/plan/PlanChildPlans.vue'
-import PlanSubtasksSection from '@/components/plan/PlanSubtasksSection.vue'
 import PlanTagPicker from '@/components/plan/PlanTagPicker.vue'
 import { ref, computed, watch } from 'vue'
 
-import { getPlanList, savePlan, deletePlan, getChildPlans } from '@/utils/storage.js'
+import { getPlanList, savePlan, deletePlan, getChildPlans, buildChildrenSpecsFromLegacy, updateIndex } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { useAppStore } from '@/store/index.js'
 import { getPlanReminder, setPlanReminder, removePlanReminder } from '@/utils/reminder.js'
 import { parseDateTime, combineDateTime } from '@/utils/datetime.js'
-import { usePlanSubtasks } from '@/composables/usePlanSubtasks.js'
 import { usePlanTags } from '@/composables/usePlanTags.js'
 import { usePlanAI } from './composables/usePlanAI.js'
-import { usePlanPhases } from './composables/usePlanPhases.js'
+import { usePlanChildAI } from './composables/usePlanChildAI.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 
 const store = useAppStore()
@@ -33,6 +31,7 @@ const isNew = ref(true)
 const planId = ref('')
 const originalCreatedAt = ref(null)
 const saved = ref(false)
+const migratedLegacy = ref(false)
 
 const form = ref({
   title: '',
@@ -47,10 +46,7 @@ const form = ref({
   start_time: '',
   end_time: '',
   parent_id: '',
-  subtasks: [],
-  phases: [],
   childPlans: [],
-  ai_breakdown: '',
   ai_advice: ''
 })
 
@@ -92,14 +88,17 @@ const statusOptions = [
 ]
 const statusMap = ['待开始', '进行中', '已完成']
 
-// 子任务管理
-const { aiLoading, subtaskProgress, toggleSubtask, addSubtask, removeSubtask, aiBreakdown } = usePlanSubtasks(form, store)
-
-// 子任务全部完成时自动将状态改为已完成
-watch(() => subtaskProgress.value, (prog) => {
+// 子计划进度（子计划全部完成时自动将状态改为已完成）
+const childProgress = computed(() => {
+  const list = form.value.childPlans || []
+  if (list.length === 0) return { total: 0, done: 0, pct: 0 }
+  const done = list.filter(c => c.status === 2).length
+  return { total: list.length, done, pct: Math.round(done / list.length * 100) }
+})
+watch(() => childProgress.value, (prog) => {
   if (prog.total > 0 && prog.done === prog.total && form.value.status !== 2) {
     form.value.status = 2
-    uni.showToast({ title: '所有子任务已完成', icon: 'none' })
+    uni.showToast({ title: '所有子计划已完成', icon: 'none' })
   } else if (prog.total > 0 && prog.done < prog.total && form.value.status === 2) {
     form.value.status = 1
   }
@@ -115,14 +114,8 @@ const {
   generateSchedule, generateReview, generateNextStep
 } = usePlanAI(form, store)
 
-// 阶段化计划
-const {
-  phaseAILoading, phaseProgress,
-  addPhase, removePhase,
-  addPhaseSubtask, removePhaseSubtask,
-  addMilestone, removeMilestone,
-  togglePhaseCollapse, aiPhaseBreakdown
-} = usePlanPhases(form, store)
+// AI 子计划拆解
+const { aiChildrenLoading, aiBreakdownChildren } = usePlanChildAI(form, store)
 
 // 父计划信息
 const parentPlan = computed(() => {
@@ -162,6 +155,43 @@ onBackPress(() => {
   return false
 })
 
+function buildChildPlanForm(spec, priority) {
+  return {
+    client_id: generateEntityId('plan'),
+    title: spec.title,
+    description: spec.description || '',
+    priority,
+    status: spec.status,
+    estimated_time: spec.estimated_time || '',
+    due_date: spec.due_date || '',
+    deadline: spec.deadline || '',
+    parent_id: '',
+    childPlans: (spec.children || []).map(g => buildChildPlanForm(g, priority)),
+    _subCount: 0
+  }
+}
+
+function saveChildPlans(children, parentId) {
+  (children || []).forEach(ch => {
+    const { _subCount, ...child } = ch
+    const record = {
+      ...child,
+      client_id: child.client_id || generateEntityId('plan'),
+      parent_id: parentId,
+      created_at: child.created_at || Date.now(),
+      updated_at: Date.now(),
+      subtasks: [],
+      phases: [],
+      is_deleted: 0
+    }
+    savePlan(record)
+    updateIndex('plan', record)
+    if (Array.isArray(child.childPlans) && child.childPlans.length > 0) {
+      saveChildPlans(child.childPlans, record.client_id)
+    }
+  })
+}
+
 function loadPlan() {
   const plans = getPlanList()
   const item = plans.find(p => p.client_id === planId.value)
@@ -182,16 +212,19 @@ function loadPlan() {
       start_time: item.start_time || '',
       end_time: item.end_time || '',
       parent_id: item.parent_id || '',
-      subtasks: Array.isArray(item.subtasks) ? item.subtasks : [],
-      phases: Array.isArray(item.phases) ? item.phases.map((ph, i) => ({
-        ...ph,
-        id: ph.id || i + 1,
-        _collapsed: ph._collapsed !== undefined ? ph._collapsed : true
-      })) : [],
       childPlans: getChildPlans(planId.value),
-      ai_breakdown: item.ai_breakdown || '',
       ai_advice: item.ai_advice || ''
     }
+    // 旧数据迁移：子任务/阶段 → 子计划（新模型统一为子计划，保存时落库）
+    if (form.value.childPlans.length === 0) {
+      const legacySpecs = buildChildrenSpecsFromLegacy(item)
+      if (legacySpecs.length > 0) {
+        form.value.childPlans = legacySpecs.map(spec => buildChildPlanForm(spec, item.priority ?? 2))
+        migratedLegacy.value = true
+      }
+    }
+    // 子计划补充孙计划数量（仅展示用，保存时剔除）
+    form.value.childPlans.forEach(ch => { ch._subCount = getChildPlans(ch.client_id).length })
     const rem = getPlanReminder(planId.value)
     if (rem) {
       reminderEnabled.value = rem.enabled !== false
@@ -225,32 +258,20 @@ async function handleSave() {
     start_time: form.value.start_time || combineDateTime(form.value.estimated_time, form.value.estimated_time_value),
     end_time: form.value.end_time || combineDateTime(form.value.due_date, form.value.due_time),
     parent_id: form.value.parent_id || '',
-    subtasks: form.value.subtasks.map((s, i) => ({
-      id: s.id || i + 1,
-      title: s.title || (typeof s === 'string' ? s : ''),
-      done: s.done || false
-    })),
-    phases: (form.value.phases || []).map((ph, i) => ({
-      id: ph.id || i + 1,
-      title: ph.title || `第${i + 1}阶段`,
-      description: ph.description || '',
-      start_date: ph.start_date || '',
-      end_date: ph.end_date || '',
-      milestones: (ph.milestones || []).filter(m => m),
-      subtasks: (ph.subtasks || []).map((s, j) => ({
-        id: s.id || j + 1,
-        title: s.title || '',
-        done: s.done || false
-      }))
-    })),
-    ai_breakdown: form.value.ai_breakdown,
     ai_advice: form.value.ai_advice,
     created_at: isNew.value ? Date.now() : (originalCreatedAt.value || Date.now()),
     updated_at: Date.now(),
     is_deleted: 0
   }
+  // 旧数据已迁移为子计划时，清理父计划上的历史子任务/阶段字段
+  if (migratedLegacy.value) {
+    plan.subtasks = []
+    plan.phases = []
+  }
 
   savePlan(plan)
+  updateIndex('plan', plan)
+  saveChildPlans(form.value.childPlans, plan.client_id)
 
   if (reminderEnabled.value && (form.value.due_date || reminderCustomDate.value)) {
     const customTime = reminderCustomDate.value
@@ -280,6 +301,7 @@ function handleDelete() {
     success(res) {
       if (res.confirm) {
         deletePlan(planId.value)
+        removePlanReminder(planId.value)
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => {
           safeNavigateBack({ fallback: '/pages/functions/index' })
@@ -422,104 +444,17 @@ function goParentPlan() {
         </view>
       </view>
 
-      <!-- 子计划（嵌套计划） -->
+      <!-- 子计划（新模型：计划直接包含子计划，点击子计划查看完整情况） -->
       <PlanChildPlans
-        v-if="!isNew"
         :child-plans="form.childPlans"
         :priority-colors="priorityColors"
         :status-map="statusMap"
+        :progress="childProgress"
+        :ai-loading="aiChildrenLoading"
+        :can-add="!isNew"
         @go-child-plan="goChildPlan"
         @add-child-plan="goAddChildPlan"
-      />
-
-      <!-- 阶段化计划 -->
-      <view v-if="form.phases && form.phases.length > 0" class="section phases-section">
-        <view class="phases-header">
-          <text class="section-label">阶段计划（{{ form.phases.length }}阶段）</text>
-          <text class="phases-progress">{{ phaseProgress.pct }}%</text>
-        </view>
-
-        <view v-for="(phase, pi) in form.phases" :key="phase.id" class="phase-block">
-          <view class="phase-header" @tap="togglePhaseCollapse(pi)">
-            <text class="phase-num">{{ pi + 1 }}</text>
-            <view class="phase-info">
-              <text class="phase-title">{{ phase.title || '未命名阶段' }}</text>
-              <text v-if="phase.start_date || phase.end_date" class="phase-date">{{ phase.start_date }} ~ {{ phase.end_date }}</text>
-            </view>
-            <text class="phase-pct">{{ phaseProgress.phases[pi]?.pct ?? 0 }}%</text>
-            <text class="phase-toggle">{{ phase._collapsed ? '▸' : '▾' }}</text>
-          </view>
-
-          <view v-if="!phase._collapsed" class="phase-body">
-            <input v-model="phase.title" class="phase-input" placeholder="阶段名称" />
-            <input v-model="phase.description" class="phase-input" placeholder="阶段描述（可选）" />
-
-            <view class="phase-dates">
-              <picker mode="date" :value="phase.start_date" @change="phase.start_date = $event.detail.value">
-                <text class="date-picker-text">{{ phase.start_date || '开始日期' }}</text>
-              </picker>
-              <text class="date-sep">~</text>
-              <picker mode="date" :value="phase.end_date" @change="phase.end_date = $event.detail.value">
-                <text class="date-picker-text">{{ phase.end_date || '结束日期' }}</text>
-              </picker>
-            </view>
-
-            <view v-if="phase.milestones.length > 0" class="milestones">
-              <text class="ms-label">里程碑</text>
-              <view v-for="(ms, mi) in phase.milestones" :key="mi" class="ms-item">
-                <text class="ms-bullet">◆</text>
-                <input v-model="phase.milestones[mi]" class="ms-input" placeholder="里程碑描述" />
-                <text class="ms-remove" @tap="removeMilestone(pi, mi)">✕</text>
-              </view>
-            </view>
-            <view class="ms-add" @tap="addMilestone(pi)">
-              <text>+ 里程碑</text>
-            </view>
-
-            <view class="phase-subtasks">
-              <view v-for="(st, si) in phase.subtasks" :key="si" class="phase-st-item">
-                <view class="st-check" :class="{ done: st.done }" @tap="st.done = !st.done">
-                  <text v-if="st.done">✓</text>
-                </view>
-                <input v-model="st.title" class="st-input" placeholder="子任务..." />
-                <text class="st-remove" @tap="removePhaseSubtask(pi, si)">✕</text>
-              </view>
-              <view class="st-add" @tap="addPhaseSubtask(pi)">
-                <text>+ 添加子任务</text>
-              </view>
-            </view>
-
-            <view class="phase-remove" @tap="removePhase(pi)">
-              <text>删除此阶段</text>
-            </view>
-          </view>
-        </view>
-
-        <view class="phase-add-btn" @tap="addPhase">
-          <text>+ 添加阶段</text>
-        </view>
-      </view>
-
-      <!-- AI 阶段化拆解（无阶段时显示） -->
-      <view v-if="!form.phases || form.phases.length === 0" class="section">
-        <view class="ai-phase-btn" :class="{ loading: phaseAILoading }" @tap="aiPhaseBreakdown()">
-          <SijiIcon name="sparkle" size="sm" />
-          <text>{{ phaseAILoading ? 'AI 拆解中...' : 'AI 阶段化拆解' }}</text>
-        </view>
-        <text class="phase-hint">适用于长周期复杂目标，AI 会按时间拆分阶段并分配子任务和里程碑</text>
-      </view>
-
-      <!-- 子任务（无阶段时显示，互斥） -->
-      <PlanSubtasksSection
-        v-if="!form.phases || form.phases.length === 0"
-        :subtasks="form.subtasks"
-        :ai-loading="aiLoading"
-        :subtask-progress="subtaskProgress"
-        :ai-breakdown-text="form.ai_breakdown"
-        @toggle-subtask="toggleSubtask"
-        @remove-subtask="removeSubtask"
-        @add-subtask="addSubtask"
-        @ai-breakdown="aiBreakdown"
+        @ai-breakdown="aiBreakdownChildren"
       />
 
       <!-- AI 增强工具栏 -->

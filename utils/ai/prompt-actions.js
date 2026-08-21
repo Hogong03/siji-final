@@ -26,10 +26,10 @@ export const CORE_ACTIONS = `记录:
 - query_stat: {month?}
 
 计划:
-- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,estimated_time?,parent_id?}
-- create_plan_phases: {title,description?,deadline,phase_count?:2-6}  // AI自动拆解多阶段计划，每阶段含子任务+里程碑+时间窗口
+- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,estimated_time?,parent_id?}  // subtasks 自动转为子计划
+- create_plan_phases: {title,description?,deadline,phase_count?:2-6}  // AI自动拆解为多个子计划
 - update_plan: {client_id,title?,description?,priority?,status?,deadline?,estimated_time?,subtasks?,parent_id?}
-- update_plan_phase: {client_id,phase_id,title?,subtasks?,milestones?,start_date?,end_date?}
+- update_plan_phase: {client_id,phase_id,title?,subtasks?,milestones?,start_date?,end_date?}  // phase_id=子计划client_id
 - update_plan_subtask: {client_id,subtask_id,done}
 - delete_plan: {client_id} needConfirm=true
 - query_plan: {status:"active"|"completed"|"all"}

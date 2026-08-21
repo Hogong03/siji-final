@@ -18,7 +18,6 @@ import { setConvTags, getConvTags, addConvTag } from '@/utils/conv-tags.js'
 export const useChatStore = defineStore('chat', () => {
   // ==================== State ====================
   const currentMode = ref('chat')
-  const isStreaming = ref(false)
   const conversations = ref([])
   const activeConversationId = ref('')
 
@@ -144,18 +143,42 @@ export const useChatStore = defineStore('chat', () => {
 
   function addMessage(message) {
     const conv = conversations.value.find(c => c.id === activeConversationId.value)
-    if (!conv) return
-    conv.messages.push({ ...message, time: formatTime(new Date()) })
+    if (!conv) return null
+    const msg = { ...message, time: formatTime(new Date()) }
+    conv.messages.push(msg)
     conv.updatedAt = Date.now()
     conv._slimCache = null
     debouncedPersistConversations()
+    return msg
+  }
+
+  // 流式中间帧的 updatedAt 节流（避免会话列表排序每帧重算）
+  let _lastUpdatedTick = 0
+  function _touchConversation(conv, now) {
+    if (conv.messages.length > 0) {
+      const last = conv.messages[conv.messages.length - 1]
+      // 流式中间帧：500ms 内只更新一次 updatedAt
+      if (last.loading && last.content && now - _lastUpdatedTick < 500) return
+    }
+    conv.updatedAt = now
+    _lastUpdatedTick = now
   }
 
   function updateLastMessage(partial) {
     const conv = conversations.value.find(c => c.id === activeConversationId.value)
     if (!conv || conv.messages.length === 0) return
     Object.assign(conv.messages[conv.messages.length - 1], partial)
-    conv.updatedAt = Date.now()
+    _touchConversation(conv, Date.now())
+    conv._slimCache = null
+    debouncedPersistConversations()
+  }
+
+  /** 按指定会话更新最后一条消息（流式切会话后回写用） */
+  function updateLastMessageFor(convId, partial) {
+    const conv = conversations.value.find(c => c.id === convId)
+    if (!conv || conv.messages.length === 0) return
+    Object.assign(conv.messages[conv.messages.length - 1], partial)
+    _touchConversation(conv, Date.now())
     conv._slimCache = null
     debouncedPersistConversations()
   }
@@ -193,13 +216,13 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     // state
-    currentMode, isStreaming, conversations, activeConversationId,
+    currentMode, conversations, activeConversationId,
     // getters
     modeLabel, messages, conversationId, activeConversation, conversationCount,
     // actions
     setCurrentMode, setConversationId,
     createConversation, switchConversation, deleteConversation, renameConversation,
-    addMessage, updateLastMessage, updateConversationSummary, clearMessages,
+    addMessage, updateLastMessage, updateLastMessageFor, updateConversationSummary, clearMessages,
     addTagToConversation, removeTagFromConversation, setConversationTags,
     persistHistory, restoreHistory,
     flushPersist: flushHistory,

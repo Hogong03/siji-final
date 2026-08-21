@@ -30,11 +30,9 @@ export function useVirtualMessages(allMessages) {
   // 是否还有更多消息可加载
   const hasMore = computed(() => visibleCount.value < allMessages.value.length)
 
-  // 切换会话时重置
-  watch(() => allMessages.value, (newVal) => {
-    if (newVal.length <= PAGE_SIZE) {
-      visibleCount.value = PAGE_SIZE
-    }
+  // 切换会话时重置（含 isLoadingMore 残留清理）
+  watch(() => allMessages.value, () => {
+    reset()
   }, { flush: 'sync' })
 
   /**

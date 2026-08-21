@@ -76,7 +76,9 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
     const messages = buildChatMessages(message, chatHistory, cfg)
     const reqOpts = buildProviderRequest(cfg.provider, cfg.model, messages, apiKey, cfg.temperature)
 
-    uni.request({
+    const stopSignal = cfg.stopSignal || null
+    let stopCheckId = null
+    const task = uni.request({
       ...reqOpts,
       success(res) {
         if (res.statusCode === 200 && res.data?.choices) {
@@ -140,6 +142,10 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
         }
       },
       fail(err) {
+        if (stopSignal && stopSignal.stopped) {
+          resolve({ reply: '', _emptyReply: true, _aborted: true })
+          return
+        }
         logger.error(`[${providerName} Network Error]`, err.errMsg)
 
         if (retryCount < maxRetries) {
@@ -154,8 +160,19 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
 
         logger.warn(`[${providerName} Fallback] Max retries exceeded, returning offline response`)
         resolve(fallbackResponse(message, '网络连接失败，请稍后再试'))
+      },
+      complete() {
+        if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
       }
     })
+    if (stopSignal) {
+      stopCheckId = setInterval(() => {
+        if (stopSignal.stopped) {
+          if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
+          try { if (task && task.abort) task.abort() } catch (e) { /* ignore */ }
+        }
+      }, 200)
+    }
   })
 }
 
@@ -171,8 +188,10 @@ function chatRequestWithRetryNoFormat(message, conversationId, cfg, history) {
 
   return new Promise((resolve, reject) => {
     const data = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.8 }
+    const stopSignal = cfg.stopSignal || null
+    let stopCheckId = null
 
-    uni.request({
+    const task = uni.request({
       url: provider.endpoint,
       method: 'POST',
       header: {
@@ -190,9 +209,24 @@ function chatRequestWithRetryNoFormat(message, conversationId, cfg, history) {
         }
       },
       fail() {
+        if (stopSignal && stopSignal.stopped) {
+          resolve({ reply: '', _emptyReply: true, _aborted: true })
+          return
+        }
         resolve(fallbackResponse(message, '网络连接失败'))
+      },
+      complete() {
+        if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
       }
     })
+    if (stopSignal) {
+      stopCheckId = setInterval(() => {
+        if (stopSignal.stopped) {
+          if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
+          try { if (task && task.abort) task.abort() } catch (e) { /* ignore */ }
+        }
+      }, 200)
+    }
   })
 }
 

@@ -10,7 +10,7 @@
  * props: message, isEditing
  * emits: confirm-action, confirm-pending, cancel-pending, start-edit, save-edit, cancel-edit, update-tags
  */
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import ExecResultCard from './ExecResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
@@ -29,6 +29,11 @@ const imageSrc = computed(() => {
   if (!img) return ''
   return img.localPath || img.base64 || ''
 })
+
+/** 图片加载失败兜底（localPath 失效时） */
+const imageFailed = ref(false)
+function onImageError() { imageFailed.value = true }
+watch(imageSrc, () => { imageFailed.value = false })
 
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
@@ -106,7 +111,7 @@ function editOwn() {
 /** 待确认卡片图标 */
 function execIcon(type) {
   const map = {
-    diary: 'diary', bill: 'bill', plan: 'plan',
+    diary: 'diary', bill: 'bill', plan: 'plan', plan_phases: 'plan',
     query_diary: 'search', query_bill: 'stats', query_plan: 'search',
     update_bill: 'edit', update_diary: 'edit', update_plan: 'edit',
     delete_bill: 'trash', delete_diary: 'trash', delete_plan: 'trash'
@@ -159,9 +164,13 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
       <!-- 消息行：单气泡，长按触发操作 -->
       <view class="msg-row" :class="message.role">
         <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="edgeColor ? { borderLeftColor: edgeColor } : {}">
-          <image v-if="message.image" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" />
-          <!-- AI 消息使用 MarkdownRenderer 渲染富文本 -->
-          <MarkdownRenderer v-if="message.role === 'assistant'" :content="message.content" />
+          <image v-if="message.image && !imageFailed" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" @error="onImageError" />
+          <view v-else-if="message.image && imageFailed" class="bubble-image-fallback" @tap="onImageTap">
+            <text class="bubble-image-fallback-text">图片已失效</text>
+          </view>
+          <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
+          <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />
+          <text v-else-if="message.role === 'assistant'" class="bubble-text">{{ message.content }}</text>
           <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播） -->
           <text v-else class="bubble-text">{{ message.content }}</text>
 
@@ -244,4 +253,18 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 
 <style scoped lang="scss">
 @import './MessageBubble.scss';
+
+.bubble-image-fallback {
+  width: 320rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F4F4F5;
+  border-radius: 12rpx;
+}
+.bubble-image-fallback-text {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
 </style>

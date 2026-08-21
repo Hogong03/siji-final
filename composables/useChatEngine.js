@@ -66,18 +66,24 @@ export function useChatEngine() {
 
     isSending.value = true
     stopSignal.value = { stopped: false }
+    const sendConvId = store.activeConversationId
+
+    // 会话锁定 — 流式期间切换会话时中止请求并丢弃增量，防止回复写入错误会话
+    const safeUpdate = (partial) => {
+      if (store.activeConversationId !== sendConvId) {
+        if (stopSignal.value) stopSignal.value.stopped = true
+        return
+      }
+      store.updateLastMessage(partial)
+    }
 
     const startStream = scrollHelpers?.startStreamScroll
     const stopStream = scrollHelpers?.stopStreamScroll
     const chatHistory = buildChatHistory(store.messages)
 
-    // 图片保存（异步，不阻塞发送）
-    if (imageData?.base64) {
-      const targetConvId = conv?.id || store.activeConversation?.id
-      saveImageAsync(imageData, store, targetConvId)
-    }
-
-    store.addMessage({ role: 'user', content: message, image: imageData || undefined })
+    const userMsg = store.addMessage({ role: 'user', content: message, image: imageData || undefined })
+    // 图片保存（异步，不阻塞发送）— 传消息引用，避免跨会话回写找错消息
+    if (imageData?.base64 && userMsg) saveImageAsync(imageData, store, userMsg)
     inputAreaRef?.value?.reset()
     scrollToBottom()
     store.addMessage({ role: 'assistant', content: '', loading: true })
@@ -86,7 +92,7 @@ export function useChatEngine() {
     // 离线检测
     const offlineHint = await checkOfflineAndHint(message, store)
     if (offlineHint) {
-      store.updateLastMessage({ content: offlineHint, loading: false })
+      safeUpdate({ content: offlineHint, loading: false })
       isSending.value = false
       return
     }
@@ -122,7 +128,7 @@ export function useChatEngine() {
           if (toolNames && toolNames.length > 0) {
             const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', create_relation: '创建关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', undo_last: '撤销操作' }
             const label = toolNames.map(n => labels[n] || n).join('、')
-            store.updateLastMessage({ loading: true, statusHint: `正在${label}…` })
+            safeUpdate({ loading: true, statusHint: `正在${label}…` })
           }
         }
       }
@@ -132,7 +138,7 @@ export function useChatEngine() {
       // 图片识别:模型不支持时提前退出
       const visionError = checkVisionSupport(imageData, cfg, store)
       if (visionError) {
-        store.updateLastMessage({ content: visionError, loading: false })
+        safeUpdate({ content: visionError, loading: false })
         isSending.value = false
         return
       }
@@ -144,7 +150,7 @@ export function useChatEngine() {
       if (imageData && message && message !== '请识别并分析这张截图') {
         // 用户同时输入了图片和有意义的文字 → 两步组合
         logger.info('[ChatEngine] 图片+文字组合模式，先识别图片')
-        store.updateLastMessage({ content: '正在识别图片…', loading: true })
+        safeUpdate({ content: '正在识别图片…', loading: true })
 
         const imageDesc = await recognizeImage(imageData, message, cfg)
         if (imageDesc) {
@@ -166,7 +172,7 @@ export function useChatEngine() {
       if (simEnd) {
         if (simEnd.reply) {
           saveSimulationReport(simEnd.simId, simEnd.reply)
-          store.updateLastMessage({ content: simEnd.reply, aiReply: simEnd.reply, loading: false })
+          safeUpdate({ content: simEnd.reply, aiReply: simEnd.reply, loading: false })
         }
         isSending.value = false
         return
@@ -182,10 +188,10 @@ export function useChatEngine() {
       function pumpDisplay() {
         if (!displayQueue) { rafId = null; return }
         // 每帧推送 1-3 个字符（模拟打字机效果）
-        const n = displayQueue.length > 200 ? 3 : displayQueue.length > 50 ? 2 : 1
+        const n = displayQueue.length > 800 ? 16 : displayQueue.length > 400 ? 10 : displayQueue.length > 200 ? 6 : displayQueue.length > 50 ? 3 : 1
         lastDisplayed += displayQueue.slice(0, n)
         displayQueue = displayQueue.slice(n)
-        store.updateLastMessage({ content: lastDisplayed, loading: true })
+        safeUpdate({ content: lastDisplayed, loading: true })
         // 每 3 帧滚一次到底部（避免每帧 scrollIntoView 性能开销）
         scrollTickCounter++
         if (scrollTickCounter % 3 === 0 && scrollHelpers?.scrollToBottomAnchor) {
@@ -224,7 +230,7 @@ export function useChatEngine() {
           chatHistory
         ),
         message,
-        store.updateLastMessage,
+        safeUpdate,
         stopSignal.value,
         () => {  // onRetry — 重置流式状态
           streamedText = ''
@@ -241,12 +247,12 @@ export function useChatEngine() {
       const finalText = extractReplyFromStream(streamedText)
       lastDisplayed = finalText
       queuedTotal = finalText.length
-      store.updateLastMessage({ content: finalText, loading: true })
+      safeUpdate({ content: finalText, loading: true })
       if (retryText) streamedText = retryText
 
       // 整体超时强制中止
       if (overallTimedOut && (!streamedText || result._emptyReply)) {
-        store.updateLastMessage({
+        safeUpdate({
           content: 'AI 响应超时，可能网络不稳定或服务繁忙。',
           loading: false, failed: true
         })
@@ -257,7 +263,7 @@ export function useChatEngine() {
       // 空回复失败处理
       if (result._emptyReply && !streamedText && !result._aborted) {
         const isTimeout = result._timeout
-        store.updateLastMessage({
+        safeUpdate({
           content: isTimeout
             ? 'AI 响应超时，可能网络不稳定或服务繁忙。'
             : 'AI 走神了，要不要再试一次？',
@@ -269,7 +275,23 @@ export function useChatEngine() {
 
       // 强制覆盖流式过程中的原始 JSON 文本
       if (result.reply && result.reply.trim()) {
-        store.updateLastMessage({ content: result.reply, loading: true })
+        safeUpdate({ content: result.reply, loading: true })
+      }
+
+      // 用户停止（agent 循环 / 流式）— 保留 stopStreaming 已写入的“已停止”状态，不覆盖
+      if (result._stopped || (result._aborted && !result.reply && !streamedText)) {
+        if (result._agentMode && result.execResults && result.execResults.length > 0) {
+          renderAgentResults(store, result, streamedText || '已停止')
+        }
+        isSending.value = false
+        return
+      }
+
+      // 流式中止且无首块（30s 无响应）— 显示超时提示
+      if (result._aborted && result._timeout && !streamedText) {
+        safeUpdate({ content: 'AI 响应超时，可能网络不稳定或服务繁忙。', loading: false, failed: true })
+        isSending.value = false
+        return
       }
 
       const reply = result.reply || streamedText || '(AI 未返回有效响应)'
@@ -282,7 +304,7 @@ export function useChatEngine() {
       if (needConfirm) {
         const isMulti = result.action.type === 'multi' && result.actions.length > 1
         const confirmText = isMulti ? `${result.actions.length} 个操作需要确认` : '需要你确认一下'
-        store.updateLastMessage({
+        safeUpdate({
           content: reply + `\n\n${confirmText}:`,
           loading: false,
           pendingAction: result.action,
@@ -340,7 +362,7 @@ export function useChatEngine() {
       logger.error('handleSend error', e)
       const msg = e.message || ''
       const isKeyError = msg.includes('API Key') || msg.includes('Access denied') || msg.includes('401') || msg.includes('403')
-      store.updateLastMessage({
+      safeUpdate({
         content: isKeyError
           ? `${msg}。请到设置页检查 AI 配置（厂商/模型/Key 权限）。`
           : `请求失败: ${msg || '未知错误'}。`,
@@ -348,6 +370,15 @@ export function useChatEngine() {
       })
     } finally {
       if (rafId) { caf(rafId); rafId = null }
+      // 流式期间会话被切换 — 将已生成内容回写原会话，避免残留 loading 气泡
+      if (store.activeConversationId !== sendConvId) {
+        const partialContent = lastDisplayed || streamedText || ''
+        store.updateLastMessageFor(sendConvId, {
+          content: partialContent || '（已中断）',
+          loading: false,
+          failed: !partialContent
+        })
+      }
       isSending.value = false
       stopSignal.value = null
       if (stopStream) stopStream()

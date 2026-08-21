@@ -62,7 +62,10 @@ export {
   savePlan,
   deletePlan,
   getChildPlans,
-  getPlanTree
+  getPlanTree,
+  convertSubtasksToChildPlans,
+  convertPhasesToChildPlans,
+  buildChildrenSpecsFromLegacy
 } from './storage/plan.js'
 
 // 本地索引 & 全局搜索

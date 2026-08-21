@@ -10,12 +10,22 @@ export function priorityClass(priority) {
   return 'low'
 }
 
+export function planListCount(detail) {
+  if (Array.isArray(detail.children) && detail.children.length > 0) return detail.children.length
+  if (Array.isArray(detail.subtasks)) return detail.subtasks.length
+  return 0
+}
+
 export function planProgressPercent(detail) {
-  if (!detail.subtasks || detail.subtasks.length === 0) return 0
-  return Math.round((detail.subtasks.filter(s => s.done).length / detail.subtasks.length) * 100)
+  const total = planListCount(detail)
+  if (total === 0) return 0
+  return Math.round((planDoneCount(detail) / total) * 100)
 }
 
 export function planDoneCount(detail) {
+  if (Array.isArray(detail.children) && detail.children.length > 0) {
+    return detail.children.filter(s => s.status === 2).length
+  }
   if (!detail.subtasks) return 0
   return detail.subtasks.filter(s => s.done).length
 }
