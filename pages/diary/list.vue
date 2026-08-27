@@ -13,6 +13,8 @@ const {
   searchKeyword, viewMode,
   monthCount, totalWords, streakDays, topTags, emotionStats,
   filteredDiaries, calendarDays, timelineGroups, months,
+  paginationEnabled, pageSize, page, pageCount, pagedDiaries,
+  setPagination, setPageSize, prevPage, nextPage, goPage,
   loadDiaries, loadTags, loadCategories, switchMonth, toggleTag, toggleCategory,
   getItemTags, tagColor, formatDate,
   hasActiveFilter, resetFilters
@@ -43,6 +45,22 @@ function clearSearch() { searchKeyword.value = '' }
 const currentMonthLabel = computed(() => {
   const m = months.value.find(m => m.key === currentMonth.value)
   return m ? m.label : ''
+})
+
+/** 分页页码（页数多时折叠：首尾 3 页 + 当前页前后 1 页） */
+const visiblePages = computed(() => {
+  const total = pageCount.value
+  const cur = page.value
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  const pages = new Set()
+  for (let p = 1; p <= 3; p++) pages.add(p)
+  for (let p = total - 2; p <= total; p++) pages.add(p)
+  for (let p = cur - 1; p <= cur + 1; p++) {
+    if (p >= 1 && p <= total) pages.add(p)
+  }
+  return [...pages].sort((a, b) => a - b)
 })
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -122,6 +140,24 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         </view>
       </view>
 
+      <!-- 分页（可自由开关，仅影响列表视图） -->
+      <view class="fp-section">
+        <text class="fp-section-label">分页</text>
+        <view class="fp-view-row">
+          <text class="fp-view-btn" :class="{ active: !paginationEnabled }" @tap="setPagination(false)">不分页</text>
+          <text class="fp-view-btn" :class="{ active: paginationEnabled }" @tap="setPagination(true)">分页</text>
+        </view>
+        <view class="fp-view-row" v-if="paginationEnabled">
+          <text class="fp-page-size-label">每页</text>
+          <text
+            v-for="n in [10, 20, 50]" :key="n"
+            class="fp-view-btn fp-size-btn"
+            :class="{ active: pageSize === n }"
+            @tap="setPageSize(n)"
+          >{{ n }} 条</text>
+        </view>
+      </view>
+
       <!-- 统计 -->
       <view class="fp-section" v-if="diaries.length > 0">
         <view class="fp-stats-row" @tap="showStats = !showStats">
@@ -183,7 +219,10 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
     <!-- 列表视图 -->
     <scroll-view v-else-if="viewMode === 'list'" class="diary-scroll" scroll-y>
-      <view v-for="item in filteredDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
+      <view v-if="filteredDiaries.length > 0 && pagedDiaries.length === 0" class="pg-empty">
+        <text class="pg-empty-text">本页暂无内容</text>
+      </view>
+      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
         <view class="card-header">
           <text class="card-date">{{ formatDate(item.created_at) }}</text>
           <text v-if="item.pinned" class="pin-badge">📌</text>
@@ -200,6 +239,20 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         </view>
       </view>
       <view style="height: 120rpx;"></view>
+      <!-- 分页栏（仅分页开启时显示；空页也保留页码，允许"每一页不必有内容"） -->
+      <view v-if="paginationEnabled" class="pagination-bar">
+        <view class="pg-btn" :class="{ disabled: page <= 1 }" @tap="prevPage">‹</view>
+        <view class="pg-info" @tap.stop>
+          <text
+            v-for="p in visiblePages"
+            :key="p"
+            class="pg-page"
+            :class="{ active: page === p }"
+            @tap="goPage(p)"
+          >{{ p }}</text>
+        </view>
+        <view class="pg-btn" :class="{ disabled: page >= pageCount }" @tap="nextPage">›</view>
+      </view>
     </scroll-view>
 
     <!-- 时间线视图 -->

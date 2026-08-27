@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 	/**
 	 * 功能中心 v6 — Tab 内嵌分区（Segmented Control）
 	 *

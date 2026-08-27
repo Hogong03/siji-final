@@ -48,6 +48,7 @@ function go(target) {
     data: '/pages/settings/sub/data',
     privacy: '/pages/settings/sub/privacy',
     feedback: '/pages/settings/sub/feedback-list',
+    devFeedback: '/pages/settings/sub/dev-feedback',
     about: '/pages/settings/sub/about',
     version: '/pages/settings/sub/version-history',
   }
@@ -123,6 +124,11 @@ function go(target) {
         <view class="row card-press" @tap="go('feedback')">
           <SijiIcon name="mail" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">体验反馈</text></view>
+          <text class="row-arrow">›</text>
+        </view>
+        <view class="row card-press" @tap="go('devFeedback')">
+          <SijiIcon name="bug" size="lg" class="row-icon" />
+          <view class="row-body"><text class="row-label">开发者反馈</text></view>
           <text class="row-arrow">›</text>
         </view>
       </view>

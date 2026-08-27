@@ -98,6 +98,14 @@
      }
     },
     {
+     "path": "dev-feedback",
+     "style": {
+      "navigationBarTitleText": "开发者反馈",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
      "path": "ai",
      "style": {
       "navigationBarTitleText": "AI 模型配置",

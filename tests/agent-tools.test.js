@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS, buildToolsInstruction } from '../utils/ai/tools.js'
+import { CORE_ACTIONS } from '../utils/ai/prompt-actions.js'
 
 describe('Agent 工具注册表', () => {
   it('工具定义覆盖核心能力', () => {
@@ -37,6 +38,23 @@ describe('Agent 工具注册表', () => {
     expect(txt).toContain('query_bill')
     expect(txt).toContain('create_diary')
     expect(txt).toContain('记录')
+  })
+})
+
+describe('AI 自定义属性（MBTI/星座/血型）上报说明', () => {
+  it('smart_update_profile 工具 schema 说明自定义属性写入方式', () => {
+    const tool = TOOL_DEFINITIONS.find(t => t.name === 'smart_update_profile')
+    const updatesDesc = JSON.stringify(tool.parameters.properties.updates)
+    expect(updatesDesc).toContain('MBTI')
+    expect(updatesDesc).toContain('星座')
+    const item = tool.parameters.properties.updates.items
+    expect(item.required).toEqual(['card', 'field', 'value'])
+  })
+
+  it('CORE_ACTIONS 说明 update_profile.custom 与自定义属性规则', () => {
+    expect(CORE_ACTIONS).toContain('custom?:[{label,value}]')
+    expect(CORE_ACTIONS).toContain('MBTI')
+    expect(CORE_ACTIONS).toContain('禁止重复上报')
   })
 })
 

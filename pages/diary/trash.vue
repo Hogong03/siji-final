@@ -239,7 +239,7 @@ function handlePurge(item) {
 .status-clear { font-size: 24rpx; color: #A1A1AA; padding: 8rpx; }
 
 /* ═══ 内容区 ═══ */
-.trash-scroll { padding: 12rpx 20rpx; flex: 1; }
+.trash-scroll { padding: 12rpx 20rpx; flex: 1; box-sizing: border-box; }
 
 .trash-card {
   background: #FFFFFF; border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 10rpx;

@@ -1,6 +1,7 @@
 import { saveDiary, updateIndex, getDiaryList, searchByIndex } from '@/utils/storage.js'
 import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
+import { expandKeywords, matchesAnyKeywords } from '@/utils/search-synonyms.js'
 
 /**
  * Diary 相关 executor 工厂函数
@@ -11,15 +12,23 @@ export function createDiaryExecutors(ctx) {
 
   function execCreateDiary(p) {
     const now = Date.now()
-    const text = (p.content || '').trim()
+    // 兼容 AI 把正文误放 title 的情况：正文为空时用 title 兜底
+    let text = (p.content || '').trim()
+    let fallbackFromTitle = false
+    if (!text && p.title) {
+      text = String(p.title).trim()
+      fallbackFromTitle = true
+    }
     const lineBreak = text.indexOf('\n')
     const title = lineBreak > 0 ? text.substring(0, lineBreak).trim() : (text.length <= 50 ? text : text.substring(0, 50))
-    const content = lineBreak > 0 ? text.substring(lineBreak + 1).trim() : ''
+    const content = fallbackFromTitle ? text : (lineBreak > 0 ? text.substring(lineBreak + 1).trim() : '')
+    const recordType = ['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type) ? p.record_type : 'note'
 
     const diary = {
       client_id: ctx.generateEntityId('diary'),
       title: title || '无标题',
       content: content,
+      record_type: recordType,
       tags: Array.isArray(p.tags) ? p.tags : [],
       created_at: now,
       updated_at: now,
@@ -35,6 +44,7 @@ export function createDiaryExecutors(ctx) {
       detail: {
         type: 'diary', id: diary.client_id,
         title: diary.title, content: diary.content,
+        record_type: diary.record_type,
         tags: diary.tags,
         created_at: diary.created_at
       }
@@ -77,6 +87,7 @@ export function createDiaryExecutors(ctx) {
     const updates = {}
     if (p.title != null) updates.title = p.title
     if (p.content != null) updates.content = p.content
+    if (['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type)) updates.record_type = p.record_type
     if (Array.isArray(p.tags)) updates.tags = p.tags
     updates.updated_at = Date.now()
 
@@ -84,7 +95,7 @@ export function createDiaryExecutors(ctx) {
     asyncSetStorageJSON(`diary_${foundMonth}`, foundList)
 
     const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
-    const fieldLabels = { title: '标题', content: '内容', tags: '标签' }
+    const fieldLabels = { title: '标题', content: '内容', tags: '标签', record_type: '类型' }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
     invalidatePromptCache()
@@ -94,6 +105,7 @@ export function createDiaryExecutors(ctx) {
       detail: {
         type: 'diary', id: clientId,
         title: foundList[foundIdx].title,
+        record_type: foundList[foundIdx].record_type,
         updatedFields: changedFields
       }
     }
@@ -142,10 +154,9 @@ export function createDiaryExecutors(ctx) {
           detail: { type: 'query_diary', month, count: list.length, items: list.slice(0, 5) }
         }
       }
-      const kw = p.keyword.toLowerCase()
+      const kws = expandKeywords(p.keyword)
       let list = getDiaryList(month).filter(d =>
-        (d.title || '').toLowerCase().includes(kw) ||
-        (d.content || '').toLowerCase().includes(kw)
+        matchesAnyKeywords(`${d.title || ''}\n${d.content || ''}`, kws)
       )
       return {
         success: true,
@@ -235,10 +246,9 @@ export function createDiaryExecutors(ctx) {
         const diaryList = JSON.parse(uni.getStorageSync(`diary_${month}`) || '[]')
         let filtered = diaryList.filter(d => d.is_deleted !== 1)
         if (p.keyword) {
-          const kw = p.keyword.toLowerCase()
+          const kws = expandKeywords(p.keyword)
           filtered = filtered.filter(d =>
-            (d.title || '').toLowerCase().includes(kw) ||
-            (d.content || '').toLowerCase().includes(kw)
+            matchesAnyKeywords(`${d.title || ''}\n${d.content || ''}`, kws)
           )
         }
         results.push(...filtered.slice(0, 5).map(d => ({
@@ -255,10 +265,9 @@ export function createDiaryExecutors(ctx) {
         const billList = JSON.parse(uni.getStorageSync(`bill_${month}`) || '[]')
         let filtered = billList.filter(b => b.is_deleted !== 1)
         if (p.keyword) {
-          const kw = p.keyword.toLowerCase()
+          const kws = expandKeywords(p.keyword)
           filtered = filtered.filter(b =>
-            (b.category || '').toLowerCase().includes(kw) ||
-            (b.note || '').toLowerCase().includes(kw)
+            matchesAnyKeywords(`${b.category || ''}\n${b.note || ''}`, kws)
           )
         }
         results.push(...filtered.slice(0, 5).map(b => ({

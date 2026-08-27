@@ -202,6 +202,7 @@ function restoreAll() {
 
 .trash-scroll {
   flex: 1;
+  box-sizing: border-box;
   padding: 12rpx 20rpx;
 }
 

@@ -32,6 +32,7 @@ const planId = ref('')
 const originalCreatedAt = ref(null)
 const saved = ref(false)
 const migratedLegacy = ref(false)
+const initialSnapshot = ref('')
 
 const form = ref({
   title: '',
@@ -117,6 +118,22 @@ const {
 // AI 子计划拆解
 const { aiChildrenLoading, aiBreakdownChildren } = usePlanChildAI(form, store)
 
+/** 生成表单快照（剔除展示字段 _subCount），用于退出时判断是否有未保存修改 */
+function snapshotForm() {
+  const f = JSON.parse(JSON.stringify(form.value))
+  if (Array.isArray(f.childPlans)) {
+    f.childPlans.forEach(ch => { delete ch._subCount })
+  }
+  return JSON.stringify({
+    f,
+    reminderEnabled: reminderEnabled.value,
+    reminderAdvanceMin: reminderAdvanceMin.value,
+    repeatType: repeatType.value,
+    reminderCustomDate: reminderCustomDate.value,
+    reminderCustomTimeValue: reminderCustomTimeValue.value
+  })
+}
+
 // 父计划信息
 const parentPlan = computed(() => {
   if (!form.value.parent_id) return null
@@ -133,26 +150,29 @@ onLoad((query) => {
     isNew.value = true
     form.value.parent_id = query.parentId
   }
+  // 新建模式：记录空表单快照，未输入任何内容时退出不弹确认
+  if (!query || !query.clientId) {
+    initialSnapshot.value = snapshotForm()
+  }
 })
 onShow(() => {
   if (!isNew.value) loadPlan()
 })
 
 onBackPress(() => {
+  // 已保存/无任何修改 → 直接退出，不弹确认
   if (saved.value) return false
-  if (form.value.title || form.value.description) {
-    uni.showModal({
-      title: '放弃编辑？', content: '当前内容未保存',
-      confirmText: '放弃', cancelText: '继续编辑',
-      success: (res) => {
-        if (!res.confirm) return
-        saved.value = true
-        safeNavigateBack({ fallback: '/pages/functions/index' })
-      }
-    })
-    return true
-  }
-  return false
+  if (initialSnapshot.value && snapshotForm() === initialSnapshot.value) return false
+  uni.showModal({
+    title: '放弃编辑？', content: '当前内容未保存',
+    confirmText: '放弃', cancelText: '继续编辑',
+    success: (res) => {
+      if (!res.confirm) return
+      saved.value = true
+      safeNavigateBack({ fallback: '/pages/functions/index' })
+    }
+  })
+  return true
 })
 
 function buildChildPlanForm(spec, priority) {
@@ -235,7 +255,10 @@ function loadPlan() {
         reminderCustomDate.value = parts.date
         reminderCustomTimeValue.value = parts.time ? parts.time.substring(0, 5) : ''
       }
+    } else {
+      reminderEnabled.value = false
     }
+    initialSnapshot.value = snapshotForm()
   }
 }
 
@@ -288,6 +311,7 @@ async function handleSave() {
   }
 
   saved.value = true
+  initialSnapshot.value = snapshotForm()
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => {
     safeNavigateBack({ fallback: '/pages/functions/index' })
@@ -302,6 +326,7 @@ function handleDelete() {
       if (res.confirm) {
         deletePlan(planId.value)
         removePlanReminder(planId.value)
+        saved.value = true
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => {
           safeNavigateBack({ fallback: '/pages/functions/index' })

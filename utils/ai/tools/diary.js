@@ -5,11 +5,12 @@ export const DIARY_TOOLS = [
   // ===== 记录 =====
   {
     name: 'create_diary',
-    description: '创建一条自由文本记录，首行自动作为标题。用户说"记一下/帮我记/写篇记录"时调用。',
+    description: '创建一条自由文本记录，首行自动作为标题。用户说"记一下/帮我记/写篇记录"时调用。正文必须放 content，禁止传 title 字段；可选 record_type（note|diary|idea|todo|flash，默认 note）。',
     parameters: {
       type: 'object',
       properties: {
         content: { type: 'string', description: '记录正文（首行作标题）' },
+        record_type: { type: 'string', enum: ['note', 'diary', 'idea', 'todo', 'flash'], description: '记录类型，默认 note' },
         tags: { type: 'array', items: { type: 'string' }, description: '标签，尽量从历史标签中选' }
       },
       required: ['content']
@@ -17,12 +18,14 @@ export const DIARY_TOOLS = [
   },
   {
     name: 'update_diary',
-    description: '修改一条已有记录。',
+    description: '修改一条已有记录。用户说"改内容/改标题/改类型"时调用，只传需要修改的字段。',
     parameters: {
       type: 'object',
       properties: {
         client_id: { type: 'string', description: '记录ID' },
-        content: { type: 'string' },
+        title: { type: 'string', description: '修改标题' },
+        content: { type: 'string', description: '修改正文' },
+        record_type: { type: 'string', enum: ['note', 'diary', 'idea', 'todo', 'flash'], description: '修改记录类型' },
         tags: { type: 'array', items: { type: 'string' } }
       },
       required: ['client_id']
@@ -30,7 +33,7 @@ export const DIARY_TOOLS = [
   },
   {
     name: 'query_diary',
-    description: '查询记录。可按关键词或月份筛选。用户问"记录了啥/查一下/上个月写了什么"时调用。',
+    description: '查询记录。可按关键词或月份筛选，支持同义词匹配（如"焦虑"能查到"压力/失眠/睡不好"相关记录）。用户问"记录了啥/查一下/上个月写了什么"时调用。',
     parameters: {
       type: 'object',
       properties: {

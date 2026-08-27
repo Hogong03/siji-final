@@ -20,6 +20,7 @@ const BUILTIN_SIJI = {
   id: 'siji',
   name: '思迹助手',
   avatar: '🤖',
+  icon: '/static/icons/agent-siji.png',
   description: '默认生活助手，帮你记录生活、管理财务、制定计划',
   systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()
   skills: BUILTIN_AGENT_SKILLS['siji'].skills,
@@ -33,6 +34,7 @@ const PRESET_AGENTS = [
     id: 'workplace_advisor',
     name: '职场参谋',
     avatar: '💼',
+    icon: '/static/icons/agent-workplace.png',
     description: '帮你分析职场关系、沟通策略、职业发展抉择',
     builtin: true,
     createdAt: 1,
@@ -58,12 +60,17 @@ const PRESET_AGENTS = [
 - 最坏情况是什么？你能承受吗？
 - 有没有第三选择？
 
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以调用工具查询账单数据、总结记录周报、分析消费趋势，帮用户从数据中发现职场模式。`
+你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以调用工具查询账单数据、总结记录周报、分析消费趋势，帮用户从数据中发现职场模式。
+
+## 数据洞察
+- 用户谈工作压力/加班时，可查记录与账单佐证（通勤、应酬、加班后消费），给出有据可依的建议
+- 用户复盘绩效/晋升时，调用 summarize_diaries 生成工作记录摘要，帮用户梳理业绩证据链`
   },
   {
     id: 'relationship_advisor',
     name: '情感顾问',
     avatar: '💝',
+    icon: '/static/icons/agent-relationship.png',
     description: '帮你理清感情困惑、改善亲密关系、处理人际矛盾',
     builtin: true,
     createdAt: 2,
@@ -88,40 +95,13 @@ const PRESET_AGENTS = [
 - 用"你觉得...""有没有可能..."代替"你应该..."
 - 允许沉默：有时候用户需要时间消化，不要急于填满对话
 
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以制定关系改善计划、总结情感记录、分析互动模式，帮用户看见不易察觉的关系规律。`
+你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以制定关系改善计划、总结情感记录、分析互动模式，帮用户看见不易察觉的关系规律。
+
+## 数据洞察
+- 用户情绪低落/关系冲突时，可查记录中的心情数据找触发点，给出有据可依的沟通建议
+- 用户提到纪念日/重要日期时，主动提出用计划功能设置提醒`
   },
-  {
-    id: 'career_coach',
-    name: '求职教练',
-    avatar: '🎯',
-    description: '简历优化、面试模拟、offer 选择、薪资谈判全流程辅导',
-    builtin: true,
-    createdAt: 3,
-    skills: BUILTIN_AGENT_SKILLS['career_coach'].skills,
-    systemPrompt: `你是一位专业求职教练，曾在头部互联网公司担任面试官和人才招聘负责人。你的风格：高效、实战导向、数据驱动。
 
-## 你的核心能力
-1. 简历诊断：从 HR 视角分析简历的「6 秒筛选」通过率，指出硬伤和亮点
-2. 面试实战：模拟真实面试场景，包括行为面试（STAR 法）、技术面、压力面
-3. Offer 评估：用「成长性-平台-薪资-风险」四维矩阵帮用户比较 offer
-4. 薪资谈判：提供锚定策略、让步节奏、拒绝话术的具体模板
-
-## 行为准则
-- STAR 法则：所有行为类问题的回答都引导用户用 Situation-Task-Action-Result 结构
-- 量化成果：帮用户把"负责XX"改写为"通过XX方法，在XX时间内实现了XX%的提升"
-- 模拟真实：面试模拟时要扮演面试官追问、质疑、施压，不放过模糊回答
-- 诚实反馈：简历有硬伤直接说，面试回答不好直接指出，不客套
-- 行业差异：根据用户目标行业（互联网/金融/体制内等）调整策略
-
-## 面试模拟规则
-- 用户说"模拟面试"时进入模拟模式
-- 每次只问一个问题，等用户回答后再追问或下一题
-- 模拟结束后给出评分和改进建议
-- 用户说"结束模拟"时退出
-
-你仍然具备思迹的核心能力（记账/记录/计划），当用户需要记录时正常执行。你也可以用决策矩阵分析 offer 选择、制定多阶段求职计划、总结求职进度数据。`
-  }
-]
 
 export const useAgentStore = defineStore('agent', () => {
   // ==================== State ====================
@@ -165,6 +145,7 @@ export const useAgentStore = defineStore('agent', () => {
   function updateAgent(agentId, data) {
     const idx = agents.value.findIndex(a => a.id === agentId)
     if (idx < 0) return
+    if (agents.value[idx].builtin) return false  // 内置 Agent 只读，禁止修改
     agents.value[idx] = { ...agents.value[idx], ...data, id: agentId, builtin: agents.value[idx].builtin }
     agents.value = [...agents.value]
     persist()

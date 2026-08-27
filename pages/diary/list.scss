@@ -289,6 +289,7 @@
 
 .diary-scroll {
   flex: 1;
+  box-sizing: border-box;
   padding: 12rpx 20rpx 0;
 }
 
@@ -474,6 +475,88 @@
 }
 
 /* ═══ 深色模式 ═══ */
+/* ─── 分页栏 ─── */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 20rpx 0 28rpx;
+}
+
+.pg-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  color: #18181B;
+  flex-shrink: 0;
+
+  &.disabled {
+    opacity: 0.35;
+  }
+
+  &:active {
+    background: #F4F4F5;
+  }
+}
+
+.pg-info {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.pg-page {
+  min-width: 56rpx;
+  height: 56rpx;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  color: #71717A;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  box-sizing: border-box;
+
+  &.active {
+    background: #000000;
+    border-color: #000000;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
+/* 空页占位（分页模式下某页无内容也正常显示） */
+.pg-empty {
+  padding: 60rpx 0;
+  text-align: center;
+}
+
+.pg-empty-text {
+  font-size: 26rpx;
+  color: #A1A1AA;
+}
+
+/* 筛选面板：分页设置 */
+.fp-page-size-label {
+  font-size: 22rpx;
+  color: #A1A1AA;
+  margin-right: 8rpx;
+}
+
+.fp-size-btn {
+  min-width: 80rpx;
+  text-align: center;
+}
+
 @media (prefers-color-scheme: dark) {
   .diary-page { background: #18181B; }
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
@@ -521,4 +604,8 @@
   .fab { background: #FAFAFA; box-shadow: none; }
   .fab-icon { color: #18181B; }
   .empty-btn { background: #FAFAFA; color: #18181B; }
+  .pg-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
+  .pg-page { background: #27272A; border-color: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
+  .pg-empty-text { color: #71717A; }
+  .fp-page-size-label { color: #71717A; }
 }

@@ -8,7 +8,27 @@
 
 .detail-scroll {
   flex: 1;
+  box-sizing: border-box;
   padding: 24rpx;
+}
+
+/* 标题输入（醒目：大字号 + 加粗 + 左侧色条） */
+.title-section {
+  margin-bottom: 16rpx;
+}
+
+.title-input {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 28rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #18181B;
+  border-left: 4rpx solid #000000;
+  box-sizing: border-box;
 }
 
 /* 编辑区 */
@@ -25,6 +45,7 @@
   font-size: 28rpx;
   color: #18181B;
   line-height: 1.6;
+  box-sizing: border-box;
 }
 .textarea-actions {
   position: absolute;
@@ -391,6 +412,7 @@
 /* 深色模式 */
 @media (prefers-color-scheme: dark) {
   .detail-page { background: #18181B; }
+  .title-input { background: #27272A; color: #FAFAFA; border-left-color: #FAFAFA; }
   .textarea-field { background: #27272A; color: #FAFAFA; }
   .ta-btn { background: #3F3F46; }
   .ai-menu { background: #27272A; }

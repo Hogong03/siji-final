@@ -290,13 +290,47 @@ export function saveImageToLocal(base64) {
 
 /**
  * 预览图片（全屏查看）
+ *
+ * App 端加固（真机崩溃防护）：
+ *  - `_doc/` / `_file/` 等相对路径 → `plus.io.convertLocalFileSystemURL` 转 file:// 绝对路径
+ *  - base64 图片先转存本地文件再预览（超大 base64 直接传给原生层会导致内存暴涨崩溃）
+ *  - current 传索引而非 URL 字符串（部分端对非 http URL 解析不稳）
+ *
  * @param {string[]} urls - 图片 URL/base64 数组
  * @param {number} [current=0] - 当前索引
  */
-export function previewImage(urls, current = 0) {
+export async function previewImage(urls, current = 0) {
+  const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean)
+  if (list.length === 0) return
+
+  let normalized = list
+  // #ifdef APP-PLUS
+  try {
+    normalized = (await Promise.all(list.map(async (url) => {
+      if (typeof url !== 'string' || !url) return ''
+      if (url.startsWith('data:')) {
+        // base64 转存本地（_doc/siji_images/），转存失败则不预览（避免崩溃）
+        const saved = await saveImageToLocal(url)
+        if (!saved) {
+          uni.showToast({ title: '图片过大，无法预览', icon: 'none' })
+          return ''
+        }
+        return plus.io.convertLocalFileSystemURL(saved)
+      }
+      if (url.startsWith('_doc/') || url.startsWith('_file/') || url.startsWith('_www/')) {
+        return plus.io.convertLocalFileSystemURL(url)
+      }
+      return url
+    }))).filter(Boolean)
+    if (normalized.length === 0) return
+  } catch (e) {
+    logger.warn('previewImage normalize failed', e)
+  }
+  // #endif
+
   uni.previewImage({
-    urls: urls,
-    current: urls[current] || urls[0],
+    urls: normalized,
+    current: Math.min(current, normalized.length - 1),
     fail: (e) => logger.warn('previewImage failed', e)
   })
 }

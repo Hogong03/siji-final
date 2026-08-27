@@ -241,7 +241,7 @@ function handlePurge(item) {
 }
 
 /* 列表 */
-.trash-scroll { padding: 12rpx 20rpx; flex: 1; }
+.trash-scroll { padding: 12rpx 20rpx; flex: 1; box-sizing: border-box; }
 
 .trash-card {
   background: #FFFFFF;

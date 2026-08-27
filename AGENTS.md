@@ -240,6 +240,20 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ---
 
+## 版本记录（必须遵守）
+
+**每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
+
+1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
+2. `utils/storage/version-data.js` 的 `getDefaultHistory()` 顶部新增一条记录：
+   - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
+   - `summary` 3-5 条核心变更（列表页可见）
+   - `categories` 按功能分类的完整变更明细（详情页可见）
+3. 记录必须真实反映本次改动，不写“优化体验”类空话；引用具体文件名/功能名
+4. 完成后在版本历史页（设置 → 版本历史）确认新版本可见
+
+---
+
 ## Git 状态
 
 - 当前 HEAD: `673e0b1` (chore: 新增 AGENTS.md 供 Codex 接手开发)

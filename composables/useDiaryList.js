@@ -2,7 +2,7 @@
  * 记录列表页 — 搜索、统计、标签、分类、日历、时间线
  * 搜索+时间+分类+标签统一筛选，不再区分本地/全局搜索
  */
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getDiaryList, getUsedTags, getCategories } from '@/utils/storage.js'
 
 export function useDiaryList() {
@@ -156,6 +156,61 @@ export function useDiaryList() {
     loadTags()
   }
 
+  // ==================== 分页（可选，用户自由开关，设置持久化） ====================
+  const PAGINATION_KEY = 'siji_diary_pagination'
+  const PAGE_SIZE_KEY = 'siji_diary_page_size'
+
+  function readStorageBool(key, def) {
+    try {
+      const v = uni.getStorageSync(key)
+      return v === '' || v === null || v === undefined ? def : !!v
+    } catch { return def }
+  }
+  function readStorageNumber(key, def) {
+    try {
+      const v = uni.getStorageSync(key)
+      return typeof v === 'number' && v > 0 ? v : def
+    } catch { return def }
+  }
+
+  const paginationEnabled = ref(readStorageBool(PAGINATION_KEY, false))
+  const pageSize = ref(readStorageNumber(PAGE_SIZE_KEY, 20))
+  const page = ref(1)
+
+  const pageCount = computed(() => {
+    if (!paginationEnabled.value) return 1
+    return Math.max(1, Math.ceil(filteredDiaries.value.length / pageSize.value))
+  })
+
+  // 分页视图数据：关闭分页时等价于全量列表
+  const pagedDiaries = computed(() => {
+    if (!paginationEnabled.value) return filteredDiaries.value
+    const start = (page.value - 1) * pageSize.value
+    return filteredDiaries.value.slice(start, start + pageSize.value)
+  })
+
+  // 数据/筛选/条数变化时修正页码（超出范围回退到最后一页；允许空页占位）
+  watch([filteredDiaries, pageSize, paginationEnabled], () => {
+    if (!paginationEnabled.value) { page.value = 1; return }
+    if (page.value > pageCount.value) page.value = pageCount.value
+  })
+
+  function setPagination(on) {
+    paginationEnabled.value = !!on
+    page.value = 1
+    try { uni.setStorageSync(PAGINATION_KEY, paginationEnabled.value) } catch { /* ignore */ }
+  }
+
+  function setPageSize(n) {
+    pageSize.value = n
+    page.value = 1
+    try { uni.setStorageSync(PAGE_SIZE_KEY, n) } catch { /* ignore */ }
+  }
+
+  function prevPage() { if (page.value > 1) page.value-- }
+  function nextPage() { if (page.value < pageCount.value) page.value++ }
+  function goPage(p) { if (p >= 1 && p <= pageCount.value) page.value = p }
+
   // 是否有激活的筛选条件
   const hasActiveFilter = computed(() => {
     return !!(filterCategory.value || filterTag.value || searchKeyword.value.trim())
@@ -203,6 +258,8 @@ export function useDiaryList() {
     searchKeyword, viewMode,
     monthCount, totalWords, streakDays, topTags, emotionStats,
     filteredDiaries, calendarDays, timelineGroups, months,
+    paginationEnabled, pageSize, page, pageCount, pagedDiaries,
+    setPagination, setPageSize, prevPage, nextPage, goPage,
     loadDiaries, loadTags, loadCategories, switchMonth, toggleTag, toggleCategory,
     getItemTags, tagColor, formatDate,
     hasActiveFilter, resetFilters

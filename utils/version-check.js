@@ -98,7 +98,10 @@ function checkAppUpdate() {
           content: `已更新至 v${currentVersion}\n看看有什么新变化`,
           showCancel: true,
           cancelText: '跳过',
-          confirmText: '查看'
+          confirmText: '查看',
+          success: (res) => {
+            if (res.confirm) goVersionHistory()
+          }
         })
       }
       uni.setStorageSync(LAST_VERSION_KEY, currentVersion)
@@ -107,6 +110,18 @@ function checkAppUpdate() {
     logger.warn('[思迹] App update check failed:', e.message)
   }
   // #endif
+}
+
+/** 跳转到版本历史页（启动弹窗时路由可能未就绪，延迟执行） */
+function goVersionHistory() {
+  setTimeout(() => {
+    uni.navigateTo({
+      url: '/pages/settings/sub/version-history',
+      fail: () => {
+        uni.redirectTo({ url: '/pages/settings/sub/version-history' })
+      }
+    })
+  }, 300)
 }
 
 /**
@@ -120,8 +135,12 @@ function checkH5Update() {
     uni.showModal({
       title: '已更新',
       content: `已更新至 v${currentVersion}`,
-      showCancel: false,
-      confirmText: '知道了'
+      showCancel: true,
+      cancelText: '跳过',
+      confirmText: '查看',
+      success: (res) => {
+        if (res.confirm) goVersionHistory()
+      }
     })
   }
   uni.setStorageSync(LAST_VERSION_KEY, currentVersion)

@@ -60,6 +60,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
 - 用户问涉及数据的问题（账单/记录/计划/人物/决策/反馈/标签）时，先调用对应 query_* 工具拿到真实数据，再基于数据回答。禁止凭记忆瞎编数字。
 - 一个查询不够时，可连续调用多个工具（例如先 query_stat 再看 query_plan）。
 - 用户明确要求创建/修改时，调用对应 create_*/update_* 工具。
+- 用户说「帮我记录/帮我写日记/帮我记一下」等明确指令 → 必须调用对应工具执行，禁止只回复不执行；内容不完整时结合上文推断，推断不了再追问。
 - 用户说「撤销/撤回/取消刚才」时，调用 undo_last 工具。
 - 纠错：用户指出数据有误（"记错了/不对/金额错了"）或你发现矛盾时，先 query 确认目标记录，再 update_* 直接修正本地数据，不要只说"建议手动修改"
 - 标签管理：用户提到标签分类/归类时，调用 add_tag/update_tag_category/query_tags 直接操作
@@ -276,6 +277,8 @@ function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk
 
 /** 带指数退避重试的 uni.request 封装 */
 function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
+  const stopSignal = cfg.stopSignal
+  let stopCheckId = null
   return new Promise((resolve) => {
     uni.request({
       url: provider.endpoint,

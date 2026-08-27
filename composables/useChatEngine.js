@@ -34,8 +34,8 @@ export function useChatEngine() {
   /**
    * Agent 模式结果渲染 — 通过 autoExecuteAndDisplay 统一入口，传 source='agent' 跳过执行步骤
    */
-  function renderAgentResults(store, result, reply) {
-    autoExecuteAndDisplay(store, result, reply, '', { source: 'agent' })
+  function renderAgentResults(store, result, reply, userMessage = '') {
+    autoExecuteAndDisplay(store, result, reply, userMessage, { source: 'agent' })
   }
 
   const isSending = ref(false)
@@ -134,6 +134,16 @@ export function useChatEngine() {
       }
 
       validateModel(cfg, store)
+
+      // 提到识别图片但未附带图片 → 本地引导，不发无意义请求
+      if (!imageData && /(?:识别|分析)(?:并)?(?:一下|这张|这个)?(?:截图|图片|照片|图中的|图片中的)|(?:这张|这个)(?:截图|图片|照片)(?:中|里)?/.test(message)) {
+        safeUpdate({
+          content: '这条消息没有附带图片，请点击输入框旁的图片按钮选择或拍摄图片后再发送。',
+          loading: false
+        })
+        isSending.value = false
+        return
+      }
 
       // 图片识别:模型不支持时提前退出
       const visionError = checkVisionSupport(imageData, cfg, store)
@@ -317,7 +327,7 @@ export function useChatEngine() {
       } else {
         if (result._agentMode) {
           // Agent 模式：工具已在循环内执行，不再二次执行，仅渲染结果卡片
-          renderAgentResults(store, result, reply)
+          renderAgentResults(store, result, reply, message)
           currentSuggestions.value = result.suggestions || []
         } else {
           autoExecuteAndDisplay(store, result, reply, message)

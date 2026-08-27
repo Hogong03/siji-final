@@ -4,7 +4,7 @@
 import { ref, computed } from 'vue'
 import { getPlanList, getUsedTags } from '@/utils/storage.js'
 import { savePlan, deletePlan } from '@/utils/storage/plan.js'
-import { toPlanTs } from '@/utils/plan-timeline.js'
+import { toPlanTs } from '@/utils/datetime.js'
 
 export function usePlanList() {
   const allPlans = ref([])
@@ -37,7 +37,8 @@ export function usePlanList() {
 
   // ==================== 筛选 ====================
   const filteredPlans = computed(() => {
-    let list = allPlans.value
+    // 列表只显示主计划（子计划在主计划详情中展示）
+    let list = allPlans.value.filter(p => !p.parent_id)
     if (filterStatus.value !== -1) list = list.filter(p => p.status === filterStatus.value)
     if (filterPriority.value !== -1) list = list.filter(p => p.priority === filterPriority.value)
     if (filterTag.value) {
@@ -85,7 +86,8 @@ export function usePlanList() {
 
   // ==================== 统计 ====================
   const stats = computed(() => {
-    const all = allPlans.value
+    // 统计仅计主计划（子计划进度通过 _childStats 归并）
+    const all = allPlans.value.filter(p => !p.parent_id)
     const total = all.length
     const active = all.filter(p => p.status === 1).length
     const completed = all.filter(p => p.status === 2).length

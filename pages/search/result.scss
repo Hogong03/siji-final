@@ -133,6 +133,7 @@
 /* 结果列表 */
 .result-scroll {
   flex: 1;
+  box-sizing: border-box;
   padding: 0 24rpx;
 }
 

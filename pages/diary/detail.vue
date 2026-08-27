@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 /**
  * 记录详情 / 新建页
  * 新建时可选 5 种记录类型，每种不同 placeholder/视觉/行为
@@ -37,9 +37,9 @@ const currentType = computed(() => RECORD_TYPES.find(t => t.key === recordType.v
 
 // 闪念模式：隐藏标签/分类/图片/AI，只留 textarea + 保存
 const isFlashMode = computed(() => recordType.value === 'flash' && isNew.value)
-const showMetaPanel = ref(true) // 类型条+标签区域可收起
+const showMetaPanel = ref(false) // 类型条+标签区域可收起
 
-const form = ref({ content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
+const form = ref({ title: '', content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
 
 const { showTagPicker, newTagInput, allUsedTags, allCategories, selectedCategory, filteredTagList,
   openTagPicker, toggleTag, isTagSelected, addNewTag, removeTag, tagColor } = useTagPicker(form)
@@ -58,7 +58,7 @@ const hasRelated = computed(() => relatedRecords.value.length > 0 || relatedBill
 
 const initialSnapshot = ref('')
 const isDirty = computed(() => {
-  return JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value }) !== initialSnapshot.value
+  return JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value }) !== initialSnapshot.value
 })
 
 onLoad((query) => {
@@ -79,7 +79,7 @@ onLoad((query) => {
       showTypePicker.value = false
     }
     applyTypeDefaults()
-    initialSnapshot.value = JSON.stringify({ c: '', tags: [], cat: '', rt: recordType.value })
+    initialSnapshot.value = JSON.stringify({ t: '', c: '', tags: [], cat: '', rt: recordType.value })
     if (query.tag) form.value.tags = [decodeURIComponent(query.tag)]
     if (query.cat) form.value.category = decodeURIComponent(query.cat)
   }
@@ -104,7 +104,7 @@ function selectType(key) {
   recordType.value = key
   showTypePicker.value = false
   applyTypeDefaults()
-  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: key })
+  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: key })
 }
 
 function closeTypePicker() {
@@ -137,13 +137,14 @@ function loadDiary() {
   isPinned.value = !!item.pinned
   recordType.value = item.record_type || 'note'
   form.value = {
-    content: (item.title ? item.title + '\n' : '') + (item.content || ''),
+    title: item.title || '',
+    content: item.content || '',
     tags: safeParseArray(item.tags), category: item.category || '',
     images: safeParseArray(item.images),
     emotion: item.emotion || '', ai_summary: item.ai_summary || '', ai_advice: item.ai_advice || '',
     record_type: recordType.value
   }
-  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
+  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
   loadRelatedRecords()
   loadRelatedBills()
 }
@@ -170,19 +171,17 @@ async function handleSave() {
   if (!form.value.content.trim()) { uni.showToast({ title: '写点什么再保存吧', icon: 'none' }); return }
   const createdAt = isNew.value ? Date.now() : (originalCreatedAt.value || Date.now())
   const text = form.value.content.trim()
-  const lineBreak = text.indexOf('\n')
-  const title = lineBreak > 0 ? text.substring(0, lineBreak).trim() : ''
-  const content = lineBreak > 0 ? text.substring(lineBreak + 1).trim() : ''
+  const title = form.value.title.trim() || text.substring(0, 50)
   saveDiary({
     client_id: isNew.value ? generateEntityId('diary') : diaryId.value,
-    title: title || text.substring(0, 50), content,
+    title, content: text,
     tags: [...form.value.tags], category: form.value.category,
     images: form.value.images || [], emotion: form.value.emotion || '',
     ai_summary: form.value.ai_summary, ai_advice: form.value.ai_advice,
     record_type: recordType.value,
     pinned: isPinned.value, created_at: createdAt, updated_at: Date.now(), is_deleted: 0
   })
-  initialSnapshot.value = JSON.stringify({ c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
+  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => { goBack() }, 800)
 }
@@ -268,6 +267,17 @@ const emotionLabel = computed(() => {
             <text class="meta-add" @tap="openTagPicker">+</text>
           </view>
         </view>
+      </view>
+
+      <!-- 标题（独立输入，紧贴正文编辑区） -->
+      <view v-if="!isFlashMode" class="title-section">
+        <input
+          v-model="form.title"
+          class="title-input"
+          placeholder="标题（可选）"
+          :maxlength="50"
+          :placeholder-style="'color: #A1A1AA'"
+        />
       </view>
 
       <!-- 编辑区 -->

@@ -36,6 +36,7 @@ function buildPromptCore(actionSchema) {
 {"reply":"自然语言","action":{"type":"none","payload":{},"needConfirm":false}}
 闲聊：{"reply":"辛苦了~","action":{"type":"none","payload":{},"needConfirm":false}}
 记账：{"reply":"记好了，午餐 ¥25","action":{"type":"create_bill","payload":{"type":"expense","amount":25,"category":"餐饮"},"needConfirm":false}}
+写日记：{"reply":"记下来了~","action":{"type":"create_diary","payload":{"content":"昨天去打球很开心"},"needConfirm":false}}
 ⚠️ 你的整个回复必须是合法 JSON，第一个字符必须是 {，最后一个字符必须是 }。禁止在 JSON 前面输出任何中文或解释文本。
 
 ## 核心铁律
@@ -45,10 +46,13 @@ function buildPromptCore(actionSchema) {
 3. 分享日常("今天好累""和朋友吃饭了") → 正常聊天，不自动记账/写记录/建计划。但用户说"记一下/帮我记/帮我建"等明确指令时必须执行 action
 4. reply 禁止说"已记录/已帮你/已创建/已添加/记好了"等操作完成语 → 除非 action.type 非 none 且 payload 完整。违反此条=对用户撒谎，绝对禁止
 5. reply 禁止暴露技术细节（不写 action type / payload 字段名 / JSON 结构）
+6. 修改已有数据（改内容/标题/类型/状态）必须用 update_*，禁止用 create_* 新建记录
+7. 时间、天数等细节只能来自用户原话：用户说"后天"就按后天计算日期，用户没说的（如"5日游"）禁止编造
 6. reply 中不用"首先""其次""最后"等作文连接词，不用"我理解你的感受"等AI味句式
 7. reply 禁止使用代码块格式（三个反引号包裹），禁止用 markdown 语法。reply 是纯文本聊天，只有换行和 emoji
 8. 纠错主动权：当用户指出之前的数据有误（"记错了/不对/金额错了/日期错了"），或 AI 自己识别到数据矛盾时，必须调用 update_* 工具直接修改本地数据，不要只说"建议你手动修改"。先查再改：如有必要先 query 确认目标记录，再 update 修正
 9. 标签智能管理：用户提到标签分类/归类/整理标签时，调用 add_tag/update_tag_category/query_tags 工具直接操作
+10. 用户说"帮我写日记/帮我记录/帮我记一下"等明确指令 → 必须执行对应工具（create_diary/update_profile/create_plan 等），禁止只聊天不执行；内容不完整时结合上文推断，推断不了再追问
 
 ## 表达多样性
 - 同一件事不要两次用同一个句式开头。上一条用了"嗯"，这条换"说起来"或直接说事
@@ -142,6 +146,22 @@ export function getUserProfile(forceRefresh = false) {
     const plans = JSON.parse(planRaw).filter(p => p.is_deleted !== 1 && p.status === 1)
 
     parts.push(`【月度概览】本月支出 ¥${totalExpense.toFixed(0)}(${topCategory}最高),收入 ¥${bills.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0).toFixed(0)},记录${diaries.length}篇,进行中计划${plans.length}个`)
+
+    // 近 3 月趋势（本月 + 前 2 个月），帮 AI 回答"上个月怎么了"类问题
+    const trendParts = []
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      try {
+        const bRaw = uni.getStorageSync(`bill_${m}`) || '[]'
+        const bList = JSON.parse(bRaw).filter(b => b.is_deleted !== 1)
+        const exp = bList.filter(b => b.type === 'expense').reduce((s, b) => s + b.amount, 0)
+        const dRaw = uni.getStorageSync(`diary_${m}`) || '[]'
+        const dCount = JSON.parse(dRaw).filter(x => x.is_deleted !== 1).length
+        trendParts.push(`${m} 支出¥${exp.toFixed(0)}/记录${dCount}篇`)
+      } catch { /* ignore */ }
+    }
+    parts.push(`【近3月】${trendParts.join('; ')}`)
 
     if (diaries.length > 0) {
       const recent3 = diaries.slice(-3).reverse()

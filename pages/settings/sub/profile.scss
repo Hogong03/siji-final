@@ -39,17 +39,6 @@
   margin-top: 8rpx;
 }
 
-/* ---- 未开启提示 ---- */
-.disabled-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  padding: 48rpx 0;
-  color: #A1A1AA;
-  font-size: 26rpx;
-}
-
 /* ---- 画像卡片 ---- */
 .profile-card {
   margin-top: 24rpx;
@@ -101,6 +90,22 @@
 .card-delete {
   padding: 8rpx;
   opacity: 0.4;
+}
+
+.card-edit-btn {
+  padding: 8rpx;
+  opacity: 0.35;
+}
+
+.card-collapse {
+  padding: 8rpx;
+  opacity: 0.5;
+  margin-left: 8rpx;
+}
+
+/* 折叠态头部：弱化分隔线 */
+.card-header.collapsed {
+  border-bottom-color: transparent;
 }
 
 /* ---- 字段行 ---- */
@@ -341,5 +346,5 @@
 
 .re-arrow {
   font-size: 40rpx;
-  color: #F4F4F5;
+  color: #A1A1AA;
 }

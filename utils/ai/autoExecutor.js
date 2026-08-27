@@ -23,6 +23,34 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
   if (source === 'agent') {
     const execResults = result.execResults || []
     const successCards = execResults.filter(r => r.ok && r.detail && !r.name?.startsWith('query_'))
+    // === Agent 兜底：模型声称已操作但未调用写入工具 → 前端提取执行 ===
+    if (successCards.length === 0 && !result._stopped) {
+      const opClaimed = OP_CLAIM_RE_EXT.test(reply || '')
+      if (opClaimed) {
+        const fallbackAction = extractFallbackAction(userMessage || '', reply || '')
+        if (fallbackAction) {
+          logger.warn('Agent 模式前端兜底执行', fallbackAction.type)
+          const fbResult = store.executeAction(fallbackAction)
+          if (fbResult && fbResult.success) {
+            const fbMsg = fbResult.message || ''
+            const noCardTypes = ['undo_last', 'get_profile', 'clear_profile', 'toggle_profile']
+            const showCard = !noCardTypes.includes(fallbackAction.type) &&
+              !fallbackAction.type.startsWith('query_') && fbResult?.detail && !fbResult.detail.deleted
+            store.updateLastMessage({
+              content: fbMsg ? `${reply}\n\n${fbMsg}` : reply, loading: false, aiReply: reply,
+              actionCard: showCard ? { type: fallbackAction.type, payload: fbResult.detail } : null,
+              execResult: fbResult,
+              execResults: [fbResult]
+            })
+            return
+          }
+        }
+        // 兜底失败 → 修正 reply 中的操作完成语，提示重说
+        const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
+        reply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到') + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
+        logger.warn('Agent 模式声称操作但无执行，fallback 失败，修正 reply')
+      }
+    }
     const execCard = execResults.find(r => r.ok && r.detail)
     const actionCard = successCards.length > 1
       ? { type: 'multi', payload: successCards.map(r => r.detail) }
@@ -125,7 +153,10 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
         }
       }
       // fallback 也失败 → 修正 reply 中的操作完成语，追加引导提示
-      const correctedReply = (reply || '').replace(OP_CLAIM_REPLACE_RE, '收到')
+      // 先剔除 AI 回显的 [执行结果: ...] 段，避免替换正则吃掉括号产生乱文
+      const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
+      const correctedReply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到')
+      reply = correctedReply
       displayContent = correctedReply + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
       logger.warn('AI 声称操作但无 action，fallback 也失败，修正 reply:', JSON.stringify(result))
     }

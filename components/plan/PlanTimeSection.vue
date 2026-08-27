@@ -28,22 +28,10 @@ function quickSetEst(days) {
   emit('update:estimatedDate', fmtDate(d))
 }
 
-function quickSetEstNow() {
-  const d = new Date()
-  emit('update:estimatedDate', fmtDate(d))
-  emit('update:estimatedTime', `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`)
-}
-
 function quickSetDue(days) {
   const d = new Date()
   d.setDate(d.getDate() + days)
   emit('update:dueDate', fmtDate(d))
-}
-
-function quickSetDueEndOfDay() {
-  const d = new Date()
-  emit('update:dueDate', fmtDate(d))
-  emit('update:dueTime', '23:59:59')
 }
 
 function quickSetDueEndOfWeek() {
@@ -80,87 +68,66 @@ function onEstTimeChange(e) {
 </script>
 
 <template>
-  <!-- 预计时间 -->
   <view class="section">
-    <text class="section-label">预计开始时间</text>
-    <view class="date-row">
+    <text class="section-label">时间安排</text>
+    <view class="time-row">
+      <text class="time-label">开始</text>
       <picker mode="date" :value="estimatedDate" @change="onEstDateChange">
-        <input
-          :value="estimatedDate"
-          class="input-field"
-          type="text"
-          placeholder="选择日期（可选）"
-          disabled
-        />
+        <input :value="estimatedDate" class="input-field" placeholder="日期" disabled />
       </picker>
       <picker mode="time" :value="estimatedTime" :end="'23:59:59'" @change="onEstTimeChange">
-        <input
-          :value="estimatedTime"
-          class="input-field time-picker"
-          type="text"
-          placeholder="选择时间（可选）"
-          disabled
-        />
+        <input :value="estimatedTime" class="input-field time-picker" placeholder="时间" disabled />
       </picker>
     </view>
     <view class="quick-dates">
       <text class="qd-btn" @tap="quickSetEst(0)">今天</text>
       <text class="qd-btn" @tap="quickSetEst(1)">明天</text>
       <text class="qd-btn" @tap="quickSetEst(3)">3天后</text>
-      <text class="qd-btn" @tap="quickSetEstNow">现在</text>
     </view>
-  </view>
-
-  <!-- 截止日期 -->
-  <view class="section">
-    <text class="section-label">截止时间</text>
-    <view class="date-row">
+    <view class="time-row due-row">
+      <text class="time-label">截止</text>
       <picker mode="date" :value="dueDate" @change="onDueDateChange">
-        <input
-          :value="dueDate"
-          class="input-field"
-          type="text"
-          placeholder="选择截止日期（可选）"
-          disabled
-        />
+        <input :value="dueDate" class="input-field" placeholder="日期" disabled />
       </picker>
       <picker mode="time" :value="dueTime" :end="'23:59:59'" @change="onDueTimeChange">
-        <input
-          :value="dueTime"
-          class="input-field time-picker"
-          type="text"
-          placeholder="选择时间（可选）"
-          disabled
-        />
+        <input :value="dueTime" class="input-field time-picker" placeholder="时间" disabled />
       </picker>
     </view>
     <view class="quick-dates">
       <text class="qd-btn" @tap="quickSetDue(0)">今天</text>
-      <text class="qd-btn" @tap="quickSetDue(1)">明天</text>
       <text class="qd-btn" @tap="quickSetDueEndOfWeek">本周末</text>
       <text class="qd-btn" @tap="quickSetDueNextMonday">下周一</text>
-      <text class="qd-btn" @tap="quickSetDue(7)">一周后</text>
-      <text class="qd-btn" @tap="quickSetDue(30)">一月后</text>
-      <text class="qd-btn" @tap="quickSetDueEndOfDay">今天结束</text>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.date-row {
+.time-row {
   display: flex;
+  align-items: center;
   gap: $spacing-sm;
+}
+
+.due-row {
+  margin-top: $spacing-sm;
+}
+
+.time-label {
+  font-size: $font-xs;
+  color: #A1A1AA;
+  width: 56rpx;
+  flex-shrink: 0;
 }
 
 .quick-dates {
   display: flex;
-  gap: $spacing-sm;
-  margin-top: $spacing-sm;
+  gap: $spacing-xs;
+  margin-top: $spacing-xs;
 
   .qd-btn {
     font-size: $font-xs;
     color: $accent;
-    padding: 6rpx 20rpx;
+    padding: 4rpx 16rpx;
     background: rgba(0, 0, 0, 0.04);
     border-radius: 20rpx;
   }
@@ -168,14 +135,16 @@ function onEstTimeChange(e) {
 
 .input-field {
   font-size: $font-md;
-  padding: $spacing-sm 0;
-  border-bottom: 1rpx solid rgba(0,0,0,0.06);
+  padding: 6rpx 0;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
   width: 100%;
+  min-width: 0;
 }
 
 .time-picker {
-  width: 200rpx !important;
+  width: 160rpx !important;
   text-align: center;
   font-size: $font-sm !important;
+  flex-shrink: 0;
 }
 </style>

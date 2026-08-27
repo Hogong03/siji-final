@@ -3,6 +3,7 @@
  * H1: 图片附件功能
  */
 import { ref } from 'vue'
+import { previewImage as previewImages } from '@/utils/image.js'
 
 export function useDiaryImages(formRef) {
   const MAX_IMAGES = 9
@@ -44,7 +45,8 @@ export function useDiaryImages(formRef) {
 
   function previewImage(idx) {
     const images = getImages()
-    uni.previewImage({ current: images[idx], urls: images })
+    // 统一走 utils/image.js：App 端自动处理本地路径/file:// 与 base64 转存，防真机崩溃
+    previewImages(images, idx)
   }
 
   async function compressImage(filePath) {

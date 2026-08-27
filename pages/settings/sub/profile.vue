@@ -27,6 +27,7 @@ const editingCardTitle = ref(null) // { cardId } 正在编辑标题
 const editingTitleValue = ref('')
 const showAddCard = ref(false)
 const newCardTitle = ref('')
+const collapsedCards = ref({}) // cardId → true=折叠；默认全部折叠
 const chipInputField = ref(null) // { cardId, field } 正在输入 chip 的数组字段
 const chipInputValue = ref('')
 const relationsStats = ref({ total: 0, interactionCount: 0, avgScore: 0 })
@@ -165,12 +166,32 @@ function cancelEditTitle() {
   editingTitleValue.value = ''
 }
 
+/* ---- 卡片折叠（默认折叠，点击头部展开/收起） ---- */
+function isCardCollapsed(cardId) {
+  return collapsedCards.value[cardId] !== false
+}
+
+function toggleCard(cardId) {
+  collapsedCards.value[cardId] = !isCardCollapsed(cardId)
+}
+
+/** 标题点击分流：自定义卡片=编辑标题（可编辑时），固定卡片=展开/收起 */
+function handleTitleTap(card) {
+  if (!isFixedCard(card) && enabled.value) {
+    startEditTitle(card.id)
+  } else {
+    toggleCard(card.id)
+  }
+}
+
 /* ---- 卡片增删 ---- */
 function handleCreateCard() {
   const title = newCardTitle.value.trim()
   if (!title) return
-  createCard(title, 'sparkle', {})
+  const card = createCard(title, 'sparkle', {})
   profile.value = getProfile()
+  // 新建分组自动展开，方便立即填写字段
+  collapsedCards.value[card.id] = false
   newCardTitle.value = ''
   showAddCard.value = false
 }
@@ -183,6 +204,7 @@ function handleDeleteCard(cardId) {
       if (res.confirm) {
         deleteCard(cardId)
         profile.value = getProfile()
+        delete collapsedCards.value[cardId]
       }
     }
   })
@@ -255,23 +277,31 @@ function goRelations() {
       <view class="header-left">
         <view class="header-title">个人信息</view>
         <view class="header-desc">
-          {{ enabled ? `已填写 ${filledCount} 项，${totalCards} 个分组` : '开启后，AI 将感知你的个人信息' }}
+          {{ enabled ? `已填写 ${filledCount} 项，${totalCards} 个分组` : '开启后即可编辑，AI 将感知你的个人信息' }}
         </view>
       </view>
       <switch :checked="enabled" @change="toggleEnabled" color="#000000" />
     </view>
 
-    <!-- 未开启提示 -->
-    <view v-if="!enabled" class="disabled-hint">
-      <SijiIcon name="lock" :size="24" />
-      <text>开启个人信息后即可编辑</text>
+    <!-- 关系图谱入口（仅开启时显示，位于开关下方） -->
+    <view v-if="enabled" class="relations-entry" @tap="goRelations">
+      <view class="re-left">
+        <view class="re-icon">
+          <SijiIcon name="heart" :size="20" />
+        </view>
+        <view class="re-info">
+          <text class="re-title">关系图谱</text>
+          <text class="re-desc">{{ relationsStats.total }} 人 · {{ relationsStats.interactionCount }} 次互动</text>
+        </view>
+      </view>
+      <text class="re-arrow">›</text>
     </view>
 
     <!-- 画像卡片列表 -->
     <view v-for="card in profile.cards" :key="card.id" class="profile-card" :class="'card-' + card.id">
       <!-- 卡片头部 -->
-      <view class="card-header">
-        <view class="card-title-wrap" @tap="!isFixedCard(card) && enabled && startEditTitle(card.id)">
+      <view class="card-header" :class="{ collapsed: isCardCollapsed(card.id) }" @tap="toggleCard(card.id)">
+        <view class="card-title-wrap" @tap.stop="handleTitleTap(card)">
           <SijiIcon :name="card.icon || 'sparkle'" :size="18" />
           <text v-if="!editingCardTitle || editingCardTitle.cardId !== card.id" class="card-title-text">{{ card.title }}</text>
           <input
@@ -283,13 +313,19 @@ function goRelations() {
             @blur="saveTitle"
           />
         </view>
-        <view v-if="!isFixedCard(card) && enabled" class="card-delete" @tap="handleDeleteCard(card.id)">
+        <view v-if="!isFixedCard(card) && enabled" class="card-edit-btn" @tap.stop="startEditTitle(card.id)">
+          <SijiIcon name="edit" :size="14" />
+        </view>
+        <view v-if="!isFixedCard(card) && enabled" class="card-delete" @tap.stop="handleDeleteCard(card.id)">
           <SijiIcon name="close" :size="16" />
+        </view>
+        <view class="card-collapse">
+          <SijiIcon :name="isCardCollapsed(card.id) ? 'chevron-down' : 'chevron-up'" :size="14" />
         </view>
       </view>
 
-      <!-- 字段列表 -->
-      <view class="card-body">
+      <!-- 字段列表（折叠时隐藏） -->
+      <view class="card-body" v-show="!isCardCollapsed(card.id)">
         <view v-for="(value, key) in card.fields" :key="key" class="field-row">
           <!-- 字段标签 -->
           <text class="field-label">{{ getFieldLabel(key) }}</text>
@@ -370,20 +406,6 @@ function goRelations() {
           <view class="btn-confirm" @tap="handleCreateCard">创建</view>
         </view>
       </view>
-    </view>
-
-    <!-- 关系图谱入口（仅开启时显示，紧跟开关下方） -->
-    <view v-if="enabled" class="relations-entry" @tap="goRelations">
-      <view class="re-left">
-        <view class="re-icon">
-          <SijiIcon name="heart" :size="20" />
-        </view>
-        <view class="re-info">
-          <text class="re-title">关系图谱</text>
-          <text class="re-desc">{{ relationsStats.total }} 人 · {{ relationsStats.interactionCount }} 次互动</text>
-        </view>
-      </view>
-      <text class="re-arrow">›</text>
     </view>
 
     <!-- 底部操作 -->

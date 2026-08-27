@@ -74,6 +74,7 @@ const emit = defineEmits([
 <style scoped lang="scss">
 .plan-scroll {
 	flex: 1;
+	box-sizing: border-box;
 	padding: 8rpx 20rpx 0;
 }
 

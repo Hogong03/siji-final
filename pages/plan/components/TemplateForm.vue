@@ -228,6 +228,7 @@ function handleSave() {
 /* 自定义表单 */
 .custom-scroll {
   flex: 1;
+  box-sizing: border-box;
   padding: $spacing-md;
   max-height: 60vh;
 }

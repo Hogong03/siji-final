@@ -19,7 +19,7 @@ const ICON_MAP = {
   'book': '▣', 'brain': '◎', 'check': '✓', 'close': '✕', 'copy': '⧉',
   'mail': '✉', 'moon': '☾', 'sun': '☀', 'info': 'ℹ', 'star': '★',
   'fire': '♨', 'tag': '#', 'stats': '▤', 'export': '⇧', 'download': '⇩',
-  'calendar': '◷', 'trash': '✂', 'tip': '!', 'plus': '+', 'add': '+',
+  'calendar': '◷', 'trash': '✂', 'tip': '!', 'plus': '+', 'add': '+', 'bug': '⚒',
   'more-h': '⋯', 'more': '⋯',
   'chat': '◌', 'heart': '♥', 'filter': '⊞', 'save': '↘',
   'eye': '◎', 'eye-off': '∅', 'x': '✕', 'palette': '◇', 'smile': '☺',

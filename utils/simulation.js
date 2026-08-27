@@ -53,8 +53,8 @@ export const SIM_MODES = {
     icon: '',
     iconName: 'plan',
     desc: 'AI 扮演规划师，推演项目/目标/时间规划',
-    agentId: 'career_coach',
-    agentName: '求职教练',
+    agentId: 'siji',
+    agentName: '思迹助手',
     needsRelation: false,
     scenePlaceholder: '如：3个月减重10斤、转行做产品经理、筹备婚礼',
     goalPlaceholder: '如：制定可执行的阶段性计划、识别风险点'

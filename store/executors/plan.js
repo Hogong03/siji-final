@@ -8,6 +8,11 @@ import { removePlanReminder } from '@/utils/reminder.js'
  * @param {{ undoStack, cidCache, generateEntityId }} ctx 上下文
  */
 export function createPlanExecutors(ctx) {
+  /** 日期字段清洗：只保留 YYYY-MM-DD 或 YYYY-MM-DD HH:mm[:ss]，其余置空（防止 AI 填 "5天" 之类脏值） */
+  function cleanDateField(v) {
+    if (!v) return ''
+    return /^\d{4}-\d{1,2}-\d{1,2}( \d{1,2}:\d{2}(:\d{2})?)?$/.test(v) ? v : ''
+  }
   // ==================== 子计划持久化 ====================
 
   /** 阶段数生成：AI 只给 phase_count 时产出空阶段骨架（schema 约束 2-6） */
@@ -79,11 +84,11 @@ export function createPlanExecutors(ctx) {
       // 父计划ID — 支持计划嵌套
       parent_id: p.parent_id || '',
       // 精确到秒的时间（YYYY-MM-DD HH:mm:ss 格式）
-      deadline: p.deadline || '',           // 截止时间（精确到秒）
-      due_date: p.due_date || p.deadline || '',  // 兼容字段
-      estimated_time: p.estimated_time || p.plan_date || '',  // 预计开始时间（精确到秒）
-      start_time: p.start_time || p.estimated_time || '',  // 开始时间（精确到秒）
-      end_time: p.end_time || p.deadline || '',            // 结束时间（精确到秒）
+      deadline: cleanDateField(p.deadline),           // 截止时间（精确到秒）
+      due_date: cleanDateField(p.due_date || p.deadline),  // 兼容字段
+      estimated_time: cleanDateField(p.estimated_time || p.plan_date),  // 预计开始时间（精确到秒）
+      start_time: cleanDateField(p.start_time || p.estimated_time),  // 开始时间（精确到秒）
+      end_time: cleanDateField(p.end_time || p.deadline),            // 结束时间（精确到秒）
       created_at: now,
       updated_at: now,
       is_deleted: 0
@@ -147,11 +152,11 @@ export function createPlanExecutors(ctx) {
     if (p.priority != null) updates.priority = p.priority
     if (p.status != null) updates.status = p.status
     if (Array.isArray(p.tags)) updates.tags = p.tags
-    if (p.deadline != null) { updates.deadline = p.deadline; updates.due_date = p.deadline }
-    if (p.due_date != null) updates.due_date = p.due_date
-    if (p.estimated_time != null) updates.estimated_time = p.estimated_time
-    if (p.start_time != null) updates.start_time = p.start_time
-    if (p.end_time != null) updates.end_time = p.end_time
+    if (p.deadline != null) { updates.deadline = cleanDateField(p.deadline); updates.due_date = cleanDateField(p.deadline) }
+    if (p.due_date != null) updates.due_date = cleanDateField(p.due_date)
+    if (p.estimated_time != null) updates.estimated_time = cleanDateField(p.estimated_time)
+    if (p.start_time != null) updates.start_time = cleanDateField(p.start_time)
+    if (p.end_time != null) updates.end_time = cleanDateField(p.end_time)
     if (p.parent_id != null) updates.parent_id = p.parent_id
 
     // 子任务/阶段 → 增量创建子计划（按标题去重，避免重复生成）

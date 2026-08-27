@@ -20,6 +20,9 @@ import { buildProfileContext } from './profileContext.js'
 
 const STORAGE_KEY = 'siji_long_term_memory'
 const MAX_MEMORIES = 100 // 最多保存 100 条
+const MONTHLY_KEY = 'siji_monthly_memory'   // 月度记忆卡
+const MAX_MONTHLY_CARDS = 12                // 最多保留 12 个月
+const MAX_MONTHLY_LINES = 20                // 每月最多 20 条
 
 /** 获取所有记忆 */
 export function getAllMemories() {
@@ -131,7 +134,6 @@ export function buildMemoryContext() {
   if (enabled === 'false') return '' // 用户关闭了长期记忆
 
   const all = getAllMemories()
-  if (all.length === 0) return ''
 
   let recent = all.slice(0, 30)
 
@@ -174,7 +176,66 @@ export function buildMemoryContext() {
     }
   }
 
+  // 历史月度记忆卡（记忆进化产物）始终注入
+  const monthly = buildMonthlyMemoryContext()
+  if (monthly) parts.push(monthly)
+
   return parts.length > 0 ? `\n\n---\n长期记忆：\n${parts.join('\n\n')}` : ''
+}
+
+// ==================== 月度记忆卡（记忆进化）====================
+
+/** 获取月度记忆卡（按月份倒序） */
+export function getMonthlyMemoryCards() {
+  try {
+    const raw = uni.getStorageSync(MONTHLY_KEY)
+    if (!raw) return []
+    const list = JSON.parse(raw)
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+/** 当前月份 YYYY-MM */
+function currentMonth() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+/** 把记忆条目追加进当月卡片（去重合并，上限 MAX_MONTHLY_LINES） */
+export function appendToMonthlyCard(month, lines) {
+  const items = Array.isArray(lines) ? lines : [lines]
+  const valid = items.map(i => String(i).trim()).filter(i => i.length >= 2)
+  if (valid.length === 0) return
+  const cards = getMonthlyMemoryCards()
+  const m = month || currentMonth()
+  let card = cards.find(c => c.month === m)
+  if (!card) {
+    card = { month: m, items: [], createdAt: Date.now() }
+    cards.push(card)
+  }
+  for (const item of valid) {
+    if (!card.items.includes(item)) card.items.push(item)
+  }
+  if (card.items.length > MAX_MONTHLY_LINES) {
+    card.items = card.items.slice(-MAX_MONTHLY_LINES)
+  }
+  card.updatedAt = Date.now()
+  cards.sort((a, b) => (a.month < b.month ? 1 : -1))
+  if (cards.length > MAX_MONTHLY_CARDS) cards.length = MAX_MONTHLY_CARDS
+  asyncSetStorageJSON(MONTHLY_KEY, cards)
+}
+
+/** 构建历史月度记忆上下文（最近 3 个月，每月最多 8 条） */
+export function buildMonthlyMemoryContext() {
+  const cards = getMonthlyMemoryCards().slice(0, 3)
+  if (cards.length === 0) return ''
+  const parts = cards.map(c => {
+    const items = (c.items || []).slice(-8).join('；')
+    return `  - ${c.month}：${items}`
+  })
+  return `【历史月度记忆】\n${parts.join('\n')}`
 }
 
 /**
@@ -264,6 +325,7 @@ export async function aiSummarizeConversation(messages, cfg) {
     if (result && result.reply && result.reply.trim() && result.reply.trim() !== '无') {
       const lines = result.reply.trim().split('\n').map(l => l.replace(/^[-•*\d.\s]+/, '').trim()).filter(l => l.length >= 3 && l.length <= 60)
       lines.forEach(line => addMemory(line, 'summary'))
+      appendToMonthlyCard(currentMonth(), lines)
       return lines.join('\n')
     }
   } catch (e) {

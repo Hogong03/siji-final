@@ -47,6 +47,24 @@ describe('记录 executor', () => {
     expect(r.message).toBe('缺少记录ID')
   })
 
+  it('创建：AI 误传 title 时正文兜底', () => {
+    const r = store.executeAction({ type: 'create_diary', payload: { title: '今天睡了一天，晚上还和小妹妹一起打了游戏。', content: '', tags: [] } })
+    expect(r.success).toBe(true)
+    expect(r.detail.title).toBe('今天睡了一天，晚上还和小妹妹一起打了游戏。')
+    expect(r.detail.content).toBe('今天睡了一天，晚上还和小妹妹一起打了游戏。')
+  })
+
+  it('创建/更新：record_type 保存与修改', () => {
+    const c = store.executeAction({ type: 'create_diary', payload: { content: '一篇日记', record_type: 'diary' } })
+    expect(c.detail.record_type).toBe('diary')
+    const u = store.executeAction({ type: 'update_diary', payload: { client_id: c.detail.id, record_type: 'idea', title: '新标题' } })
+    expect(u.success).toBe(true)
+    expect(u.detail.updatedFields).toEqual(expect.arrayContaining(['record_type', 'title']))
+    const q = store.executeAction({ type: 'query_diary', payload: {} })
+    expect(q.detail.items[0].record_type).toBe('idea')
+    expect(q.detail.items[0].title).toBe('新标题')
+  })
+
   it('软删除：删除后查询不可见', () => {
     const c = store.executeAction({ type: 'create_diary', payload: { content: '待删除' } })
     const d = store.executeAction({ type: 'delete_diary', payload: { client_id: c.detail.id } })

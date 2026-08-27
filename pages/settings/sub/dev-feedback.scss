@@ -1,0 +1,542 @@
+﻿.dev-feedback-page {
+  min-height: 100vh;
+  background: #FFFFFF;
+  padding: 24rpx;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 顶部说明 */
+.intro {
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.intro-text {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #71717A;
+}
+
+/* 通用 section */
+.section {
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #18181B;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+/* 选项 chip */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 28rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid #E4E4E7;
+  background: #FFFFFF;
+  font-size: 26rpx;
+  color: #18181B;
+}
+
+.chip.active {
+  border-color: #18181B;
+  background: #000000;
+  color: #FFFFFF;
+}
+
+/* 自动选择提示 */
+.auto-hint {
+  margin-top: 16rpx;
+  background: #F4F4F5;
+  border-radius: 12rpx;
+  padding: 16rpx 24rpx;
+}
+
+.auto-hint-text {
+  font-size: 24rpx;
+  color: #71717A;
+  line-height: 1.5;
+}
+
+/* 会话列表 */
+.conv-list {
+  margin-top: 16rpx;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  padding: 8rpx 24rpx;
+}
+
+.conv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #E4E4E7;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.conv-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #18181B;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conv-meta {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.conv-more {
+  display: block;
+  text-align: center;
+  font-size: 24rpx;
+  color: #A1A1AA;
+  padding: 16rpx 0;
+}
+
+.empty-tip {
+  display: block;
+  font-size: 26rpx;
+  color: #A1A1AA;
+  padding: 24rpx 0;
+}
+
+/* 开关行 */
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  margin-top: 16rpx;
+}
+
+.option-label {
+  font-size: 26rpx;
+  color: #18181B;
+  flex: 1;
+  min-width: 0;
+}
+
+.option-switch {
+  min-width: 72rpx;
+  text-align: center;
+  padding: 8rpx 16rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  color: #71717A;
+  background: #E4E4E7;
+  flex-shrink: 0;
+}
+
+.option-switch.on {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+/* 统计 */
+.stat-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.stat-item {
+  flex: 1;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  padding: 24rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stat-num {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #18181B;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+
+/* 预览 */
+.preview-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.preview-hint {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+
+.preview-box {
+  width: 100%;
+  height: 360rpx;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+  margin-top: 12rpx;
+}
+
+.preview-text {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #3F3F46;
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: block;
+}
+
+/* 操作按钮 */
+.action-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  background: #000000;
+  color: #FFFFFF;
+  border: none;
+}
+
+.btn-primary[disabled],
+.btn-secondary[disabled] {
+  opacity: 0.5;
+}
+
+.btn-primary:not([disabled]):active {
+  opacity: 0.85;
+}
+
+.btn-secondary {
+  background: #F4F4F5;
+  color: #18181B;
+  border: 2rpx solid #E4E4E7;
+}
+
+.btn-secondary:not([disabled]):active {
+  background: #E4E4E7;
+}
+
+.btn-text {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .dev-feedback-page {
+    background: #18181B;
+  }
+
+  .section-title {
+    color: #FAFAFA;
+  }
+
+  .intro {
+    background: #27272A;
+  }
+
+  .intro-text {
+    color: #A1A1AA;
+  }
+
+  .chip {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .chip.active {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+    color: #18181B;
+  }
+
+  .conv-list {
+    background: #27272A;
+  }
+
+  .conv-item {
+    border-bottom-color: #3F3F46;
+  }
+
+  .conv-title {
+    color: #FAFAFA;
+  }
+
+  .conv-meta,
+  .conv-more,
+  .empty-tip,
+  .preview-hint {
+    color: #A1A1AA;
+  }
+
+  .option-row {
+    background: #27272A;
+  }
+
+  .option-label {
+    color: #FAFAFA;
+  }
+
+  .option-switch {
+    background: #3F3F46;
+    color: #A1A1AA;
+  }
+
+  .option-switch.on {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+
+  .stat-item {
+    background: #27272A;
+  }
+
+  .stat-num {
+    color: #FAFAFA;
+  }
+
+  .stat-label {
+    color: #71717A;
+  }
+
+  .preview-box {
+    background: #27272A;
+  }
+
+  .preview-text {
+    color: #F4F4F5;
+  }
+
+  .btn-secondary {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .btn-secondary:not([disabled]):active {
+    background: #3F3F46;
+  }
+}
+
+/* 自由选择面板 */
+.custom-panel {
+  margin-top: 16rpx;
+}
+
+.custom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.custom-btn {
+  padding: 10rpx 28rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid #E4E4E7;
+  background: #FFFFFF;
+  font-size: 24rpx;
+  color: #3F3F46;
+}
+
+.custom-btn:active {
+  background: #F4F4F5;
+}
+
+.conv-check {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
+  border: 2rpx solid #D4D4D8;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.conv-check.on {
+  border-color: #000000;
+  background: #000000;
+}
+
+.conv-check-mark {
+  color: #FFFFFF;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.conv-main {
+  flex: 1;
+  min-width: 0;
+  margin-left: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.conv-arrow {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  margin-left: 12rpx;
+}
+
+/* 消息列表 */
+.msg-list {
+  background: #FAFAFA;
+  border-radius: 12rpx;
+  padding: 8rpx 16rpx;
+  margin: 8rpx 0 16rpx;
+}
+
+.msg-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid #E4E4E7;
+  &:last-child { border-bottom: none; }
+}
+
+.msg-role {
+  font-size: 20rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+}
+
+.msg-role-user {
+  background: #F4F4F5;
+  color: #3F3F46;
+}
+
+.msg-role-ai {
+  background: #18181B;
+  color: #FFFFFF;
+}
+
+.msg-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: #52525B;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* 自由选择：消息列表内嵌展开 */
+.conv-item-expandable {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 8rpx 0;
+}
+
+.conv-item-expandable .conv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  width: 100%;
+}
+
+.msg-list {
+  margin: 0 0 12rpx;
+}
+
+/* 自由选择面板深色模式覆盖 */
+@media (prefers-color-scheme: dark) {
+  .custom-btn {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .custom-btn:active {
+    background: #3F3F46;
+  }
+
+  .conv-check {
+    background: #27272A;
+    border-color: #3F3F46;
+  }
+
+  .conv-check.on {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+  }
+
+  .conv-check.on .conv-check-mark {
+    color: #18181B;
+  }
+
+  .msg-list {
+    background: #18181B;
+  }
+
+  .msg-item {
+    border-bottom-color: #3F3F46;
+  }
+
+  .msg-role-user {
+    background: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .msg-role-ai {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+
+  .msg-text {
+    color: #D4D4D8;
+  }
+}

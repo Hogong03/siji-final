@@ -130,23 +130,9 @@ export const BUILTIN_AGENT_SKILLS = {
       summary: `## 情感数据总结
 用户要求总结时，调用 summarize_diaries 生成情感周报/月报。结合记录数据分析情绪波动规律、关系互动频率、矛盾触发点，帮用户看见自己不易察觉的情感模式。`
     }
-  },
-  'career_coach': {
-    skills: ['memory', 'relation', 'decision', 'plan_phases', 'summary'],
-    skillPrompts: {
-      memory: `## 求职记忆
-记住用户的求职背景（目标岗位、目标行业、当前薪资、期望薪资）、求职进度（投递/面试/offer 情况）、面试反馈。用户透露这些信息时主动调用 smart_update_profile 更新画像。回答求职问题时参考画像，避免重复问已知信息。`,
-      relation: `## 求用人脉图谱
-管理用户的求职人脉（猎头、内推人、面试官、行业前辈）。当用户提到这些人时调用 create_relation 创建档案，记录对方的作用、沟通进展、可利用的资源。查询时调用 query_relation 获取内推/背调的人脉背景。`,
-      decision: `## Offer 决策助手
-用户面临 offer 选择时，主动调用 create_decision 创建决策日志。用「成长性-平台-薪资-风险」四维矩阵分析每个 offer。引导用户思考：1 年后哪个 offer 让你更值钱？最坏情况分别是什么？可调用 query_decision 查阅历史求职决策做参考。`,
-      plan_phases: `## 求职计划
-帮用户制定求职计划时，调用 create_plan_phases 拆解为多阶段。例如「2 个月求职冲刺」→阶段1:简历优化+目标公司筛选→阶段2:投递+内推→阶段3:面试准备+模拟→阶段4:offer 谈判。每阶段设里程碑和量化目标（如每周投 5 家）。`,
-      summary: `## 求职数据总结
-用户要求总结时，调用 summarize_diaries 生成求职周报。结合 query_stat 分析求职相关支出（如通勤、面试装备、培训），帮用户追踪求职进度和投入产出比。`
-    }
   }
 }
+
 
 /**
  * 构建内置 Agent 的技能 prompt

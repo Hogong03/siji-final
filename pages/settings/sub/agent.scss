@@ -157,7 +157,14 @@ $spacing-lg: 32rpx;
   &:active { opacity: 0.7; }
 }
 
-/* 内置标签 */
+/* 内置标签 + 详情入口 */
+.agent-meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  flex-shrink: 0;
+}
+
 .agent-tag {
   flex-shrink: 0;
   padding: $spacing-xs $spacing-sm;
