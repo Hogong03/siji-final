@@ -15,6 +15,7 @@ import { getProfile, saveProfile, setProfileEnabled, clearProfile, getFilledCoun
          createCard, updateCardTitle, deleteCard, setCardField, removeCardField,
          addArrayItem, removeArrayItem } from '@/utils/profile.js'
 import { getRelationsStats } from '@/utils/relations.js'
+import { getAdoptableMemories, suggestProfileAdoption, adoptMemoryToProfile } from '@/utils/memory.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { logger } from '@/utils/logger.js'
 
@@ -31,6 +32,7 @@ const collapsedCards = ref({}) // cardId → true=折叠；默认全部折叠
 const chipInputField = ref(null) // { cardId, field } 正在输入 chip 的数组字段
 const chipInputValue = ref('')
 const relationsStats = ref({ total: 0, interactionCount: 0, avgScore: 0 })
+const aiPrefs = ref([])
 
 /* ---- 计算属性 ---- */
 const filledCount = computed(() => {
@@ -53,12 +55,14 @@ onMounted(() => {
   profile.value = getProfile()
   enabled.value = profile.value.enabled
   if (enabled.value) relationsStats.value = getRelationsStats()
+  refreshAiPrefs()
 })
 
 onShow(() => {
   profile.value = getProfile()
   enabled.value = profile.value.enabled
   if (enabled.value) relationsStats.value = getRelationsStats()
+  refreshAiPrefs()
 })
 
 /* ---- 开关 ---- */
@@ -265,6 +269,50 @@ function isFixedCard(card) {
   return card.id === 'basic' || card.id === 'lifestyle'
 }
 
+/* ---- AI 偏好采纳（记忆 → 画像联动） ---- */
+function refreshAiPrefs() {
+  aiPrefs.value = getAdoptableMemories()
+}
+
+function handleAdopt(item) {
+  const sug = suggestProfileAdoption(item.content)
+  if (sug) {
+    uni.showModal({
+      title: '采纳到画像',
+      content: `写入「${sug.label}」：${sug.value}`,
+      confirmText: '采纳',
+      confirmColor: '#000000',
+      success: (res) => {
+        if (res.confirm) doAdopt(item, sug.cardId, sug.field, sug.value)
+      }
+    })
+    return
+  }
+  uni.showModal({
+    title: '采纳到画像',
+    editable: true,
+    placeholderText: '输入字段名，如：hobbies、MBTI',
+    confirmText: '采纳',
+    confirmColor: '#000000',
+    success: (res) => {
+      if (res.confirm && res.content && res.content.trim()) {
+        doAdopt(item, 'lifestyle', res.content.trim(), item.content)
+      }
+    }
+  })
+}
+
+function doAdopt(item, cardId, field, value) {
+  const r = adoptMemoryToProfile(item.id, cardId, field, value)
+  if (r.success) {
+    uni.showToast({ title: '已采纳到画像', icon: 'none' })
+    profile.value = getProfile()
+    refreshAiPrefs()
+  } else {
+    uni.showToast({ title: r.message, icon: 'none' })
+  }
+}
+
 function goRelations() {
   uni.navigateTo({ url: '/pages/settings/sub/relation-graph' })
 }
@@ -385,6 +433,21 @@ function goRelations() {
           <text>添加字段</text>
         </view>
       </view>
+    </view>
+
+    <!-- AI 学到的偏好（记忆 → 画像联动） -->
+    <view v-if="enabled && aiPrefs.length > 0" class="ai-prefs-section">
+      <view class="ai-prefs-header">
+        <text class="ai-prefs-title">AI 学到的偏好</text>
+        <text class="ai-prefs-count">{{ aiPrefs.length }} 条待采纳</text>
+      </view>
+      <view v-for="item in aiPrefs" :key="item.id" class="ai-pref-item">
+        <text class="ai-pref-content">{{ item.content }}</text>
+        <view class="ai-pref-adopt" @tap="handleAdopt(item)">
+          <text class="ai-pref-adopt-text">采纳</text>
+        </view>
+      </view>
+      <view class="ai-prefs-hint">采纳后写入画像分组，AI 不再重复记忆</view>
     </view>
 
     <!-- 添加新分组 -->

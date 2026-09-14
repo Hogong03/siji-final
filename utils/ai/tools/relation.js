@@ -33,12 +33,13 @@ export const RELATION_TOOLS = [
     parameters: {
       type: 'object',
       properties: {
-        relation_id: { type: 'string' },
+        relation_id: { type: 'string', description: '关系ID（关系上下文中 ID: 后面的值）' },
+        relation_name: { type: 'string', description: '关系人名（不知道 ID 时传人名，系统会自动匹配）' },
         scene: { type: 'string' },
         content: { type: 'string' },
         result: { type: 'string' }
       },
-      required: ['relation_id', 'scene', 'content']
+      required: ['scene', 'content']
     }
   },
 ]

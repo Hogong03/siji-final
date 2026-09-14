@@ -41,8 +41,9 @@ export const SIM_MODES = {
     icon: '',
     iconName: 'chat-bubble',
     desc: 'AI 扮演你身边的人进行对话演练',
-    agentId: 'relationship_advisor',
-    agentName: '情感顾问',
+    // 3.0：场景 Agent 已模板化，演练统一由思迹助手执行；角色人格由模式 prompt 控制
+    agentId: 'siji',
+    agentName: '思迹助手',
     needsRelation: true,
     scenePlaceholder: '如：年终绩效面谈、表白、拒绝请求',
     goalPlaceholder: '如：争取加薪、体面分手、说服对方同意'
@@ -65,8 +66,9 @@ export const SIM_MODES = {
     icon: '',
     iconName: 'relation',
     desc: 'AI 扮演冲突中的对方，演练沟通策略',
-    agentId: 'workplace_advisor',
-    agentName: '职场参谋',
+    // 3.0：场景 Agent 已模板化，演练统一由思迹助手执行；角色人格由模式 prompt 控制
+    agentId: 'siji',
+    agentName: '思迹助手',
     needsRelation: true,
     scenePlaceholder: '如：同事甩锅、领导施压、朋友借钱不还',
     goalPlaceholder: '如：不伤和气地拒绝、让领导改变主意、维护边界'

@@ -205,6 +205,7 @@ function formatRelationLine(r) {
   if (r.preferences && r.preferences.length > 0) parts.push(`偏好: ${r.preferences.join('、')}`)
   if (r.notes) parts.push(`备注: ${r.notes}`)
   parts.push(`亲密度: ${r.relationship_score}/10`)
+  parts.push(`ID: ${r.id}`) // 供 log_interaction/update_relation 使用
   return parts.join(' | ')
 }
 

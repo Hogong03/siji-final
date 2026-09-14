@@ -38,9 +38,12 @@ export function extractFallbackAction(userMessage, aiReply) {
       if (re.test(userMessage)) { relationType = label; break }
     }
     if (name) {
+      // 提取逗号后的补充信息（如“叫阿伟，产品经理”）作为关系备注
+      const tailMatch = userMessage.match(/[，,]\s*([\u4e00-\u9fa5A-Za-z0-9]{2,12})/)
+      const context = tailMatch ? tailMatch[1] : ''
       return {
         type: 'create_relation',
-        payload: { name, relation: relationType, tags: [], notes: '', interactions: [] },
+        payload: { name, role: relationType, context, tags: [], notes: '', interactions: [] },
         needConfirm: false
       }
     }

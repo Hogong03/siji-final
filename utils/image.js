@@ -5,15 +5,16 @@
  *  - chooseAndCompress: 选择图片 → 压缩 → 返回 base64
  *  - compressImage: Canvas 压缩（H5）/ uni.compressImage（App）
  *  - buildVisionMessage: 构建多模态消息格式
- *  - 目标：≤ 1MB / ≤ 1024px，适配主流 vision 模型限制
+ *  - 目标：≤ 1MB（H5 渐进降质兜底）/ 最长边 1568px，适配主流 vision 模型限制
+ *  - 2026-08-30：1024px/80 对聊天截图小字识别过糊（DeepSeek V4 Vision 反馈），提升到 1568px/90
  *  - 支持平台：H5、App、微信小程序
  */
 import { logger } from './logger.js'
 
 /** 压缩配置 */
-const MAX_SIZE = 1024
+const MAX_SIZE = 1568
 const MAX_FILE_SIZE = 1024 * 1024
-const QUALITY = 80
+const QUALITY = 90
 
 /** 判断当前是否为 H5 环境 */
 function isH5() {
@@ -55,6 +56,21 @@ export function chooseAndCompress() {
 function compressImage(path) {
   if (isH5()) return compressWithCanvas(path)
   return compressWithUni(path)
+}
+
+/**
+ * 压缩已获取的图片文件（H5 粘贴/拖拽等场景）
+ * 复用同一套压缩管线；完成后释放临时 objectURL
+ * @param {File|Blob} file
+ * @returns {Promise<{base64:string,width:number,height:number,size:number}|null>}
+ */
+export function compressFileObject(file) {
+  if (!file || typeof URL === 'undefined' || !URL.createObjectURL) return Promise.resolve(null)
+  const url = URL.createObjectURL(file)
+  return compressImage(url).then((r) => {
+    try { URL.revokeObjectURL(url) } catch (e) { /* ignore */ }
+    return r
+  }).catch(() => null)
 }
 
 /**
@@ -206,25 +222,10 @@ export function saveImageToLocal(base64) {
     const pureBase64 = match[3]
 
     // #ifdef H5
-    // H5：转 Blob → 下载链接（浏览器保存）
-    try {
-      const bytes = atob(pureBase64)
-      const arr = new Uint8Array(bytes.length)
-      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
-      const blob = new Blob([arr], { type: `image/${match[2]}` })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `siji_${Date.now()}.${ext}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-      resolve(url)
-    } catch (e) {
-      logger.error('H5 saveImage failed', e)
-      resolve(null)
-    }
+    // H5：无本地文件系统，直接以 base64 作为"本地路径"（data URL 可直接作 img src）。
+    // 之前转 Blob + <a download> 会触发浏览器下载弹框，发送图片识别时体验极差。
+    // localStorage 容量由 persist.js 的 MAX_CHARS 截断保护，超限历史图片自动裁剪。
+    resolve(base64)
     // #endif
 
     // #ifdef APP-PLUS

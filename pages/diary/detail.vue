@@ -111,11 +111,16 @@ function closeTypePicker() {
   showTypePicker.value = false
 }
 
+let leaveConfirmed = false
+
 function goBack() {
+  leaveConfirmed = true
   uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/diary/list' }) })
 }
 
 onBackPress(() => {
+  // 放弃/保存/删除后放行：navigateBack 会再次触发 onBackPress，不置标志会重复弹窗（反馈 2026-09-01）
+  if (leaveConfirmed) return false
   if (showTypePicker.value) { showTypePicker.value = false; return true }
   if (isDirty.value) {
     uni.showModal({ title: '放弃编辑？', content: '当前修改未保存', confirmText: '放弃', cancelText: '继续编辑', success: (res) => { if (res.confirm) goBack() } })

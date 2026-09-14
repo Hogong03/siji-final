@@ -42,6 +42,17 @@ export const useAppStore = defineStore('app', () => {
   } = storeToRefs(agent)
 
   /**
+   * 创建会话并绑定当前活跃 Agent（3.1 M3）
+   * chat store 不依赖 agent store，由聚合层注入，避免循环依赖
+   */
+  function createConversationWithAgent(customTitle) {
+    return chat.createConversation(customTitle, {
+      agentId: agent.activeAgentId,
+      agentName: agent.activeAgent ? agent.activeAgent.name : ''
+    })
+  }
+
+  /**
    * 从 Storage 恢复关键配置 — 启动时同步执行，不阻塞首屏
    * 调用时机：App.vue onLaunch
    */
@@ -51,7 +62,7 @@ export const useAppStore = defineStore('app', () => {
     chat.restoreHistory()
     // 如果没有会话，自动创建一个
     if (chat.conversations.length === 0) {
-      chat.createConversation()
+      createConversationWithAgent()
     }
     // 监听网络恢复，自动消费离线队列
     if (typeof uni !== 'undefined' && uni.onNetworkStatusChange) {
@@ -68,6 +79,13 @@ export const useAppStore = defineStore('app', () => {
    */
   function restoreNonCriticalFromStorage() {
     agent.restoreFromStorage()
+    // 3.1：agent 晚于 chat 恢复——启动自动创建的首会话若仍为空，补绑实际活跃 Agent
+    const first = chat.conversations.find(c => c.id === chat.activeConversationId)
+    if (first && !first.agentId && (!first.messages || first.messages.length === 0)) {
+      first.agentId = agent.activeAgentId
+      first.agentName = agent.activeAgent ? agent.activeAgent.name : ''
+      chat.persistHistory()
+    }
     // 消费离线队列 — fallback.js 写入但无消费逻辑，此处补上
     consumeOfflineQueue()
     logger.log('[思迹] Non-critical storage restored')
@@ -145,10 +163,13 @@ export const useAppStore = defineStore('app', () => {
     modeLabel, conversations, activeConversationId, activeConversation, conversationCount,
     setCurrentMode: chat.setCurrentMode,
     setConversationId: chat.setConversationId,
-    createConversation: chat.createConversation,
+    createConversation: createConversationWithAgent,
     switchConversation: chat.switchConversation,
     deleteConversation: chat.deleteConversation,
     renameConversation: chat.renameConversation,
+    addTagToConversation: chat.addTagToConversation,
+    removeTagFromConversation: chat.removeTagFromConversation,
+    setConversationTags: chat.setConversationTags,
     addMessage: chat.addMessage,
     updateLastMessage: chat.updateLastMessage,
     updateLastMessageFor: chat.updateLastMessageFor,
@@ -160,7 +181,6 @@ export const useAppStore = defineStore('app', () => {
     // ==================== Agent ====================
     agents, activeAgentId, activeAgent, customAgents, agentCount,
     getAgentSystemPrompt: agent.getAgentSystemPrompt,
-    getAgentSkills: agent.getAgentSkills,
     createAgent: agent.createAgent,
     updateAgent: agent.updateAgent,
     deleteAgent: agent.deleteAgent,

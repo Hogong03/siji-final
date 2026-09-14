@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { TOOL_DEFINITIONS, QUERY_TOOLS, CONFIRM_TOOLS } from '../utils/ai/tools.js'
+import { CORE_ACTIONS } from '../utils/ai/prompt-actions.js'
 
 // 从 CORE_ACTIONS 文本中提取所有 action name
 function extractActionNames(text) {
@@ -25,10 +26,11 @@ describe('Action Schema 一致性', () => {
     expect(toolNames.size).toBe(TOOL_DEFINITIONS.length) // 无重复
   })
 
-  it('CONFIRM_TOOLS 应为空集（当前未定义 delete_* 工具）', () => {
+  it('CONFIRM_TOOLS 只登记真实存在的删除类工具（3.5.11：delete_feedback）', () => {
     const toolNames = extractToolNames()
     const orphans = [...CONFIRM_TOOLS].filter(name => !toolNames.has(name))
     expect(orphans).toEqual([])
+    expect(CONFIRM_TOOLS.has('delete_feedback')).toBe(true)
     // undo_last 是安全操作，不需要确认
     expect(CONFIRM_TOOLS.has('undo_last')).toBe(false)
   })
@@ -37,5 +39,13 @@ describe('Action Schema 一致性', () => {
     const toolNames = extractToolNames()
     const orphans = [...QUERY_TOOLS].filter(name => !toolNames.has(name))
     expect(orphans).toEqual([])
+  })
+
+  it('3.4.1 打卡工具双注册：log_plan_checkin 同时存在于 TOOL_DEFINITIONS 与 CORE_ACTIONS', () => {
+    const tools = extractToolNames()
+    const core = extractActionNames(CORE_ACTIONS)
+    expect(tools.has('log_plan_checkin')).toBe(true)
+    expect(core.has('log_plan_checkin')).toBe(true)
+    expect(core.has('create_plan_phases')).toBe(true)
   })
 })

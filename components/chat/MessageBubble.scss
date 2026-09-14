@@ -403,7 +403,7 @@
 
 .confirm-body {
   margin-bottom: $spacing-sm;
-  .confirm-detail { font-size: $font-sm; color: #3F3F46; }
+  .confirm-detail { display: block; font-size: $font-sm; color: #3F3F46; line-height: 1.5; }
 }
 
 .confirm-actions {

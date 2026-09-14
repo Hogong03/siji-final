@@ -238,9 +238,8 @@
 				</view>
 
 				<view class="card">
-					<text class="card-title">Agent 管理</text>
-					<text class="card-text">创建和管理多个 AI Agent，每个 Agent 可自定义名称与图标、角色设定、回复风格。内置 5
-						套模板：心理咨询师、健身教练、财务顾问、学习伙伴、极简助手。</text>
+					<text class="card-title">Agent 与模板</text>
+					<text class="card-text">思迹助手是唯一内置 Agent。需要专用人设时，点心理咨询师/情感顾问模板一键创建，或直接对思迹助手说「帮我创建一个 XX Agent」，AI 会先出创建确认卡。所有 Agent 共用模型配置，系统提示词决定人设。</text>
 					<text class="card-hint">💡 所有 Agent 共用模型配置，系统提示词决定人设</text>
 				</view>
 			</view>

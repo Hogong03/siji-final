@@ -11,6 +11,8 @@ import { useSimulationManager } from '@/composables/useSimulationManager.js'
 import { buildChatHistory } from '@/utils/ai/chatHistoryBuilder.js'
 import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
 import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
+import { mergeSuggestions } from '@/utils/ai/chat-suggestion.js'
+import { needsConfirmation } from '@/utils/ai/tools.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
 import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
@@ -44,14 +46,43 @@ export function useChatEngine() {
   const pendingActions = ref([])
   const pendingReply = ref('')
   const currentSuggestions = ref([])
+  const sendStage = ref('idle')
+  const sendElapsedMs = ref(0)
+  let _sendTimer = null
+
+  /** 发送状态行：思考中 → 流式中；计时 1s 步进，finally 统一停止 */
+  function startSendTimer() {
+    sendElapsedMs.value = 0
+    stopSendTimer()
+    sendStage.value = 'thinking'
+    _sendTimer = setInterval(() => { sendElapsedMs.value += 1000 }, 1000)
+  }
+  function stopSendTimer() {
+    if (_sendTimer) { clearInterval(_sendTimer); _sendTimer = null }
+  }
+
+  /** suggestions 归一：AI 给了原样透传；执行了写操作不补本地兜底 */
+  function pickSuggestions(result, reply) {
+    const aiList = Array.isArray(result.suggestions)
+      ? result.suggestions.slice(0, 3).map(s => String(s)).filter(Boolean)
+      : []
+    const didWrite = result._agentExecuted === true ||
+      !!(result.action && result.action.type && result.action.type !== 'none') ||
+      (Array.isArray(result.actions) && result.actions.length > 0)
+    return mergeSuggestions(aiList, (didWrite || simulationMode.value) ? '' : reply)
+  }
 
   const { simulationMode, initSimulation, handleSimulationEnd } = useSimulationManager()
   const { getWelcomeMessage } = useWelcomeMessage()
 
   /** 发送消息 */
-  async function handleSend(text, inputAreaRef, scrollToBottom, imageData, scrollHelpers) {
+  async function handleSend(text, inputAreaRef, scrollToBottom, imageData, scrollHelpers, sendOpts = {}) {
     const message = text || ''
     if (!message || isSending.value) return
+    const sendInstr = (sendOpts && sendOpts.appendInstruction && typeof sendOpts.appendInstruction === 'string')
+      ? sendOpts.appendInstruction.trim()
+      : ''
+    const plainMessage = sendInstr ? `${message}\n\n${sendInstr}` : message
     currentSuggestions.value = []
     if (!store.hasApiKey) {
       uni.showToast({ title: '请先在设置中配置 API Key', icon: 'none' })
@@ -66,6 +97,8 @@ export function useChatEngine() {
 
     isSending.value = true
     stopSignal.value = { stopped: false }
+    sendStage.value = 'thinking'
+    sendElapsedMs.value = 0
     const sendConvId = store.activeConversationId
 
     // 会话锁定 — 流式期间切换会话时中止请求并丢弃增量，防止回复写入错误会话
@@ -106,6 +139,9 @@ export function useChatEngine() {
     const raf = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (fn) => setTimeout(fn, 16)
     const caf = typeof cancelAnimationFrame !== 'undefined' ? cancelAnimationFrame : (id) => clearTimeout(id)
 
+    // P1 发送中状态行：开始计时（try 内所有出口都会在 finally 停止）
+    startSendTimer()
+
     try {
       const agentSystemPrompt = simulationMode.value
         ? simulationMode.value.systemPrompt
@@ -126,7 +162,7 @@ export function useChatEngine() {
         onStatus: (toolNames) => {
           // 工具执行进度反馈 — 更新当前消息的临时状态
           if (toolNames && toolNames.length > 0) {
-            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', create_relation: '创建关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', undo_last: '撤销操作' }
+            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', update_plan_phase: '更新阶段', update_plan_subtask: '更新子项', create_relation: '创建关系', update_relation: '修改关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', create_feedback: '提交反馈', add_tag: '添加标签', update_tag_category: '修改标签分类', remove_tag: '删除标签', create_agent: '创建 Agent', undo_last: '撤销操作' }
             const label = toolNames.map(n => labels[n] || n).join('、')
             safeUpdate({ loading: true, statusHint: `正在${label}…` })
           }
@@ -156,8 +192,12 @@ export function useChatEngine() {
       // === 两步组合模式：图片+文字同时输入时，先识别图片再走文字模型 ===
       // Step 1: vision 模型识别图片内容，返回纯文本描述
       // Step 2: 把「图片描述 + 用户文字」拼接，走文字模型处理（action/工具调用）
-      let combinedMessage = message
-      if (imageData && message && message !== '请识别并分析这张截图') {
+      // 仅当用户选中的对话模型不支持视觉时启用两步组合；选中模型本身支持视觉时
+      // 直接把图片发给它（单步），避免纯视觉模型收到纯文本请求后返回空内容
+      const userSelectedModel = store.aiModel
+      const userModelSupportsVision = !!getProvider(cfg.provider).visionModels?.includes(userSelectedModel)
+      let combinedMessage = plainMessage
+      if (imageData && message && !userModelSupportsVision) {
         // 用户同时输入了图片和有意义的文字 → 两步组合
         logger.info('[ChatEngine] 图片+文字组合模式，先识别图片')
         safeUpdate({ content: '正在识别图片…', loading: true })
@@ -165,7 +205,9 @@ export function useChatEngine() {
         const imageDesc = await recognizeImage(imageData, message, cfg)
         if (imageDesc) {
           // 拼接：用户原始文字 + 图片识别结果
-          combinedMessage = `${message}\n\n[图片识别结果]\n${imageDesc}`
+          combinedMessage = `${plainMessage}\n\n[图片识别结果]\n${imageDesc}`
+          // 回切到用户选中的文字模型处理「图片描述+指令」，避免纯视觉模型对纯文本请求返回空
+          cfg.model = userSelectedModel
           logger.info('[ChatEngine] 图片识别完成，组合消息长度:', combinedMessage.length)
         } else {
           // 识别失败，降级为原单步模式（vision 模型直接处理）
@@ -234,12 +276,15 @@ export function useChatEngine() {
             if (displayText.length > queuedTotal) {
               displayQueue += displayText.slice(queuedTotal)
               queuedTotal = displayText.length
+              sendStage.value = 'streaming'
               if (!rafId) rafId = raf(pumpDisplay)
             }
           },
           chatHistory
         ),
-        message,
+        // 图片+文字两步组合时用组合消息（含识别结果）作为请求与重试基准，
+        // 否则首次请求/重试会退回原始文本，丢失图片描述导致模型“看不到图片”
+        combinedMessage,
         safeUpdate,
         stopSignal.value,
         () => {  // onRetry — 重置流式状态
@@ -274,9 +319,11 @@ export function useChatEngine() {
       if (result._emptyReply && !streamedText && !result._aborted) {
         const isTimeout = result._timeout
         safeUpdate({
-          content: isTimeout
-            ? 'AI 响应超时，可能网络不稳定或服务繁忙。'
-            : 'AI 走神了，要不要再试一次？',
+          content: result._error
+            ? `请求失败：${result._error}`
+            : (isTimeout
+                ? 'AI 响应超时，可能网络不稳定或服务繁忙。'
+                : 'AI 走神了，要不要再试一次？'),
           loading: false, failed: true
         })
         isSending.value = false
@@ -309,29 +356,44 @@ export function useChatEngine() {
         logger.warn('AI 返回空 reply', JSON.stringify(result))
       }
 
-      const needConfirm = result.action && result.action.needConfirm
+      let needConfirm = !!(result.action && result.action.needConfirm)
+      // 3.0 M3：JSON 兜底路径的写操作同样受「写操作默认需确认」约束（Agent 路径在 agent-loop 内已拦截）
+      let pendingActs = []
+      if (!result._agentMode) {
+        const actList = (result.actions && result.actions.length > 1)
+          ? result.actions
+          : (result.action ? [result.action] : [])
+        pendingActs = actList.filter(a => a && a.type && needsConfirmation(a.type, a.payload || {}))
+        if (pendingActs.length > 0) needConfirm = true
+      }
 
       if (needConfirm) {
-        const isMulti = result.action.type === 'multi' && result.actions.length > 1
-        const confirmText = isMulti ? `${result.actions.length} 个操作需要确认` : '需要你确认一下'
+        const aiMulti = result.action?.type === 'multi' && (result.actions || []).length > 1
+        const isMulti = pendingActs.length > 1 || aiMulti
+        const confirmAction = pendingActs.length === 1
+          ? pendingActs[0]
+          : (isMulti ? { type: 'multi', payload: null, needConfirm: true } : result.action)
+        const confirmActs = pendingActs.length > 0 ? pendingActs : (aiMulti ? result.actions : [])
+        const confirmText = isMulti ? `${confirmActs.length} 个操作需要确认` : '需要你确认一下'
+        const alreadyAsks = /我需要确认|确认执行|确认吗/.test(reply || '')
         safeUpdate({
-          content: reply + `\n\n${confirmText}:`,
+          content: alreadyAsks ? reply : reply + `\n\n${confirmText}:`,
           loading: false,
-          pendingAction: result.action,
-          pendingActions: result.actions
+          pendingAction: confirmAction,
+          pendingActions: confirmActs
         })
-        pendingAction.value = result.action
-        pendingActions.value = result.actions
+        pendingAction.value = confirmAction
+        pendingActions.value = confirmActs
         pendingReply.value = reply
         currentSuggestions.value = []
       } else {
         if (result._agentMode) {
           // Agent 模式：工具已在循环内执行，不再二次执行，仅渲染结果卡片
           renderAgentResults(store, result, reply, message)
-          currentSuggestions.value = result.suggestions || []
+          currentSuggestions.value = pickSuggestions(result, reply)
         } else {
           autoExecuteAndDisplay(store, result, reply, message)
-          currentSuggestions.value = result.suggestions || []
+          currentSuggestions.value = pickSuggestions(result, reply)
         }
       }
       if (result.conversation_id) store.setConversationId(result.conversation_id)
@@ -389,6 +451,8 @@ export function useChatEngine() {
           failed: !partialContent
         })
       }
+      sendStage.value = 'idle'
+      stopSendTimer()
       isSending.value = false
       stopSignal.value = null
       if (stopStream) stopStream()
@@ -416,7 +480,7 @@ export function useChatEngine() {
   }
 
   return {
-    isSending, stopSignal, pendingAction, pendingActions, pendingReply, currentSuggestions,
+    isSending, stopSignal, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
     simulationMode,
     getWelcomeMessage, handleSend, handleStop, handleRetry,
     handleConfirmAction, handleCancelAction, initSimulation

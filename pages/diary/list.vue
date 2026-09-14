@@ -209,7 +209,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <text class="cal-day-label">{{ cell.day }}日 · {{ cell.count }}篇 · {{ cell.words }}字</text>
         <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r.client_id)">
           <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
-          <text class="card-preview" v-if="r.content">{{ r.content.substring(0, 80) }}</text>
+          <text class="card-preview" v-if="r.content">{{ r.content.replace(/\s+/g, ' ').substring(0, 80) }}</text>
           <view v-if="getItemTags(r).length > 0" class="tag-row">
             <text v-for="t in getItemTags(r)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
           </view>
@@ -229,7 +229,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
           <text v-if="item.category" class="cat-badge">{{ item.category }}</text>
         </view>
         <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
-        <text class="card-preview" v-if="item.content">{{ item.content.substring(0, 120) }}</text>
+        <text class="card-preview" v-if="item.content">{{ item.content.replace(/\s+/g, ' ').substring(0, 120) }}</text>
         <view class="card-images" v-if="item.images && item.images.length > 0">
           <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
           <text class="img-more" v-if="item.images.length > 3">+{{ item.images.length - 3 }}</text>
@@ -261,7 +261,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <view class="timeline-date">{{ group.date }}</view>
         <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
           <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
-          <text class="card-preview" v-if="item.content">{{ item.content.substring(0, 100) }}</text>
+          <text class="card-preview" v-if="item.content">{{ item.content.replace(/\s+/g, ' ').substring(0, 100) }}</text>
           <view class="card-images" v-if="item.images && item.images.length > 0">
             <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
           </view>

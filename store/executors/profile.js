@@ -1,4 +1,5 @@
 import { getProfile, saveProfile, clearProfile, setProfileEnabled, smartUpdateProfile, clearCardField } from '@/utils/profile.js'
+import { markMemoriesAdoptedByProfile } from '@/utils/memory.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
@@ -57,13 +58,17 @@ export function createProfileExecutors(ctx) {
     }
 
     invalidatePromptCache()
-    return smartUpdateProfile({ updates, createCard })
+    const result = smartUpdateProfile({ updates, createCard })
+    markMemoriesAdoptedByProfile(updates)
+    return result
   }
 
   /** 智能更新 profile — AI 驱动的结构化操作 */
   function execSmartUpdateProfile(p) {
     invalidatePromptCache()
-    return smartUpdateProfile(p)
+    const result = smartUpdateProfile(p)
+    markMemoriesAdoptedByProfile(p?.updates)
+    return result
   }
 
   function execGetProfile(p) {

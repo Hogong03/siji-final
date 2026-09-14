@@ -73,9 +73,13 @@ onLoad((query) => {
   }
 })
 
+let leaveConfirmed = false
+
 onBackPress(() => {
+  // 放弃后放行：navigateBack 会再次触发 onBackPress，不置标志会重复弹窗（反馈 2026-09-01）
+  if (leaveConfirmed) return false
   if (amount.value || note.value) {
-    uni.showModal({ title: '放弃记账？', content: '当前内容未保存', confirmText: '放弃', cancelText: '继续编辑', success: (res) => { if (res.confirm) safeNavigateBack() } })
+    uni.showModal({ title: '放弃记账？', content: '当前内容未保存', confirmText: '放弃', cancelText: '继续编辑', success: (res) => { if (res.confirm) { leaveConfirmed = true; safeNavigateBack() } } })
     return true
   }
   return false

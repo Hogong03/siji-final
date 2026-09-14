@@ -1,61 +1,10 @@
 /**
- * 消息编辑与标签管理 composable
+ * 消息标签管理 composable
  *
- * 从 chat/index.vue 拆出 — 处理账单/记录/计划的编辑保存和标签同步
+ * 从 chat/index.vue 拆出 — 处理执行结果卡片标签的更新与同步
+ * （执行结果卡片的标题/金额就地编辑已移除，见 ExecResultCard.vue）
  */
-import { ref } from 'vue'
-
 export function useMessageEdit(store) {
-  const editingMessage = ref(null)
-
-  function startEdit(index) {
-    editingMessage.value = index
-  }
-
-  function cancelEdit() {
-    editingMessage.value = null
-  }
-
-  /**
-   * 保存编辑 — 根据 execResult.detail.type 分发到不同 store 方法
-   */
-  function saveEdit(formData) {
-    if (editingMessage.value === null) return
-    const msg = store.messages[editingMessage.value]
-    const execResult = msg?.execResult
-    if (!execResult?.detail || !formData) return
-
-    const detail = execResult.detail
-    let ok = true
-
-    if (detail.type === 'bill') {
-      const month = detail.bill_date ? String(detail.bill_date).substring(0, 7) : undefined
-      ok = store.updateBill(detail.id, {
-        amount: parseFloat(formData.amount) || 0,
-        category: formData.category
-      }, month)
-      if (ok) {
-        msg.execResult.detail.amount = parseFloat(formData.amount) || 0
-        msg.execResult.detail.category = formData.category
-        msg.execResult.message = `已记账 -¥${formData.amount} (${formData.category})`
-      }
-    } else if (detail.type === 'diary') {
-      const month = _getMonth(detail.created_at)
-      ok = store.updateDiary(detail.id, {
-        title: formData.title
-      }, month)
-      if (ok) {
-        msg.execResult.detail.title = formData.title
-      }
-    } else if (detail.type === 'plan') {
-      store.updatePlan(detail.id, { title: formData.title })
-      msg.execResult.detail.title = formData.title
-    }
-
-    uni.showToast({ title: ok ? '已更新' : '保存失败', icon: ok ? 'success' : 'none' })
-    if (ok) editingMessage.value = null
-  }
-
   /**
    * 更新标签
    */
@@ -122,10 +71,6 @@ export function useMessageEdit(store) {
   }
 
   return {
-    editingMessage,
-    startEdit,
-    cancelEdit,
-    saveEdit,
     handleUpdateTags,
     syncAllMessageTags
   }

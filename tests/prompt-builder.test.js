@@ -32,7 +32,7 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt(true)
     expect(p).toContain('create_relation')
     expect(p).not.toContain('update_relation: {id')
-    expect(p).not.toContain('log_interaction')
+    expect(p).not.toContain('log_interaction: {relation_id') // 无关系数据时不注入 log_interaction 工具 schema
   })
 
   it('有关系数据时注入完整关系图谱 action', () => {
@@ -49,10 +49,10 @@ describe('buildSystemPrompt', () => {
     expect(lite.length).toBeLessThan(full.length)
   })
 
-  it('agentMode 跳过身份行并注入技能', () => {
-    const p = buildSystemPrompt(true, { agentMode: true, skills: ['memory'], agentId: 'a1' })
+  it('agentMode 跳过身份行（保留 Agent 人设接管）', () => {
+    const p = buildSystemPrompt(true, { agentMode: true })
     expect(p).not.toContain('你是「思迹」')
-    expect(p).toContain('## 长期记忆')
+    expect(p).toContain('## 输出格式')
   })
 
   it('invalidatePromptCache 后重建并反映新数据', () => {

@@ -7,7 +7,7 @@
 
 import { logger } from '@/utils/logger.js'
 import { extractFallbackAction } from '@/utils/ai/fallback.js'
-import { OP_CLAIM_RE_EXT, OP_CLAIM_REPLACE_RE } from '@/utils/ai/constants.js'
+import { OP_CLAIM_RE_FALLBACK, OP_CLAIM_REPLACE_RE, OP_REQUEST_RE } from '@/utils/ai/constants.js'
 
 /**
  * 自动执行并显示结果
@@ -25,7 +25,7 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
     const successCards = execResults.filter(r => r.ok && r.detail && !r.name?.startsWith('query_'))
     // === Agent 兜底：模型声称已操作但未调用写入工具 → 前端提取执行 ===
     if (successCards.length === 0 && !result._stopped) {
-      const opClaimed = OP_CLAIM_RE_EXT.test(reply || '')
+      const opClaimed = OP_CLAIM_RE_FALLBACK.test(reply || '')
       if (opClaimed) {
         const fallbackAction = extractFallbackAction(userMessage || '', reply || '')
         if (fallbackAction) {
@@ -45,10 +45,13 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
             return
           }
         }
-        // 兜底失败 → 修正 reply 中的操作完成语，提示重说
-        const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
-        reply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到') + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
-        logger.warn('Agent 模式声称操作但无执行，fallback 失败，修正 reply')
+        // 兜底失败 → 仅当用户消息确为操作指令时才修正 reply；
+        // 否则（如自我介绍/闲聊提到能力）保留原回复，避免误删正常内容
+        if (OP_REQUEST_RE.test(userMessage || '')) {
+          const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
+          reply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到') + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
+          logger.warn('Agent 模式声称操作但无执行，fallback 失败，修正 reply')
+        }
       }
     }
     const execCard = execResults.find(r => r.ok && r.detail)
@@ -131,7 +134,7 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
   const hasExecuted = execResult && execResult.success
   const isNotEnabled = execResult?.detail?.notEnabled
   if (!hasExecuted && !isQueryAction && !isNotEnabled) {
-    const opClaimed = OP_CLAIM_RE_EXT.test(reply || '') || result._opClaimWithoutAction
+    const opClaimed = OP_CLAIM_RE_FALLBACK.test(reply || '') || result._opClaimWithoutAction
     if (opClaimed) {
       const fallbackAction = extractFallbackAction(userMessage || '', reply || '')
       if (fallbackAction) {
@@ -152,13 +155,16 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
           return
         }
       }
-      // fallback 也失败 → 修正 reply 中的操作完成语，追加引导提示
-      // 先剔除 AI 回显的 [执行结果: ...] 段，避免替换正则吃掉括号产生乱文
-      const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
-      const correctedReply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到')
-      reply = correctedReply
-      displayContent = correctedReply + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
-      logger.warn('AI 声称操作但无 action，fallback 也失败，修正 reply:', JSON.stringify(result))
+      // fallback 也失败 → 仅当用户消息确为操作指令时才修正 reply；
+      // 否则（如自我介绍/闲聊提到能力）保留原回复，避免误删正常内容
+      if (OP_REQUEST_RE.test(userMessage || '')) {
+        // 先剔除 AI 回显的 [执行结果: ...] 段，避免替换正则吃掉括号产生乱文
+        const strippedReply = (reply || '').replace(/\[执行结果:[^\]]*\]?/gs, '').trim()
+        const correctedReply = strippedReply.replace(OP_CLAIM_REPLACE_RE, '收到')
+        reply = correctedReply
+        displayContent = correctedReply + '\n\n💡 没能自动记录，再告诉我一次具体要记什么？'
+        logger.warn('AI 声称操作但无 action，fallback 也失败，修正 reply:', JSON.stringify(result))
+      }
     }
   }
 

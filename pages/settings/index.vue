@@ -7,7 +7,7 @@
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import { onShow } from '@dcloudio/uni-app'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/store/index.js'
 import { AI_PROVIDERS } from '@/utils/api.js'
 import { hasPin } from '@/utils/pin.js'
@@ -29,6 +29,18 @@ const currentModel = computed(() => currentProvider.value.models?.find(m => m.id
 const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
 const pinStatus = computed(() => hasPin() ? '已开启' : '未开启')
 const appVersion = computed(() => 'v' + getVersion())
+
+// ─── AI 写操作自动执行开关（3.0：默认关 = AI 写入前需确认）───
+const autoWrite = ref(false)
+function loadAutoWrite() {
+  try { autoWrite.value = uni.getStorageSync('siji_auto_write') === '1' } catch (e) { autoWrite.value = false }
+}
+function toggleAutoWrite(e) {
+  const on = !!(e && e.detail && e.detail.value)
+  autoWrite.value = on
+  try { uni.setStorageSync('siji_auto_write', on ? '1' : '0') } catch (err) { /* 忽略写入失败 */ }
+}
+loadAutoWrite()
 
 const modelAbbr = computed(() => {
   const p = store.aiProvider
@@ -65,7 +77,7 @@ function go(target) {
       <view class="card card-ai-section slide-in-left-stagger">
         <view class="row ai-row card-press" @tap="go('ai')">
           <image
-            :src="`/static/icons/provider-${PROVIDER_ICONS[store.aiProvider] || 'ds'}.png`"
+            :src="`/static/icons/provider-${PROVIDER_ICONS[store.aiProvider] || 'ds'}-v2.png`"
             mode="aspectFit"
             class="row-provider-logo"
           />
@@ -84,10 +96,19 @@ function go(target) {
         <view class="row card-press" @tap="go('agent')">
           <AgentAvatar :name="store.activeAgent.name" :icon="store.activeAgent.icon" :size="64" />
           <view class="row-body">
-            <text class="row-label">Agent 管理</text>
+            <text class="row-label">Agent 与模板</text>
             <text class="row-desc">{{ store.activeAgent.name }}{{ store.agents.length > 1 ? ' · 共' + store.agents.length + '个' : '' }}</text>
           </view>
           <text class="row-arrow">›</text>
+        </view>
+      </view>
+      <view class="card slide-in-left-stagger">
+        <view class="row">
+          <view class="row-body">
+            <text class="row-label">AI 自动执行写操作</text>
+            <text class="row-desc">关闭时 AI 写入记录/账单/计划/画像前先出确认卡，点确认才落库</text>
+          </view>
+          <switch :checked="autoWrite" color="#000000" @change="toggleAutoWrite" />
         </view>
       </view>
 

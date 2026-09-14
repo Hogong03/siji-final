@@ -6,14 +6,17 @@
   padding: 16rpx 20rpx 8rpx;
 }
 .exec-header-left { display: flex; align-items: center; gap: 8rpx; }
-.exec-header-actions { display: flex; gap: 8rpx; }
-.exec-action-btn {
-  width: 48rpx; height: 48rpx; border-radius: 12rpx;
-  background: #F4F4F5; border: 1rpx solid #E4E4E7; display: flex; align-items: center; justify-content: center;
-  transition: transform 0.12s, background 0.15s;
-  &:active { transform: scale(0.9); background: #E4E4E7; }
+.exec-jump-btn {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #71717A;
+  padding: 8rpx 20rpx;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 12rpx;
+  background: #F4F4F5;
+  &:active { background: #E4E4E7; }
 }
-.exec-action-icon { font-size: 24rpx; color: #71717A; font-weight: 600; }
 .exec-type-icon {
   width: 36rpx; height: 36rpx; border-radius: 8rpx;
   display: flex; align-items: center; justify-content: center;
@@ -31,14 +34,16 @@
 
 /* ═════════════════ 账单卡片 ═════════════════ */
 .card-bill { display: flex; flex-direction: column; gap: 8rpx; }
-.bill-main-row { display: flex; flex-direction: column; gap: 8rpx; }
+.bill-main-row { display: flex; align-items: center; gap: 12rpx; }
 .bill-amount {
   font-size: 64rpx; font-weight: 900; color: #EF4444;
   letter-spacing: -2rpx; display: block; line-height: 1.1;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   &.income { color: #10B981; }
 }
 .bill-cat-tag {
-  display: inline-block; align-self: flex-start;
+  display: inline-block;
   padding: 4rpx 16rpx; border-radius: 20rpx; border: 1rpx solid;
   &.expense { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.06); }
   &.income { border-color: rgba(34, 197, 94, 0.3); background: rgba(34, 197, 94, 0.06); }
@@ -50,12 +55,17 @@
 
 /* ═════════════════ 记录卡片 ═════════════════ */
 .card-diary { display: flex; flex-direction: column; gap: 6rpx; }
+.diary-title-row { display: flex; align-items: center; gap: 12rpx; }
 .diary-date { font-size: 22rpx; color: #A1A1AA; margin-left: auto; }
-.diary-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
+.diary-title {
+  font-size: 28rpx; font-weight: 600; color: #18181B;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .diary-preview {
   font-size: 24rpx; color: #71717A; line-height: 1.6;
-  overflow: hidden; text-overflow: ellipsis;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  max-height: 76rpx; overflow: hidden;
+  word-break: break-all;
 }
 
 /* ═════════════════ 计划卡片 ═════════════════ */
@@ -68,7 +78,11 @@
   &.medium { background: $warning; }
   &.low { background: #A1A1AA; }
 }
-.plan-title { font-size: 28rpx; font-weight: 600; color: #18181B; flex: 1; }
+.plan-title {
+  font-size: 28rpx; font-weight: 600; color: #18181B;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .plan-desc { font-size: 24rpx; color: #71717A; }
 .plan-progress { display: flex; align-items: center; gap: 8rpx; margin-top: 4rpx; }
 .plan-progress-bar {
@@ -93,6 +107,24 @@
 .subtask-title {
   font-size: 24rpx; color: #71717A;
   &.done { text-decoration: line-through; color: #A1A1AA; }
+}
+
+.plan-next-row {
+  display: flex; align-items: center; gap: 8rpx; margin-top: 8rpx;
+  padding: 10rpx 12rpx; border-radius: 10rpx; background: #18181B;
+}
+.plan-next-row .pn-label {
+  font-size: 20rpx; font-weight: 700; color: #FAFAFA;
+  background: #3F3F46; padding: 2rpx 10rpx; border-radius: 999rpx;
+}
+.plan-next-row .pn-title {
+  flex: 1; font-size: 24rpx; font-weight: 600; color: #FAFAFA;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.plan-next-row .pn-arrow { font-size: 22rpx; color: #D4D4D8; }
+@media (prefers-color-scheme: dark) {
+  .plan-next-row { background: #27272A; }
+  .plan-next-row .pn-label { background: #3F3F46; color: #FAFAFA; }
 }
 
 /* ═════════════════ 查询账单卡片 ═════════════════ */
@@ -162,7 +194,10 @@
 .qi-note { font-size: 22rpx; color: #A1A1AA; flex: 1; }
 .qi-date { font-size: 22rpx; color: #A1A1AA; }
 .qi-title { font-size: 26rpx; color: #18181B; flex: 1; }
-.qi-preview { font-size: 22rpx; color: #A1A1AA; }
+.qi-preview {
+  font-size: 22rpx; color: #A1A1AA;
+  max-height: 70rpx; overflow: hidden; word-break: break-all;
+}
 .qi-sub { font-size: 22rpx; color: #A1A1AA; }
 .qi-progress { font-size: 22rpx; color: #A1A1AA; }
 
@@ -221,18 +256,6 @@
 .tp-add { font-size: 28rpx; color: #18181B; padding: 16rpx 24rpx; }
 .tp-done { text-align: center; padding: 20rpx; font-size: 30rpx; color: #18181B; border-top: 1rpx solid #E4E4E7; }
 
-/* ═════════════════ 编辑表单 ═════════════════ */
-.edit-card { padding: 16rpx 20rpx; }
-.edit-header { margin-bottom: 12rpx; }
-.edit-title { font-size: 28rpx; font-weight: 600; color: #18181B; }
-.edit-field { margin-bottom: 12rpx; }
-.edit-label { display: block; font-size: 24rpx; color: #A1A1AA; margin-bottom: 4rpx; }
-.edit-input { border: 1rpx solid #E4E4E7; border-radius: 12rpx; padding: 16rpx; font-size: 28rpx; color: #18181B; }
-.edit-picker { display: block; padding: 16rpx; border: 1rpx solid #E4E4E7; border-radius: 12rpx; font-size: 28rpx; color: #18181B; }
-.edit-actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
-.edit-btn { flex: 1; text-align: center; padding: 20rpx; border-radius: 12rpx; }
-.edit-btn.cancel { background: #F4F4F5; color: #71717A; border: 1rpx solid #E4E4E7; }
-.edit-btn.save { background: #000000; color: #FFFFFF; }
 
 /* 深色模式覆盖 */
 @media (prefers-color-scheme: dark) {
@@ -242,8 +265,7 @@
   .exec-body { background: #18181B; }
   .exec-title { color: #F4F4F5; }
   .exec-sub { color: #A1A1AA; }
-  .exec-action-btn { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
-  .exec-action-icon { color: #A1A1AA; }
+  .exec-jump-btn { background: #27272A; border-color: #3F3F46; color: #A1A1AA; &:active { background: #3F3F46; } }
   .bct-text { color: #F4F4F5; }
   .bill-date { color: #52525B; }
   .bill-note { color: #A1A1AA; }
@@ -294,10 +316,59 @@
   .tp-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
   .tp-add { color: #F4F4F5; }
   .tp-done { border-top-color: #27272A; color: #F4F4F5; }
-  .edit-card { background: #18181B; }
-  .edit-title { color: #F4F4F5; }
-  .edit-input { border-color: #27272A; background: #18181B; color: #F4F4F5; }
-  .edit-picker { border-color: #27272A; background: #18181B; color: #F4F4F5; }
-  .edit-btn.cancel { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
-  .edit-btn.save { background: #FAFAFA; color: #000000; }
+}.card-glimmer {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding: 4rpx 0;
+}
+.gl-date {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+.gl-content {
+  font-size: 26rpx;
+  color: #18181B;
+  line-height: 1.6;
+}
+.card-query-glimmer {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 4rpx 0;
+}
+.glq-count {
+  font-size: 22rpx;
+  color: #71717A;
+}
+.glq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.glq-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  padding: 8rpx 0;
+  border-bottom: 1rpx solid #F4F4F5;
+}
+.glq-date {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+.glq-content {
+  font-size: 26rpx;
+  color: #18181B;
+  line-height: 1.5;
+}
+.glq-empty {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+@media (prefers-color-scheme: dark) {
+  .gl-content, .glq-content { color: #E4E4E7; }
+  .gl-date, .glq-date { color: #71717A; }
+  .glq-item { border-bottom-color: #27272A; }
+  .glq-count { color: #A1A1AA; }
 }

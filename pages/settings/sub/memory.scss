@@ -57,6 +57,11 @@
     font-size: $font-xs;
     color: #71717A;
   }
+
+  .stats-structured {
+    font-size: $font-xs;
+    color: #A1A1AA;
+  }
 }
 
 /* 筛选栏 */
@@ -75,6 +80,28 @@
     font-size: $font-xs;
     color: #71717A;
     flex-shrink: 0;
+
+    &.active {
+      background: #000000;
+      color: #FFFFFF;
+    }
+  }
+}
+
+/* 视图分段（3.2 M2：全部 / 未整合 / 已整合） */
+.scope-bar {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+  padding: 4rpx 0;
+
+  .filter-chip {
+    display: inline-flex;
+    padding: 8rpx 24rpx;
+    border-radius: 20rpx;
+    background: #FFFFFF;
+    font-size: $font-xs;
+    color: #71717A;
 
     &.active {
       background: #000000;
@@ -123,6 +150,97 @@
   }
 }
 
+/* 选择整合模式 */
+.memory-item.selecting {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.memory-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.select-badge {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  margin-top: 4rpx;
+  border-radius: 50%;
+  border: 2rpx solid #A1A1AA;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.memory-item.selecting .select-badge.selected {
+  background: #000000;
+  border-color: #000000;
+}
+
+.integrated-tag {
+  font-size: 18rpx;
+  color: #059669;
+  background: #F0FDF4;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 8rpx;
+}
+
+.hidden-tag {
+  font-size: 18rpx;
+  color: #71717A;
+  background: #F4F4F5;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 8rpx;
+}
+
+/* 治理弹窗条目 */
+.gov-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-sm;
+}
+
+.gov-check {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  margin-top: 2rpx;
+  border-radius: 50%;
+  border: 2rpx solid #A1A1AA;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+
+  &.selected {
+    background: #000000;
+    border-color: #000000;
+  }
+}
+
+.gov-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gov-title {
+  margin-bottom: 2rpx;
+}
+
+.gov-desc {
+  display: block;
+  font-size: 20rpx;
+  color: #A1A1AA;
+  line-height: 1.4;
+}
+
 /* 空状态 */
 .empty-state {
   display: flex;
@@ -155,6 +273,7 @@
     font-weight: 600;
 
     &.add { background: #000000; color: #FFFFFF; }
+    &.integrate { background: #F4F4F5; color: #18181B; }
     &.clear { background: #F4F4F5; color: #EF4444; }
   }
 }
@@ -228,6 +347,64 @@
   box-sizing: border-box;
 }
 
+/* 整合预览弹窗 */
+.integrate-modal {
+  max-height: 80vh;
+}
+
+.modal-sub {
+  font-size: $font-xs;
+  color: #71717A;
+  text-align: center;
+}
+
+.integrate-list {
+  max-height: 48vh;
+}
+
+.integrate-item {
+  background: #F4F4F5;
+  border-radius: 12rpx;
+  padding: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.integrate-content {
+  display: block;
+  font-size: $font-sm;
+  color: #18181B;
+  line-height: 1.5;
+  margin-bottom: $spacing-xs;
+  word-break: break-word;
+}
+
+.integrate-row {
+  display: flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-xs;
+}
+
+.integrate-input {
+  flex: 1;
+  min-width: 0;
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  padding: 10rpx 16rpx;
+  font-size: $font-xs;
+  color: #18181B;
+  border: 1rpx solid #E4E4E7;
+
+  &.group { flex: 0 0 180rpx; }
+  &.field { flex: 0 0 160rpx; }
+}
+
+.integrate-existing {
+  display: block;
+  font-size: 20rpx;
+  color: #D97706;
+  margin-top: 4rpx;
+}
+
 .modal-actions {
   display: flex;
   gap: $spacing-sm;
@@ -262,6 +439,10 @@
     background: #27272A;
     color: #A1A1AA;
   }
+  .scope-bar .filter-chip {
+    background: #18181B;
+    color: #A1A1AA;
+  }
   .memory-item {
     background: #18181B;
   }
@@ -280,6 +461,40 @@
     color: #A1A1AA;
   }
   .modal-input {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+  .integrate-item {
+    background: #27272A;
+  }
+  .integrate-content {
+    color: #FAFAFA;
+  }
+  .integrate-input {
+    background: #18181B;
+    color: #FAFAFA;
+    border-color: #27272A;
+  }
+  .integrate-existing {
+    color: #FBBF24;
+  }
+  .integrated-tag {
+    color: #6EE7B7;
+    background: #064E3B;
+  }
+  .hidden-tag {
+    color: #A1A1AA;
+    background: #27272A;
+  }
+  .gov-check {
+    background: #18181B;
+    border-color: #52525B;
+  }
+  .select-badge {
+    background: #18181B;
+    border-color: #52525B;
+  }
+  .bottom-btn.integrate {
     background: #27272A;
     color: #FAFAFA;
   }

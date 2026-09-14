@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 17 文件 / 119 用例，Vitest，`npx vitest run`（退出码 1 是正常的，stderr 日志来自 op-claim-guard 测试） |
-| 版本 | v2.2.0（AI 纠错 + 反馈管理 + 标签分类 + 记录类型 + 样式重构） |
+| 测试 | 45 文件 / 530 用例，Vitest，`npx vitest run` 实测全绿（exit 0） |
+| 版本 | v3.5.10（介绍网站新增 44 秒介绍片：滚到静音播、滚走暂停，1080p 无音轨） |
 
 ---
 
@@ -104,6 +104,13 @@
 - 拆分方向：按职责分离（store/executors/ 已拆 7 个领域）
 - 标记未拆项：`// TODO: extract to xxx`
 
+### 图片资源（防 App 端缓存）
+
+- **更换图片内容必须同时改文件名**（追加 `-v2`/`-v3` 版本后缀，如 `chat.png` → `chat-v2.png`），App 端同名资源不刷新，只换内容不换名会"更新不生效"
+- 改名后必须全局搜索更新所有引用：`pages.json` tabBar、`static/icons/` 下 provider/agent 动态拼接、`store/agent.js`、`utils/agent-templates.js`、各 .vue 组件
+- 引用文件与磁盘文件名必须一致；改动后执行 `rg -n "static/(icons|tab)/" --glob "!static/**"` 检查无旧名残留
+- 存量数据兼容：已持久化的旧 icon 路径在 `utils/agent-templates.js` 的 `AGENT_ICON_V2` 映射表中登记，`normalizeAgentIcon()` 渲染时归一化，禁止删除旧名文件前不登记映射
+
 ### 平台差异
 
 - **H5 可用 ≠ App 可用 ≠ 小程序可用** — 任何方案必须说明平台适配
@@ -133,9 +140,11 @@
 ├── utils/
 │   ├── ai/             # AI 核心引擎（agent-loop/tools/prompt-builder/response-parser/autoExecutor 等）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.5.js）
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 15 文件 94 用例
+├── tests/              # 45 文件 530 用例
+├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
 ├── manifest.json       # 应用配置
@@ -186,7 +195,7 @@
 
 ### 内置 Agent
 
-4 个内置（siji 通用 / workplace_advisor / relationship_advisor / career_coach），各有定制技能。5 个自定义模板。
+3.0 起内置仅 1 个：思迹助手（siji，通用）。场景人设全部模板化：PRESET_TEMPLATES 仅 2 个（心理咨询师 / 情感顾问），点击模板创建为自定义 Agent；也可让 AI 直接创建（create_agent 工具，见 utils/ai/tools/agent.js）。
 
 ---
 
@@ -233,7 +242,10 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 加新页面 | `pages.json` + `pages/xxx/` |
 | 改全局样式 | `uni.scss` + `App.vue` |
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
-| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/skills.js` |
+| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
+| 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
+| 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
+| 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
 | 记录类型 | `pages/diary/detail.vue` RECORD_TYPES 常量 |
@@ -245,7 +257,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-data.js` 的 `getDefaultHistory()` 顶部新增一条记录：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `3.5.js`；聚合入口 `utils/storage/version-data.js` 不用改）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）
@@ -266,5 +278,5 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- `npx vitest run` 退出码 1 是正常的（stderr 日志来自 op-claim-guard 测试的预期输出）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 45 文件 / 530 用例全绿，exit 0
 - 完整交接文档见 `CODEX_HANDOFF.md`

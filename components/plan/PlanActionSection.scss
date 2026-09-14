@@ -1,0 +1,210 @@
+/* PlanActionSection.vue SCSS — 下一步单卡 + 打卡 + 本月打卡日历（3.5.7 从 plan/detail.scss 拆出） */
+
+/* 3.3 A：下一步单卡（最小行动闭环） */
+.next-step-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  background: #18181B;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+.ns-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.ns-label {
+  font-size: 20rpx;
+  color: #A1A1AA;
+}
+.ns-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ns-meta {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+.ns-btn {
+  flex-shrink: 0;
+  background: #FFFFFF;
+  color: #18181B;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+}
+
+/* 3.4.1 B2：打卡（带描述与时刻，轻记录） */
+.checkin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+.ci-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+.ci-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.ci-label {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #18181B;
+}
+.ci-sub {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+.ci-btn {
+  flex-shrink: 0;
+  background: #18181B;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+}
+.ci-btn.done {
+  background: rgba(0, 0, 0, 0.06);
+  color: #71717A;
+}
+
+.ci-backfill {
+  align-self: flex-start;
+  margin-top: 10rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.05);
+  color: #3F3F46;
+  font-size: 22rpx;
+
+  &:active { background: rgba(0, 0, 0, 0.12); }
+}
+
+.ci-editor {
+  display: flex;
+  gap: 12rpx;
+  align-items: flex-end;
+}
+.ci-note {
+  flex: 1;
+  min-height: 72rpx;
+  padding: 12rpx 16rpx;
+  font-size: 24rpx;
+  color: #18181B;
+  background: #F4F4F5;
+  border-radius: 12rpx;
+}
+.ci-save {
+  flex-shrink: 0;
+  background: #18181B;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+}
+.ci-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  border-top: 1rpx solid #E4E4E7;
+  padding-top: 12rpx;
+}
+.ci-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+.ci-item-time {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  min-width: 120rpx;
+  flex-shrink: 0;
+}
+.ci-item-note {
+  flex: 1;
+  font-size: 22rpx;
+  color: #18181B;
+}
+.ci-tip {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  margin-top: 2rpx;
+}
+
+/* 3.5.5：本月打卡日历 */
+.cal-section {
+  padding-top: 12rpx;
+}
+.cal-day-text {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #18181B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-day-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+.cal-day-row .cal-day-text {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+}
+.cal-undo {
+  flex-shrink: 0;
+  padding: 4rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 0, 0, 0.05);
+  color: #71717A;
+  font-size: 20rpx;
+
+  &:active { background: rgba(0, 0, 0, 0.12); }
+}
+
+@media (prefers-color-scheme: dark) {
+  .next-step-card { background: #27272A; }
+  .ns-btn { background: #FAFAFA; color: #18181B; }
+
+  .checkin-card { background: #27272A; border-color: #3F3F46; }
+  .ci-label { color: #FAFAFA; }
+  .ci-sub { color: #71717A; }
+  .ci-btn { background: #FAFAFA; color: #18181B; }
+  .ci-btn.done { background: #3F3F46; color: #A1A1AA; }
+  .ci-backfill { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+  .ci-note { background: #3F3F46; color: #FAFAFA; }
+  .ci-save { background: #FAFAFA; color: #18181B; }
+  .ci-list { border-top-color: #3F3F46; }
+  .ci-item-note { color: #FAFAFA; }
+  .ci-tip { color: #52525B; }
+
+  .cal-day-text { color: #FAFAFA; }
+  .cal-undo { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+}

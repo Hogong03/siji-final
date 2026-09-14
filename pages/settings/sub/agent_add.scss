@@ -251,31 +251,6 @@ $spacing-lg: 32rpx;
   line-height: 1.2;
 }
 
-.view-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
-}
-
-.view-skill-chip {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: $spacing-xs $spacing-sm;
-  background: #F4F4F5;
-  border-radius: $radius-sm;
-  box-sizing: border-box;
-}
-
-.view-skill-icon {
-  font-size: 28rpx;
-}
-
-.view-skill-name {
-  font-size: $font-sm;
-  color: #18181B;
-}
-
 .view-prompt {
   padding: $spacing-md;
   background: #FFFFFF;
@@ -289,74 +264,35 @@ $spacing-lg: 32rpx;
   box-sizing: border-box;
 }
 
-/* 技能选择 */
-.skill-grid {
+/* 开场引导（只读 chips） */
+.start-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  gap: $spacing-sm;
   margin-top: 16rpx;
 }
 
-.skill-option {
-  width: calc(33.33% - 11rpx);
-  background: #F4F4F5;
-  border: 2rpx solid transparent;
-  border-radius: 16rpx;
-  padding: 20rpx 12rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6rpx;
-  transition: all 0.2s;
-
-  &.active {
-    background: #18181B;
-    border-color: #000000;
-  }
+.start-chip {
+  padding: $spacing-xs $spacing-sm;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  border: 1rpx solid #E4E4E7;
+  box-sizing: border-box;
 }
 
-.skill-icon {
-  font-size: 36rpx;
-}
-
-.skill-name {
-  font-size: 24rpx;
-  font-weight: 600;
+.start-chip-text {
+  font-size: $font-xs;
   color: #18181B;
-}
-
-.skill-desc {
-  font-size: 20rpx;
-  color: #71717A;
-  text-align: center;
-  line-height: 1.3;
-}
-
-.skill-option.active .skill-name,
-.skill-option.active .skill-icon {
-  color: #FFFFFF;
+  line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {
-  .skill-option {
+  .start-chip {
     background: #27272A;
-
-    &.active {
-      background: #FAFAFA;
-      border-color: #FAFAFA;
-    }
+    border-color: #27272A;
   }
 
-  .skill-name {
+  .start-chip-text {
     color: #FAFAFA;
-  }
-
-  .skill-desc {
-    color: #71717A;
-  }
-
-  .skill-option.active .skill-name,
-  .skill-option.active .skill-icon {
-    color: #000000;
   }
 }

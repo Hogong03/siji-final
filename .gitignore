@@ -20,3 +20,9 @@ Thumbs.db
 
 # local trash
 .trash/
+
+# 临时文件
+npm-install.log
+package.json.bak
+icon-compare.html
+icon-new.html

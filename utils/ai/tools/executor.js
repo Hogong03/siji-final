@@ -4,7 +4,9 @@
  */
 import { logger } from '../../logger.js'
 import { addCustomTag, getTagsByCategory, removeCustomTag, updateTagCategory } from '../../storage/tags.js'
-import { needsConfirmation } from './index.js'
+import { needsConfirmation, TOOL_LABELS } from './index.js'
+import { buildAgentPayload } from './agent.js'
+import { searchConversations } from '../../chat-search.js'
 
 /**
  * 执行一个工具调用
@@ -15,6 +17,19 @@ import { needsConfirmation } from './index.js'
  */
 export function executeTool(store, name, args = {}) {
   try {
+    // 确认闸门前置：写操作默认需用户确认（3.0 M3），查询/撤销直接放行
+    if (needsConfirmation(name, args)) {
+      const label = TOOL_LABELS[name] || name
+      const isBill = (name === 'create_bill' || name === 'update_bill') && args && typeof args.amount === 'number'
+      const reason = isBill ? `金额 ¥${args.amount} 较大` : label
+      return {
+        ok: false,
+        confirm: true,
+        text: `${reason}，需要你确认后再执行。已生成确认卡等待确认，确认前不要写入。`,
+        detail: { type: name, payload: args, confirmReason: reason }
+      }
+    }
+
     // 标签管理工具 — 直接调用 tags.js，不走 store.executeAction
     if (name === 'query_tags') {
       const type = args.type || 'diary'
@@ -58,16 +73,36 @@ export function executeTool(store, name, args = {}) {
       }
     }
 
-    // 确认检查：金额>=500 或破坏性操作需用户确认
-    if (needsConfirmation(name, args)) {
-      const reason = name === 'create_bill' || name === 'update_bill'
-        ? `金额 ¥${args.amount} 较大，需要你确认后再执行`
-        : `操作 ${name} 需要用户确认`
+    // 会话检索（3.2 M3）— 直接调 utils/chat-search.js，不走 store
+    if (name === 'query_conversations') {
+      const hits = searchConversations(args.keyword, { tag: args.tag })
+      if (hits.length === 0) {
+        return {
+          ok: true,
+          text: `没有在历史对话中找到「${args.keyword}」相关内容。`,
+          detail: { type: 'query_conversations', hits: [] }
+        }
+      }
+      const lines = hits.map(h => `• ${h.dateText}「${h.convTitle}」：…${h.snippet}…`)
       return {
-        ok: false,
-        confirm: true,
-        text: reason + '。请向用户说明并等待确认，不要直接执行。',
-        detail: { type: name, payload: args, confirmReason: reason }
+        ok: true,
+        text: `找到 ${hits.length} 条相关会话：\n${lines.join('\n')}`,
+        detail: { type: 'query_conversations', hits }
+      }
+    }
+
+    // Agent 管理 — AI 对话直接创建（3.0；校验后落库，供用户在切换器/设置中编辑）
+    if (name === 'create_agent') {
+      if (typeof store.createAgent !== 'function') {
+        return { ok: false, text: '当前环境不支持创建 Agent，请稍后重试', detail: null }
+      }
+      const built = buildAgentPayload(args)
+      if (!built.ok) return { ok: false, text: built.text, detail: null }
+      const agent = store.createAgent(built.data)
+      return {
+        ok: true,
+        text: '已创建 Agent「' + agent.name + '」。可在对话顶部切换器选用，或到 设置 → Agent 与模板 中编辑人设。',
+        detail: { type: 'create_agent', agent: { id: agent.id, name: agent.name, description: agent.description, icon: agent.icon, starts: agent.starts || [] } }
       }
     }
 
@@ -124,6 +159,18 @@ function formatToolResult(name, detail) {
     case 'query_feedback_stats':
     case 'query_tags':
       return JSON.stringify(detail)
+    case 'query_glimmers': {
+      const items = (detail && Array.isArray(detail.items)) ? detail.items : []
+      if (items.length === 0) return '微光本还是空的（允许空着）'
+      const lines = items.map(g => (g.date || '') + '：' + (g.content || ''))
+      return '微光本（近 ' + (detail.days || 30) + ' 天，共 ' + items.length + ' 条）：\n' + lines.join('\n')
+    }
+    case 'log_plan_checkin': {
+      const d = detail || {}
+      const total = d.totalDays || 0
+      const baseText = d.todayDone ? '今天已经打过卡（累计 ' + total + ' 天）' : '已记录「今天做了」（累计 ' + total + ' 天）'
+      return d.note ? baseText + '，描述：' + d.note : baseText
+    }
     default:
       return JSON.stringify(detail)
   }

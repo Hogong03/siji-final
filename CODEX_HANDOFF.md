@@ -2,7 +2,7 @@
 
 > 本文件供 AI 编码助手（Codex/Claude/Cursor 等）快速接手项目开发。
 > 包含项目架构、核心约定、代码风格、禁用项、关键模块索引。
-> 最后更新：2026-08-20
+> 最后更新：2026-09-13
 
 ---
 
@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 17 文件 / 119 用例全通过，Vitest 框架 |
-| 版本 | v2.1.0+（Agent 系统优化已落地） |
+| 测试 | 45 文件 / 530 用例全通过，Vitest 框架 |
+| 版本 | v3.5.10（介绍网站新增 44 秒介绍片：滚到静音播、滚走暂停，1080p 无音轨） |
 
 ---
 
@@ -70,7 +70,6 @@
 │   │   ├── autoExecutor.js     # 自动执行 + 结果渲染
 │   │   ├── fallback.js         # 前端兜底
 │   │   ├── providers.js        # 4 厂商注册表
-│   │   ├── skills.js           # 内置 Agent 技能
 │   │   ├── chat-helpers.js     # 消息构建
 │   │   ├── chat-store.js       # 聊天会话存储
 │   │   └── constants.js        # 共享正则与类型映射
@@ -146,8 +145,10 @@ prompt-builder.js
 
 ### 3.5 内置 Agent
 
-4 个内置 Agent（siji 通用 / workplace_advisor / relationship_advisor / career_coach），各有定制技能。
-5 个自定义模板。Agent 技能由 `skills.js` 的 `BUILTIN_AGENT_SKILLS` 定义。
+3.0 起内置仅 1 个：思迹助手（siji 通用）。
+场景人设模板化：`utils/agent-templates.js` 的 `PRESET_TEMPLATES` 仅保留 2 个（心理咨询师 / 情感顾问），点击模板创建为自定义 Agent；另支持 AI 对话直接创建（`create_agent` 工具）。
+
+3.1 起技能体系整体下线：`utils/ai/skills.js` 已删除，Agent 无 `skills` 字段，人设即能力（原 7 段技能引导等价物并入 CORE_ACTIONS / agent-loop 提示词）；Agent 新增 `starts[]` 开场引导（≤3 条、每条 ≤20 字，思迹助手与 2 个模板预置，create_agent 支持 AI 生成）；会话新增 `agentId/agentName` 绑定（新建会话记录活跃 Agent，历史会话不符时聊天页显示一次性「切换」提示）。
 
 ### 3.6 AI 输出三层加固
 
@@ -320,7 +321,7 @@ npx vitest run
 | 加新页面 | `pages.json` + `pages/xxx/` |
 | 改全局样式 | `uni.scss` + `App.vue` |
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
-| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/skills.js` |
+| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
 | 记录类型 | `pages/diary/detail.vue` RECORD_TYPES 常量 |

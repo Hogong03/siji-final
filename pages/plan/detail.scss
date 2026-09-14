@@ -1,4 +1,5 @@
 /* plan/detail.vue SCSS — 计划详情页样式 */
+/* 3.5.7：分块样式已随组件拆走（PlanActionSection / PlanFieldsSection / PlanAiTools），这里只剩页面骨架与底部栏 */
 
 .detail-page {
   display: flex;
@@ -11,246 +12,6 @@
   flex: 1;
   box-sizing: border-box;
   padding: 12rpx 20rpx 120rpx;
-}
-
-.section {
-  margin-bottom: 12rpx;
-  background: #FFFFFF;
-  border-radius: 12rpx;
-  padding: 16rpx 20rpx;
-}
-
-.section-label {
-  font-size: 24rpx;
-  color: #71717A;
-  margin-bottom: 8rpx;
-  display: block;
-  font-weight: 600;
-}
-
-.input-field {
-  font-size: 28rpx;
-  padding: 8rpx 0;
-  border-bottom: 1rpx solid #E4E4E7;
-  width: 100%;
-  color: #18181B;
-}
-
-.textarea-field {
-  font-size: 28rpx;
-  min-height: 200rpx;
-  width: 100%;
-  line-height: 1.8;
-  padding: 8rpx 0;
-  color: #18181B;
-}
-
-/* 优先级 */
-.priority-row {
-  display: flex;
-  gap: 8rpx;
-}
-
-.priority-item {
-  flex: 1;
-  text-align: center;
-  padding: 12rpx 0;
-  border-radius: 10rpx;
-  font-size: 24rpx;
-  border: 2rpx solid #E4E4E7;
-  color: #71717A;
-  transition: all 0.15s ease;
-
-  &.active {
-    border-color: #18181B;
-    background: #18181B;
-    color: #FFFFFF;
-    font-weight: 600;
-  }
-}
-
-/* 状态 */
-.status-row {
-  display: flex;
-  gap: 8rpx;
-}
-
-.status-item {
-  flex: 1;
-  text-align: center;
-  padding: 12rpx 0;
-  border-radius: 10rpx;
-  font-size: 24rpx;
-  background: #F4F4F5;
-  color: #71717A;
-  transition: all 0.15s ease;
-
-  &.active {
-    background: #18181B;
-    color: #FFFFFF;
-    font-weight: 600;
-  }
-}
-
-/* AI 工具栏 */
-.ai-tools-section {
-  background: #FAFAFA;
-  border: 1rpx solid #E4E4E7;
-}
-
-.ai-tools-row {
-  display: flex;
-  gap: 8rpx;
-  flex-wrap: wrap;
-}
-
-.ai-tool-btn {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 12rpx 20rpx;
-  border-radius: 10rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #E4E4E7;
-  font-size: 24rpx;
-  color: #18181B;
-  font-weight: 500;
-  transition: all 0.15s ease;
-
-  &.loading {
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
-  &:active {
-    transform: scale(0.95);
-    background: #F4F4F5;
-  }
-}
-
-.ai-result {
-  margin-top: 12rpx;
-  padding: 12rpx;
-  background: #FFFFFF;
-  border-radius: 8rpx;
-  border-left: 4rpx solid #18181B;
-}
-
-.ai-result-title {
-  font-size: 22rpx;
-  font-weight: 700;
-  color: #18181B;
-  display: block;
-  margin-bottom: 4rpx;
-}
-
-.ai-result-text {
-  font-size: 24rpx;
-  color: #52525B;
-  line-height: 1.7;
-  white-space: pre-wrap;
-}
-
-/* AI 建议 */
-.ai-section {
-  background: #FAFAFA;
-  border: 1rpx solid #E4E4E7;
-
-  .ai-text {
-    font-size: 24rpx;
-    color: #18181B;
-    line-height: 1.7;
-    white-space: pre-wrap;
-  }
-}
-
-/* 标签 chips */
-.tag-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  align-items: center;
-}
-
-.tag-chip {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-  border: 1rpx solid #E4E4E7;
-  font-size: 22rpx;
-  background: #F4F4F5;
-  color: #52525B;
-
-  .tc-label { font-weight: 500; }
-  .tc-close { font-size: 20rpx; opacity: 0.7; margin-left: 2rpx; }
-}
-
-.tag-add-btn {
-  padding: 6rpx 20rpx;
-  border-radius: 20rpx;
-  border: 1rpx dashed #A1A1AA;
-  font-size: 22rpx;
-  color: #71717A;
-}
-
-/* 父计划关联 */
-.parent-section {
-  padding: 12rpx 20rpx;
-  background: #FAFAFA;
-  border: 1rpx solid #E4E4E7;
-
-  &:active { background: #F4F4F5; }
-}
-
-.parent-link {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-}
-
-.parent-label {
-  font-size: 22rpx;
-  color: #71717A;
-  flex-shrink: 0;
-}
-
-.parent-title {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #18181B;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.parent-arrow {
-  font-size: 28rpx;
-  color: #A1A1AA;
-}
-
-/* 重复提醒 */
-.repeat-row {
-  display: flex;
-  gap: 8rpx;
-  flex-wrap: wrap;
-}
-
-.repeat-item {
-  padding: 10rpx 24rpx;
-  border-radius: 10rpx;
-  font-size: 24rpx;
-  background: #F4F4F5;
-  color: #71717A;
-  transition: all 0.15s ease;
-
-  &.active {
-    background: #18181B;
-    color: #FFFFFF;
-    font-weight: 600;
-  }
 }
 
 /* 底部操作栏 — fixed 定位，硬编码颜色 */
@@ -287,31 +48,24 @@
     font-size: 28rpx;
     font-weight: 600;
   }
+
+  .btn-freeze {
+    flex: 1;
+    text-align: center;
+    padding: 20rpx 0;
+    border-radius: 12rpx;
+    background: #F4F4F5;
+    color: #B45309;
+    font-size: 28rpx;
+    font-weight: 600;
+  }
 }
 
 /* ═══ 深色模式 ═══ */
 @media (prefers-color-scheme: dark) {
   .detail-page { background: #18181B; }
-  .section { background: #27272A; }
-  .section-label { color: #71717A; }
-  .parent-section { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
-  .parent-title { color: #FAFAFA; }
-  .parent-label { color: #71717A; }
-  .parent-arrow { color: #52525B; }
-  .repeat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
-  .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
-  .textarea-field { color: #FAFAFA; }
-  .priority-item { border-color: #3F3F46; color: #A1A1AA; &.active { border-color: #FAFAFA; background: #FAFAFA; color: #18181B; } }
-  .status-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
-  .ai-tools-section { background: #27272A; border-color: #3F3F46; }
-  .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
-  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
-  .ai-result-title { color: #FAFAFA; }
-  .ai-result-text { color: #F4F4F5; }
-  .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
-  .tag-chip { background: #3F3F46; border-color: #52525B; color: #F4F4F5; }
-  .tag-add-btn { border-color: #52525B; color: #71717A; }
   .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
   .bottom-bar .btn-delete { background: #3F3F46; }
   .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
+  .btn-freeze { background: #3F3F46; color: #D97706; }
 }

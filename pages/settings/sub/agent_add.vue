@@ -9,8 +9,7 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
-import { SKILL_REGISTRY } from '@/utils/ai/skills.js'
-import { PRESET_TEMPLATES } from '@/utils/agent-templates.js'
+import { PRESET_TEMPLATES, normalizeAgentIcon } from '@/utils/agent-templates.js'
 
 const store = useAppStore()
 
@@ -22,26 +21,18 @@ const editForm = ref({
   id: '',
   name: '',
   avatar: '🤖',
-  icon: '/static/icons/agent-custom.png',
+  icon: '/static/icons/agent-custom-v2.png',
   description: '',
   systemPrompt: '',
-  skills: ['memory']
+  starts: []
 })
 
 /* ---- 预设头像图标 ---- */
 const ICON_OPTIONS = [
-  { id: 'agent-siji', label: '助手' },
-  { id: 'agent-workplace', label: '职场' },
-  { id: 'agent-relationship', label: '情感' },
-  { id: 'agent-career', label: '求职' },
-  { id: 'agent-psychologist', label: '心理' },
-  { id: 'agent-fitness', label: '健身' },
-  { id: 'agent-finance', label: '财务' },
-  { id: 'agent-study', label: '学习' },
-  { id: 'agent-minimal', label: '极简' },
-  { id: 'agent-custom', label: '自定义' },
-]
-
+      { id: 'agent-relationship', label: '情感' },
+      { id: 'agent-psychologist', label: '心理' },
+      { id: 'agent-custom', label: '自定义' },
+    ]
 
 /* ---- 初始化 ---- */
 onLoad((options) => {
@@ -54,10 +45,10 @@ onLoad((options) => {
         id: agent.id,
         name: agent.name,
         avatar: agent.avatar,
-        icon: agent.icon || '',
+        icon: normalizeAgentIcon(agent.icon || ''),
         description: agent.description,
         systemPrompt: agent.systemPrompt,
-        skills: agent.skills || ['memory']
+        starts: agent.starts || []
       }
       uni.setNavigationBarTitle({ title: viewMode.value ? 'Agent 详情' : '编辑 Agent' })
     } else {
@@ -71,7 +62,7 @@ onLoad((options) => {
         id: '', name: tpl.name, avatar: tpl.avatar,
         icon: tpl.icon || '',
         description: tpl.description, systemPrompt: tpl.systemPrompt,
-        skills: tpl.skills || ['memory']
+        starts: tpl.starts || []
       }
     }
     uni.setNavigationBarTitle({ title: '创建 Agent' })
@@ -79,20 +70,6 @@ onLoad((options) => {
     uni.setNavigationBarTitle({ title: '创建 Agent' })
   }
 })
-
-/* ---- 操作 ---- */
-function skillById(id) {
-  return SKILL_REGISTRY.find(x => x.id === id)
-}
-
-function toggleSkill(id) {
-  const idx = editForm.value.skills.indexOf(id)
-  if (idx >= 0) {
-    editForm.value.skills.splice(idx, 1)
-  } else {
-    editForm.value.skills.push(id)
-  }
-}
 
 function saveAgent() {
   if (!editForm.value.name.trim()) {
@@ -102,10 +79,10 @@ function saveAgent() {
   const data = {
     name: editForm.value.name.trim(),
     avatar: editForm.value.avatar,
-    icon: editForm.value.icon || '/static/icons/agent-custom.png',
+    icon: editForm.value.icon || '/static/icons/agent-custom-v2.png',
     description: editForm.value.description.trim(),
     systemPrompt: editForm.value.systemPrompt.trim(),
-    skills: editForm.value.skills
+    starts: editForm.value.starts.slice(0, 3)
   }
   if (editMode.value === 'create') {
     const agent = store.createAgent(data)
@@ -136,10 +113,10 @@ function saveAgent() {
             <view
               v-for="opt in ICON_OPTIONS" :key="opt.id"
               class="avatar-option"
-              :class="{ active: editForm.icon === `/static/icons/${opt.id}.png` }"
-              @tap="editForm.icon = `/static/icons/${opt.id}.png`"
+              :class="{ active: editForm.icon === `/static/icons/${opt.id}-v2.png` }"
+              @tap="editForm.icon = `/static/icons/${opt.id}-v2.png`"
             >
-              <image :src="`/static/icons/${opt.id}.png`" mode="aspectFill" class="avatar-option-img" />
+              <image :src="`/static/icons/${opt.id}-v2.png`" mode="aspectFill" class="avatar-option-img" />
               <text class="avatar-option-label">{{ opt.label }}</text>
             </view>
           </view>
@@ -178,26 +155,13 @@ function saveAgent() {
           <text v-else class="view-value">{{ editForm.description || '暂无描述' }}</text>
         </view>
 
-        <!-- 技能选择 -->
-        <view class="form-section">
-          <text class="form-label">技能</text>
-          <text class="form-hint">选择 Agent 具备的能力，选中后对应的工具和行为规则会注入系统提示词</text>
-          <view v-if="!viewMode" class="skill-grid">
-            <view
-              v-for="skill in SKILL_REGISTRY" :key="skill.id"
-              class="skill-option"
-              :class="{ active: editForm.skills.includes(skill.id) }"
-              @tap="toggleSkill(skill.id)"
-            >
-              <text class="skill-icon">{{ skill.icon }}</text>
-              <text class="skill-name">{{ skill.name }}</text>
-              <text class="skill-desc">{{ skill.description }}</text>
-            </view>
-          </view>
-          <view v-else class="view-skills">
-            <view v-for="sid in editForm.skills" :key="sid" class="view-skill-chip">
-              <text class="view-skill-icon">{{ skillById(sid)?.icon || '' }}</text>
-              <text class="view-skill-name">{{ skillById(sid)?.name || sid }}</text>
+        <!-- 开场引导（切换 Agent 后可一键发送的示例；只读展示，由模板/AI 预置） -->
+        <view v-if="editForm.starts.length" class="form-section">
+          <text class="form-label">开场引导</text>
+          <text class="form-hint">切换到此 Agent 时显示在输入框上方，点击即可发送</text>
+          <view class="start-chips">
+            <view v-for="(s, si) in editForm.starts" :key="si" class="start-chip">
+              <text class="start-chip-text">{{ s }}</text>
             </view>
           </view>
         </view>

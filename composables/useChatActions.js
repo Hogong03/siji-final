@@ -52,7 +52,7 @@ export function saveImageAsync(imageData, store, targetMsg) {
     if (!localPath) return
     // 直接回写消息引用 — 跨会话切换也不受影响
     if (targetMsg && targetMsg.image) targetMsg.image.localPath = localPath
-    store.persistConversations()
+    store.persistHistory()
     logger.info('Image saved to', localPath)
   }).catch(e => logger.warn('saveImage failed', e))
 }
@@ -133,7 +133,7 @@ export async function retryLastMessage(store, handleSend, options = {}, inputAre
     }
   }
 
-  await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers)
+  await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers, options)
 }
 
 /** 离线检测并返回本地操作提示 */

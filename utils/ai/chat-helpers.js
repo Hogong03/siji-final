@@ -5,10 +5,11 @@
  */
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
-import { buildSkillsPrompt } from './skills.js'
 import { buildMemoryContext } from '@/utils/memory.js'
-import { buildRelationsContext } from '@/utils/relations.js'
+import { buildRelationsContext, detectMentionedRelations } from '@/utils/relations.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
+import { buildPlanContext } from '@/utils/plan-context.js'
+import { energyScan } from '@/utils/energy-context.js'
 import { buildVisionMessage } from '@/utils/image.js'
 import { logger } from '../logger.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
@@ -39,6 +40,7 @@ function estimateTokens(text) {
 const CONTEXT_KEYWORDS = {
   relations: /(?:朋友|同事|女朋友|男朋友|女友|男友|老婆|老公|妻子|丈夫|家人|爸爸|妈妈|爸|妈|领导|老板|老师|同学|室友|人脉|关系|认识|介绍|是谁|叫什么)/,
   decisions: /(?:纠结|选择|决定|决策|要不要|该不该|选哪个|两难|权衡|纠结|犯难)/,
+  plan: /(?:计划|执行|开始做|做到哪|进度|完成得|下一步|目标|拖延|没做|放弃|取消)/,
   memorySummary: /(?:总结|周报|月报|复盘|回顾|最近怎么样|这段时间)/
 }
 
@@ -56,14 +58,14 @@ export function buildChatMessages(userMessage, history, cfg) {
     system += `\n\n---\n用户近期数据：\n${profile}`
   }
 
-  // 长期记忆：始终注入精简版（最近 3 条），完整版按需
-  const memoryContext = buildMemoryContext()
+  // 长期记忆：按当前消息相关度检索 top-30 注入（无命中回落最近 30 条，3.5.11）
+  const memoryContext = buildMemoryContext(userMessage)
   if (memoryContext) {
     system += memoryContext
   }
 
   // 关系上下文：仅在用户消息含人名/关系词时注入
-  if (CONTEXT_KEYWORDS.relations.test(userMessage)) {
+  if (CONTEXT_KEYWORDS.relations.test(userMessage) || detectMentionedRelations(userMessage).length > 0) {
     const relationsCtx = buildRelationsContext(userMessage)
     if (relationsCtx) {
       system += relationsCtx
@@ -78,15 +80,19 @@ export function buildChatMessages(userMessage, history, cfg) {
     }
   }
 
-  // Agent 模式：注入技能 prompt（内置 Agent 使用定制化技能 prompt）
-  if (cfg && cfg.agentMode && cfg.skills && cfg.skills.length > 0) {
-    const skillsPrompt = buildSkillsPrompt(cfg.skills, cfg.agentId || null)
-    if (skillsPrompt) {
-      system += skillsPrompt
-    }
+  // 关系上下文已包含被提到的人物详情（buildRelationsContext 内部处理）
+  // 3.4 M1：能量感知 — 低/极低时注入降载指令（纯本地推断，零用户输入）
+  const energy = energyScan(userMessage, history)
+  if (energy.text) {
+    system += energy.text
+  }
+  // 3.4 M1/M3：低/极低能量抑制点破模板（noNudge）；冷藏计划由 buildPlanContext 内部跳过
+  // 计划执行上下文：仅当用户消息涉及计划且点名具体计划时注入（3.3 A/B，逃避候选附点破模板）
+  const planCtx = buildPlanContext(userMessage, energy.level === 'low' || energy.level === 'very_low' ? { noNudge: true } : undefined)
+  if (planCtx) {
+    system += planCtx
   }
 
-  // 关系上下文已包含被提到的人物详情（buildRelationsContext 内部处理）
   // 不再单独注入 detectMentionedRelations，避免重复
 
   const messages = [{ role: 'system', content: system }]

@@ -32,6 +32,9 @@
 	import {
 		checkVersionUpdate
 	} from '@/utils/version-check.js'
+	import {
+		initEnterSummary
+	} from '@/composables/useEnterSummary.js'
 
 	const store = useAppStore()
 
@@ -64,6 +67,8 @@
 				rebuildIndex()
 				initReminder(getPlanList)
 				startReminderChecker()
+				// 3.4.5：冷启动进入总结（计划完成/打卡 + 新增记录，仅冷启动计算一次）
+				initEnterSummary()
 			} catch (e) {
 				console.warn('[思迹] Init failed:', e.message)
 			}
@@ -126,14 +131,16 @@
 				Notification.requestPermission()
 			}
 		} catch (e) {
-			/* ignore */ }
+			/* ignore */
+		}
 		// #endif
 
 		// 检查计划提醒（从后台回到前台时立即检查）
 		try {
 			checkAllReminders()
 		} catch (e) {
-			/* ignore */ }
+			/* ignore */
+		}
 	})
 
 	onHide(() => {

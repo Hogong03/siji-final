@@ -12,14 +12,6 @@ export const OP_CLAIM_WORDS = [
   '已帮你记录', '已更新', '已修改', '已删除', '已生成'
 ]
 
-/** 扩展触发词（autoExecutor 专用，含更宽泛的匹配） */
-export const OP_CLAIM_WORDS_EXT = [
-  ...OP_CLAIM_WORDS,
-  '已记', '记了一笔', '帮你', '已帮',
-  '账单已', '记录已', '计划已', '已为你',
-  '记下了', '帮你记', '帮你建'
-]
-
 /** 构建检测正则 */
 function buildRegex(words) {
   return new RegExp(words.join('|'))
@@ -34,15 +26,16 @@ function buildReplaceRegex(words) {
 /** AI 声称操作完成 — 检测正则（基础集，response-parser 用） */
 export const OP_CLAIM_RE = buildRegex(OP_CLAIM_WORDS)
 
-/** AI 声称操作完成 — 检测正则（扩展集，autoExecutor 用） */
-export const OP_CLAIM_RE_EXT = buildRegex(OP_CLAIM_WORDS_EXT)
-
 /** AI 声称操作完成 — 替换正则（修改 reply 用） */
 export const OP_CLAIM_REPLACE_RE = buildReplaceRegex(OP_CLAIM_WORDS)
 
 /** fallback 场景 reply 触发正则（收窄：必须含"已"+操作动词，或"帮你"+操作动词，或"记下了"）
  *  原 .*记 过宽，"我记得你说过" 会误触发 */
 export const OP_CLAIM_RE_FALLBACK = /已(?:记|帮|创建|添加|保存|写入|更新|删除|生成)|帮你(?:记|建|创建|添加|保存|写入|更新)|记下了|记了一笔/
+
+/** 用户消息是否为明确操作指令 — autoExecutor 修正 reply 的前置条件
+ *  必须含"帮我+操作动词"或"操作动词+对象"结构，避免"聊天记录""工作计划"等名词误触发 */
+export const OP_REQUEST_RE = /(?:帮我(?:记|查|建|写|定|制定|安排|规划|创建|修改|更新|删除|撤销)|(?:记一下|记一笔|记录一下|写一篇|写个|建一个|创建一个)(?:账|账单|消费|支出|收入|记录|日记|周报|月报|计划|决策|标签)?|(?:创建|修改|更新|删除|撤销)(?:计划|记录|账单|决策|标签|画像|关系|日记)?|帮我记录|帮我记账|帮我计划)/
 
 /** 关系类型映射表 */
 export const RELATION_TYPES = [

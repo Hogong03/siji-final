@@ -10,6 +10,37 @@ import { expandKeywords, matchesAnyKeywords } from '@/utils/search-synonyms.js'
 export function createDiaryExecutors(ctx) {
   // ==================== 创建操作 ====================
 
+  /** 从完整句提取简短标题：去开头修饰词 → 取第一分句 → ≤20 字 */
+  function deriveShortTitle(text) {
+    let t = String(text || '').trim()
+    if (!t) return ''
+    t = t.replace(/^(?:今天|昨天|明天|昨晚|今早|早上|下午|晚上|最近|这(?:周|次|个)?(?:周末)?|打算|准备|计划|想要|想|在家|我们|我|然后|就|要|去|在|把|给|帮)+/g, '')
+    const seg = t.split(/[，。；、,.;!！?？\n]/)[0].trim()
+    return (seg || t).substring(0, 20)
+  }
+
+  /** 无意义标题（AI 常传"记录/日记"等占位词） */
+  const USELESS_TITLE_RE = /^(?:记录|日记|今天|昨天|明天|想法|灵感|待办|备忘|闪念|日常|随笔|心情|生活|无标题|记录一下|记一下|备忘一下|备注|我的记录|我)$/
+
+  /**
+   * 自动生成记录标题：
+   * - 多行正文：首行即标题（首行过长时提炼）
+   * - 单行短句（≤10 字）：直接作标题
+   * - 单行长文：去开头修饰词取第一分句提炼，避免"标题=正文开头"
+   */
+  function autoDiaryTitle(text) {
+    const t = String(text || '').trim()
+    if (!t) return ''
+    const lb = t.indexOf('\n')
+    if (lb > 0) {
+      const firstLine = t.substring(0, lb).trim()
+      if (firstLine.length <= 30) return firstLine
+      return deriveShortTitle(firstLine) || firstLine.substring(0, 20)
+    }
+    if (t.length <= 10) return t
+    return deriveShortTitle(t) || t.substring(0, 20)
+  }
+
   function execCreateDiary(p) {
     const now = Date.now()
     // 兼容 AI 把正文误放 title 的情况：正文为空时用 title 兜底
@@ -20,9 +51,31 @@ export function createDiaryExecutors(ctx) {
       fallbackFromTitle = true
     }
     const lineBreak = text.indexOf('\n')
-    const title = lineBreak > 0 ? text.substring(0, lineBreak).trim() : (text.length <= 50 ? text : text.substring(0, 50))
-    const content = fallbackFromTitle ? text : (lineBreak > 0 ? text.substring(lineBreak + 1).trim() : '')
-    const recordType = ['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type) ? p.record_type : 'note'
+    // 标题自动生成：AI 传了合理标题（≠正文、非占位词、≤30 字）→ 直接采用；
+    // 否则从正文自动提炼（多行取首行，单行长文去修饰词取第一分句），
+    // 避免“标题=正文开头 50 字 / 标题是‘记录’占位词”（开发者反馈 2026-09-01）
+    const aiTitle = fallbackFromTitle ? '' : String(p.title || '').trim()
+    const sameAsContent = !!aiTitle && aiTitle === text
+    let title
+    if (fallbackFromTitle) {
+      title = text.length <= 50 ? text : text.substring(0, 50)
+    } else if (!aiTitle || sameAsContent || aiTitle.length > 30 || USELESS_TITLE_RE.test(aiTitle)) {
+      title = autoDiaryTitle(text)
+    } else {
+      title = aiTitle
+    }
+    if (!title) title = '无标题'
+    const content = fallbackFromTitle
+      ? text
+      : (lineBreak > 0 ? text.substring(lineBreak + 1).trim() : text)
+    // 模型未传记录类型时按正文关键词推断（日记/心情→diary，想法→idea，待办→todo，闪念→flash）
+    const inferredType = /日记|心情|随笔/.test(text) ? 'diary'
+      : /想法|灵感|点子/.test(text) ? 'idea'
+      : /待办|要做|备忘/.test(text) ? 'todo'
+      : /闪念|碎片/.test(text) ? 'flash' : ''
+    const recordType = ['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type)
+      ? p.record_type
+      : (inferredType || 'note')
 
     const diary = {
       client_id: ctx.generateEntityId('diary'),
@@ -87,6 +140,16 @@ export function createDiaryExecutors(ctx) {
     const updates = {}
     if (p.title != null) updates.title = p.title
     if (p.content != null) updates.content = p.content
+    // 只改正文且旧标题无意义（空/占位词/与旧正文重复）时自动提炼新标题（反馈 2026-09-01）
+    if (p.title == null && p.content != null && String(p.content).trim()) {
+      const oldTitle = String(old.title || '').trim()
+      const oldContent = String(old.content || '').trim()
+      const titleUseless = !oldTitle || oldTitle === '无标题' || USELESS_TITLE_RE.test(oldTitle) || (!!oldContent && oldTitle === oldContent)
+      if (titleUseless) {
+        const derived = autoDiaryTitle(String(p.content))
+        if (derived) updates.title = derived
+      }
+    }
     if (['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type)) updates.record_type = p.record_type
     if (Array.isArray(p.tags)) updates.tags = p.tags
     updates.updated_at = Date.now()

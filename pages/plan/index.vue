@@ -8,9 +8,12 @@
 	import { onMounted, ref, computed } from 'vue'
 	import { onShow } from '@dcloudio/uni-app'
 	import SijiIcon from '@/components/common/SijiIcon.vue'
+	import { logPlanCheckIn } from '@/utils/storage.js'
+	import { checkinFeedback, streakOfPlanRecord } from '@/utils/checkin-feedback.js'
 	import { usePlanList } from './composables/usePlanList.js'
 	import { usePlanSwipe } from './composables/usePlanSwipe.js'
 	import PlanOverview from './components/PlanOverview.vue'
+	import PlanDailyStrip from '@/components/plan/PlanDailyStrip.vue'
 	import PlanFilter from './components/PlanFilter.vue'
 	import PlanList from './components/PlanList.vue'
 
@@ -32,7 +35,7 @@
 
 	const {
 		searchKeyword, filterStatus, filterPriority, filterTag, filterTags,
-		filteredPlans, hasActiveFilter, stats, priorityBar,
+		filteredPlans, hasActiveFilter, stats, priorityBar, dailyItems, allPlans,
 		loadPlans, loadTags, resetFilters, quickToggleStatus, removePlan
 	} = usePlanList()
 
@@ -60,12 +63,56 @@
 		uni.navigateTo({ url: '/pages/plan/stats' })
 	}
 
+	function goRecords() {
+		uni.navigateTo({ url: '/pages/plan/records' })
+	}
+
 	function goTrash() {
 		uni.navigateTo({ url: '/pages/plan/trash' })
 	}
 
 	function onCardTap(plan) {
 		handleTap(plan, (p) => goDetail(p.client_id))
+	}
+
+	function planById(clientId) {
+		return (allPlans.value || []).find(p => p.client_id === clientId) || null
+	}
+
+	/** 打卡前取该任务当前连续值（weekly 看周，其余看天） */
+	function streakOfPlan(clientId) {
+		return streakOfPlanRecord(planById(clientId))
+	}
+
+	/** 打卡后回执：跨过里程碑才说一句，其余回原文案 */
+	function feedbackAfter(rec, beforeStreak, fallback) {
+		checkinFeedback(streakOfPlanRecord(rec), beforeStreak, fallback, rec && rec.recur_type === 'weekly' ? 'week' : 'day')
+	}
+
+	/** 3.5.0：今日行动条循环任务快捷打卡（轻记录，不置完成） */
+	function quickCheckIn(item) {
+		if (!item || !item.recurType) return
+		const before = streakOfPlan(item.client_id)
+		const rec = logPlanCheckIn(item.client_id, '')
+		if (!rec) {
+			uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+			return
+		}
+		feedbackAfter(rec, before, '已打卡，今天完成')
+		setTimeout(() => loadPlans(), 60)
+	}
+
+	/** 3.5.2：今日行动条长按补写描述后打卡（描述为空等价于普通打卡） */
+	function checkinWithNote(payload) {
+		if (!payload || !payload.clientId) return
+		const before = streakOfPlan(payload.clientId)
+		const rec = logPlanCheckIn(payload.clientId, payload.note || '')
+		if (!rec) {
+			uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+			return
+		}
+		feedbackAfter(rec, before, payload.note ? '已记录' : '已打卡，今天完成')
+		setTimeout(() => loadPlans(), 60)
 	}
 </script>
 
@@ -74,6 +121,10 @@
 		<!-- 概览卡（含模板/统计入口） -->
 		<PlanOverview :stats="stats" :priorityBar="priorityBar"
 			@go-templates="goTemplates" @go-stats="goStats" />
+
+		<!-- 今日行动条（3.4.3） -->
+		<PlanDailyStrip :items="dailyItems" @go-detail="goDetail" @quick-checkin="quickCheckIn" @checkin-note="checkinWithNote" />
+		<!-- 3.5.2：长按循环任务可补写描述 -->
 
 		<!-- 工具栏：搜索 + 回收站入口 -->
 		<view class="toolbar" @tap.stop>
@@ -89,6 +140,9 @@
 				<text v-if="searchKeyword" class="search-clear" @tap="searchKeyword = ''">✕</text>
 			</view>
 			<view class="tool-actions">
+				<view class="tool-btn" @tap="goRecords">
+					<SijiIcon name="clock" size="sm" />
+				</view>
 				<view class="tool-btn" @tap="goTrash">
 					<SijiIcon name="trash" size="sm" />
 				</view>

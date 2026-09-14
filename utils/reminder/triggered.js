@@ -2,6 +2,9 @@
  * 提醒触发记录模块 — 持久化已触发提醒，防重复
  *
  * 存储键：siji_reminders_triggered
+ * 3.5.0：key 支持两种粒度
+ *  - 一次性提醒：planId（历史上已触发的 key 兼容，不重复弹）
+ *  - 循环提醒：`planId|YYYY-MM-DD`（按天防重复，跨天自动可再触发）
  */
 
 import { asyncSetStorageJSON } from './settings.js'
@@ -16,20 +19,20 @@ function getTriggeredMap() {
   return {}
 }
 
-function markTriggered(planId) {
+function markTriggered(key) {
   const map = getTriggeredMap()
-  map[planId] = Date.now()
+  map[key] = Date.now()
   asyncSetStorageJSON(STORAGE_KEY_TRIGGERED, map)
 }
 
-function isTriggered(planId) {
+function isTriggered(key) {
   const map = getTriggeredMap()
-  return !!map[planId]
+  return !!map[key]
 }
 
-function clearTriggered(planId) {
+function clearTriggered(key) {
   const map = getTriggeredMap()
-  delete map[planId]
+  delete map[key]
   asyncSetStorageJSON(STORAGE_KEY_TRIGGERED, map)
 }
 

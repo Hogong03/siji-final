@@ -65,7 +65,14 @@ export {
   getPlanTree,
   convertSubtasksToChildPlans,
   convertPhasesToChildPlans,
-  buildChildrenSpecsFromLegacy
+  buildChildrenSpecsFromLegacy,
+  logPlanCheckIn,
+  removePlanCheckIn,
+  getPlanCheckInStats,
+  getPlanCheckInRecords,
+  setPlanFrozen,
+  setPlanSomeday,
+  setPlanRecur
 } from './storage/plan.js'
 
 // 本地索引 & 全局搜索
@@ -81,7 +88,11 @@ export {
 export {
   exportAllData,
   exportJson,
-  exportCsv
+  exportCsv,
+  exportBackup,
+  exportBackupJson,
+  parseBackup,
+  importBackup
 } from './storage/export.js'
 
 // 体验反馈
@@ -106,6 +117,16 @@ export {
   removeCustomCategory,
   TAG_CATEGORIES
 } from './storage/tags.js'
+
+// 微光本（3.4 M2）
+export {
+  getGlimmers,
+  getGlimmerByDate,
+  saveGlimmer,
+  removeGlimmer,
+  countGlimmers,
+  todayStr
+} from './storage/glimmer.js'
 
 // 版本历史
 export {

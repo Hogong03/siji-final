@@ -78,11 +78,17 @@ export function createRelationExecutors(ctx) {
   }
 
   function execLogInteraction(p) {
-    if (!p.relation_id) return { success: false, message: '缺少关系ID', detail: null }
-    const relation = getAllRelations().find(r => r.id === p.relation_id)
-    if (!relation) return { success: false, message: '关系卡片不存在', detail: null }
+    let relation = null
+    if (p.relation_id) {
+      relation = getAllRelations().find(r => r.id === p.relation_id)
+    } else if (p.relation_name) {
+      // 模型未拿到 ID 时按人名自动匹配
+      const matched = findRelationsByName(p.relation_name)
+      relation = matched.length > 0 ? matched[0] : null
+    }
+    if (!relation) return { success: false, message: '关系卡片不存在，请先创建该人脉', detail: null }
     const interaction = logInteraction({
-      relation_id: p.relation_id,
+      relation_id: relation.id,
       relation_name: relation.name,
       scene: p.scene || '日常',
       content: p.content || '',
@@ -93,7 +99,7 @@ export function createRelationExecutors(ctx) {
     return {
       success: true,
       message: `已记录与「${relation.name}」的互动`,
-      detail: { type: 'interaction', id: interaction.id, relation_name: relation.name, scene: interaction.scene }
+      detail: { type: 'interaction', id: interaction.id, relation_id: relation.id, relation_name: relation.name, scene: interaction.scene }
     }
   }
 

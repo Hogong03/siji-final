@@ -36,6 +36,10 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 			<text class="os-sep">·</text>
 			<text class="os-item"><text class="os-num">{{ stats.completed }}</text> 完成</text>
 			<text class="os-sep">·</text>
+			<text v-if="stats.weekCheckins > 0" class="os-item">
+				<text class="os-num">{{ stats.weekCheckins }}</text> 本周打卡<text v-if="stats.weekDays > 1" class="os-sub">（{{ stats.weekDays }} 天）</text>
+			</text>
+			<text v-if="stats.weekCheckins > 0 && stats.subTotal > 0" class="os-sep">·</text>
 			<text class="os-item" v-if="stats.subTotal > 0">
 				<text class="os-num">{{ stats.subDone }}/{{ stats.subTotal }}</text> 子计划
 			</text>
@@ -150,6 +154,11 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 	font-variant-numeric: tabular-nums;
 }
 
+.os-sub {
+	font-size: 18rpx;
+	color: #A1A1AA;
+}
+
 .os-sep {
 	color: #F4F4F5;
 }
@@ -185,6 +194,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 	.ov-action { background: #3F3F46; &:active { background: #52525B; } }
 	.os-item { color: #71717A; }
 	.os-num { color: #FAFAFA; }
+	.os-sub { color: #52525B; }
 	.os-sep { color: #3F3F46; }
 	.priority-bar { background: #3F3F46; }
 }

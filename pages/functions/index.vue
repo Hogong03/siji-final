@@ -111,15 +111,21 @@
 			route: '/pages/settings/sub/profile'
 		}]
 
-		if (memoryEnabled.value) {
-			list.push({
-				id: 'memory',
-				iconName: 'brain',
-				title: '记忆管理',
-				desc: '已开启',
-				route: '/pages/settings/sub/memory'
-			})
-		}
+		list.push({
+			id: 'glimmer',
+			iconName: 'sun',
+			title: '微光本',
+			desc: 'AI 收着的小事',
+			route: '/pages/settings/sub/glimmer'
+		})
+
+		list.push({
+			id: 'memory',
+			iconName: 'brain',
+			title: '记忆管理',
+			desc: memoryEnabled.value ? '已开启' : '已关闭',
+			route: '/pages/settings/sub/memory'
+		})
 
 		list.push({
 			id: 'decisions',

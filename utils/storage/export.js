@@ -106,3 +106,129 @@ function escapeCsv(str) {
   }
   return str
 }
+// ==================== 全量备份 / 恢复（W1 数据安全） ====================
+
+/** 备份排除项：敏感或可重建数据，不进入备份文件 */
+const BACKUP_EXCLUDE_KEYS = new Set([
+  'siji_provider_keys',      // 厂商 API Key（加密存储，仍应排除）
+  'siji_api_key',            // 旧版明文 Key
+  'siji_index',              // 搜索索引，可重建
+  'siji_device_id',          // 设备标识
+  'siji_export_json',        // 导出产物自身
+  'siji_pin',                // 应用锁（设备安全，跨机不迁移）
+  'siji_pin_fail',
+  'siji_pin_lock_until',
+  'siji_offline_cache',      // 运行时队列，恢复旧值可能误发
+  'siji_offline_queue',
+  'siji_error_queue',
+  'siji_debug',
+  'siji_reminders_triggered'
+])
+
+/** 判断 key 是否属于业务数据（可备份） */
+function isBackupKey(key) {
+  if (!key || typeof key !== 'string') return false
+  if (key.startsWith('diary_') || key.startsWith('bill_')) return true
+  if (key === 'plan_all') return true
+  if (!key.startsWith('siji_')) return false
+  if (key.startsWith('siji_export_')) return false // 导出产物
+  return !BACKUP_EXCLUDE_KEYS.has(key)
+}
+
+/** 备份域：chat=聊天记录（体积大头），ai=AI 认知，life=生活数据与设置（兜底） */
+const CHAT_KEYS = new Set([
+  'siji_conversations', 'siji_conv_tags', 'siji_active_conversation', 'siji_chat_draft'
+])
+const AI_KEYS = new Set([
+  'siji_long_term_memory', 'siji_monthly_memory', 'siji_structured_memory',
+  'siji_my_profile', 'siji_agents', 'siji_active_agent', 'siji_memory_enabled'
+])
+
+/** 判断存储键属于哪个备份域 */
+function sectionOfKey(key) {
+  if (CHAT_KEYS.has(key)) return 'chat'
+  if (AI_KEYS.has(key)) return 'ai'
+  return 'life'
+}
+
+/** 收集指定备份域的 storage 快照（section 为空则全量） */
+function collectBackupStorage(section) {
+  const allKeys = uni.getStorageInfoSync().keys || []
+  const storage = {}
+  allKeys.forEach(key => {
+    if (!isBackupKey(key)) return
+    if (section && sectionOfKey(key) !== section) return
+    storage[key] = uni.getStorageSync(key)
+  })
+  return storage
+}
+
+/**
+ * 备份：导出业务存储键快照（含记忆/画像/对话/关系/Agent 等）
+ * @param {object} options { version, section } version 应用版本号；section=life|ai|chat 分域导出（防剪贴板超限）
+ * @returns {object} { meta, storage }
+ */
+export function exportBackup(options = {}) {
+  const section = options.section || ''
+  const storage = collectBackupStorage(section || null)
+  return {
+    meta: {
+      app: '思迹',
+      backupVersion: 1,
+      exportedAt: Date.now(),
+      version: options.version || '',
+      section: section || 'all',
+      note: '不含 API Key 与应用锁；恢复后需重新配置厂商 Key'
+    },
+    storage
+  }
+}
+
+/** 备份 → JSON 字符串（options.section 可指定 life/ai/chat 分域） */
+export function exportBackupJson(options = {}) {
+  return JSON.stringify(exportBackup(options))
+}
+
+/** 校验备份 JSON 结构，返回解析结果 */
+export function parseBackup(jsonText) {
+  if (typeof jsonText !== 'string' || !jsonText.trim()) {
+    throw new Error('备份内容为空')
+  }
+  let data
+  try {
+    data = JSON.parse(jsonText)
+  } catch {
+    throw new Error('不是有效的 JSON，请检查粘贴内容是否完整')
+  }
+  if (!data || data.meta?.app !== '思迹') {
+    throw new Error('不是思迹的备份文件')
+  }
+  if (!data.storage || typeof data.storage !== 'object' || Array.isArray(data.storage)) {
+    throw new Error('备份文件缺少数据内容')
+  }
+  return data
+}
+
+/**
+ * 恢复备份：将备份 storage 写回（调用方负责先清空旧数据与确认）
+ * @param {string|object} jsonTextOrData 备份 JSON 或已解析对象
+ * @returns {object} { total, skipped } 写入统计
+ */
+export function importBackup(jsonTextOrData) {
+  const data = typeof jsonTextOrData === 'string'
+    ? parseBackup(jsonTextOrData)
+    : jsonTextOrData
+  if (!data.storage) throw new Error('备份文件缺少数据内容')
+
+  let total = 0
+  let skipped = 0
+  Object.entries(data.storage).forEach(([key, value]) => {
+    if (!isBackupKey(key)) {
+      skipped++
+      return
+    }
+    uni.setStorageSync(key, value)
+    total++
+  })
+  return { total, skipped }
+}

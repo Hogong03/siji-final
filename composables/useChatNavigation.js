@@ -6,29 +6,47 @@
 
 const ROUTE_MAP = {
   create_diary: (detail) => `/pages/diary/detail?clientId=${detail.id || 'new'}&month=${_getMonth(detail.created_at)}`,
-  create_bill: (detail) => `/pages/bill/edit?id=${detail.id || ''}&month=${_getMonth(detail.bill_date)}`,
-  create_plan: (detail) => `/pages/plan/detail?clientId=${detail.id || 'new'}`,
-  update_bill: (detail) => `/pages/bill/edit?id=${detail.id || ''}&month=${_getMonth(detail.bill_date)}`,
   update_diary: (detail) => `/pages/diary/detail?clientId=${detail.id || 'new'}&month=${_getMonth(detail.created_at)}`,
-  update_plan: (detail) => `/pages/plan/detail?clientId=${detail.id || 'new'}`,
   query_diary: () => '/pages/diary/list',
+  summarize_diaries: () => '/pages/diary/list',
+  query_combined: () => '/pages/diary/list',
+  create_bill: (detail) => `/pages/bill/edit?id=${detail.id || ''}&month=${_getMonth(detail.bill_date)}`,
+  update_bill: (detail) => `/pages/bill/edit?id=${detail.id || ''}&month=${_getMonth(detail.bill_date)}`,
   query_bill: () => '/pages/bill/index',
+  query_stat: () => '/pages/bill/index',
+  create_plan: (detail) => `/pages/plan/detail?clientId=${detail.id || 'new'}`,
+  create_plan_phases: (detail) => `/pages/plan/detail?clientId=${detail.id || 'new'}`,
+  update_plan: (detail) => `/pages/plan/detail?clientId=${detail.id || 'new'}`,
+  open_plan_child: (detail) => `/pages/plan/detail?clientId=${detail.id || detail.client_id || ''}`,
   query_plan: () => '/pages/plan/index',
-  query_stat: () => '/pages/bill/index'
+  smart_update_profile: () => '/pages/settings/sub/profile',
+  update_profile: () => '/pages/settings/sub/profile',
+  get_profile: () => '/pages/settings/sub/profile',
+  create_relation: () => '/pages/settings/sub/relations',
+  update_relation: (detail) => `/pages/settings/sub/relation-detail?id=${detail.id || ''}`,
+  query_relation: () => '/pages/settings/sub/relations',
+  log_interaction: (detail) => `/pages/settings/sub/relation-detail?id=${detail.relation_id || ''}`,
+  query_interaction: (detail) => `/pages/settings/sub/relation-detail?id=${detail.relation_id || ''}`,
+  create_decision: () => '/pages/settings/sub/decisions',
+  update_decision: (detail) => `/pages/settings/sub/decision-detail?id=${detail.id || ''}`,
+  query_decision: () => '/pages/settings/sub/decisions',
+  create_agent: () => '/pages/settings/sub/agent'
 }
 
 export function useChatNavigation() {
   function handleConfirmActionCard(card) {
     if (!card) return
     const detail = card.payload || {}
-    // multi 类型：取第一个 detail 的类型决定路由
+    // multi 类型：取第一个 detail 的类型决定路由（覆盖 create_/update_/log_/query_ 等动作）
     if (card.type === 'multi' && Array.isArray(detail) && detail.length > 0) {
       const firstDetail = detail[0]
-      const firstType = Object.keys(ROUTE_MAP).find(k =>
-        firstDetail?.type && (k === `create_${firstDetail.type}` || k === `update_${firstDetail.type}`)
-      )
-      if (firstType) {
-        uni.navigateTo({ url: ROUTE_MAP[firstType](firstDetail) })
+      const firstType = firstDetail?.type
+      const candidates = firstType
+        ? [`create_${firstType}`, `update_${firstType}`, `log_${firstType}`, `query_${firstType}`, `smart_update_${firstType}`]
+        : []
+      const builder = candidates.map(k => ROUTE_MAP[k]).find(Boolean)
+      if (builder) {
+        uni.navigateTo({ url: builder(firstDetail) })
       }
       return
     }

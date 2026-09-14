@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>思迹 SIJI · 把想变成做 — 对话式 AI 生活助手</title>
+  <meta name="description" content="思迹是一款对话式 AI 生活助手：不用填表、不用打卡，说出来就够了，AI 负责记录、整理，并给出下一步。数据保存在你自己的设备上，支持自带 API Key。">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="思迹 SIJI · 把想变成做">
+  <meta property="og:description" content="思迹是一款对话式 AI 生活助手：不用填表、不用打卡，说出来就够了，AI 负责记录、整理，并给出下一步。数据保存在你自己的设备上，支持自带 API Key。">
+  <meta property="og:image" content="assets/app-icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0A0A0B" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="wrap nav__inner">
+      <a class="nav__brand" href="#top"><img src="assets/app-icon.png" alt="思迹图标">思迹</a>
+      <nav class="nav__links">
+        <a href="#demo">介绍片</a>
+        <a href="#philosophy">设计原则</a>
+        <a href="#features">能做什么</a>
+        <a href="#roles">AI 的角色</a>
+        <a href="#privacy">隐私</a>
+        <a href="#changelog">更新</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero__grid">
+        <div>
+          <span class="hero__eyebrow">AI 对话式生活助手 · v3.5.10</span>
+          <h1 class="hero__title">把「想」<br>变成「做」<span>。</span></h1>
+          <p class="hero__lead">思迹是一款对话式 AI 生活助手。不用填表、不用打卡，说出想法就够了 —— AI 负责记录、整理，并给出下一步。</p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="#demo">看 44 秒介绍片</a>
+            <a class="btn" href="#features">看看能做什么</a>
+            <a class="btn" href="#philosophy">为什么这么设计</a>
+          </div>
+          <p class="hero__meta">记录 · 计划 · 账单 · 人脉 · 决策 ｜ 数据保存在你自己的设备上</p>
+        </div>
+
+        <div class="phone">
+          <div class="phone__bar"><span>思迹</span><span>9:41</span></div>
+          <div class="phone__screen">
+            <div class="chat" id="chat">
+              <div class="msg msg--user" data-step="0">帮我记一下，今天在家打游戏，想冲个金标</div>
+              <div class="msg" data-step="1">
+                <div class="record">
+                  <div class="record__title">今天在家打游戏，目标是用上官婉儿冲击金标。</div>
+                  <div class="record__tags"><span class="tag">游戏</span><span class="tag">日常</span></div>
+                </div>
+                <span class="msg__note">已保存 · 可以改，也可以撤</span>
+              </div>
+              <div class="msg msg--ai" data-step="2">下一步，5 分钟就能做完：开局前先把今天要练的英雄定下来。</div>
+              <div class="msg" data-step="3">
+                <div class="record">
+                  <div class="record__title">已加入计划 · 明天 20:00 提醒</div>
+                  <div class="record__tags"><span class="tag">每天</span><span class="tag">5 分钟</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone__compose"><span>说点什么…</span><span>记一下</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="demo">
+      <div class="wrap">
+        <p class="section__eyebrow">介绍片</p>
+        <h2 class="section__title">把「想」变成「做」，一次看完</h2>
+        <p class="section__lead">从说出一句话，到落库成记录、拆成今天就能做的一步、进计划 —— 44 秒走完整条链路。没有表单、没有打卡、没有评分。</p>
+
+        <figure class="demo reveal">
+          <video class="demo__video" id="intro" controls muted playsinline preload="metadata"
+                 poster="assets/siji-intro-poster.jpg">
+            <source src="assets/siji-intro.mp4" type="video/mp4">
+            你的浏览器不支持内嵌视频，可直接打开 <a href="assets/siji-intro.mp4">siji-intro.mp4</a> 观看。
+          </video>
+          <figcaption class="demo__cap">44 秒 · 1920×1080 · 无音轨 · 滚到此处自动静音播放，滚出暂停</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="philosophy">
+      <div class="wrap">
+        <p class="section__eyebrow">设计原则</p>
+        <h2 class="section__title">你只做两件事：说话、点确认</h2>
+        <p class="section__lead">所有功能都过同一道题：这个操作需要付出多少意志力？大于零就重新设计。</p>
+
+        <div class="steps">
+          <div class="step reveal">
+            <div class="step__no">01</div>
+            <h3 class="step__title">你说</h3>
+            <p class="step__desc">唯一需要你付出的动作是说话。想到什么说什么，不需要挑模块、不需要填字段。</p>
+          </div>
+          <div class="step reveal">
+            <div class="step__no">02</div>
+            <h3 class="step__title">AI 沉淀</h3>
+            <p class="step__desc">记录、标签、画像、记忆、人脉，AI 自动整理成可编辑的条目，落库前可预览，落库后可撤销。</p>
+          </div>
+          <div class="step reveal">
+            <div class="step__no">03</div>
+            <h3 class="step__title">最小行动</h3>
+            <p class="step__desc">每次对话结束，屏幕上有一个 5 分钟内能做完的下一步。只有第一步，没有宏伟计划。</p>
+          </div>
+        </div>
+
+        <ul class="rules">
+          <li class="rule reveal"><span class="rule__mark">01</span>不打卡、不连击、不评分 —— 断更不惩罚，任何「你应该更努力」的机制都是 bug。</li>
+          <li class="rule reveal"><span class="rule__mark">02</span>静止是合法状态 —— 一整天什么都没做，AI 不追问、不暗示、不惋惜。</li>
+          <li class="rule reveal"><span class="rule__mark">03</span>计划必须小 —— 大计划要拆到第一步才能存在；反复规划不执行时，缩小而不是加大。</li>
+          <li class="rule reveal"><span class="rule__mark">04</span>记录可改，比记全更重要 —— 记错了能改，漏了能补，补记还能撤销。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="wrap">
+        <p class="section__eyebrow">能做什么</p>
+        <h2 class="section__title">六个模块，一个入口</h2>
+        <p class="section__lead">全部能力都能在对话里触发，手动页面只是辅助。</p>
+
+        <div class="cards">
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><path d="M21 11.5a8 8 0 0 1-8 8H8l-4 3v-6.6A8 8 0 0 1 12 4h1a8 8 0 0 1 8 7.5Z"/></svg>
+            <h3 class="card__title">对话即记录</h3>
+            <p class="card__desc">说一句「记一下」，AI 整理成标题、正文与标签直接落库。</p>
+            <ul class="card__list"><li>自动打标签归档</li><li>按月分片存储，历史不丢</li><li>全局搜索与筛选</li></ul>
+          </div>
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"/></svg>
+            <h3 class="card__title">计划只给小步</h3>
+            <p class="card__desc">大计划必须拆到「5 分钟能做的第一步」才允许存在。</p>
+            <ul class="card__list"><li>子计划可打卡、可写描述</li><li>每天/每周循环，连续天数自动统计</li><li>跑不动就「先放一放」，随时原样恢复</li></ul>
+          </div>
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18M7 15h3"/></svg>
+            <h3 class="card__title">账单不靠习惯</h3>
+            <p class="card__desc">说话或截图自动归账，不看账单也知道本周花了多少。</p>
+            <ul class="card__list"><li>收支记录与分类统计</li><li>月度概览与预算提醒</li><li>每周三个数字播报</li></ul>
+          </div>
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M3.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><path d="M16 5.5a3 3 0 0 1 0 6M17.5 14.6c2 .6 3.5 2.4 3.5 4.4"/></svg>
+            <h3 class="card__title">人脉有预算</h3>
+            <p class="card__desc">记录互动与关系档案，社交能量可以配额，应付式社交有现成模板。</p>
+            <ul class="card__list"><li>关系档案与互动时间线</li><li>和某个人对话的场景模拟 + 复盘</li><li>延后回复，不失礼也不消失</li></ul>
+          </div>
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><path d="M12 3.2 3.5 8 12 12.8 20.5 8 12 3.2Z"/><path d="M3.5 13.2 12 18l8.5-4.8"/></svg>
+            <h3 class="card__title">记忆与画像</h3>
+            <p class="card__desc">AI 记得你说过什么，回答能引用「你上个月提过……」。</p>
+            <ul class="card__list"><li>「我的信息」是可编辑的画像</li><li>长期记忆与月结自动归纳</li><li>一键整合，合并去重后你确认</li></ul>
+          </div>
+          <div class="card reveal">
+            <svg viewBox="0 0 24 24"><path d="M4.5 19.5 9.5 14.5"/><path d="M14.5 4.5 19.5 9.5"/><path d="M6 6h6M6 6v6M18 18h-6M18 18v-6"/></svg>
+            <h3 class="card__title">决策有复盘</h3>
+            <p class="card__desc">把纠结的选项写下来，过段时间回看结果，只记录不评判。</p>
+            <ul class="card__list"><li>决策日志与理由留档</li><li>定期回看与结果对照</li><li>用「你当时的判断」代替说教</li></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="roles">
+      <div class="wrap">
+        <p class="section__eyebrow">AI 的角色</p>
+        <h2 class="section__title">它不是陪你聊天的，是替你干活的</h2>
+        <div class="roles">
+          <div class="role reveal">
+            <h3 class="role__title">记录员</h3>
+            <p class="role__desc">听懂你的话并落库，成本为零。说完就结束，不用回头整理。</p>
+          </div>
+          <div class="role reveal">
+            <h3 class="role__title">整理师</h3>
+            <p class="role__desc">归纳特征、拆解行动、识别状态。连续低落时提醒休息，不催进度。</p>
+          </div>
+          <div class="role reveal">
+            <h3 class="role__title">顾问</h3>
+            <p class="role__desc">状态觉察 → 最小行动 → 社交预案 → 财务真相，建议能引用你自己的历史。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="privacy">
+      <div class="wrap split">
+        <div>
+          <p class="section__eyebrow">隐私</p>
+          <h2 class="section__title">数据在你手上</h2>
+          <p class="section__lead">思迹没有自建服务器。你的记录、账单、聊天历史保存在本机，请求直接发往你自己配置的模型厂商。</p>
+          <ul class="rules">
+            <li class="rule reveal"><span class="rule__mark">·</span>不做用户画像广告，不买卖数据，不设埋点回传。</li>
+            <li class="rule reveal"><span class="rule__mark">·</span>API Key 加密保存在本机，不经过任何第三方。</li>
+            <li class="rule reveal"><span class="rule__mark">·</span>随时导出完整备份，随时手动恢复。</li>
+          </ul>
+        </div>
+        <div class="facts">
+          <div class="fact"><div class="fact__k">数据存放</div><div class="fact__v">本机存储，App 端在应用私有目录</div></div>
+          <div class="fact"><div class="fact__k">API Key</div><div class="fact__v">本地加密（XOR + Base64），仅用于直连模型</div></div>
+          <div class="fact"><div class="fact__k">模型可选</div><div class="fact__v">DeepSeek · 智谱 GLM · 通义千问 · Moonshot</div></div>
+          <div class="fact"><div class="fact__k">支持平台</div><div class="fact__v">Android · iOS · 微信小程序 · H5</div></div>
+          <div class="fact"><div class="fact__k">备份导出</div><div class="fact__v">全量 JSON / 分域复制（生活 · AI 记忆 · 聊天）</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="changelog">
+      <div class="wrap">
+        <p class="section__eyebrow">最近更新</p>
+        <h2 class="section__title">一直在长</h2>
+        <div class="logs">
+          <div class="log reveal">
+            <div class="log__ver">v3.5.6<span class="log__date">2026-09-11</span></div>
+            <div>
+              <div class="log__title">打卡缺口补齐</div>
+              <ul class="log__items"><li>补记可以撤销了，误触不再等于脏数据</li><li>连续天数按「每日 / 每周」分别统计</li><li>详情页日历可以翻月，记录页与日历口径统一</li></ul>
+            </div>
+          </div>
+          <div class="log reveal">
+            <div class="log__ver">v3.5.4<span class="log__date">2026-09-10</span></div>
+            <div>
+              <div class="log__title">打卡回看与温和补记</div>
+              <ul class="log__items"><li>热力格点开就是当天明细</li><li>总览页直接看本周打卡</li><li>昨天忘了做的事，今天可以补记</li></ul>
+            </div>
+          </div>
+          <div class="log reveal">
+            <div class="log__ver">v3.5.0<span class="log__date">2026-09-09</span></div>
+            <div>
+              <div class="log__title">循环任务闭环</div>
+              <ul class="log__items"><li>每天 / 每周的固定动作，打卡闭环</li><li>内置备考类长期计划模板</li><li>循环子计划收尾与进度自动同步</li></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__row">
+      <span>思迹 SIJI · v3.5.10</span>
+      <span>思迹不做医疗诊断与治疗建议，不替代专业就医与用药。</span>
+      <span>© <span id="year">2026</span> 思迹</span>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

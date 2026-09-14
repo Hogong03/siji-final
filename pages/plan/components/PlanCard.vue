@@ -70,13 +70,14 @@ function formatEst(ds) {
 
 <template>
 	<view class="plan-card"
-		:class="{ 'card-done': item.status === 2, 'card-urg': item.priority === 2, 'card-imp': item.priority === 1 }"
+		:class="{ 'card-done': item.status === 2, 'card-urg': item.priority === 2, 'card-imp': item.priority === 1, 'card-frozen': !!item.frozen_at }"
 		@tap="emit('go-detail', item.client_id)">
 		<!-- 标题行 -->
 		<view class="card-top">
 			<view class="priority-dot" :style="{ background: priorityColors[item.priority] || '#999' }" />
 			<text class="card-title">{{ item.title }}</text>
 			<text class="status-tag" :class="`status-${item.status}`">{{ statusMap[item.status] || '未知' }}</text>
+			<text v-if="item.frozen_at" class="frozen-tag">冷藏中</text>
 		</view>
 
 		<!-- 描述 -->
@@ -251,5 +252,26 @@ function formatEst(ds) {
 	.st-text { color: #F4F4F5; }
 	.date-text { color: #71717A; &.due { color: #FAFAFA; } &.danger { color: #F87171; } }
 	.nested-badge { background: #3F3F46; color: #71717A; }
+}
+
+.frozen-tag {
+	font-size: 20rpx;
+	color: #B45309;
+	background: #F5F5F4;
+	padding: 2rpx 12rpx;
+	border-radius: 8rpx;
+	margin-left: 10rpx;
+	flex-shrink: 0;
+}
+
+.card-frozen {
+	opacity: 0.72;
+}
+
+@media (prefers-color-scheme: dark) {
+	.frozen-tag {
+		background: #3F3F46;
+		color: #D97706;
+	}
 }
 </style>

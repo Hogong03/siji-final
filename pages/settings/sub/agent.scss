@@ -276,19 +276,11 @@ $spacing-lg: 32rpx;
   flex-shrink: 0;
 }
 
-/* Agent 技能图标 */
-.agent-skills {
-  display: flex;
-  gap: 6rpx;
-  margin-top: 6rpx;
+/* 模板区与我的 Agent 分区间距（3.0 三段布局） */
+.tpl-label {
+  margin-top: 28rpx;
 }
 
-.skill-tag {
-  font-size: 24rpx;
-}
-
-.skill-more {
-  font-size: 20rpx;
-  color: #A1A1AA;
-  margin-left: 4rpx;
+.my-header {
+  margin-top: 28rpx;
 }

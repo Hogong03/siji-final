@@ -138,6 +138,14 @@
      }
     },
     {
+     "path": "glimmer",
+     "style": {
+      "navigationBarTitleText": "微光本",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
      "path": "profile",
      "style": {
       "navigationBarTitleText": "我的信息",
@@ -309,6 +317,14 @@
      }
     },
     {
+     "path": "records",
+     "style": {
+      "navigationBarTitleText": "执行记录",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
      "path": "templates",
      "style": {
       "navigationBarTitleText": "计划模板",
@@ -371,20 +387,20 @@
   "list": [
    {
     "pagePath": "pages/chat/index",
-    "iconPath": "/static/tab/chat.png",
-    "selectedIconPath": "/static/tab/chat-active.png",
+    "iconPath": "/static/tab/chat-v2.png",
+    "selectedIconPath": "/static/tab/chat-active-v2.png",
     "text": "思迹"
    },
    {
     "pagePath": "pages/functions/index",
-    "iconPath": "static/tab/functions.png",
-    "selectedIconPath": "static/tab/functions-active.png",
+    "iconPath": "static/tab/functions-v2.png",
+    "selectedIconPath": "static/tab/functions-active-v2.png",
     "text": "功能"
    },
    {
     "pagePath": "pages/settings/index",
-    "iconPath": "static/tab/settings.png",
-    "selectedIconPath": "static/tab/settings-active.png",
+    "iconPath": "static/tab/settings-v2.png",
+    "selectedIconPath": "static/tab/settings-active-v2.png",
     "text": "设置"
    }
   ]

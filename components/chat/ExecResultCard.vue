@@ -9,64 +9,37 @@
  *   - useExecTags.js — 标签管理逻辑（增删改查、面板交互）
  *   - useExecCardHelpers.js — 卡片辅助函数（心情 emoji、优先级、进度计算等）
  *
- * props: message, isEditing
- * emits: confirm-action, start-edit, save-edit, cancel-edit, update-tags
+ * props: message
+ * emits: confirm-action, update-tags
  */
-import { ref, watch, computed } from 'vue'
+import { computed } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { useExecTags } from '@/composables/useExecTags.js'
 import {
   priorityClass, planProgressPercent, planDoneCount, planListCount,
-  topCategories, formatTs, execIcon, CATEGORIES
+  topCategories, formatTs, execIcon
 } from '@/composables/useExecCardHelpers.js'
 
 const props = defineProps({
-  message: { type: Object, required: true },
-  isEditing: { type: Boolean, default: false }
+  message: { type: Object, required: true }
 })
 
 const emit = defineEmits([
-  'confirm-action', 'start-edit', 'save-edit', 'cancel-edit', 'update-tags'
+  'confirm-action', 'update-tags'
 ])
 
-const localForm = ref({})
-
-/* 双击检测 */
-let lastTapTime = 0
-function onCardTap() {
-  const now = Date.now()
-  if (now - lastTapTime < 350) {
-    lastTapTime = 0
-    emit('start-edit')
-  } else {
-    lastTapTime = now
-  }
-}
-
-function onEditConfirm() {
-  emit('save-edit', localForm.value)
-}
-
-function initEditForm(detail) {
-  if (!detail) { localForm.value = {}; return }
-  if (detail.type === 'bill') {
-    localForm.value = { amount: String(detail.amount || ''), category: detail.category || '其他', note: '' }
-  } else if (detail.type === 'diary') {
-    localForm.value = { title: detail.title || '' }
-  } else if (detail.type === 'plan') {
-    localForm.value = { title: detail.title || '' }
-  } else {
-    localForm.value = {}
-  }
-}
-
-watch(() => props.isEditing, (editing) => {
-  if (editing && props.message?.execResult?.detail) {
-    initEditForm(props.message.execResult.detail)
-  }
+// 可编辑类型（标题行内嵌跳转按钮）— 其余类型保留头部图标 + 跳转按钮
+const isInlineType = computed(() => {
+  const t = props.message?.execResult?.detail?.type || ''
+  return t === 'bill' || t === 'diary' || t === 'plan' || t === 'glimmer'
 })
 
-const categories = CATEGORIES
+// 记录预览：压平换行 + 截断，避免长文/多换行在 App 端撑爆卡片（反馈 2026-09-01）
+const diaryPreviewText = computed(() => {
+  const c = props.message?.execResult?.detail?.content || ''
+  const flat = c.replace(/\s+/g, ' ').trim()
+  return flat.length > 50 ? flat.substring(0, 50) + '...' : flat
+})
 
 // 卡片头部类型图标 + 样式类
 const execTypeIcon = computed(() => {
@@ -86,7 +59,17 @@ const execTypeClass = computed(() => {
   if (t === 'plan') return 'type-plan'
   if (t.startsWith('query_')) return 'type-query'
   return 'type-default'
+})
+
+// 3.3 A：计划卡片「下一步」入口（第一条未完成且带 client_id 的子计划）
+const nextChild = computed(() => {
+  const kids = props.message?.execResult?.detail?.children || []
+  return kids.find(st => st.status !== 2 && st.client_id) || null
 })
+function openChild(st) {
+  if (!st || !st.client_id) return
+  emit('confirm-action', { type: 'open_plan_child', payload: { id: st.client_id } })
+}
 
 // 标签管理 — 委托给 useExecTags composable
 const {
@@ -118,23 +101,17 @@ const {
 
   <!-- 单意图结果 -->
   <template v-else>
-    <view class="exec-header">
+    <!-- 非 bill/diary/plan：保留类型图标 + 跳转按钮 -->
+    <view v-if="!isInlineType" class="exec-header">
       <view class="exec-header-left">
         <view class="exec-type-icon" :class="execTypeClass">
           <text class="eti-text">{{ execTypeIcon }}</text>
         </view>
       </view>
-      <view class="exec-header-actions">
-        <view class="exec-action-btn" @tap="$emit('start-edit')">
-          <text class="exec-action-icon">✎</text>
-        </view>
-        <view class="exec-action-btn" @tap="$emit('confirm-action', message.actionCard)">
-          <text class="exec-action-icon">→</text>
-        </view>
-      </view>
+      <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
     </view>
 
-    <view class="exec-body" @tap="onCardTap">
+    <view class="exec-body">
       <!-- ── 账单卡片 ── -->
       <template v-if="message.execResult.detail?.type === 'bill'">
         <view class="card-bill">
@@ -145,6 +122,7 @@ const {
             <view class="bill-cat-tag" :class="message.execResult.detail.billType === 'income' ? 'income' : 'expense'">
               <text class="bct-text">{{ message.execResult.detail.category }}</text>
             </view>
+            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
           </view>
           <view class="bill-meta-row" v-if="message.execResult.detail.bill_date || message.execResult.detail.note">
             <text class="bill-date" v-if="message.execResult.detail.bill_date">{{ message.execResult.detail.bill_date }}</text>
@@ -156,8 +134,11 @@ const {
       <!-- ── 记录卡片 ── -->
       <template v-else-if="message.execResult.detail?.type === 'diary'">
         <view class="card-diary">
-          <text class="diary-title">{{ message.execResult.detail.title }}</text>
-          <text class="diary-preview" v-if="message.execResult.detail.content">{{ (message.execResult.detail.content || '').substring(0, 80) }}{{ (message.execResult.detail.content || '').length > 80 ? '...' : '' }}</text>
+          <view class="diary-title-row">
+            <text class="diary-title">{{ message.execResult.detail.title }}</text>
+            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
+          </view>
+          <text class="diary-preview" v-if="diaryPreviewText">{{ diaryPreviewText }}</text>
           <text class="diary-date" v-if="message.execResult.detail.created_at">{{ formatTs(message.execResult.detail.created_at) }}</text>
         </view>
       </template>
@@ -168,6 +149,7 @@ const {
           <view class="plan-title-row">
             <view class="plan-priority-dot" :class="priorityClass(message.execResult.detail.priority)" />
             <text class="plan-title">{{ message.execResult.detail.title }}</text>
+            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
           </view>
           <text class="plan-desc" v-if="message.execResult.detail.description">{{ message.execResult.detail.description }}</text>
           <!-- 进度条（子计划优先，历史子任务兜底） -->
@@ -188,11 +170,17 @@ const {
             <text v-if="message.execResult.detail.due_date || message.execResult.detail.deadline" class="plan-date-chip due">截止 {{ message.execResult.detail.due_date || message.execResult.detail.deadline }}</text>
           </view>
           <view class="plan-subtasks" v-if="message.execResult.detail.children?.length > 0 && message.execResult.detail.children.length <= 5">
-            <view class="subtask-row" v-for="(st, idx) in message.execResult.detail.children" :key="idx">
+            <view class="subtask-row" v-for="(st, idx) in message.execResult.detail.children" :key="idx" @tap="openChild(st)">
               <text class="subtask-dot" :class="{ done: st.status === 2 }">{{ st.status === 2 ? '✓' : '○' }}</text>
               <text class="subtask-title" :class="{ done: st.status === 2 }">{{ st.title }}</text>
             </view>
           </view>
+            <!-- 3.3 A：最小行动「下一步」入口 → 直达该子计划详情页标记完成 -->
+            <view class="plan-next-row" v-if="nextChild" @tap="openChild(nextChild)">
+              <text class="pn-label">下一步</text>
+              <text class="pn-title">{{ nextChild.title }}</text>
+              <text class="pn-arrow">去做 →</text>
+            </view>
           <view class="plan-subtasks" v-else-if="message.execResult.detail.subtasks?.length > 0 && message.execResult.detail.subtasks.length <= 5">
             <view class="subtask-row" v-for="(st, idx) in message.execResult.detail.subtasks" :key="idx">
               <text class="subtask-dot" :class="{ done: st.done }">{{ st.done ? '✓' : '○' }}</text>
@@ -291,7 +279,7 @@ const {
           <view class="query-item diary-q-item" v-for="(item, idx) in message.execResult.detail.items.slice(0, 5)" :key="idx">
             <view class="qi-diary-body">
               <text class="qi-title">{{ item.title }}</text>
-              <text class="qi-preview" v-if="item.content">{{ item.content.substring(0, 40) }}...</text>
+              <text class="qi-preview" v-if="item.content">{{ item.content.replace(/\s+/g, ' ').substring(0, 40) }}...</text>
               <text class="qi-date">{{ formatTs(item.created_at) }}</text>
             </view>
           </view>
@@ -318,6 +306,26 @@ const {
           <view v-else class="query-empty">
             <text class="query-empty-text">暂无计划</text>
           </view>
+        </view>
+      </template>
+
+      <!-- ── 微光本（3.4 M2）── -->
+      <template v-else-if="message.execResult.detail?.type === 'glimmer'">
+        <view class="card-glimmer">
+          <text class="gl-date">{{ message.execResult.detail.date }} · 微光</text>
+          <text class="gl-content">{{ message.execResult.detail.content }}</text>
+        </view>
+      </template>
+      <template v-else-if="message.execResult.detail?.type === 'query_glimmers'">
+        <view class="card-query-glimmer">
+          <text class="glq-count">微光本 · 近 {{ message.execResult.detail.days || 30 }} 天 {{ message.execResult.detail.count || 0 }} 条</text>
+          <view class="glq-list" v-if="(message.execResult.detail.items || []).length > 0">
+            <view class="glq-item" v-for="(g, idx) in message.execResult.detail.items.slice(0, 10)" :key="idx">
+              <text class="glq-date">{{ g.date }}</text>
+              <text class="glq-content">{{ g.content }}</text>
+            </view>
+          </view>
+          <text class="glq-empty" v-else>微光本是空的，允许空着</text>
         </view>
       </template>
 
@@ -348,42 +356,6 @@ const {
       </view>
     </view>
   </template>
-
-  <!-- 就地编辑表单 -->
-  <view v-if="isEditing" class="edit-card">
-    <view class="edit-header">
-      <text class="edit-title">编辑</text>
-    </view>
-    <template v-if="message.execResult.detail?.type === 'bill'">
-      <view class="edit-field">
-        <text class="edit-label">金额</text>
-        <input v-model="localForm.amount" type="digit" class="edit-input" placeholder="金额" @confirm="onEditConfirm" />
-      </view>
-      <view class="edit-field">
-        <text class="edit-label">分类</text>
-        <picker :range="categories" @change="localForm.category = categories[$event.detail.value]">
-          <text class="edit-picker">{{ localForm.category }}</text>
-        </picker>
-      </view>
-    </template>
-    <template v-else-if="message.execResult.detail?.type === 'diary'">
-      <view class="edit-field">
-        <text class="edit-label">标题</text>
-        <input v-model="localForm.title" class="edit-input" placeholder="标题" @confirm="onEditConfirm" />
-      </view>
-    </template>
-    <template v-else-if="message.execResult.detail?.type === 'plan'">
-      <view class="edit-field">
-        <text class="edit-label">标题</text>
-        <input v-model="localForm.title" class="edit-input" placeholder="计划标题" @confirm="onEditConfirm" />
-      </view>
-    </template>
-    <view class="edit-actions">
-      <view class="edit-btn cancel" @tap="$emit('cancel-edit')"><text>取消</text></view>
-      <view class="edit-btn save" @tap="$emit('save-edit', localForm)"><text>保存</text></view>
-    </view>
-  </view>
-
   <!-- 标签选择面板 -->
   <view v-if="showTagPanel" class="tag-panel-overlay" @tap.self="closeTagPanel">
     <view class="tag-panel">

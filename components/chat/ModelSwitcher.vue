@@ -21,7 +21,7 @@ const PROVIDER_LOGO_MAP = {
 
 function getProviderLogo(pid) {
   const suffix = PROVIDER_LOGO_MAP[pid] || 'oa'
-  return `/static/icons/provider-${suffix}.png`
+  return `/static/icons/provider-${suffix}-v2.png`
 }
 
 const switchableProviders = computed(() => {

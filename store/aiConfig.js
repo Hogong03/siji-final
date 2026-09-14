@@ -120,12 +120,13 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
         const OLD_SALT = 'siji_2024_salt_key'
         try {
           // #ifdef H5
-          const decoded = decodeURIComponent(escape(atob(val)))
+          const decodedH5 = decodeURIComponent(escape(atob(val)))
           // #endif
           // #ifndef H5
           const buf = uni.base64ToArrayBuffer(val)
-          const decoded = String.fromCharCode(...new Uint8Array(buf))
+          const decodedNative = String.fromCharCode(...new Uint8Array(buf))
           // #endif
+          const decoded = typeof decodedH5 !== 'undefined' ? decodedH5 : decodedNative
           const plain = decoded.split('').map((c, i) =>
             String.fromCharCode(c.charCodeAt(0) ^ OLD_SALT.charCodeAt(i % OLD_SALT.length))
           ).join('')
@@ -166,10 +167,19 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
     const model = uni.getStorageSync('siji_ai_model')
     // 旧版模型名映射
     const MODEL_MIGRATION = {
-      'qwen-turbo-latest': 'qwen-turbo',
-      'qwen-plus-latest': 'qwen-plus',
-      'qwen-max-latest': 'qwen-max',
+      'qwen-turbo-latest': 'qwen3.8-flash',
+      'qwen-plus-latest': 'qwen3.7-plus',
+      'qwen-max-latest': 'qwen3.8-max',
       'glm-4.7': 'glm-4.7-flash',
+      'qwen-turbo': 'qwen3.8-flash',
+      'qwen-plus': 'qwen3.7-plus',
+      'qwen-max': 'qwen3.8-max',
+      'qwen-long': 'qwen3.8-max',
+      'kimi-k2.5': 'kimi-k3',
+      'kimi-latest': 'kimi-k3',
+      'moonshot-v1-8k': 'kimi-k3',
+      'moonshot-v1-32k': 'kimi-k3',
+      'moonshot-v1-128k': 'kimi-k3'
     }
     const resolvedModel = MODEL_MIGRATION[model] || model
 

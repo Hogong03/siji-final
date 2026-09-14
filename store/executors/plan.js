@@ -1,4 +1,4 @@
-import { savePlan, getPlanList, getChildPlans, deletePlan, updateIndex, savePlanTemplate, buildChildrenSpecsFromLegacy, convertSubtasksToChildPlans } from '@/utils/storage.js'
+import { savePlan, getPlanList, getChildPlans, deletePlan, updateIndex, savePlanTemplate, buildChildrenSpecsFromLegacy, convertSubtasksToChildPlans, logPlanCheckIn, getPlanCheckInStats } from '@/utils/storage.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { removePlanReminder } from '@/utils/reminder.js'
 
@@ -12,6 +12,16 @@ export function createPlanExecutors(ctx) {
   function cleanDateField(v) {
     if (!v) return ''
     return /^\d{4}-\d{1,2}-\d{1,2}( \d{1,2}:\d{2}(:\d{2})?)?$/.test(v) ? v : ''
+  }
+  /** 循环类型清洗：'' | daily | weekly */
+  function cleanRecurType(v) {
+    return v === 'daily' || v === 'weekly' ? v : ''
+  }
+  /** 循环次数清洗：weekly 至少 1 次，其余恒为 1 */
+  function cleanRecurCount(v, type) {
+    if (type !== 'weekly') return 1
+    const n = parseInt(v, 10)
+    return Number.isFinite(n) && n > 0 ? n : 1
   }
   // ==================== 子计划持久化 ====================
 
@@ -53,6 +63,11 @@ export function createPlanExecutors(ctx) {
         estimated_time: spec.estimated_time || '',
         start_time: spec.start_time || '',
         end_time: spec.end_time || '',
+        est_minutes: spec.est_minutes != null ? (Number(spec.est_minutes) || 0) : 0,
+        recur_type: cleanRecurType(spec.recur_type),
+        recur_count: cleanRecurCount(spec.recur_count, cleanRecurType(spec.recur_type)),
+        executions: [],
+        plan_count: 0,
         created_at: now,
         updated_at: now,
         is_deleted: 0
@@ -89,6 +104,10 @@ export function createPlanExecutors(ctx) {
       estimated_time: cleanDateField(p.estimated_time || p.plan_date),  // 预计开始时间（精确到秒）
       start_time: cleanDateField(p.start_time || p.estimated_time),  // 开始时间（精确到秒）
       end_time: cleanDateField(p.end_time || p.deadline),            // 结束时间（精确到秒）
+      recur_type: cleanRecurType(p.recur_type),
+      recur_count: cleanRecurCount(p.recur_count, cleanRecurType(p.recur_type)),
+      plan_count: 1,
+      executions: [],
       created_at: now,
       updated_at: now,
       is_deleted: 0
@@ -157,7 +176,14 @@ export function createPlanExecutors(ctx) {
     if (p.estimated_time != null) updates.estimated_time = cleanDateField(p.estimated_time)
     if (p.start_time != null) updates.start_time = cleanDateField(p.start_time)
     if (p.end_time != null) updates.end_time = cleanDateField(p.end_time)
+    if (p.recur_type != null || p.recur_count != null) {
+      const type = p.recur_type != null ? cleanRecurType(p.recur_type) : (old.recur_type || '')
+      updates.recur_type = type
+      updates.recur_count = cleanRecurCount(p.recur_count != null ? p.recur_count : (old.recur_count || 1), type)
+    }
     if (p.parent_id != null) updates.parent_id = p.parent_id
+    // 3.4 M3：冷藏（先放一放）只是标记 — 不删除、不改状态、不累计 plan_count
+    if (p.frozen != null) updates.frozen_at = p.frozen ? Date.now() : null
 
     // 子任务/阶段 → 增量创建子计划（按标题去重，避免重复生成）
     let createdChildren = []
@@ -176,7 +202,8 @@ export function createPlanExecutors(ctx) {
       createdChildren = persistChildSpecs(missing, clientId)
     }
 
-    const updated = { ...old, ...updates, updated_at: Date.now() }
+    const structuralUpdate = Object.keys(updates).some(k => k !== 'status' && k !== 'frozen_at' && k !== 'updated_at')
+    const updated = { ...old, ...updates, plan_count: (old.plan_count || 0) + (structuralUpdate ? 1 : 0), updated_at: Date.now() }
     savePlan(updated)
 
     const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
@@ -184,7 +211,8 @@ export function createPlanExecutors(ctx) {
       title: '标题', description: '描述', priority: '优先级', status: '状态',
       tags: '标签', deadline: '截止日期', due_date: '截止日期',
       estimated_time: '预计时间', start_time: '开始时间', end_time: '结束时间',
-      parent_id: '父计划'
+      parent_id: '父计划',
+      frozen_at: '冷藏状态'
     }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
@@ -238,7 +266,8 @@ export function createPlanExecutors(ctx) {
         updates.description = baseDesc ? baseDesc + '\n' + msText : msText
       }
     }
-    const updated = { ...child, ...updates, updated_at: Date.now() }
+    const structuralUpdate = Object.keys(updates).some(k => k !== 'status' && k !== 'updated_at')
+    const updated = { ...child, ...updates, plan_count: (child.plan_count || 0) + (structuralUpdate ? 1 : 0), updated_at: Date.now() }
     savePlan(updated)
 
     // 子任务 → 下一级子计划（增量创建）
@@ -290,6 +319,7 @@ export function createPlanExecutors(ctx) {
       return { success: false, message: '子任务不存在', detail: null }
     }
     subtask.done = p.done === true
+    plan.plan_count = (plan.plan_count || 0) + 1
     plan.updated_at = Date.now()
     savePlan(plan)
 
@@ -308,6 +338,43 @@ export function createPlanExecutors(ctx) {
       }
     }
   }
+
+  /** 3.4.1 B：计划打卡（轻记录，同日幂等；不改状态/plan_count/executions） */
+  function execLogPlanCheckIn(p) {
+    if (!p.client_id && !p.id) {
+      return { success: false, message: '缺少计划ID', detail: null }
+    }
+    const clientId = p.client_id || p.id
+    const list = getPlanList()
+    const plan = list.find(item => item.client_id === clientId)
+    if (!plan) {
+      return { success: false, message: '计划不存在', detail: null }
+    }
+    if (plan.frozen_at) {
+      return { success: false, message: '计划已冷藏（先放一放），暂不打卡', detail: null }
+    }
+    if (plan.status === 2) {
+      return { success: false, message: '计划已完成，无需打卡', detail: null }
+    }
+    const noteText = typeof p.note === 'string' ? p.note.trim() : ''
+    const before = getPlanCheckInStats(plan)
+    if (before.todayDone) {
+      const rec = logPlanCheckIn(clientId, noteText)
+      const st = rec ? getPlanCheckInStats(rec) : before
+      return {
+        success: true,
+        message: noteText ? '已更新今天的打卡描述' : '今天已打过卡，不重复记录',
+        detail: { type: 'plan', id: clientId, totalDays: st.days, todayDone: true, note: noteText }
+      }
+    }
+    const record = logPlanCheckIn(clientId, noteText)
+    const after = record ? getPlanCheckInStats(record) : before
+    return {
+      success: true,
+      message: noteText ? '已记录「今天做了」，描述：' + noteText : '已记录「今天做了」',
+      detail: { type: 'plan', id: clientId, totalDays: after.days, todayDone: after.todayDone, note: noteText }
+  }
+    }
 
   function execDeletePlan(p) {
     if (!p.client_id && !p.id) {
@@ -379,5 +446,5 @@ export function createPlanExecutors(ctx) {
     }
   }
 
-  return { execCreatePlan, execUpdatePlan, execUpdatePlanPhase, execUpdatePlanSubtask, execDeletePlan, execQueryPlan, execCreatePlanTemplate }
+  return { execCreatePlan, execUpdatePlan, execUpdatePlanPhase, execUpdatePlanSubtask, execLogPlanCheckIn, execDeletePlan, execQueryPlan, execCreatePlanTemplate }
 }

@@ -276,11 +276,22 @@ export function removeCardField(cardId, field) {
 }
 
 /** 数组字段添加项 */
+function normalizeArrayValue(value) {
+  return String(value == null ? '' : value)
+    .trim()
+    .toLowerCase()
+    .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .replace(/\s+/g, '')
+}
+
 export function addArrayItem(cardId, field, value) {
   const profile = getProfile()
   const card = profile.cards.find(c => c.id === cardId)
   if (card && Array.isArray(card.fields[field])) {
-    if (!card.fields[field].includes(value)) {
+    // 3.2 M2：归一化去重（大小写/全半角/空白差异不重复追加）
+    const norm = normalizeArrayValue(value)
+    const duplicated = card.fields[field].some(v => norm && normalizeArrayValue(v) === norm)
+    if (norm && !duplicated) {
       card.fields[field].push(value)
       saveProfile(profile)
     }

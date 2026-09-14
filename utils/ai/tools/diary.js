@@ -5,7 +5,7 @@ export const DIARY_TOOLS = [
   // ===== 记录 =====
   {
     name: 'create_diary',
-    description: '创建一条自由文本记录，首行自动作为标题。用户说"记一下/帮我记/写篇记录"时调用。正文必须放 content，禁止传 title 字段；可选 record_type（note|diary|idea|todo|flash，默认 note）。',
+    description: '创建一条自由文本记录，首行自动作为标题。用户说"记一下/帮我记/写篇记录"时调用。正文必须放 content，禁止传 title 字段；record_type 必须根据用户原话判断：日记/心情→diary，想法/灵感→idea，待办/要做→todo，闪念→flash，其他→note，禁止省略。',
     parameters: {
       type: 'object',
       properties: {

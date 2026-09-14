@@ -20,7 +20,7 @@ const PROVIDER_LOGO_MAP = {
   deepseek: 'ds', zhipu: 'zg', qwen: 'qw', moonshot: 'ms', openai: 'oa'
 }
 function getProviderLogo(pid) {
-  return `/static/icons/provider-${PROVIDER_LOGO_MAP[pid] || 'oa'}.png`
+  return `/static/icons/provider-${PROVIDER_LOGO_MAP[pid] || 'oa'}-v2.png`
 }
 
 const switchableProviders = computed(() => {

@@ -5,6 +5,7 @@
  */
 import { logger } from '../logger.js'
 import { OP_CLAIM_RE } from './constants.js'
+import { mergeSuggestions } from './chat-suggestion.js'
 
 /**
  * 解析 AI 响应 — 容错处理，支持单意图/复合意图/撤销
@@ -59,6 +60,7 @@ export function parseAiResponse(raw, conversationId) {
         reply: cleaned,
         action: null,
         actions: [],
+        suggestions: mergeSuggestions([], cleaned),
         conversation_id: conversationId || ''
       }
     }
@@ -118,7 +120,7 @@ export function parseAiResponse(raw, conversationId) {
     action,
     actions,
     _opClaimWithoutAction,
-    suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 3).map(s => String(s)).filter(Boolean) : [],
+    suggestions: mergeSuggestions(parsed.suggestions, action ? '' : reply),
     conversation_id: conversationId || ''
   }
 }

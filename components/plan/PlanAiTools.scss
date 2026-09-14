@@ -1,0 +1,81 @@
+/* PlanAiTools.vue SCSS — AI 工具栏 + AI 建议（3.5.7 从 plan/detail.scss 拆出） */
+
+.ai-tools-section {
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+}
+
+.ai-tools-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.ai-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 10rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  font-size: 24rpx;
+  color: #18181B;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.95);
+    background: #F4F4F5;
+  }
+}
+
+.ai-result {
+  margin-top: 12rpx;
+  padding: 12rpx;
+  background: #FFFFFF;
+  border-radius: 8rpx;
+  border-left: 4rpx solid #18181B;
+}
+
+.ai-result-title {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #18181B;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.ai-result-text {
+  font-size: 24rpx;
+  color: #52525B;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* AI 建议 */
+.ai-section {
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+
+  .ai-text {
+    font-size: 24rpx;
+    color: #18181B;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .ai-tools-section { background: #27272A; border-color: #3F3F46; }
+  .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
+  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
+  .ai-result-title { color: #FAFAFA; }
+  .ai-result-text { color: #F4F4F5; }
+  .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
+}

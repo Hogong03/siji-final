@@ -342,6 +342,9 @@
   font-size: 24rpx;
   color: #71717A;
   line-height: 1.4;
+  max-height: 68rpx;
+  overflow: hidden;
+  word-break: break-all;
 }
 .card-images {
   display: flex;

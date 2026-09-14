@@ -5,6 +5,8 @@ import { ref, computed } from 'vue'
 import { getPlanList, getUsedTags } from '@/utils/storage.js'
 import { savePlan, deletePlan } from '@/utils/storage/plan.js'
 import { toPlanTs } from '@/utils/datetime.js'
+import { collectDailySuggestions } from '@/utils/plan-daily.js'
+import { weekCheckinSummary } from '@/utils/plan-heatmap.js'
 
 export function usePlanList() {
   const allPlans = ref([])
@@ -73,6 +75,9 @@ export function usePlanList() {
     })
   })
 
+  // ==================== 今日行动条（3.4.3） ====================
+  const dailyItems = computed(() => collectDailySuggestions(allPlans.value, { limit: 3 }))
+
   const hasActiveFilter = computed(() =>
     searchKeyword.value || filterStatus.value !== -1 || filterPriority.value !== -1 || filterTag.value
   )
@@ -111,7 +116,13 @@ export function usePlanList() {
       }
     })
 
-    return { total, active, completed, pending, rate, pHigh, pMid, pLow, overdue, subTotal, subDone }
+    // 3.5.4：本周打卡概览（主计划 + 子计划一起算，只算 checkins）
+    const week = weekCheckinSummary(allPlans.value)
+
+    return {
+      total, active, completed, pending, rate, pHigh, pMid, pLow, overdue, subTotal, subDone,
+      weekCheckins: week.times, weekDays: week.days
+    }
   })
 
   const priorityBar = computed(() => {
@@ -143,7 +154,7 @@ export function usePlanList() {
 
   return {
     allPlans, searchKeyword, filterStatus, filterPriority, filterTag, filterTags,
-    filteredPlans, hasActiveFilter, stats, priorityBar,
+    filteredPlans, hasActiveFilter, stats, priorityBar, dailyItems,
     loadPlans, loadTags, resetFilters, quickToggleStatus, removePlan
   }
 }

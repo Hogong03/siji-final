@@ -20,9 +20,10 @@ import { useChatEngine } from '@/composables/useChatEngine.js'
 import { useScrollControl } from '@/composables/useScrollControl.js'
 import { useConversationManager } from '@/composables/useConversationManager.js'
 import { useRetryBar } from '@/composables/useRetryBar.js'
-import { useChatTagSync } from '@/composables/useChatTagSync.js'
 import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
+import { useEnterSummary } from '@/composables/useEnterSummary.js'
+import { formatSummaryTime } from '@/utils/enter-summary.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 
 const store = useAppStore()
@@ -31,7 +32,7 @@ const inputAreaRef = ref(null)
 
 // ===== 聊天核心逻辑 =====
 const {
-  isSending, pendingAction, pendingActions, pendingReply, currentSuggestions,
+  isSending, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
   simulationMode,
   getWelcomeMessage, handleSend: engineSend, handleStop: engineStop, handleRetry: engineRetry,
   handleConfirmAction, handleCancelAction, initSimulation
@@ -45,6 +46,65 @@ const {
   startStreamScroll, stopStreamScroll,
   handleScroll, backToBottom, resetScrollState, forceShouldAutoScroll
 } = useScrollControl()
+
+// ===== 发送状态行（P1）+ AI 气泡重新生成/换说法（P4）=====
+const REPHRASE_HINT = '请把这条回复换个说法重新回答：意思保持一致，但换一种更自然、更简洁的表达，不要重复刚才的原句，也不要执行任何操作或输出动作。'
+const sendStageText = computed(() => {
+  const map = { idle: '正在连接…', thinking: '正在思考…', streaming: '正在回复…' }
+  return map[sendStage.value] || '正在思考…'
+})
+const sendElapsedLabel = computed(() => {
+  const s = Math.floor(sendElapsedMs.value / 1000)
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  return `${m}:${String(s % 60).padStart(2, '0')}`
+})
+const chatScrollHelpers = { startStreamScroll, stopStreamScroll, scrollToBottomAnchor }
+
+function handleRegenerateReply() {
+  showRetryBar.value = false
+  engineRetry({}, inputAreaRef, scrollToBottom, chatScrollHelpers)
+}
+
+function handleRephraseReply() {
+  let hasText = false
+  const msgs = store.messages
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role === 'user') { hasText = !!msgs[i].content; break }
+  }
+  if (!hasText) {
+    uni.showToast({ title: '上一条消息没有文字，无法换一种说法', icon: 'none' })
+    return
+  }
+  showRetryBar.value = false
+  engineRetry({ appendInstruction: REPHRASE_HINT }, inputAreaRef, scrollToBottom, chatScrollHelpers)
+}
+
+// ===== 冷启动进入总结卡片（3.4.5）=====
+const { pending: enterSummary, dismiss: dismissEnterSummary } = useEnterSummary()
+const enterSummaryEvents = computed(() => {
+  const s = enterSummary.value
+  if (!s) return []
+  return (s.events || []).slice(0, 3).map(e => ({
+    kind: e.kind,
+    title: e.title,
+    timeLabel: formatSummaryTime(e.at)
+  }))
+})
+const enterSummaryExtra = computed(() => {
+  const s = enterSummary.value
+  if (!s) return 0
+  return Math.max(0, (s.eventsTotal || 0) - enterSummaryEvents.value.length)
+})
+const enterSummaryDiary = computed(() => (enterSummary.value && enterSummary.value.diaryCount) || 0)
+// 3.5.3：全局连续打卡天数（计划打卡日期的并集，从今天/昨天向前数）
+const enterSummaryStreak = computed(() => (enterSummary.value && enterSummary.value.streak) || 0)
+function openEnterSummaryDetail() {
+  const s = enterSummary.value
+  const goPlan = !!s && s.eventsTotal > 0
+  dismissEnterSummary()
+  uni.navigateTo({ url: goPlan ? '/pages/plan/records' : '/pages/diary/list' })
+}
 
 // ===== 会话管理 =====
 const {
@@ -82,7 +142,7 @@ function handleDeleteConversation(conv) {
 
 // ===== 编辑/标签 =====
 const {
-  editingMessage, startEdit, cancelEdit, saveEdit, handleUpdateTags, syncAllMessageTags
+  handleUpdateTags, syncAllMessageTags
 } = useMessageEdit(store)
 
 // ===== 跳转路由 =====
@@ -150,6 +210,7 @@ function handleSend(text) {
   const message = text || inputText.value.trim()
   if (!message || isSending.value) return
   showRetryBar.value = false
+  agentHintDismissed.value = true
   forceShouldAutoScroll()
   const img = pendingImage.value
   engineSend(message, inputAreaRef, scrollToBottom, img, { startStreamScroll, stopStreamScroll, scrollToBottomAnchor })
@@ -173,6 +234,44 @@ function handleEditOwn(content) {
   if (!content) return
   inputAreaRef.value?.setText(content)
 }
+
+// ===== 开场引导 Starter（3.1 M2）=====
+// 当前 Agent 有 starts 且会话还没有用户消息时，在输入区上方展示可一键发送的示例
+const starterChips = computed(() => {
+  const starts = store.activeAgent && store.activeAgent.starts
+  return Array.isArray(starts) ? starts.slice(0, 3) : []
+})
+const starterChipsVisible = computed(() => {
+  if (simulationMode.value || isSending.value || starterChips.value.length === 0) return false
+  const conv = store.activeConversation
+  if (!conv) return true
+  return !conv.messages.some(m => m.role === 'user')
+})
+
+// ===== 会话 Agent 绑定提示（3.1 M3）=====
+// 打开历史会话时若绑定 Agent 与当前活跃 Agent 不一致，提示一次，不自动切换
+const agentHintDismissed = ref(false)
+const boundConvAgent = computed(() => {
+  if (simulationMode.value) return null
+  const conv = store.activeConversation
+  if (!conv || !conv.agentId || conv.agentId === store.activeAgentId) return null
+  return conv
+})
+const showConvAgentHint = computed(() => !!boundConvAgent.value && !agentHintDismissed.value)
+const convAgentHintName = computed(() => {
+  const conv = boundConvAgent.value
+  if (!conv) return ''
+  const agent = store.agents.find(a => a.id === conv.agentId)
+  return (agent && agent.name) || conv.agentName || '该 Agent'
+})
+function switchToConversationAgent() {
+  const conv = boundConvAgent.value
+  if (conv && conv.agentId) store.setActiveAgent(conv.agentId)
+  agentHintDismissed.value = true
+}
+watch(() => store.activeConversationId, () => {
+  agentHintDismissed.value = false
+})
 
 // ===== UI Modal 状态 =====
 const showGuide = ref(false)
@@ -198,7 +297,7 @@ const PROVIDER_LOGO_MAP = {
   deepseek: 'ds', zhipu: 'zg', qwen: 'qw', moonshot: 'ms', openai: 'oa'
 }
 function getProviderLogo(pid) {
-  return `/static/icons/provider-${PROVIDER_LOGO_MAP[pid] || 'oa'}.png`
+  return `/static/icons/provider-${PROVIDER_LOGO_MAP[pid] || 'oa'}-v2.png`
 }
 const simBannerTitle = computed(() => {
   if (!simulationMode.value) return ''
@@ -289,6 +388,44 @@ function handleWelcomeChip(text) {
       </view>
     </view>
 
+    <!-- 冷启动进入总结卡片（3.4.5：计划完成/打卡 + 新增记录） -->
+    <view v-if="enterSummary" class="summary-card">
+      <view class="summary-head">
+        <view class="summary-badge" />
+        <text class="summary-head-title">回来啦 · 新进展小结</text>
+      </view>
+      <view class="summary-list">
+        <view v-for="(ev, ei) in enterSummaryEvents" :key="ei" class="summary-line">
+          <text class="summary-kind" :class="ev.kind === 'done' ? 'kind-done' : 'kind-checkin'">{{ ev.kind === 'done' ? '完成' : '打卡' }}</text>
+          <text class="summary-line-title">{{ ev.title }}</text>
+          <text class="summary-line-time">{{ ev.timeLabel }}</text>
+        </view>
+        <view v-if="enterSummaryExtra > 0" class="summary-line">
+          <text class="summary-line-title">还有 {{ enterSummaryExtra }} 项进展</text>
+        </view>
+        <view v-if="enterSummaryDiary > 0" class="summary-line">
+          <text class="summary-kind kind-diary">记录</text>
+          <text class="summary-line-title">新增记录 {{ enterSummaryDiary }} 条</text>
+        </view>
+        <view v-if="enterSummaryStreak >= 2" class="summary-line">
+          <text class="summary-kind kind-streak">连续</text>
+          <text class="summary-line-title">已连续打卡 {{ enterSummaryStreak }} 天</text>
+        </view>
+      </view>
+      <view class="summary-actions">
+        <view class="summary-btn" @tap="dismissEnterSummary">知道了</view>
+        <view class="summary-btn summary-btn-primary" @tap="openEnterSummaryDetail">查看详情</view>
+      </view>
+    </view>
+
+    <!-- 会话 Agent 绑定提示（该会话由 X 进行 · 切换） -->
+    <view v-if="showConvAgentHint" class="conv-agent-hint">
+      <text class="conv-agent-hint-text">该会话由 {{ convAgentHintName }} 进行</text>
+      <view class="conv-agent-hint-btn" @tap="switchToConversationAgent">
+        <text class="conv-agent-hint-btn-text">切换</text>
+      </view>
+    </view>
+
     <!-- 离线提示条 -->
     <view v-if="showOfflineBanner" class="banner-slide-in offline-banner">
       <text class="offline-text">网络已断开 · 数据保存在本地</text>
@@ -326,17 +463,17 @@ function handleWelcomeChip(text) {
       <view class="messages-list">
         <MessageBubble
           v-for="(msg, vi) in visibleMessages" :key="toGlobalIndex(vi)"
-          :message="msg" :is-editing="editingMessage === toGlobalIndex(vi)"
+          :message="msg"
           :prev-role="vi > 0 ? visibleMessages[vi - 1].role : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].role : '')"
           :is-last="vi === visibleMessages.length - 1"
+          :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
           @confirm-action="handleConfirmActionCard"
           @confirm-pending="handleConfirmAction"
           @cancel-pending="handleCancelAction"
-          @start-edit="startEdit(toGlobalIndex(vi))"
-          @save-edit="saveEdit"
-          @cancel-edit="cancelEdit"
           @update-tags="handleUpdateTags"
           @edit-own="handleEditOwn"
+          @regenerate="handleRegenerateReply"
+          @rephrase="handleRephraseReply"
         />
         <view id="chat-bottom" style="height: 16rpx" />
       </view>
@@ -376,6 +513,24 @@ function handleWelcomeChip(text) {
           <text>编辑</text>
         </view>
       </view>
+    </view>
+
+    <!-- 开场引导 Starter：切换/创建 Agent 后可一键发送的示例 -->
+    <view v-if="starterChipsVisible" class="agent-starter-bar">
+      <view
+        v-for="(s, i) in starterChips" :key="i"
+        class="agent-starter-chip"
+        @tap="handleSend(s)"
+      >
+        <text class="agent-starter-chip-text">{{ s }}</text>
+      </view>
+    </view>
+
+    <!-- 发送中状态行：正在思考/回复 + 计时 -->
+    <view v-if="isSending" class="sending-strip">
+      <view class="sending-dot" />
+      <text class="sending-text">{{ sendStageText }}</text>
+      <text class="sending-elapsed">{{ sendElapsedLabel }}</text>
     </view>
 
     <!-- 输入区 -->

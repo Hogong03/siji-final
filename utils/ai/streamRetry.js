@@ -12,6 +12,21 @@ const MAX_STREAM_RETRIES = 2
 const RETRY_DELAYS = [1000, 3000]
 
 /**
+ * 判断流式失败结果是否值得自动重试
+ * 参数/权限类错误（HTTP 4xx，除 429）重试无意义，直接透出给用户；
+ * 空回复、网络错误、429 限流、5xx 服务端错误可重试
+ * @param {Object} result - 流式请求结果
+ * @returns {boolean}
+ */
+export function isRetryableError(result) {
+  if (!result || !result._error) return true
+  const m = result._error.match(/^HTTP\s*(\d{3})/)
+  if (!m) return true
+  const code = Number(m[1])
+  return code === 429 || code >= 500
+}
+
+/**
  * 执行带指数退避的流式重试
  * @param {Function} streamFn - chatRequestStream 调用函数 (message, onChunk, history) => result
  * @param {string} originalMessage - 原始用户消息
@@ -28,6 +43,11 @@ export async function retryStreamWithBackoff(streamFn, originalMessage, updateLa
     return { result, streamedText: result.reply || '' }
   }
 
+  // 参数/权限类错误（如 HTTP 400）重试无意义，直接透出错误
+  if (result._error && !isRetryableError(result)) {
+    logger.warn('[Stream Retry] Non-retryable error, skip retry: ' + result._error)
+    return { result, streamedText: '' }
+  }
   // 超时中止（_aborted + _timeout）不重试，直接返回让上层显示重试按钮
   if (result._aborted && result._timeout) {
     logger.warn('[Stream Retry] Timeout abort, skip retry (will show retry button)')
@@ -40,7 +60,7 @@ export async function retryStreamWithBackoff(streamFn, originalMessage, updateLa
   }
 
   let streamRetry = 0
-  while (result._emptyReply && streamRetry < MAX_STREAM_RETRIES && !stopSignal.stopped) {
+  while (result._emptyReply && isRetryableError(result) && streamRetry < MAX_STREAM_RETRIES && !stopSignal.stopped) {
     streamRetry++
     const delay = RETRY_DELAYS[streamRetry - 1] || 3000
 
@@ -48,7 +68,10 @@ export async function retryStreamWithBackoff(streamFn, originalMessage, updateLa
     let simplifiedMsg = originalMessage
     let retryHint = ''
     if (streamRetry === 2) {
-      simplifiedMsg = originalMessage.replace(/^\[[^\]]+\]\s*/g, '').trim().substring(0, 100)
+      // 图片两步组合消息（含 [图片识别结果]）必须整体保留，否则重试会丢失图片描述
+      simplifiedMsg = originalMessage.includes('[图片识别结果]')
+        ? originalMessage
+        : originalMessage.replace(/^\[[^\]]+\]\s*/g, '').trim().substring(0, 100)
       retryHint = '（请简短回复）'
     }
 
@@ -72,6 +95,11 @@ export async function retryStreamWithBackoff(streamFn, originalMessage, updateLa
     result = await streamFn(simplifiedMsg + retryHint)
     streamedText = ''
 
+    // 重试后仍为参数/权限类错误，不再继续重试
+    if (result._error && !isRetryableError(result)) {
+      logger.warn(`[Stream Retry] Non-retryable error on retry ${streamRetry}, stopping`)
+      break
+    }
     // 超时中止不继续重试
     if (result._aborted && result._timeout) {
       logger.warn(`[Stream Retry] Timeout abort on retry ${streamRetry}, stopping`)

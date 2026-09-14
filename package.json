@@ -1,31 +1,12 @@
 {
   "name": "siji",
   "version": "2.2.0",
-  "description": "思迹 - AI 个人生活助手",
+  "description": "思迹 - AI 个人生活助手 (test-only deps)",
   "scripts": {
-    "dev:h5": "npx uni",
-    "build:h5": "npx uni build",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint . --ext .vue,.js --ignore-path .gitignore"
-  },
-  "dependencies": {
-    "pinia": "^2.1.7",
-    "vue": "^3.4.21",
-    "@dcloudio/uni-app": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-app-plus": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-components": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-h5": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-mp-alipay": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-mp-baidu": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-mp-toutiao": "3.0.0-alpha-4010120250109001"
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@dcloudio/types": "^3.4.8",
-    "@dcloudio/uni-automator": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/uni-cli-shared": "3.0.0-alpha-4010120250109001",
-    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-4010120250109001",
     "sass": "^1.71.1",
     "vite": "^5.1.4",
     "vitest": "^4.1.11"

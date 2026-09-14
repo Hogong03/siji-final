@@ -10,7 +10,7 @@ export const PROFILE_TOOLS = [
   },
   {
     name: 'smart_update_profile',
-    description: '智能更新用户画像。用户在对话中透露新偏好/事实时调用，支持任意自定义属性（如 MBTI、星座、血型等），未知属性会自动新建分组保存。',
+    description: '智能更新用户画像。用户在对话中透露新偏好/事实时调用，支持任意自定义属性（如 MBTI、星座、血型等），未知属性会自动新建分组保存。用户表示值有变更（如「不是 X，是 Y」「改成 Y」）时传新值覆盖原字段，禁止新增一条内容重复的属性。',
     parameters: {
       type: 'object',
       properties: {

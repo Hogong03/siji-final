@@ -7,6 +7,7 @@
  *   2. text 模式（默认）：取名字首字+彩色底色
  */
 import { computed } from 'vue'
+import { normalizeAgentIcon } from '@/utils/agent-templates.js'
 
 const props = defineProps({
   name: { type: String, default: '' },
@@ -15,9 +16,7 @@ const props = defineProps({
 })
 
 const TYPE_COLORS = {
-  '思迹助手': '#F5F0E8', '职场参谋': '#F0F0E8', '情感顾问': '#F5E8F0',
-  '心理咨询师': '#F5F0E8', '健身教练': '#E8F0E8',
-  '财务顾问': '#F0E8E8', '学习伙伴': '#E8EEF5', '极简助手': '#F0F0F0',
+  '思迹助手': '#F5F0E8', '情感顾问': '#F5E8F0', '心理咨询师': '#E8EEF5'
 }
 
 const bgColor = computed(() => TYPE_COLORS[props.name] || '#EBEBEB')
@@ -34,6 +33,7 @@ const fontSize = computed(() => {
 })
 
 const hasIcon = computed(() => !!props.icon)
+const iconSrc = computed(() => normalizeAgentIcon(props.icon))
 </script>
 
 <template>
@@ -43,7 +43,7 @@ const hasIcon = computed(() => !!props.icon)
     :style="{ width: sizeRpx, height: sizeRpx }"
   >
     <image
-      :src="icon"
+      :src="iconSrc"
       mode="aspectFill"
       class="avatar-icon-img"
       :style="{ width: '100%', height: '100%' }"

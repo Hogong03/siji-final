@@ -1,0 +1,21 @@
+/* 计划详情分块通用样式（3.5.7：PlanActionSection / PlanFieldsSection / PlanAiTools 共用） */
+
+.section {
+  margin-bottom: 12rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+}
+
+.section-label {
+  font-size: 24rpx;
+  color: #71717A;
+  margin-bottom: 8rpx;
+  display: block;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .section { background: #27272A; }
+  .section-label { color: #71717A; }
+}

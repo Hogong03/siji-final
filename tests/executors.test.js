@@ -54,6 +54,37 @@ describe('记录 executor', () => {
     expect(r.detail.content).toBe('今天睡了一天，晚上还和小妹妹一起打了游戏。')
   })
 
+  it('创建：title 与 content 相同时提取简短标题（反馈 2026-08-30）', () => {
+    const full = '今天打算在家打王者荣耀，目标是用上官婉儿冲击金标。'
+    const r = store.executeAction({ type: 'create_diary', payload: { title: full, content: full, tags: [] } })
+    expect(r.success).toBe(true)
+    expect(r.detail.title).toBe('打王者荣耀')
+    expect(r.detail.content).toBe(full)
+  })
+  it('创建：单行长文自动提炼简短标题（反馈 2026-09-01）', () => {
+    const full = '今天打算在家打王者荣耀，目标是用上官婉儿冲击金标。'
+    const r = store.executeAction({ type: 'create_diary', payload: { content: full, tags: [] } })
+    expect(r.success).toBe(true)
+    expect(r.detail.title).toBe('打王者荣耀')
+    expect(r.detail.content).toBe(full)
+  })
+
+  it('创建：AI 传占位标题时自动提炼（反馈 2026-09-01）', () => {
+    const r = store.executeAction({ type: 'create_diary', payload: { title: '记录', content: '今天跑步了五公里，状态不错', tags: [] } })
+    expect(r.success).toBe(true)
+    expect(r.detail.title).toBe('跑步了五公里')
+    expect(r.detail.content).toBe('今天跑步了五公里，状态不错')
+  })
+
+  it('更新：只改正文且旧标题与旧正文重复时自动提炼（反馈 2026-09-01）', () => {
+    const c = store.executeAction({ type: 'create_diary', payload: { content: '旧内容', tags: [] } })
+    const u = store.executeAction({ type: 'update_diary', payload: { client_id: c.detail.id, content: '今天跑了五公里，感觉不错' } })
+    expect(u.success).toBe(true)
+    expect(u.detail.updatedFields).toContain('title')
+    expect(u.detail.title).toBe('跑了五公里')
+  })
+
+
   it('创建/更新：record_type 保存与修改', () => {
     const c = store.executeAction({ type: 'create_diary', payload: { content: '一篇日记', record_type: 'diary' } })
     expect(c.detail.record_type).toBe('diary')

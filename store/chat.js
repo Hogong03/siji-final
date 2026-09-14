@@ -51,7 +51,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // ==================== 会话 CRUD ====================
 
-  function createConversation(customTitle) {
+  function createConversation(customTitle, meta) {
     const count = conversations.value.length
     const conv = {
       id: generateConversationId(),
@@ -61,6 +61,11 @@ export const useChatStore = defineStore('chat', () => {
       updatedAt: Date.now(),
       summary: null,
       summaryIndex: 0
+    }
+    // 3.1：绑定创建时活跃的 Agent（meta 由 app store 注入），存量会话无字段按未知处理
+    if (meta && meta.agentId) {
+      conv.agentId = meta.agentId
+      conv.agentName = meta.agentName || ''
     }
     conversations.value = [...conversations.value, conv]
     activeConversationId.value = conv.id

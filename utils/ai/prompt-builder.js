@@ -15,7 +15,6 @@
  */
 import { buildProfileContext } from '../profile.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES, isLiteChatMode } from './prompt-actions.js'
-import { buildSkillsPrompt } from './skills.js'
 
 // 重新导出（保持向后兼容）
 export { isLiteChatMode }
@@ -37,6 +36,7 @@ function buildPromptCore(actionSchema) {
 闲聊：{"reply":"辛苦了~","action":{"type":"none","payload":{},"needConfirm":false}}
 记账：{"reply":"记好了，午餐 ¥25","action":{"type":"create_bill","payload":{"type":"expense","amount":25,"category":"餐饮"},"needConfirm":false}}
 写日记：{"reply":"记下来了~","action":{"type":"create_diary","payload":{"content":"昨天去打球很开心"},"needConfirm":false}}
+可选：reply 后可附带 "suggestions": ["用户可能直接发出的下一句短句1", "短句2"]（最多 2 条、每条 ≤14 字）；只放用户接下来最可能直接发送的短句，禁止"你觉得呢/要不要试试"式评价追问，没有把握就不给
 ⚠️ 你的整个回复必须是合法 JSON，第一个字符必须是 {，最后一个字符必须是 }。禁止在 JSON 前面输出任何中文或解释文本。
 
 ## 核心铁律
@@ -143,7 +143,8 @@ export function getUserProfile(forceRefresh = false) {
     const diaryRaw = uni.getStorageSync(`diary_${month}`) || '[]'
     const diaries = JSON.parse(diaryRaw).filter(d => d.is_deleted !== 1)
     const planRaw = uni.getStorageSync('plan_all') || '[]'
-    const plans = JSON.parse(planRaw).filter(p => p.is_deleted !== 1 && p.status === 1)
+    // 3.4 M3：冷藏计划（frozen_at）不计入「进行中」
+    const plans = JSON.parse(planRaw).filter(p => p.is_deleted !== 1 && p.status === 1 && !p.frozen_at)
 
     parts.push(`【月度概览】本月支出 ¥${totalExpense.toFixed(0)}(${topCategory}最高),收入 ¥${bills.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0).toFixed(0)},记录${diaries.length}篇,进行中计划${plans.length}个`)
 
@@ -186,8 +187,8 @@ export function getUserProfile(forceRefresh = false) {
 
     const insights = []
     if (totalExpense > 3000 && expenseBills.length > 20) insights.push('消费较频繁,注意节奏')
-    if (diaries.length === 0) insights.push('本月还未写记录')
-    else if (diaries.length >= 10) insights.push('坚持写记录,很棒')
+    // 3.4 铁律 8：未完成信息只有用户主动问才出现，删除「还未写记录」缺口提醒
+    if (diaries.length >= 10) insights.push('坚持写记录,很棒')
     if (plans.length > 5) insights.push('计划较多,关注优先级')
     if (insights.length > 0) parts.push(`【洞察】${insights.join(';')}`)
 
@@ -216,7 +217,7 @@ export function getTopCategory(expenseBills) {
  * 动态段(问候/日期/extActions/profileCtx) → 每次重新拼
  */
 export function buildSystemPrompt(forceRefresh = false, opts = {}) {
-  const { agentMode = false, lite = false, skills = [], agentId = null } = opts  // lite: 精简 action schema（闲聊模式）；skills: agent 技能 prompt
+  const { agentMode = false, lite = false } = opts  // lite: 精简 action schema（闲聊模式）；agentMode: 跳过身份行（由 Agent 人设接管）
   const cacheNow = Date.now()
   // lite 模式和 agent 模式不缓存
   if (!lite && !agentMode && !forceRefresh && _cache.systemPrompt && (cacheNow - _cache.systemPromptTime) < CACHE_TTL) {
@@ -242,7 +243,7 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
 - create_relation: {name,role,context?,traits:[],preferences:[],notes?,relationship_score:1-10,tags:[]}
 - update_relation: {id,name?,role?,context?,traits?,preferences?,notes?,relationship_score?,tags?}
 - delete_relation: {id} needConfirm=true
-- log_interaction: {relation_id,scene,content,result?,emotion?}
+- log_interaction: {relation_id?,relation_name?,scene,content,result?,emotion?}  // relation_id 优先（上下文里 ID: 后的值），不知道 ID 时传 relation_name
 - query_interaction: {relation_id}
 - query_relation: {keyword?}`)
   } else {
@@ -253,14 +254,14 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
 
   if (hasDecisions) {
     extParts.push(`决策日志:
-- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}
+- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}  // 用户面临选择/纠结时用「机会成本-风险-时机」三维框架引导思考并落库
 - update_decision: {id,status?,decision?,reasoning?,deadline?}
 - review_decision: {id,review_notes,outcome?}
 - analyze_decisions: {}
 - query_decision: {status?,category?}`)
   } else {
     extParts.push(`决策日志:
-- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}
+- create_decision: {title,category,status:"thinking",deadline?,options:[{name,pros:[],cons:[],weight:1-10}],stakeholders:[],factors:[]}  // 用户面临选择/纠结时用「机会成本-风险-时机」三维框架引导思考并落库
 - query_decision: {status?,category?}`)
   }
 
@@ -281,8 +282,7 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
   const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
   const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
-  const skillsPrompt = buildSkillsPrompt(skills, agentId)
-  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}${skillsPrompt ? '\n\n' + skillsPrompt : ''}`
+  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}`
 
   if (!lite && !agentMode) {
     _cache.systemPrompt = result

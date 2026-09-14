@@ -7,8 +7,8 @@
  * 用户气泡：纯黑实心白字
  * 执行结果卡：白底黑边，只有数据有功能色
  *
- * props: message, isEditing
- * emits: confirm-action, confirm-pending, cancel-pending, start-edit, save-edit, cancel-edit, update-tags
+ * props: message
+ * emits: confirm-action, confirm-pending, cancel-pending, update-tags
  */
 import { computed, ref, watch } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
@@ -18,8 +18,8 @@ import { previewImage } from '@/utils/image.js'
 
 const props = defineProps({
   message: { type: Object, required: true },
-  isEditing: { type: Boolean, default: false },
   prevRole: { type: String, default: '' },
+  operable: { type: Boolean, default: false },
   isLast: { type: Boolean, default: false }
 })
 
@@ -37,7 +37,7 @@ watch(imageSrc, () => { imageFailed.value = false })
 
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
-  'start-edit', 'save-edit', 'cancel-edit', 'update-tags', 'edit-own', 'delete-message'
+  'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase'
 ])
 
 /** 点击图片预览 */
@@ -54,6 +54,7 @@ const edgeColor = computed(() => {
   if (t.startsWith('bill') || t === 'create_bill' || t === 'update_bill' || t === 'query_bill') return '#F59E0B'
   if (t.startsWith('diary') || t === 'create_diary' || t === 'update_diary' || t === 'query_diary') return '#0EA5E9'
   if (t.startsWith('plan') || t === 'create_plan' || t === 'update_plan' || t === 'query_plan') return '#059669'
+  if (t === 'glimmer' || t === 'query_glimmers') return '#B45309'
   return ''
 })
 
@@ -108,6 +109,10 @@ function editOwn() {
   emit('edit-own', props.message.content)
 }
 
+/** AI 气泡操作：重新生成 / 换一种说法（P4，事件交由页面触发重发） */
+function onRegenerate() { emit('regenerate') }
+function onRephrase() { emit('rephrase') }
+
 /** 待确认卡片图标 */
 function execIcon(type) {
   const map = {
@@ -122,9 +127,18 @@ function execIcon(type) {
 function actionTitle(action) {
   const map = {
     create_diary: '写记录', create_bill: '记账', create_plan: '创建计划',
+    create_plan_phases: '创建分阶段计划',
     query_diary: '查询记录', query_bill: '查询账单', query_plan: '查询计划',
     update_bill: '修改账单', update_diary: '修改记录', update_plan: '修改计划',
-    delete_bill: '删除账单', delete_diary: '删除记录', delete_plan: '删除计划'
+    update_plan_phase: '更新计划阶段', update_plan_subtask: '更新计划子项',
+    delete_bill: '删除账单', delete_diary: '删除记录', delete_plan: '删除计划',
+    smart_update_profile: '更新个人信息', update_profile: '更新个人信息',
+    create_relation: '创建人物档案', update_relation: '修改人物档案', log_interaction: '记录互动',
+    create_decision: '创建决策', update_decision: '更新决策', review_decision: '复盘决策',
+    create_feedback: '提交反馈', update_feedback: '修改反馈',
+    add_tag: '添加标签', update_tag_category: '修改标签分类', remove_tag: '删除标签',
+    create_agent: '创建 Agent', create_plan_template: '保存计划模板', undo_last: '撤销上一步',
+    create_glimmer: '收微光', query_glimmers: '查看微光本'
   }
   return map[action.type] || '确认操作'
 }
@@ -134,15 +148,35 @@ function actionDetail(action) {
   if (action.type === 'create_bill') return `¥${p.amount || 0} ${p.category || ''} ${p.note || ''}`.trim()
   if (action.type === 'create_diary') return p.title || (p.content || '').substring(0, 30) || ''
   if (action.type === 'create_plan') return p.title || ''
+  if (action.type === 'create_plan_phases') return (p.title || '') + (p.phase_count ? `（${p.phase_count} 个阶段）` : '')
+  if (action.type === 'create_glimmer') return (p.content || '').substring(0, 30)
+  if (action.type === 'create_agent') {
+    const parts = [`名称：${p.name || ''}`]
+    if (p.description) parts.push(p.description)
+    return parts.join('｜')
+  }
+  if (action.type === 'smart_update_profile' || action.type === 'update_profile') {
+    const updates = Array.isArray(p.updates) ? p.updates : []
+    const labels = []
+    updates.slice(0, 4).forEach(u => labels.push(`${u.card || u.field || '?'}: ${u.value != null ? u.value : (u.field || '')}`))
+    if (p.custom && p.custom.length) labels.push(p.custom.map(c => `${c.label}: ${c.value}`).join('、'))
+    return labels.length ? labels.join('；') : (JSON.stringify(p).substring(0, 60))
+  }
+  if (action.type === 'log_interaction') return `${p.relation_name || p.relation_id || ''} ${p.scene || ''} ${p.content || ''}`.trim()
+  if (action.type === 'create_relation') return `${p.name || ''}（${p.relation || '未填关系'}）`
   if (action.type.startsWith('update_')) return Object.entries(p).map(([k,v]) => `${k}: ${v}`).join(' ')
   if (action.type.startsWith('delete_')) return p.title || p.client_id || ''
   return JSON.stringify(p).substring(0, 60)
 }
 
-/** 从执行结果卡片内触发的编辑操作，透传 emit */
-function onStartEdit() { emit('start-edit') }
-function onSaveEdit(form) { emit('save-edit', form) }
-function onCancelEdit() { emit('cancel-edit') }
+/** 待确认卡标题：多操作时显示总数 */
+function confirmCardTitle(message) {
+  const list = message?.pendingActions
+  if (Array.isArray(list) && list.length > 1) return `${list.length} 个操作待确认`
+  return actionTitle(message?.pendingAction || {})
+}
+
+/** 从执行结果卡片内触发的标签操作，透传 emit */
 function onUpdateTags(payload) { emit('update-tags', payload) }
 
 /** 长按消息 — 已禁用（削弱 AI 幻觉 + 简化交互） */
@@ -194,6 +228,8 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
         <text class="bubble-time-outer">{{ message.time }}</text>
         <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
         <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="editOwn">编辑</text>
+        <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRegenerate">重新生成</text>
+        <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRephrase">换一种说法</text>
         <text v-if="message.role === 'assistant' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
       </view>
 
@@ -201,10 +237,13 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
       <view v-if="message.pendingAction" class="confirm-card">
         <view class="confirm-header">
           <SijiIcon :name="execIcon(message.pendingAction.type.replace('create_', ''))" size="sm" class="confirm-icon" />
-          <text class="confirm-title">{{ actionTitle(message.pendingAction) }}</text>
+          <text class="confirm-title">{{ confirmCardTitle(message) }}</text>
         </view>
         <view class="confirm-body">
-          <text class="confirm-detail">{{ actionDetail(message.pendingAction) }}</text>
+          <template v-if="Array.isArray(message.pendingActions) && message.pendingActions.length > 1">
+            <text v-for="(pa, pi) in message.pendingActions" :key="pi" class="confirm-detail">{{ actionTitle(pa) }}：{{ actionDetail(pa) }}</text>
+          </template>
+          <text v-else class="confirm-detail">{{ actionDetail(message.pendingAction) }}</text>
         </view>
         <view class="confirm-actions">
           <view class="confirm-btn cancel" @tap="$emit('cancel-pending')">
@@ -218,25 +257,9 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 
       <!-- 执行结果卡片（独立组件） -->
       <ExecResultCard
-        v-else-if="message.execResult && message.execResult.success && !isEditing"
+        v-else-if="message.execResult && message.execResult.success"
         :message="message"
-        :is-editing="false"
         @confirm-action="$emit('confirm-action', $event)"
-        @start-edit="onStartEdit"
-        @save-edit="onSaveEdit"
-        @cancel-edit="onCancelEdit"
-        @update-tags="onUpdateTags"
-      />
-
-      <!-- 就地编辑表单（独立组件内） -->
-      <ExecResultCard
-        v-else-if="message.execResult && message.execResult.success && isEditing"
-        :message="message"
-        :is-editing="true"
-        @confirm-action="$emit('confirm-action', $event)"
-        @start-edit="onStartEdit"
-        @save-edit="onSaveEdit"
-        @cancel-edit="onCancelEdit"
         @update-tags="onUpdateTags"
       />
 

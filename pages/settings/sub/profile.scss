@@ -282,6 +282,71 @@
   border-radius: 8rpx;
 }
 
+/* ---- AI 学到的偏好（记忆联动） ---- */
+.ai-prefs-section {
+  margin-top: 32rpx;
+  background: #FFFFFF;
+  border-radius: $radius-lg;
+  border: 2rpx solid #E4E4E7;
+  padding: 28rpx;
+}
+
+.ai-prefs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.ai-prefs-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #18181B;
+}
+
+.ai-prefs-count {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+
+.ai-pref-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #F4F4F5;
+  &:last-child { border-bottom: none; }
+}
+
+.ai-pref-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  color: #18181B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-pref-adopt {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  background: #000000;
+  border-radius: 100rpx;
+}
+
+.ai-pref-adopt-text {
+  font-size: 24rpx;
+  color: #FFFFFF;
+}
+
+.ai-prefs-hint {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+
 /* ---- 底部操作 ---- */
 .bottom-actions {
   margin-top: 40rpx;

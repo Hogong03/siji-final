@@ -1,0 +1,231 @@
+/* PlanFieldsSection.vue SCSS — 父计划 / 优先级 / 状态 / 标题 / 描述 / 标签 / 时间 / 循环 / 提醒（3.5.7 从 plan/detail.scss 拆出） */
+
+.input-field {
+  font-size: 28rpx;
+  padding: 8rpx 0;
+  border-bottom: 1rpx solid #E4E4E7;
+  width: 100%;
+  color: #18181B;
+}
+
+.textarea-field {
+  font-size: 28rpx;
+  min-height: 200rpx;
+  width: 100%;
+  line-height: 1.8;
+  padding: 8rpx 0;
+  color: #18181B;
+}
+
+/* 优先级 */
+.priority-row {
+  display: flex;
+  gap: 8rpx;
+}
+
+.priority-item {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  border: 2rpx solid #E4E4E7;
+  color: #71717A;
+  transition: all 0.15s ease;
+
+  &.active {
+    border-color: #18181B;
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
+/* 状态 */
+.status-row {
+  display: flex;
+  gap: 8rpx;
+}
+
+.status-item {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  background: #F4F4F5;
+  color: #71717A;
+  transition: all 0.15s ease;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
+/* 标签 chips */
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  align-items: center;
+}
+
+.tag-chip {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid #E4E4E7;
+  font-size: 22rpx;
+  background: #F4F4F5;
+  color: #52525B;
+
+  .tc-label { font-weight: 500; }
+  .tc-close { font-size: 20rpx; opacity: 0.7; margin-left: 2rpx; }
+}
+
+.tag-add-btn {
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  border: 1rpx dashed #A1A1AA;
+  font-size: 22rpx;
+  color: #71717A;
+}
+
+/* 父计划关联 */
+.parent-section {
+  padding: 12rpx 20rpx;
+  background: #FAFAFA;
+  border: 1rpx solid #E4E4E7;
+
+  &:active { background: #F4F4F5; }
+}
+
+.parent-link {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.parent-label {
+  font-size: 22rpx;
+  color: #71717A;
+  flex-shrink: 0;
+}
+
+.parent-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #18181B;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parent-arrow {
+  font-size: 28rpx;
+  color: #A1A1AA;
+}
+
+/* 重复提醒 */
+.repeat-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+
+.repeat-item {
+  padding: 10rpx 24rpx;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  background: #F4F4F5;
+  color: #71717A;
+  transition: all 0.15s ease;
+
+  &.active {
+    background: #18181B;
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+}
+
+/* 时间折叠区（3.2 M4） */
+.time-collapse-section {
+  padding: 12rpx 20rpx;
+}
+
+.time-collapse-head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.time-collapse-strip {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-collapse-empty {
+  flex: 1;
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+
+.time-collapse-btn {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #18181B;
+  background: #F4F4F5;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  font-weight: 600;
+}
+
+.time-collapse-editor {
+  margin: 12rpx 0 0;
+}
+
+/* 循环任务（3.5.0） */
+.recur-count-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 10rpx;
+}
+.recur-count-label {
+  font-size: 22rpx;
+  color: #71717A;
+}
+.recur-count-item {
+  min-width: 52rpx;
+  text-align: center;
+  padding: 4rpx 0;
+}
+.recur-hint {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 20rpx;
+  color: #A1A1AA;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
+  .textarea-field { color: #FAFAFA; }
+  .priority-item { border-color: #3F3F46; color: #A1A1AA; &.active { border-color: #FAFAFA; background: #FAFAFA; color: #18181B; } }
+  .status-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+  .tag-chip { background: #3F3F46; border-color: #52525B; color: #F4F4F5; }
+  .tag-add-btn { border-color: #52525B; color: #71717A; }
+  .parent-section { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
+  .parent-title { color: #FAFAFA; }
+  .parent-label { color: #71717A; }
+  .parent-arrow { color: #52525B; }
+  .repeat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+  .time-collapse-btn { color: #FAFAFA; background: #27272A; }
+  .recur-count-label { color: #A1A1AA; }
+  .recur-hint { color: #52525B; }
+}

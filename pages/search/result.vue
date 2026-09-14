@@ -120,12 +120,15 @@ function tapHistory(kw) {
 }
 
 // 按类型分组
+// 只返回非空分组：v-if 与 v-for 不能同元素（v-if 先求值，拿不到 v-for 的局部变量）
 const groupedResults = computed(() => {
-  const groups = { diary: [], bill: [], plan: [] }
+  const buckets = { diary: [], bill: [], plan: [] }
   results.value.forEach(r => {
-    if (groups[r.type]) groups[r.type].push(r)
+    if (buckets[r.type]) buckets[r.type].push(r)
   })
-  return groups
+  return ['diary', 'bill', 'plan']
+    .filter(type => buckets[type].length > 0)
+    .map(type => ({ type, items: buckets[type] }))
 })
 
 const totalCount = computed(() => results.value.length + convResults.value.length)
@@ -268,20 +271,19 @@ function switchTime(days) {
       <!-- 按类型分组展示 -->
       <template v-if="!loading && totalCount > 0">
         <view
-          v-for="(group, type) in groupedResults"
-          :key="type"
+          v-for="group in groupedResults"
+          :key="group.type"
           class="result-group"
-          v-if="group.length > 0"
         >
           <view class="group-header">
-            <view class="group-dot" :style="{ background: typeMeta[type].color }" />
-            <text class="group-title">{{ typeMeta[type].label }}</text>
-            <text class="group-count">{{ group.length }}</text>
+            <view class="group-dot" :style="{ background: typeMeta[group.type].color }" />
+            <text class="group-title">{{ typeMeta[group.type].label }}</text>
+            <text class="group-count">{{ group.items.length }}</text>
           </view>
 
           <view class="group-list">
             <view
-              v-for="item in group" :key="item.id"
+              v-for="item in group.items" :key="item.id"
               class="result-item"
               @tap="tapResult(item)"
             >

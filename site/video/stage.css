@@ -1,0 +1,182 @@
+/* 思迹介绍片 · 舞台样式
+   与介绍网站同一套设计语言：Zinc 灰阶、零阴影、零渐变。
+   注意：全片不使用 CSS transition / animation，
+   所有动效由 scenes.js 逐帧写入 opacity 与 transform，保证逐帧渲染可复现。 */
+
+:root {
+  --bg: #0A0A0B;
+  --card: #18181B;
+  --muted: #27272A;
+  --line: #3F3F46;
+  --line-strong: #52525B;
+  --text: #E4E4E7;
+  --text-strong: #D4D4D8;
+  --mid: #A1A1AA;
+  --hint: #71717A;
+  --ink: #FFFFFF;
+  --on-ink: #0A0A0B;
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { box-sizing: border-box; transition: none !important; animation: none !important; }
+
+html, body { margin: 0; padding: 0; background: var(--bg); }
+
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 26px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scene { position: absolute; inset: 0; opacity: 0; }
+.wrap { width: 1520px; margin: 0 auto; }
+
+/* 通用文字 */
+.eyebrow { margin: 0; font-size: 22px; letter-spacing: 7px; color: var(--hint); }
+.eyebrow--center { text-align: center; }
+.h2 { margin: 22px 0 0; font-size: 74px; font-weight: 800; line-height: 1.24; letter-spacing: -1.5px; }
+.h2--center { text-align: center; }
+.lead { margin: 26px 0 0; font-size: 27px; line-height: 1.75; color: var(--mid); }
+.bullets { list-style: none; margin: 44px 0 0; padding: 0; display: grid; gap: 22px; }
+.bullets li { position: relative; padding-left: 34px; font-size: 27px; line-height: 1.6; color: var(--text-strong); }
+.bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15px;
+  width: 12px;
+  height: 12px;
+  background: var(--line-strong);
+}
+.footline { margin: 56px 0 0; font-size: 24px; color: var(--hint); text-align: center; }
+
+/* S1 / S6 竖排堆叠 */
+.stack {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+}
+.logo {
+  width: 168px;
+  height: 168px;
+  border-radius: 40px;
+  border: 1px solid var(--line);
+  display: block;
+  margin-bottom: 14px;
+}
+.brand { margin: 0; font-size: 132px; font-weight: 800; letter-spacing: 22px; text-indent: 22px; }
+.brand-sub { margin: 0; font-size: 28px; color: var(--mid); }
+.tagline { margin: 0; font-size: 46px; font-weight: 700; letter-spacing: 16px; text-indent: 16px; color: var(--text); }
+.rule { width: 360px; height: 1px; background: var(--line); transform-origin: center; }
+
+/* S2 手机演示 */
+.grid2 { width: 1640px; margin: 0 auto; height: 100%; display: grid; align-items: center; gap: 140px; grid-template-columns: 540px 1fr; }
+.grid2--flip { grid-template-columns: 660px 880px; gap: 100px; }
+
+.phone {
+  width: 540px;
+  border: 1px solid var(--line-strong);
+  border-radius: 44px;
+  padding: 20px;
+  background: var(--card);
+}
+.phone__bar { display: flex; justify-content: space-between; padding: 6px 14px 16px; font-size: 22px; color: var(--hint); }
+.phone__screen {
+  height: 800px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 26px;
+  background: var(--bg);
+}
+.chat { display: flex; flex-direction: column; gap: 22px; }
+.msg { max-width: 86%; font-size: 26px; line-height: 1.6; min-height: 44px; }
+.msg--user { align-self: flex-end; background: var(--ink); color: var(--on-ink); padding: 18px 24px; border-radius: 26px 26px 8px 26px; }
+.msg--ai { align-self: flex-start; color: var(--text-strong); }
+.phone__compose {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 18px 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  font-size: 24px;
+  color: var(--hint);
+}
+.phone__send { color: var(--text-strong); }
+
+.rec { border: 1px solid var(--line); border-radius: 24px; background: var(--card); padding: 22px 26px; }
+.rec__title { font-size: 27px; font-weight: 700; }
+.rec__row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 24px; }
+.rec__k { color: var(--hint); }
+.rec__v { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rec__tags { display: flex; gap: 10px; margin-top: 16px; }
+.rec__list { margin-top: 18px; display: grid; gap: 14px; }
+.rec__li { display: flex; align-items: center; gap: 14px; font-size: 25px; color: var(--text-strong); }
+.dot { width: 12px; height: 12px; border: 2px solid var(--line-strong); border-radius: 50%; flex: none; }
+.tag { font-size: 20px; color: var(--mid); background: var(--muted); border-radius: 999px; padding: 6px 18px; white-space: nowrap; }
+
+/* S3 计划卡 */
+.plancard { border: 1px solid var(--line-strong); border-radius: 28px; background: var(--card); padding: 36px 40px; }
+.plancard__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 28px; border-bottom: 1px solid var(--muted); }
+.plancard__title { font-size: 42px; font-weight: 700; letter-spacing: -0.5px; }
+.plancard__meta { margin-top: 10px; font-size: 22px; color: var(--hint); }
+.plancard__foot { padding-top: 26px; font-size: 22px; color: var(--hint); }
+.steprow { display: flex; align-items: flex-start; gap: 24px; padding: 26px 0; border-bottom: 1px solid var(--muted); }
+.steprow__body { flex: 1; }
+.steprow__title { font-size: 30px; font-weight: 600; }
+.steprow__title--done { color: var(--hint); text-decoration: line-through; }
+.steprow__note { margin-top: 10px; font-size: 22px; color: var(--hint); }
+.steprow__day { font-size: 22px; color: var(--line-strong); padding-top: 6px; }
+.check {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  flex: none;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: transparent;
+}
+.check--on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+/* S4 功能卡 */
+.cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; margin-top: 66px; }
+.card { border: 1px solid var(--line); border-radius: 24px; background: var(--card); padding: 36px 28px; }
+.card svg { width: 44px; height: 44px; fill: none; stroke: var(--text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.card__title { margin-top: 32px; font-size: 34px; font-weight: 700; }
+.card__desc { margin-top: 16px; font-size: 23px; line-height: 1.6; color: var(--mid); }
+.card--lit { border-color: var(--ink); }
+
+/* S5 大字原则 */
+.stack--tight { position: absolute; inset: 0; }
+.bigline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 460px;
+  height: 160px;
+  line-height: 160px;
+  margin: 0;
+  text-align: center;
+  font-size: 88px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.smallprint { position: absolute; left: 0; right: 0; top: 886px; margin: 0; text-align: center; font-size: 24px; color: var(--hint); }
