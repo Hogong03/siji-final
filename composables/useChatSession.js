@@ -24,6 +24,7 @@ import { buildEnterSummaryMessage } from '@/utils/enter-dialogue.js'
 export function useChatSession(store, getWelcomeMessage) {
   const dismissed = ref(false)
 
+  // 目标：排除当前会话、跳过空壳（含落盘丢标记后按「没用户消息」兜底认出来的壳）、取最近更新
   const resumeTarget = computed(() => pickResumeConversation(store.conversations, store.activeConversationId))
   const resumeVisible = computed(() => shouldOfferResume({
     conversations: store.conversations,
@@ -64,6 +65,8 @@ export function useChatSession(store, getWelcomeMessage) {
    * 回到最近一条有内容的对话；成功返回 true
    * 3.5.21：回去＝离开这条伪对话，只带总结 / 欢迎语、没真聊过的当前对话直接销毁，
    * 不在列表里留一条「只有开场白」的壳（用户点了回去，就不会再想回来）
+   * 3.6.1：返回值改成 switchConversation 的真实结果 —— 切不过去时返回 false，
+   * 调用方不再拿着一个「以为切了」的 true 去滚屏
    */
   function resumeBack() {
     const conv = resumeTarget.value
@@ -72,8 +75,7 @@ export function useChatSession(store, getWelcomeMessage) {
     if (current && current.id !== conv.id && isEmptyConversation(current)) {
       store.deleteConversation(current.id)
     }
-    store.switchConversation(conv.id)
-    return true
+    return store.switchConversation(conv.id) === true
   }
 
   /**

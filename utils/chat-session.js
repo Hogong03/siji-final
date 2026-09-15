@@ -12,6 +12,11 @@
  * 只带总结的对话下次冷启动仍会被当空壳清掉，不在会话列表里堆一串没有对话的壳；
  * 但它自己带着「返回旧对话」按钮，所以此时不再显示空态入口卡（避免两个入口打架）。
  *
+ * 3.6.1：3.6.0 及以前落盘丢标记（见 store/chat/persist.js 的修复），存量壳在重启后
+ * 认不出来，会被当成「聊过的对话」顶掉真正的上一次对话 —— 「回去接着聊」跳到壳上，
+ * 屏幕上还是那句一模一样的开场白，看着像没跳。判空因此不再只看标记：整条对话连一句
+ * 用户消息都没有、也没有任何 AI 产出，就是壳（与标记口径并存，标记优先）。
+ *
  * 不碰存储、不 import store：存储与编排在 store/chat.js 与 composables/useChatSession.js。
  */
 
@@ -33,7 +38,21 @@ export function resetColdStart() {
 }
 
 /**
+ * AI 开口但没产出内容的一条消息（欢迎语 / 进入总结的兜底判据）
+ * 标记丢了也能认出来：只要没有任何真实产出（aiReply / 执行结果 / 动作卡 / 图片），
+ * 一条 role 为 assistant 的裸消息就是开场白。
+ * @param {Object} m
+ * @returns {boolean}
+ */
+function isBareAssistantMessage(m) {
+  if (!m || m.role !== 'assistant') return false
+  if (m.aiReply || m.execResult || m.execResults || m.actionCard || m.image) return false
+  return true
+}
+
+/**
  * 空会话：没有消息、或消息全是欢迎语 / 进入总结（3.5.19 起总结也算空）
+ * 3.6.1 起再加一条兜底：整条对话没有用户消息、也没有 AI 产出，同样是壳
  * @param {Object} conv
  * @returns {boolean}
  */
@@ -42,7 +61,7 @@ export function isEmptyConversation(conv) {
   if (conv.summary) return false
   const list = Array.isArray(conv.messages) ? conv.messages : []
   if (list.length === 0) return true
-  return list.every(m => m && (m._isWelcome || m[ENTER_SUMMARY_FLAG]))
+  return list.every(m => m && (m._isWelcome || m[ENTER_SUMMARY_FLAG] || isBareAssistantMessage(m)))
 }
 
 /**

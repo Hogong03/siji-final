@@ -75,11 +75,14 @@ export const useChatStore = defineStore('chat', () => {
     return conv
   }
 
+  /** 切换活跃会话；返回是否真的切了（目标不在列表里时不动活跃指针，调用方据此判断） */
   function switchConversation(id) {
     if (conversations.value.find(c => c.id === id)) {
       activeConversationId.value = id
       persistActiveId(id)
+      return true
     }
+    return false
   }
 
   /**

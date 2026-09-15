@@ -92,6 +92,16 @@ export function persistConversations(conversations, activeConversationId) {
         content: m.content,
         aiReply: m.aiReply || undefined
       }
+      // 3.6.1：开场白 / 进入总结的标记必须落盘 —— 丢了的话重启后「只有欢迎语 /
+      // 只有总结」的空壳会被当成有内容的会话：列表里堆壳、coldStart 清不掉、
+      // 「回去接着聊」跳到一个和大厅长得一模一样的壳上（看着像没跳）
+      if (m._isWelcome) item._isWelcome = true
+      if (m._isEnterSummary) {
+        item._isEnterSummary = true
+        if (m._enterSummaryKind) item._enterSummaryKind = m._enterSummaryKind
+        if (Array.isArray(m._enterButtons)) item._enterButtons = m._enterButtons
+        if (m._enterSummaryDigest) item._enterSummaryDigest = m._enterSummaryDigest
+      }
       if (m.execResult) item.execResult = m.execResult
       if (m.execResults) item.execResults = m.execResults
       if (m.actionCard) item.actionCard = m.actionCard
@@ -114,6 +124,11 @@ export function persistConversations(conversations, activeConversationId) {
       summary: conv.summary || null,
       summaryIndex: conv.summaryIndex || 0,
       tags: conv.tags || []
+    }
+    // Agent 绑定同样要落盘，否则重启后「该会话由 X 进行」的提示永远不出现
+    if (conv.agentId) {
+      result.agentId = conv.agentId
+      result.agentName = conv.agentName || ''
     }
     conv._slimCache = result
     return result

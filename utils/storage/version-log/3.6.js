@@ -6,6 +6,40 @@
 
 export const V36 = [
   {
+    version: '3.6.1',
+    date: '2026-09-15',
+    title: '3.6.1 「回去接着聊」跳到正确的对话：会话落盘不再丢标记',
+    summary: [
+      '修「回去接着聊 / 返回旧对话」跳转不对：开场白与进入总结的标记以前没跟着会话落盘，重启后只带一句问候的空壳被当成「聊过的对话」，比真正的上一次对话更新，于是被选成跳转目标 —— 跳到壳上，屏幕上还是那句一模一样的开场白，看着像没跳',
+      'store/chat/persist.js 白名单补齐：_isWelcome / _isEnterSummary / _enterSummaryKind / _enterButtons / _enterSummaryDigest 跟消息一起落盘；会话的 agentId / agentName 也落盘（重启后「该会话由 X 进行」的提示不再消失）',
+      'utils/chat-session.js 判空不再只看标记：整条对话没有一句用户消息、也没有任何 AI 产出（aiReply / 执行结果 / 动作卡 / 图片）就是空壳 —— 存量设备上已经丢掉标记的壳，冷启动照样被清掉',
+      'store/chat.js 的 switchConversation 返回是否真的切了；composables/useChatSession.js 的 resumeBack 返回真实结果，切不过去时不再谎报成功',
+      'pages/chat/index.vue 的 handleResumeBack：跳回去之后，不再把排队中的这轮进入总结补写到刚回去的旧对话里'
+    ],
+    categories: [
+      {
+        title: '根因与修复（3.6.1）',
+        items: [
+          '根因：store/chat/persist.js 落盘时按白名单挑字段，只留 role / content / aiReply / execResult(s) / actionCard / image —— 消息上的 _isWelcome 与 _isEnterSummary、_enterButtons 全被丢掉。重启后 isEmptyConversation 认不出「只有欢迎语 / 只有进入总结」的壳',
+          '后果：壳不再被 pruneEmptyConversations 清掉，还因为 updatedAt 是最近一次冷启动的时间而排在列表最前；pickResumeConversation 取「最近更新」正好取到它 —— 点「回去接着聊」跳到壳上，画面还是同一句开场白；进入总结的壳同理（连预置按钮也没了）',
+          'store/chat/persist.js：消息新增 _isWelcome / _isEnterSummary / _enterSummaryKind / _enterButtons / _enterSummaryDigest 落盘；会话新增 agentId / agentName 落盘（3.1 起创建时写入的 Agent 绑定以前从没进过存储）',
+          'utils/chat-session.js：新增 isBareAssistantMessage(m) —— role 为 assistant、且没有任何真实产出（aiReply / execResult / execResults / actionCard / image）的裸消息；isEmptyConversation 的 every 判定加上这条兜底，标记与兜底并存',
+          'store/chat.js：switchConversation 返回布尔（目标不在列表里返回 false，活跃指针不动）',
+          'composables/useChatSession.js：resumeBack 返回 switchConversation 的真实结果，返回值语义从「有目标就 true」改成「真的切过去了才 true」',
+          'pages/chat/index.vue：handleResumeBack 在切成功后清掉 _queuedEnterSummary（排队待写的这轮总结属于刚销毁的伪对话，不往旧对话里补写）'
+        ]
+      },
+      {
+        title: '测试（3.6.1）',
+        items: [
+          'tests/chat-persist.test.js（新增 6 例）：欢迎语标记落盘、进入总结标记与预置按钮落盘、Agent 绑定落盘、重启后冷启动「回去接着聊」落在真正聊过的那条上（走 persist → restore → maybeStartFreshSession → resumeBack 全链路）、switchConversation 对不存在的 id 返回 false 且不动活跃指针、目标切不过去时 resumeBack 返回 false 不谎报成功',
+          '先写用例复现：4 个用例全红（_isWelcome / _isEnterSummary / _enterButtons / agentId 在存储里是 undefined，重启后壳判空为 false）—— 定位到根因后再改代码，改完转绿',
+          '全量：64 文件 / 900 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.6.0',
     date: '2026-09-15',
     title: '3.6.0 读网址 + 读文件：AI 能读网页正文，也能读你发来的文件',

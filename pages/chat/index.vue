@@ -144,7 +144,10 @@ const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resu
   useChatSession(store, getWelcomeMessage)
 
 function handleResumeBack() {
-  if (resumeBack()) resetScrollState()
+  if (!resumeBack()) return
+  // 已经离开这条伪对话：排队的这轮总结不再补写到刚回去的旧对话里
+  _queuedEnterSummary = null
+  resetScrollState()
 }
 function handleResumePick() {
   toggleConvList()
