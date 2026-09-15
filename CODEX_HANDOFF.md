@@ -379,8 +379,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `191895e` (feat: 3.5.21 进入总结带预置按钮 + 回去接着聊时销毁伪对话)
-- 远端：`origin/main`，2026-09-15 推送成功（`bdaea24..191895e`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `b5b07d4` (feat: 3.6.0 读网址（直连优先 + 自动兜底 Tavily）与读文件（文本直读 + 文档解析）)
+- 远端：`origin/main`，2026-09-15 推送成功（`46ab2b4..b5b07d4`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
