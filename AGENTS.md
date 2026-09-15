@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 64 文件 / 900 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.6.1（「回去接着聊」跳到正确的对话：会话落盘不再丢开场白 / 进入总结标记，判空也不只看标记；含 3.6.0 的读网址 + 读文件） |
+| 测试 | 65 文件 / 917 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.6.2（读网址：网址前后粘连的中文不再带偏抓取，直连失败的原因按平台给；搜索 / 读网页的执行卡只留摘要不落整包结果；含 3.6.1 的「回去接着聊」跳转修复） |
 
 ---
 
@@ -256,14 +256,16 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记忆注入 | `utils/memory/context.js` 的 `buildMemoryContext` + `utils/memory-rank.js`（门面 `utils/memory.js` 只做转出，别把逻辑写回门面） |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms`（扩展词必须再切二元组） |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端注册表 / 请求 / 解析）+ `utils/ai/search-config.js`（开关 / 后端 / Key 裁决）+ `pages/settings/sub/ai.vue` 的"联网搜索"卡片 |
-| 改读网址 | `utils/ai/read-adapters.js`（direct 直连 / tavily 阅读）+ `utils/ai/read-config.js`（开关 / 后端 / Key 裁决）+ `utils/ai/html-text.js`（本地 HTML 转文本）+ `utils/ai/tools/read-url.js`（直连失败自动兜底）+ `pages/settings/sub/ai.vue` 的"读网址"卡片 |
+| 改读网址 | `utils/ai/read-adapters.js`（direct 直连 / tavily 阅读 + `normalizeUrl` 从第一个 http(s):// 起算并截断粘连中文 + `directFailHint` 按平台给失败原因）+ `utils/ai/read-config.js`（开关 / 后端 / Key 裁决）+ `utils/ai/html-text.js`（本地 HTML 转文本）+ `utils/ai/tools/read-url.js`（直连失败自动兜底 / 成功补 host）+ `pages/settings/sub/ai.vue` 的"读网址"卡片 |
 | 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装）+ `doc-parse.js`（解析后端）+ `picker.js`（选文件）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
 | 改每周账单播报 | `utils/bill-weekly.js`（口径与文案）+ `composables/useEnterSummary.js`（接线）+ `pages/chat/index.vue` 卡片「账」行 |
 | 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
+| 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` 压缩 / `execCardText` 卡片文案）+ `utils/ai/autoExecutor.js`（agent 路径 `compact` 落盘点）+ `components/chat/ExecResultCard.vue`（`toolCardText` 分支）+ `composables/useChatNavigation.js` 的 `canOpenType`（有没有页面可跳） |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
+| 改版本号读取 / 反馈导出 | `utils/version-check.js`（`primeAppVersion` 读资源包版本 + `getVersion`；基座里 `plus.runtime.version` 是宿主版本）+ `pages/settings/sub/dev-feedback.vue`（导出头部 meta）+ `utils/dev-feedback.js`（纯函数） |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
@@ -299,7 +301,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `0f3db6c` (fix: 3.6.1 「回去接着聊」跳到正确的对话（会话落盘不再丢开场白/总结标记）)
+- 当前 HEAD: `0dc583b` (fix: 3.6.2 读网址不再被粘连的中文带偏 + 失败原因按平台 + 搜索卡只留摘要)
 - 远端：`origin/main`，2026-09-15 推送成功（`46ab2b4..b5b07d4`）
 - 上一次 push 曾遇到 HTTP 502（GitHub 网关侧），重试即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过
 - `http.sslVerify` 保持 true（2026-08-20 恢复）
@@ -310,7 +312,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 64 文件 / 900 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 65 文件 / 917 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

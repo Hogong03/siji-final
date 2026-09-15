@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 64 文件 / 900 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.6.1（「回去接着聊」跳到正确的对话：会话落盘补齐 `_isWelcome` / `_isEnterSummary` / `_enterButtons` / `agentId`，`isEmptyConversation` 加「没用户消息也没 AI 产出 = 壳」兜底，`resumeBack` 返回真实跳转结果。含 3.6.0 的读网址 + 读文件） |
+| 测试 | 65 文件 / 917 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.6.2（读网址：`normalizeUrl` 从第一个 http(s):// 起算并截断粘连中文、`directFailHint` 按失败原因分平台；`utils/ai/exec-payload.js` 压缩执行卡负载（搜索 / 读网页不再整包落盘）；`primeAppVersion` 修反馈导出里的版本号。含 3.6.1 的「回去接着聊」跳转修复） |
 
 ---
 
@@ -124,7 +124,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（64 文件 900 用例，Vitest）
+├── tests/              # 测试（65 文件 917 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -367,9 +367,10 @@ npx vitest run
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息 `_isWelcome` / `_isEnterSummary` / `_enterSummaryKind` / `_enterButtons` / `_enterSummaryDigest`、会话 `agentId` / `agentName`）+ `utils/chat-session.js`（`isEmptyConversation` 的「没用户消息也没 AI 产出 = 壳」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔）+ `tests/chat-persist.test.js` |
 | 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名/`buildEnterButtons` 预置按钮）+ `composables/useChatSession.js` 的 `appendEnterSummary` 与 `resumeBack`（回去时销毁伪对话）+ `utils/chat-session.js`（空壳/让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `pages/chat/index.vue` 的 `.enter-actions` 与 `handleEnterButton` |
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
+| 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` / `execCardText`）+ `utils/ai/autoExecutor.js`（agent 路径落盘点）+ `components/chat/ExecResultCard.vue` + `composables/useChatNavigation.js` 的 `canOpenType` |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
-| 改读网址 | `utils/ai/read-adapters.js` + `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
+| 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
 | 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |
 | 改长期记忆 | `utils/memory.js`（门面）→ `utils/memory/xxx.js` 对应职责文件 |
@@ -380,8 +381,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `0f3db6c` (fix: 3.6.1 「回去接着聊」跳到正确的对话（会话落盘不再丢开场白/总结标记）)
-- 远端：`origin/main`，2026-09-15 推送成功（`5c4d073..0f3db6c`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `0dc583b` (fix: 3.6.2 读网址不再被粘连的中文带偏 + 失败原因按平台 + 搜索卡只留摘要)
+- 远端：`origin/main`，2026-09-15 推送成功（`b802a0b..0dc583b`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
