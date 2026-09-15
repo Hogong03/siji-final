@@ -294,9 +294,10 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `43182fc` (chore: 同步本地修改 v3.5.10)
-- GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
-- `http.sslVerify` 已恢复为 true（2026-08-20）
+- 当前 HEAD: `0598b2d` (feat: 3.5.18 记忆语义扩展 + 联网搜索与聊天厂商解耦)
+- 远端：`origin/main`，2026-09-15 推送成功（`d249552..0598b2d`）
+- 首次 push 遇到 HTTP 502（GitHub 网关侧），重试即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过
+- `http.sslVerify` 保持 true（2026-08-20 恢复）
 
 ---
 
