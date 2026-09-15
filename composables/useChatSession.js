@@ -5,6 +5,9 @@
  *   - 冷启动（进程第一次进入对话页）→ 停在一条新对话上，欢迎语待发
  *   - 回前台 / 切 Tab → 保持当前对话，不打断打字
  *   - 新对话空态 → 给出「回去接着聊（最近一条）」与「选择历史对话」两个入口，可关
+ *
+ * 3.5.19：有进入总结时，开场白换成总结消息（伪对话），欢迎语不再重复发；
+ * 总结消息自带「返回旧对话」，空态入口卡此时自动让位（见 chat-session 的 shouldOfferResume）。
  */
 import { ref, computed, watch } from 'vue'
 import {
@@ -14,6 +17,7 @@ import {
   shouldOfferResume,
   formatConversationAge
 } from '@/utils/chat-session.js'
+import { buildEnterSummaryMessage } from '@/utils/enter-dialogue.js'
 
 export function useChatSession(store, getWelcomeMessage) {
   const dismissed = ref(false)
@@ -40,6 +44,18 @@ export function useChatSession(store, getWelcomeMessage) {
     dismissed.value = true
   }
 
+  /**
+   * 把进入总结写成 AI 消息落进当前对话（3.5.19）
+   * @param {Object} summary useEnterSummary 的 pending 值
+   * @returns {boolean} 是否写入（无内容返回 false，调用方回落欢迎语）
+   */
+  function appendEnterSummary(summary) {
+    const message = buildEnterSummaryMessage(summary)
+    if (!message) return false
+    store.addMessage(message)
+    return true
+  }
+
   /** 回到最近一条有内容的对话；成功返回 true */
   function resumeBack() {
     const conv = resumeTarget.value
@@ -52,9 +68,10 @@ export function useChatSession(store, getWelcomeMessage) {
    * 冷启动：清掉历史空壳 → 当前会话有内容就新开一条 → 补欢迎语
    * @param {Object} [opts]
    * @param {boolean} [opts.pendingSimulation] 有模拟演练待进入时不换会话
+   * @param {Object} [opts.enterSummary] 待展示的进入总结（有则代替欢迎语落成对话消息）
    * @returns {boolean} 是否执行了冷启动换新
    */
-  function maybeStartFreshSession({ pendingSimulation = false } = {}) {
+  function maybeStartFreshSession({ pendingSimulation = false, enterSummary = null } = {}) {
     if (pendingSimulation) return false
     if (!consumeColdStart()) return false
     store.pruneEmptyConversations()
@@ -66,10 +83,15 @@ export function useChatSession(store, getWelcomeMessage) {
     }
     const conv = store.activeConversation
     if (conv && isEmptyConversation(conv)) {
-      store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+      if (!appendEnterSummary(enterSummary)) {
+        store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+      }
     }
     return true
   }
 
-  return { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, maybeStartFreshSession }
+  return {
+    resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack,
+    appendEnterSummary, maybeStartFreshSession
+  }
 }

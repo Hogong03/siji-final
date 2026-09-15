@@ -5,6 +5,42 @@
  */
 
 export const V35 = [
+
+  {
+    version: '3.5.19',
+    date: '2026-09-15',
+    title: '3.5.19 进入总结改成伪对话（总结落进新对话 + 一键返回旧对话）',
+    summary: [
+      '进应用先看到的不再是顶部卡片：进入总结（新进展 / 离开这阵子的动静）改成 AI 的一条对话消息，直接落在新对话里 —— 能顺着它接着聊，消息下方挂「查看详情 / 返回旧对话」两个按钮，看总结和回旧对话在同一处完成',
+      '同一条总结只写一遍：按「来源 + 离开时长 + 计划事件数 + 记录数 + 连续天数」算签名去重，回前台重复算出同一批进展不再刷屏；正在输出回复时先排队，等这一轮结束再落消息，不打断流式',
+      '大段摘要按条念：最多念 3 条计划事件（其余归入「还有 N 项进展」），正文改用 Markdown 列表渲染，不再糊成一坨；开场白带时段问候，「刚刚」不写进文案',
+      '空态入口让位：总结消息自带「返回旧对话」，此时不再叠一张「这是新对话」入口卡（两个入口不打架）；只带总结消息、没真聊过的对话算空壳，下次冷启动清掉，不在会话列表堆壳',
+      '工程：新增 utils/enter-dialogue.js（纯函数、不 import uni）与 tests/enter-dialogue.test.js（18 例）；chat.scss 删除全部 .summary-* / .kind-* 卡片样式，换成 .enter-btn；全量 61 文件 / 812 用例全绿'
+    ],
+    categories: [
+      {
+        title: '进入总结伪对话（3.5.19）',
+        items: [
+          'utils/enter-dialogue.js（新增 130 行，纯函数、不 import uni）：ENTER_SUMMARY_FLAG(_isEnterSummary) 与 ENTER_LINE_LIMIT(3)；enterSummaryRoute —— 有进展去 /pages/plan/records，否则去 /pages/diary/list',
+          'buildEnterOpener 开场白：时段问候（夜深了 / 早上好 / 中午好 / 下午好 / 晚上好）+ 按 source 区分「距上次小结 N」（冷启动）与「你离开的这 N」（回前台）；离开时长格式化成「刚刚」时不写进文案（时长与时间格式化见 utils/enter-summary.js 的 formatAwaySpan / formatSummaryTime）',
+          'buildEnterLines 正文行：计划事件「打卡 计划「X」 今天 09:12：备注」（最多 3 条，kind=done 念「完成」）+「还有 N 项进展」+「新增记录 N 条」+「已连续打卡 N 天」（≥2 天才念）+ 账单播报 + 低落提示',
+          'buildEnterSummaryMessage 组装 { role: assistant, content, _isEnterSummary, _enterSummaryKind(cold|away), _enterSummaryDigest }，无内容返回 null；正文用 markdown 列表语法「- 」—— 用裸字符「·」只会在同一段里换行、长摘要糊成一坨（本轮踩过的坑）',
+          'enterSummarySignature + shouldAppendEnterSummary 去重与放行：签名 = 来源 | 离开时长 | 事件数 | 记录数 | 连续天数，相同即同一批进展不重复写；空内容直接拒绝；isEnterSummaryMessage(msg) 供渲染判定'
+        ]
+      },
+      {
+        title: '会话与页面接线（3.5.19）',
+        items: [
+          'utils/chat-session.js：isEmptyConversation 把 _isWelcome 与 _isEnterSummary 都算空壳（只带总结的对话下次冷启动被 pruneEmptyConversations 清掉，不在列表堆壳）；新增 hasEnterSummaryMessage(conv)；shouldOfferResume 增加 opts.hideWhenEnterSummary（默认开），当前对话已有总结时空态入口卡让位',
+          'composables/useChatSession.js：新增 appendEnterSummary(summary)（无内容返回 false）；maybeStartFreshSession 增加 opts.enterSummary —— 有待展示的总结就把它当开场白写出去，没有才回落欢迎语',
+          'pages/chat/index.vue：删除顶部 .summary-card 整块模板与 8 个 enterSummary* computed 及旧 openEnterSummaryDetail()；新增 injectEnterSummary（走 shouldAppendEnterSummary）/ flushEnterSummary（流式中排队、isSending 结束即落）/ summaryReturnVisible（仅「刚进来还没说过话」才给返回入口）/ openEnterSummaryDetail(msg) 按 digest.route 跳转',
+          '消息模板在 MessageBubble 之后加 .enter-actions 操作行：「查看详情」按 digest 有无内容显示，「返回旧对话 · 对话标题」按 summaryReturnVisible 显示；总结消息 :operable 置 false，不给重新生成 / 换说法',
+          'pages/chat/chat.scss：删掉全部 .summary-* / .kind-* 浅色与深色样式，换成 .enter-actions / .enter-btn / .enter-btn-text / .enter-btn-primary（含 @media (prefers-color-scheme: dark) 覆盖），纯黑白灰阶、零阴影零渐变、无 var(--xxx)',
+          '测试：tests/enter-dialogue.test.js（新增 18 例）覆盖正文行 / 行数上限 / 备注拼接 / 四个时段开场白 / 冷启动与回前台文案 / 消息组装与 digest 路由 / 签名去重 / 空输入；tests/chat-session.test.js 补两段（空会话判定与入口让位、开场白换成总结），38 例'
+        ]
+      }
+    ]
+  },
   {
     version: '3.5.18',
     date: '2026-09-15',

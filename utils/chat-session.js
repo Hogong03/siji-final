@@ -2,14 +2,20 @@
  * chat-session.js — 「每次进来都是新对话」的判定（3.5.16）
  *
  * 三个纯函数 + 一个进程内标志：
- *   isEmptyConversation     空会话（没有消息，或只有欢迎语）—— 用于清理由冷启动换下来的空壳
+ *   isEmptyConversation     空会话（没有消息，或只有欢迎语 / 进入总结消息）—— 用于清理由冷启动换下来的空壳
  *   pickResumeConversation  从列表里挑「回去接着聊」的那条（排除当前、跳过空会话、取最近更新）
- *   shouldOfferResume       新对话空态是否给入口（关掉了就不再给）
+ *   shouldOfferResume       新对话空态是否给入口（关掉了就不再给；当前对话已带回旧对话按钮时也不给）
  *   formatConversationAge   对话时间的人类说法（刚刚 / N 分钟前 / 今天 10:20 / 昨天 / N 天前 / 3月5日）
  *   consumeColdStart        本次进程是否是第一次进入对话页（只 true 一次）
  *
+ * 3.5.19：进入总结改成对话消息（utils/enter-dialogue.js），它不算「有内容」——
+ * 只带总结的对话下次冷启动仍会被当空壳清掉，不在会话列表里堆一串没有对话的壳；
+ * 但它自己带着「返回旧对话」按钮，所以此时不再显示空态入口卡（避免两个入口打架）。
+ *
  * 不碰存储、不 import store：存储与编排在 store/chat.js 与 composables/useChatSession.js。
  */
+
+import { ENTER_SUMMARY_FLAG } from './enter-dialogue.js'
 
 /** 冷启动标志：模块加载即置位，第一次消费后清除 */
 let coldStartPending = true
@@ -27,7 +33,7 @@ export function resetColdStart() {
 }
 
 /**
- * 空会话：没有消息、或消息全是欢迎语
+ * 空会话：没有消息、或消息全是欢迎语 / 进入总结（3.5.19 起总结也算空）
  * @param {Object} conv
  * @returns {boolean}
  */
@@ -36,7 +42,18 @@ export function isEmptyConversation(conv) {
   if (conv.summary) return false
   const list = Array.isArray(conv.messages) ? conv.messages : []
   if (list.length === 0) return true
-  return list.every(m => m && m._isWelcome)
+  return list.every(m => m && (m._isWelcome || m[ENTER_SUMMARY_FLAG]))
+}
+
+/**
+ * 当前对话里是否已有进入总结消息（3.5.19）
+ * 有的话它自己带着「返回旧对话」，空态入口卡就不重复出现
+ * @param {Object} conv
+ * @returns {boolean}
+ */
+export function hasEnterSummaryMessage(conv) {
+  const list = (conv && Array.isArray(conv.messages)) ? conv.messages : []
+  return list.some(m => m && m[ENTER_SUMMARY_FLAG])
 }
 
 /**
@@ -60,10 +77,11 @@ export function pickResumeConversation(conversations, activeId = '') {
  * @param {boolean} [opts.dismissed] 本次会话内被用户关掉了
  * @returns {boolean}
  */
-export function shouldOfferResume({ conversations = [], activeId = '', dismissed = false } = {}) {
+export function shouldOfferResume({ conversations = [], activeId = '', dismissed = false, hideWhenEnterSummary = true } = {}) {
   if (dismissed) return false
   const active = (Array.isArray(conversations) ? conversations : []).find(c => c && c.id === activeId) || null
   if (!isEmptyConversation(active)) return false
+  if (hideWhenEnterSummary && hasEnterSummaryMessage(active)) return false
   return !!pickResumeConversation(conversations, activeId)
 }
 

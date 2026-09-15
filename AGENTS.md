@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 60 文件 / 784 用例，Vitest，`npx vitest run` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.5.18（记忆检索语义扩展：同义分组 + 拼音桥接；联网搜索与聊天厂商解耦，搜索后端独立配置。含 3.5.17 的对话尺、3.5.16 的每次进来都是新对话、3.5.15 的白屏修复、3.5.14 的账单播报与记忆拆分） |
+| 测试 | 61 文件 / 812 用例，Vitest，`npx vitest run` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.5.19（进入总结改成伪对话：总结作为 AI 消息落进新对话，消息下挂「查看详情 / 返回旧对话」。含 3.5.18 的记忆语义扩展与联网搜索解耦、3.5.17 的对话尺、3.5.16 的每次进来都是新对话、3.5.15 的白屏修复） |
 
 ---
 
@@ -145,7 +145,7 @@
 │   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.5.js）
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 60 文件 784 用例
+├── tests/              # 61 文件 812 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -248,7 +248,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 改 Agent 入口判定 | `utils/ai/chat-stream.js` 的 `isClearlyCasual`（闲聊 / 工具循环分流） |
 | 改 Agent 请求传输 | `utils/ai/agent-transport.js`（超时 / 重试 / 流式三端分支） |
-| 改进入总结卡片 | `composables/useEnterSummary.js`（两条基线 + 节流）+ `utils/enter-summary.js`（窗口裁决/聚合/低落扫描）+ `pages/chat/index.vue` 卡片 |
+| 改进入总结（伪对话） | `composables/useEnterSummary.js`（两条基线 + 节流）+ `utils/enter-summary.js`（窗口裁决/聚合/低落扫描）+ `utils/enter-dialogue.js`（写成对话消息：开场白 / 正文行 / 签名去重）+ `pages/chat/index.vue` 的 `.enter-actions` + `utils/chat-session.js`（只带总结算空壳、空态入口让位） |
 | 改 AI 动静摘要 | `utils/progress-digest.js`（组装）+ `utils/ai/chat-helpers.js`（buildChatMessages 注入点） |
 | 改冷启动新对话 | `utils/chat-session.js`（判定）+ `composables/useChatSession.js`（编排）+ `pages/chat/index.vue` onMounted 与 `.resume-*` 卡片 | `utils/next-step.js`（选取与每天一次）+ `composables/useChatEngine.js` offerNextStep + `pages/chat/index.vue` 卡片 |
 | 改记忆注入 | `utils/memory/context.js` 的 `buildMemoryContext` + `utils/memory-rank.js`（门面 `utils/memory.js` 只做转出，别把逻辑写回门面） |
@@ -286,7 +286,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 1. 判定「重大更新」：新增/删除功能、改 AI 行为或工具、改存储结构、修用户可感知的 Bug、提升版本号 —— 命中任意一条即算
 2. 流程：全量测试跑绿 → `manifest.json` 与版本日志已更新 → `git add -A` → `git commit` → `git push`
-3. 提交信息格式：`<type>: <版本号> <一句话>`，type 取 feat / fix / docs / refactor / chore（例：`feat: 3.5.18 记忆语义扩展 + 联网搜索与聊天厂商解耦`）
+3. 提交信息格式：`<type>: <版本号> <一句话>`，type 取 feat / fix / docs / refactor / chore（例：`feat: 3.5.19 进入总结改成伪对话`）
 4. 推送失败（网络 / 认证）必须当场报告，禁止静默跳过；`http.sslVerify` 保持 true，不要为绕证书问题改全局配置
 5. 提交前 `git status --short` 扫一遍：截图、日志、临时脚本（`.playwright-cli/`、`*.log`、`siji-*.cjs`）一律清掉，不进仓库
 
@@ -305,8 +305,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 60 文件 / 784 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 61 文件 / 812 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
-- 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.summary-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
+- 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
 - 完整交接文档见 `CODEX_HANDOFF.md`

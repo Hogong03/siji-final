@@ -11,6 +11,7 @@ import { resetStorage } from './setup.js'
 import { useChatSession } from '../composables/useChatSession.js'
 import {
   isEmptyConversation,
+  hasEnterSummaryMessage,
   pickResumeConversation,
   shouldOfferResume,
   formatConversationAge,
@@ -270,5 +271,115 @@ describe('store.pruneEmptyConversations：不留空壳', () => {
     store.pruneEmptyConversations()
     expect(store.activeConversationId).toBe(first.id)
     expect(store.activeConversation).toBeTruthy()
+  })
+})
+
+/* ==================== 3.5.19：进入总结落成对话消息 ==================== */
+
+const SUMMARY_MSG = { role: 'assistant', content: '下午好。这是上次小结以来的进展：', _isEnterSummary: true }
+
+/** 造一条有内容的进入总结（够写出一条消息） */
+function summaryData(over) {
+  return Object.assign({
+    source: 'cold',
+    awayMs: 8 * 60 * 60 * 1000,
+    eventsTotal: 1,
+    diaryCount: 2,
+    streak: 3,
+    events: [{ kind: 'checkin', at: NOW - 60 * 1000, title: '六级备考', note: '' }],
+    moodDip: false,
+    weekBill: null
+  }, over)
+}
+
+describe('进入总结消息：空会话判定与入口让位（3.5.19）', () => {
+  it('只有进入总结消息也算空会话（不在会话列表里堆壳）', () => {
+    expect(isEmptyConversation({ id: 'a', messages: [SUMMARY_MSG] })).toBe(true)
+    expect(isEmptyConversation({ id: 'a', messages: [WELCOME, SUMMARY_MSG] })).toBe(true)
+  })
+
+  it('说过话就不算空', () => {
+    expect(isEmptyConversation({ id: 'a', messages: [SUMMARY_MSG, { role: 'user', content: '在吗' }] })).toBe(false)
+  })
+
+  it('hasEnterSummaryMessage 认标记', () => {
+    expect(hasEnterSummaryMessage({ messages: [WELCOME] })).toBe(false)
+    expect(hasEnterSummaryMessage({ messages: [SUMMARY_MSG] })).toBe(true)
+    expect(hasEnterSummaryMessage(null)).toBe(false)
+    expect(hasEnterSummaryMessage({})).toBe(false)
+  })
+
+  it('当前对话自带「返回旧对话」时，空态入口卡让位；显式关掉该行为仍可显示', () => {
+    const list = [mkConv('old'), { id: 'new', messages: [SUMMARY_MSG] }]
+    expect(shouldOfferResume({ conversations: list, activeId: 'new' })).toBe(false)
+    expect(shouldOfferResume({ conversations: list, activeId: 'new', hideWhenEnterSummary: false })).toBe(true)
+  })
+
+  it('没有总结消息时入口卡照旧显示', () => {
+    const list = [mkConv('old'), { id: 'new', messages: [WELCOME] }]
+    expect(shouldOfferResume({ conversations: list, activeId: 'new' })).toBe(true)
+  })
+})
+
+describe('useChatSession：开场白换成总结消息（3.5.19）', () => {
+  let store
+  let scope
+  beforeEach(() => {
+    resetStorage()
+    setActivePinia(createPinia())
+    store = useChatStore()
+    resetColdStart()
+    scope = effectScope()
+  })
+
+  function session() {
+    return scope.run(() => useChatSession(store, () => '你好，我是思迹。'))
+  }
+
+  it('有总结：开场白是总结消息，欢迎语不再发', () => {
+    store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    s.maybeStartFreshSession({ enterSummary: summaryData() })
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0]._isEnterSummary).toBe(true)
+    expect(store.messages[0]._isWelcome).toBeUndefined()
+    expect(store.messages[0].content).toContain('六级备考')
+  })
+
+  it('没有总结：照旧发欢迎语', () => {
+    store.createConversation()
+    const s = session()
+    s.maybeStartFreshSession()
+    expect(store.messages[0]._isWelcome).toBe(true)
+  })
+
+  it('appendEnterSummary：有内容写入并返回 true，空内容不写', () => {
+    store.createConversation()
+    const s = session()
+    expect(s.appendEnterSummary(summaryData())).toBe(true)
+    expect(store.messages).toHaveLength(1)
+    expect(s.appendEnterSummary({ events: [], eventsTotal: 0, diaryCount: 0 })).toBe(false)
+    expect(s.appendEnterSummary(null)).toBe(false)
+    expect(store.messages).toHaveLength(1)
+  })
+
+  it('只带总结的会话仍是空壳，冷启动清理时会被清掉', () => {
+    const s = session()
+    s.maybeStartFreshSession({ enterSummary: summaryData() })
+    expect(store.messages[0]._isEnterSummary).toBe(true)
+    // 下一次冷启动第一件事就是清空壳：只说过总结、没真聊过的对话不留
+    const removed = store.pruneEmptyConversations()
+    expect(removed).toBe(1)
+    expect(store.conversations).toHaveLength(0)
+  })
+
+  it('总结消息落进对话后，回来接着聊仍指向有真实对话的那条', () => {
+    const old = store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    s.maybeStartFreshSession({ enterSummary: summaryData() })
+    expect(s.resumeTarget.value.id).toBe(old.id)
+    expect(s.resumeVisible.value).toBe(false)
   })
 })

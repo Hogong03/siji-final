@@ -24,7 +24,8 @@ import { useChatSession } from '@/composables/useChatSession.js'
 import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
 import { useEnterSummary } from '@/composables/useEnterSummary.js'
-import { formatSummaryTime, formatAwaySpan } from '@/utils/enter-summary.js'
+import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-session.js'
+import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { useChatRuler } from '@/composables/useChatRuler.js'
 
@@ -83,50 +84,42 @@ function handleRephraseReply() {
   engineRetry({ appendInstruction: REPHRASE_HINT }, inputAreaRef, scrollToBottom, chatScrollHelpers)
 }
 
-// ===== 进入总结卡片（3.4.5 冷启动 / 3.5.12 回前台增量）=====
+// ===== 进入总结（3.5.19：改成对话里的伪对话消息，不再是顶部卡片）=====
 const { pending: enterSummary, dismiss: dismissEnterSummary } = useEnterSummary()
-const enterSummaryEvents = computed(() => {
-  const s = enterSummary.value
-  if (!s) return []
-  return (s.events || []).slice(0, 3).map(e => ({
-    kind: e.kind,
-    title: e.title,
-    timeLabel: formatSummaryTime(e.at)
-  }))
-})
-const enterSummaryExtra = computed(() => {
-  const s = enterSummary.value
-  if (!s) return 0
-  return Math.max(0, (s.eventsTotal || 0) - enterSummaryEvents.value.length)
-})
-const enterSummaryDiary = computed(() => (enterSummary.value && enterSummary.value.diaryCount) || 0)
-// 3.5.3：全局连续打卡天数（计划打卡日期的并集，从今天/昨天向前数）
-const enterSummaryStreak = computed(() => (enterSummary.value && enterSummary.value.streak) || 0)
-// 3.5.12：回前台增量换标题 + 标出离开时长（冷启动保持原文案；「刚刚」不显示时长）
-const enterSummaryHead = computed(() => {
-  const s = enterSummary.value
-  if (!s) return ''
-  return s.source === 'away' ? '欢迎回来 · 这段时间的进展' : '回来啦 · 新进展小结'
-})
-// 3.5.13：连续两天记录低落 → 只提醒休息，不催进度、不评分
-const enterSummaryMood = computed(() => !!(enterSummary.value && enterSummary.value.moodDip))
-// 3.5.14：每周账单播报（本周支出 / 主要花在哪 / 比上周）
-const enterSummaryBill = computed(() => {
-  const s = enterSummary.value
-  return (s && s.weekBill && s.weekBill.text) || ''
-})
-const enterSummarySpan = computed(() => {
-  const s = enterSummary.value
-  if (!s) return ''
-  const span = formatAwaySpan(s.awayMs)
-  if (!span || span === '刚刚') return ''
-  return s.source === 'away' ? ('离开 ' + span) : ('距上次小结 ' + span)
-})
-function openEnterSummaryDetail() {
-  const s = enterSummary.value
-  const goPlan = !!s && s.eventsTotal > 0
+// 已落进对话的总结签名：同一条只写一次，回前台算出新的一批才再写
+let _lastEnterSignature = ''
+// 正在输出回复时先攒着，等这一轮结束再落（避免打断流式写最后一条消息）
+let _queuedEnterSummary = null
+
+/** 把新总结落成一条 AI 消息；重复或空内容返回 false（判定见 utils/enter-dialogue.js） */
+function injectEnterSummary(summary) {
+  if (!shouldAppendEnterSummary(summary, _lastEnterSignature)) return false
+  if (!appendEnterSummary(summary)) return false
+  _lastEnterSignature = enterSummarySignature(summary)
+  return true
+}
+
+/** 流式输出结束后，把攒下的总结落进对话 */
+function flushEnterSummary() {
+  const queued = _queuedEnterSummary
+  if (!queued) return
+  _queuedEnterSummary = null
+  if (injectEnterSummary(queued)) resetScrollState()
+}
+
+/**
+ * 总结消息上的「返回旧对话」是否显示
+ * 只在「这次刚进来、还没说过话」时给：已经在聊的会话里插一条总结，不该再劝你跳走
+ */
+const summaryReturnVisible = computed(
+  () => !!resumeTarget.value && isEmptyConversation(store.activeConversation)
+)
+
+/** 总结消息上的「查看详情」：按摘要内容去打卡记录或记录列表 */
+function openEnterSummaryDetail(msg) {
+  const digest = (msg && msg._enterSummaryDigest) || {}
   dismissEnterSummary()
-  uni.navigateTo({ url: goPlan ? '/pages/plan/records' : '/pages/diary/list' })
+  uni.navigateTo({ url: digest.route || '/pages/diary/list' })
 }
 
 // ===== 会话管理 =====
@@ -139,7 +132,7 @@ const {
 } = useConversationManager(store, getWelcomeMessage, resetScrollState)
 
 // ===== 冷启动新对话 + 新对话空态入口（3.5.16）=====
-const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, maybeStartFreshSession } =
+const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, appendEnterSummary, maybeStartFreshSession } =
   useChatSession(store, getWelcomeMessage)
 
 function handleResumeBack() {
@@ -394,16 +387,38 @@ watch(showModelSwitch, (v, prev) => {
   }
 })
 
+// ===== 进入总结落成对话消息（3.5.19）=====
+// 回前台算出增量后写进当前对话；正在输出回复时排队，等这一轮结束再写
+watch(enterSummary, (val) => {
+  if (!val || simulationMode.value) return
+  if (isSending.value) {
+    _queuedEnterSummary = val
+    return
+  }
+  if (injectEnterSummary(val)) resetScrollState()
+})
+watch(isSending, (val) => {
+  if (!val) flushEnterSummary()
+})
+
 // ===== onMounted =====
 onMounted(() => {
   // 冷启动：清空壳 → 停在一条新对话上（回前台不触发，避免打断打字）
-  maybeStartFreshSession({ pendingSimulation: !!_pendingSimParams || _deepLinkSim })
+  maybeStartFreshSession({
+    pendingSimulation: !!_pendingSimParams || _deepLinkSim,
+    enterSummary: enterSummary.value
+  })
+  // 会话初始化已写过总结时记下签名，同一批进展不再写第二遍
+  if (hasEnterSummaryMessage(store.activeConversation)) _lastEnterSignature = enterSummarySignature(enterSummary.value)
   // 保护：如果 activeConversationId 指向的会话不存在（数据损坏/迁移），强制创建
   if (!store.activeConversation) {
     store.createConversation()
   }
   if (store.messages.length === 0 && !simulationMode.value && !_pendingSimParams) {
-    store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+    // 有进入总结就发总结（伪对话开场），没有才发欢迎语
+    if (!injectEnterSummary(enterSummary.value)) {
+      store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+    }
   }
   const sysInfo = uni.getSystemInfoSync()
   statusBarHeight.value = sysInfo.statusBarHeight || 0
@@ -462,44 +477,6 @@ function handleWelcomeChip(text) {
       </view>
     </view>
 
-    <!-- 进入总结卡片（3.4.5 冷启动 / 3.5.12 回前台增量：计划完成/打卡 + 新增记录） -->
-    <view v-if="enterSummary" class="summary-card">
-      <view class="summary-head">
-        <view class="summary-badge" />
-        <text class="summary-head-title">{{ enterSummaryHead }}</text>
-        <text v-if="enterSummarySpan" class="summary-head-meta">{{ enterSummarySpan }}</text>
-      </view>
-      <view class="summary-list">
-        <view v-for="(ev, ei) in enterSummaryEvents" :key="ei" class="summary-line">
-          <text class="summary-kind" :class="ev.kind === 'done' ? 'kind-done' : 'kind-checkin'">{{ ev.kind === 'done' ? '完成' : '打卡' }}</text>
-          <text class="summary-line-title">{{ ev.title }}</text>
-          <text class="summary-line-time">{{ ev.timeLabel }}</text>
-        </view>
-        <view v-if="enterSummaryExtra > 0" class="summary-line">
-          <text class="summary-line-title">还有 {{ enterSummaryExtra }} 项进展</text>
-        </view>
-        <view v-if="enterSummaryDiary > 0" class="summary-line">
-          <text class="summary-kind kind-diary">记录</text>
-          <text class="summary-line-title">新增记录 {{ enterSummaryDiary }} 条</text>
-        </view>
-        <view v-if="enterSummaryStreak >= 2" class="summary-line">
-          <text class="summary-kind kind-streak">连续</text>
-          <text class="summary-line-title">已连续打卡 {{ enterSummaryStreak }} 天</text>
-        </view>
-        <view v-if="enterSummaryMood" class="summary-line">
-          <text class="summary-kind kind-mood">休息</text>
-          <text class="summary-line-title">这两天记录里写着低落，今天慢一点也算数</text>
-        </view>
-        <view v-if="enterSummaryBill" class="summary-line">
-          <text class="summary-kind kind-bill">账</text>
-          <text class="summary-line-title">{{ enterSummaryBill }}</text>
-        </view>
-      </view>
-      <view class="summary-actions">
-        <view class="summary-btn" @tap="dismissEnterSummary">知道了</view>
-        <view class="summary-btn summary-btn-primary" @tap="openEnterSummaryDetail">查看详情</view>
-      </view>
-    </view>
 
     <!-- 会话 Agent 绑定提示（该会话由 X 进行 · 切换） -->
     <view v-if="showConvAgentHint" class="conv-agent-hint">
@@ -554,7 +531,7 @@ function handleWelcomeChip(text) {
             :message="msg"
             :prev-role="vi > 0 ? visibleMessages[vi - 1].role : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].role : '')"
             :is-last="vi === visibleMessages.length - 1"
-            :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
+            :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg._isEnterSummary && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
             @confirm-action="handleConfirmActionCard"
             @confirm-pending="handleConfirmAction"
             @cancel-pending="handleCancelAction"
@@ -563,6 +540,23 @@ function handleWelcomeChip(text) {
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
           />
+            <!-- 进入总结消息的操作行：查看详情 / 返回旧对话（3.5.19） -->
+            <view v-if="msg._isEnterSummary && !simulationMode" class="enter-actions">
+              <view
+                v-if="msg._enterSummaryDigest && (msg._enterSummaryDigest.eventsTotal > 0 || msg._enterSummaryDigest.diaryCount > 0)"
+                class="enter-btn"
+                @tap="openEnterSummaryDetail(msg)"
+              >
+                <text class="enter-btn-text">查看详情</text>
+              </view>
+              <view
+                v-if="summaryReturnVisible"
+                class="enter-btn enter-btn-primary"
+                @tap="handleResumeBack"
+              >
+                <text class="enter-btn-text">返回旧对话 · {{ resumeTarget.title || '上次的对话' }}</text>
+              </view>
+            </view>
           </view>
           <!-- 新对话空态：回去接着聊 / 选择历史对话（3.5.16，可关） -->
           <view v-if="resumeVisible && !simulationMode" class="resume-card">
