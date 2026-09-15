@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 63 文件 / 894 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.6.0（读网址 + 读文件：read_url 工具（直连抓取优先，失败自动换 Tavily 重试一次）+ 输入框「文件」按钮（文本本地直读 / pdf 与 office 走 Moonshot 解析后端）+ 设置页两张配置卡。含 3.5.21 的进入总结伪对话与预置按钮） |
+| 测试 | 64 文件 / 900 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.6.1（「回去接着聊」跳到正确的对话：会话落盘补齐 `_isWelcome` / `_isEnterSummary` / `_enterButtons` / `agentId`，`isEmptyConversation` 加「没用户消息也没 AI 产出 = 壳」兜底，`resumeBack` 返回真实跳转结果。含 3.6.0 的读网址 + 读文件） |
 
 ---
 
@@ -124,7 +124,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（61 文件 825 用例，Vitest）
+├── tests/              # 测试（64 文件 900 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -364,6 +364,7 @@ npx vitest run
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 加测试 | `tests/xxx.test.js` |
 | 改每周账单播报 | `utils/bill-weekly.js` + `composables/useEnterSummary.js` + `pages/chat/index.vue` |
+| 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息 `_isWelcome` / `_isEnterSummary` / `_enterSummaryKind` / `_enterButtons` / `_enterSummaryDigest`、会话 `agentId` / `agentName`）+ `utils/chat-session.js`（`isEmptyConversation` 的「没用户消息也没 AI 产出 = 壳」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔）+ `tests/chat-persist.test.js` |
 | 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名/`buildEnterButtons` 预置按钮）+ `composables/useChatSession.js` 的 `appendEnterSummary` 与 `resumeBack`（回去时销毁伪对话）+ `utils/chat-session.js`（空壳/让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `pages/chat/index.vue` 的 `.enter-actions` 与 `handleEnterButton` |
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
@@ -379,8 +380,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `b5b07d4` (feat: 3.6.0 读网址（直连优先 + 自动兜底 Tavily）与读文件（文本直读 + 文档解析）)
-- 远端：`origin/main`，2026-09-15 推送成功（`46ab2b4..b5b07d4`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `0f3db6c` (fix: 3.6.1 「回去接着聊」跳到正确的对话（会话落盘不再丢开场白/总结标记）)
+- 远端：`origin/main`，2026-09-15 推送成功（`5c4d073..0f3db6c`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
