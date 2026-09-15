@@ -19,6 +19,8 @@ import {
   priorityClass, planProgressPercent, planDoneCount, planListCount,
   topCategories, formatTs, execIcon
 } from '@/composables/useExecCardHelpers.js'
+import { canOpenType } from '@/composables/useChatNavigation.js'
+import { execCardText } from '@/utils/ai/exec-payload.js'
 
 const props = defineProps({
   message: { type: Object, required: true }
@@ -33,6 +35,17 @@ const isInlineType = computed(() => {
   const t = props.message?.execResult?.detail?.type || ''
   return t === 'bill' || t === 'diary' || t === 'plan' || t === 'glimmer'
 })
+
+// 联网搜索 / 读网页：没有可跳转的页面，卡片只给一行摘要（3.6.2）
+// 命中时既不显头部图标，也不显「查看 →」—— 那个按钮以前点了没反应
+const toolCardText = computed(() => execCardText(props.message?.execResult?.detail))
+const showExecHeader = computed(() => !isInlineType.value && !toolCardText.value)
+
+/** multi 行里的「查看 →」指向 create_<type>，没有对应路由就不显示 */
+function canOpenRow(r) {
+  const t = r && r.detail && r.detail.type
+  return canOpenType(t ? 'create_' + t : '')
+}
 
 // 记录预览：压平换行 + 截断，避免长文/多换行在 App 端撑爆卡片（反馈 2026-09-01）
 const diaryPreviewText = computed(() => {
@@ -94,7 +107,7 @@ const {
           <text v-else-if="r.detail?.type === 'diary'" class="exec-multi-sub">{{ r.detail.title }}</text>
           <text v-else-if="r.detail?.type === 'plan'" class="exec-multi-sub">{{ r.detail.title }}</text>
         </view>
-        <text class="exec-multi-arrow" @tap="$emit('confirm-action', { type: r.detail?.type ? ('create_' + r.detail.type) : '', payload: r.detail })">查看 →</text>
+        <text v-if="canOpenRow(r)" class="exec-multi-arrow" @tap="$emit('confirm-action', { type: r.detail?.type ? ('create_' + r.detail.type) : '', payload: r.detail })">查看 →</text>
       </view>
     </view>
   </template>
@@ -102,7 +115,7 @@ const {
   <!-- 单意图结果 -->
   <template v-else>
     <!-- 非 bill/diary/plan：保留类型图标 + 跳转按钮 -->
-    <view v-if="!isInlineType" class="exec-header">
+    <view v-if="showExecHeader" class="exec-header">
       <view class="exec-header-left">
         <view class="exec-type-icon" :class="execTypeClass">
           <text class="eti-text">{{ execTypeIcon }}</text>
@@ -112,8 +125,11 @@ const {
     </view>
 
     <view class="exec-body">
+      <!-- ── 联网搜索 / 读网页：一行摘要（没有跳转可点） ── -->
+      <text v-if="toolCardText" class="exec-title">{{ toolCardText }}</text>
+
       <!-- ── 账单卡片 ── -->
-      <template v-if="message.execResult.detail?.type === 'bill'">
+      <template v-else-if="message.execResult.detail?.type === 'bill'">
         <view class="card-bill">
           <view class="bill-main-row">
             <text class="bill-amount" :class="{ income: message.execResult.detail.billType === 'income' }">

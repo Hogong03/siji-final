@@ -6,6 +6,55 @@
 
 export const V36 = [
   {
+    version: '3.6.2',
+    date: '2026-09-15',
+    title: '3.6.2 读网址不再被粘连的中文带偏，失败原因按平台说，搜索卡只留摘要',
+    summary: [
+      '修「网址后面直接跟中文就读不到」：https://www.deepseek.com/阅读这个网址 以前把「阅读这个网址」当路径一起请求，现在从第一个 http(s):// 起算、遇到中文或空白即截断，并把截掉的尾巴写进工具结果（读了哪个网址、哪段没当网址用，模型看得见）',
+      '直连失败的原因按平台给：H5 说浏览器跨域限制，App 端说目标站点超时 / 拒绝抓取 / 证书问题 —— 以前 App 上也报「跨域限制」，AI 会照抄给你，排查被带偏',
+      '联网搜索 / 读网页的执行卡只留摘要（已联网搜索 · N 条结果 / 已读取网页 · 域名（N 字））：原始结果不再跟着会话落盘，agent 路径以前把整包结果同时写进 actionCard / execResult / execResults 三处，一次搜索约 7KB 放大成约 21KB，导出的开发者反馈里也整段是网页正文',
+      '没有对应页面的类型不再显示「查看 →」死按钮（搜索 / 读网页，以及多步结果里没有路由的行）',
+      '修开场白里的半角逗号（「夜深了,我是思迹。」→「夜深了，我是思迹。」）；App 端版本号改读资源包，反馈导出头部不再恒为 v1.0.0'
+    ],
+    categories: [
+      {
+        title: '读网址（3.6.2，反馈 2026-09-15）',
+        items: [
+          '根因：normalizeUrl 只按「空白与尾部标点」清洗，不做中文截断 —— 用户把「阅读这个网址」直接粘在网址后面，整串被当成路径请求（反馈里的原话就是 https://www.deepseek.com/阅读这个网址）',
+          'utils/ai/read-adapters.js：新增 URL_STOP_RE（空白 / 零宽 / 中日韩文字 / 全角标点），normalizeUrl 改成「先从第一个 http(s):// 起算（左边粘话也不拼进域名）→ 遇到上述字符即截断 → 去尾部标点」，返回值多一个 dropped（被截掉的尾巴）',
+          'utils/ai/read-adapters.js：新增 directFailHint(platform) —— 直连失败的原因纯函数按平台分叉，H5 提跨域、App 不提',
+          'utils/ai/tools/read-url.js：currentPlatform()（条件编译 #ifdef H5）接进 requestOnce 的 fail 分支；成功结果经 withUrlMeta 补 url / host，网址被截断时在正文前加一句「网址后面的文字没有当网址用，实际读取：…」，避免模型以为整串都读过'
+        ]
+      },
+      {
+        title: '执行卡与落盘（3.6.2）',
+        items: [
+          'utils/ai/exec-payload.js（新增，纯函数）：compactExecDetail(name, detail) —— web_search 只留条数与前 3 条标题链接、read_url 只留 url / host / title / 字数 / 是否截断，其余工具原样返回；execCardText(detail) 出卡片那一行文案；EXEC_TITLE_LIMIT=3',
+          'utils/ai/autoExecutor.js：agent 路径落盘前统一走 compactExecDetail（actionCard / execResult / execResults 三处），原始工具结果仍只给模型看，不跟着会话存',
+          'components/chat/ExecResultCard.vue：搜索 / 读网页走 toolCardText 一行摘要（.exec-title），头部与「查看 →」都不显示 —— 以前是个点了没反应的死按钮；多步结果行同理（canOpenRow）',
+          'composables/useChatNavigation.js：导出 canOpenType(type)，卡片据此判断有没有可去的页面（ROUTE_MAP 命中才算）'
+        ]
+      },
+      {
+        title: '文案与版本号（3.6.2）',
+        items: [
+          'composables/useWelcomeMessage.js：开场白半角逗号 → 全角（「夜深了,我是思迹。」是导出记录里肉眼可见的文案瑕疵）',
+          'utils/version-check.js：新增 primeAppVersion() —— App 端用 plus.runtime.getProperty 读资源包版本并缓存；getCurrentVersion() 优先用它。基座里 plus.runtime.version 给的是宿主 App 的版本，版本历史、反馈导出、更新检查以前全报 v1.0.0',
+          'App.vue：onLaunch 首行调 primeAppVersion()'
+        ]
+      },
+      {
+        title: '测试（3.6.2）',
+        items: [
+          'tests/read-url.test.js +7 例：中文粘连截断（用户原话那条）、左边粘话从 http(s):// 起算、半角尾标点、全中文拒绝、directFailHint 按平台、成功结果带 host、截断说明',
+          'tests/exec-payload.test.js（新增 8 例）：搜索压缩不残留正文、读网页字段、其它工具原样、卡片文案、agent 路径落盘用的是摘要（含写操作不受影响的对照）',
+          'tests/bugfix-regression.test.js +2 例：开场白全角逗号、App 端版本预热在无 plus 环境不抛错',
+          '全量：65 文件 / 917 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.6.1',
     date: '2026-09-15',
     title: '3.6.1 「回去接着聊」跳到正确的对话：会话落盘不再丢标记',

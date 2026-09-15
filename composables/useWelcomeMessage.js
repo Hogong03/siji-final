@@ -34,7 +34,7 @@ export function useWelcomeMessage() {
       if (diaries.length > 0 && diaries.length < 3) tips.push(`本月写了 ${diaries.length} 篇记录`)
     } catch (e) {}
 
-    let msg = `${greeting},我是思迹。`
+    let msg = `${greeting}，我是思迹。`
     if (tips.length > 0) {
       msg += `\n\n${tips.join('、')}。`
     }

@@ -8,6 +8,7 @@
 import { logger } from '@/utils/logger.js'
 import { extractFallbackAction } from '@/utils/ai/fallback.js'
 import { OP_CLAIM_RE_FALLBACK, OP_CLAIM_REPLACE_RE, OP_REQUEST_RE } from '@/utils/ai/constants.js'
+import { compactExecDetail } from '@/utils/ai/exec-payload.js'
 
 /**
  * 自动执行并显示结果
@@ -55,16 +56,18 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
       }
     }
     const execCard = execResults.find(r => r.ok && r.detail)
+    // 搜索 / 读网页的原始负载只给模型看：卡片与落盘一律用压缩后的摘要（3.6.2）
+    const compact = (r) => compactExecDetail(r.name, r.detail)
     const actionCard = successCards.length > 1
-      ? { type: 'multi', payload: successCards.map(r => r.detail) }
+      ? { type: 'multi', payload: successCards.map(compact) }
       : successCards.length === 1
-        ? { type: successCards[0].name, payload: successCards[0].detail }
-        : (execCard?.detail ? { type: execCard.name, payload: execCard.detail } : null)
+        ? { type: successCards[0].name, payload: compact(successCards[0]) }
+        : (execCard?.detail ? { type: execCard.name, payload: compact(execCard) } : null)
     store.updateLastMessage({
       content: reply, loading: false, aiReply: reply,
       actionCard,
-      execResult: execCard ? { success: true, message: execCard.message || '', detail: execCard.detail } : null,
-      execResults: successCards
+      execResult: execCard ? { success: true, message: execCard.message || '', detail: compact(execCard) } : null,
+      execResults: successCards.map(r => Object.assign({}, r, { detail: compact(r) }))
     })
     return
   }

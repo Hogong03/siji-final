@@ -21,21 +21,58 @@ export const DEFAULT_READ_BACKEND = 'direct'
 
 const TAVILY_EXTRACT = 'https://api.tavily.com/extract'
 
-/** 网址规整：补协议、去空白与尾部标点，非 http/https 直接拒绝（纯函数，可单测） */
+/**
+ * 网址里不该出现的字符：空白（半角 / 全角）与中日韩文字、全角标点。
+ * 用户习惯把话直接粘在网址上（「https://www.deepseek.com/阅读这个网址」），
+ * 不截断就会整串当路径去请求 —— 抓回来 404 或直接请求失败（反馈 2026-09-15）。
+ */
+const URL_STOP_RE = /[\s\u200b-\u200f\u3000-\u303f\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/
+
+/**
+ * 网址规整：从第一个 http(s):// 起算、截掉粘连的中文与空白、去尾部标点，非 http/https 直接拒绝
+ * @param {string} input
+ * @returns {{ok: boolean, url?: string, dropped?: string, reason?: string}} dropped 是被截掉的尾巴
+ */
 export function normalizeUrl(input) {
   let s = String(input === null || input === undefined ? '' : input).trim()
   if (!s) return { ok: false, reason: '没有给网址' }
-  s = s.replace(/[\s\u200b\u3000]+/g, '')
-  if (!/^https?:\/\//i.test(s)) {
-    if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return { ok: false, reason: '只支持 http / https 开头的网址' }
+
+  // 从网址本身起算：左边粘了话（「读一下 https://a.com」）不该被拼进域名
+  const head = /https?:\/\//i.exec(s)
+  if (head) {
+    s = s.slice(head.index)
+  } else if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) {
+    return { ok: false, reason: '只支持 http / https 开头的网址' }
+  } else {
     s = 'https://' + s
   }
-  s = s.replace(/[）)\]】>，。、；：！？"'”’]+$/, '')
+
+  // 右边粘了话就截断：原始空白与中文不会是网址的一部分
+  const stop = s.search(URL_STOP_RE)
+  let dropped = ''
+  if (stop >= 0) {
+    dropped = s.slice(stop).trim()
+    s = s.slice(0, stop)
+  }
+  s = s.replace(/[）)\]】}>，。、；：！？"'”’,.!;]+$/, '')
   if (!/^https?:\/\/[^\s/?#]+/i.test(s)) return { ok: false, reason: '网址格式不对' }
   // 域名一定带「.」：挡住「https://随便写点什么」这种把普通文字硬拼成网址的输入
   const host = hostOf(s).split(':')[0]
   if (host.indexOf('.') < 0) return { ok: false, reason: '网址格式不对' }
-  return { ok: true, url: s }
+  return { ok: true, url: s, dropped: dropped }
+}
+
+/**
+ * 直连抓取失败的原因提示 —— 按平台给，别在 App 端说「跨域」
+ * H5：对方站点不给 CORS 头，浏览器同源策略拦截是主因
+ * App / 小程序：没有跨域这回事，多为目标站点超时、拒绝抓取或证书问题
+ * @param {string} platform 'h5' | 其他
+ * @returns {string}
+ */
+export function directFailHint(platform) {
+  return platform === 'h5'
+    ? '（直连抓取失败，H5 端多为浏览器跨域限制，可换第三方阅读服务）'
+    : '（直连抓取失败，App 端多为目标站点超时、拒绝抓取或证书问题，可换第三方阅读服务）'
 }
 
 /** 取主机名（展示用） */

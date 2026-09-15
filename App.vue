@@ -30,7 +30,8 @@
 		checkAllReminders
 	} from '@/utils/reminder.js'
 	import {
-		checkVersionUpdate
+		checkVersionUpdate,
+		primeAppVersion
 	} from '@/utils/version-check.js'
 	import {
 		initEnterSummary,
@@ -57,6 +58,8 @@
 
 	onLaunch(() => {
 		logger.log('[思迹] Launch')
+		// App 端先读一次真实版本号（基座里 plus.runtime.version 是宿主版本）
+		primeAppVersion()
 		// 1. 仅恢复关键配置（AI/对话/设备ID）— 延迟非关键初始化到 splash 后
 		store.restoreCriticalFromStorage()
 		logger.log('[思迹] Critical storage restored, device:', store.deviceId)

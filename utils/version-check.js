@@ -15,6 +15,31 @@ const LAST_VERSION_KEY = 'siji_last_known_version'
 const CHECK_INTERVAL = 24 * 60 * 60 * 1000 // 24h
 
 /**
+ * App 端资源包版本：plus.runtime.getProperty 是异步的，读到后缓存在这里
+ * （基座里 plus.runtime.version 给的是宿主 App 的版本，不是本项目的 versionName）
+ */
+let _appVersion = ''
+
+/**
+ * App 端预热真实版本号 —— 启动时调一次即可
+ *
+ * 坑：HBuilder 标准基座 / 自定义基座里 plus.runtime.version 返回的是宿主的版本（1.0.0），
+ * 本项目的 manifest versionName 拿不到；于是版本历史、反馈导出、更新检查全部报 1.0.0
+ * （反馈 2026-09-15 的导出头部就是 v1.0.0）。getProperty 读的是资源包，才是真实版本。
+ */
+export function primeAppVersion() {
+  // #ifdef APP-PLUS
+  try {
+    if (typeof plus !== 'undefined' && plus.runtime && plus.runtime.getProperty) {
+      plus.runtime.getProperty(plus.runtime.appid, (info) => {
+        if (info && info.version) _appVersion = String(info.version)
+      })
+    }
+  } catch (e) { /* 拿不到就用 plus.runtime.version 兜底 */ }
+  // #endif
+}
+
+/**
  * 获取当前应用版本号
  */
 function getCurrentVersion() {
@@ -23,7 +48,8 @@ function getCurrentVersion() {
     return uni.getAccountInfoSync().miniProgram.version || '1.0.0'
     // #endif
     // #ifdef APP-PLUS
-    return plus.runtime.version || '1.0.0'
+    if (_appVersion) return _appVersion
+    try { return plus.runtime.version || '1.0.0' } catch (e) { return '1.0.0' }
     // #endif
     // #ifdef H5
     // H5 端从 manifest 注入的版本号读取

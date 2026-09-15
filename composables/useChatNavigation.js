@@ -33,6 +33,16 @@ const ROUTE_MAP = {
   create_agent: () => '/pages/settings/sub/agent'
 }
 
+/**
+ * 这个动作类型有没有可去的页面 —— 执行卡片的「查看 →」据此决定显不显示，
+ * 别给一个点了没反应的死按钮（联网搜索 / 读网页就没有对应页面）
+ * @param {string} type
+ * @returns {boolean}
+ */
+export function canOpenType(type) {
+  return !!type && Object.prototype.hasOwnProperty.call(ROUTE_MAP, type)
+}
+
 export function useChatNavigation() {
   function handleConfirmActionCard(card) {
     if (!card) return

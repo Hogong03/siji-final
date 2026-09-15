@@ -269,6 +269,21 @@ describe('关系上下文注入', () => {
   })
 })
 
+describe('反馈 2026-09-15：开场白逗号 + 反馈导出里的版本号', () => {
+  it('欢迎语用全角逗号（导出记录里是「夜深了,我是思迹。」）', async () => {
+    const { useWelcomeMessage } = await import('../composables/useWelcomeMessage.js')
+    const msg = useWelcomeMessage().getWelcomeMessage()
+    expect(msg).toContain('，我是思迹。')
+    expect(/,我是思迹/.test(msg)).toBe(false)
+  })
+
+  it('App 端版本预热不炸：plus 不存在时安全返回，getVersion 仍是字符串', async () => {
+    const { primeAppVersion, getVersion } = await import('../utils/version-check.js')
+    expect(() => primeAppVersion()).not.toThrow()
+    expect(typeof getVersion()).toBe('string')
+  })
+})
+
 describe('会话标签映射（store/index.js 聚合入口）', () => {
   it('addTagToConversation / removeTagFromConversation 已映射可用（反馈 2026-08-30 点击确定报错）', async () => {
     const { useAppStore } = await import('../store/index.js')

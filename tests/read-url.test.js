@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import './setup.js'
 import {
   READ_BACKENDS, DEFAULT_READ_BACKEND, getReadBackend, listReadBackends,
-  normalizeUrl, hostOf
+  normalizeUrl, hostOf, directFailHint
 } from '../utils/ai/read-adapters.js'
 import {
   READ_KEYS, isReadEnabled, setReadEnabled, getReadBackendId, setReadBackend,
@@ -60,6 +60,37 @@ describe('URL 归一', () => {
   it('hostOf 取域名，失败返回空串', () => {
     expect(hostOf('https://www.example.com/a')).toBe('www.example.com')
     expect(hostOf('不是网址')).toBe('')
+  })
+})
+
+describe('URL 归一：网址与中文粘连（反馈 2026-09-15）', () => {
+  it('网址后面直接跟中文：截到中文为止（用户原话是「https://www.deepseek.com/阅读这个网址」）', () => {
+    const r = normalizeUrl('https://www.deepseek.com/阅读这个网址')
+    expect(r.ok).toBe(true)
+    expect(r.url).toBe('https://www.deepseek.com/')
+    expect(r.dropped).toBe('阅读这个网址')
+  })
+
+  it('网址前面有中文：从 http(s):// 起算，不拼进域名', () => {
+    const r = normalizeUrl('读一下 https://example.com/post 这篇')
+    expect(r.ok).toBe(true)
+    expect(r.url).toBe('https://example.com/post')
+    expect(r.dropped).toBe('这篇')
+  })
+
+  it('句尾半角标点也去掉', () => {
+    expect(normalizeUrl('https://example.com/a,').url).toBe('https://example.com/a')
+    expect(normalizeUrl('https://example.com/a.').url).toBe('https://example.com/a')
+  })
+
+  it('全中文不再被拼成网址', () => {
+    expect(normalizeUrl('不是网址').ok).toBe(false)
+  })
+
+  it('直连失败的原因提示按平台给：App 端不提跨域', () => {
+    expect(directFailHint('app')).toContain('App 端')
+    expect(directFailHint('app')).not.toContain('跨域')
+    expect(directFailHint('h5')).toContain('跨域')
   })
 })
 
@@ -210,6 +241,23 @@ describe('executeReadUrl', () => {
     expect(r.ok).toBe(true)
     expect(r.text).toContain('听力要每天练 30 分钟')
     expect(urls).toEqual(['https://example.com/post'])
+  })
+
+  it('成功结果补上域名，卡片能显示读了哪个站（3.6.2）', async () => {
+    global.uni.request = (opts) => opts.success({ statusCode: 200, data: PAGE_HTML })
+    const r = await executeReadUrl('https://www.example.com/post')
+    expect(r.ok).toBe(true)
+    expect(r.detail.host).toBe('www.example.com')
+    expect(r.detail.url).toBe('https://www.example.com/post')
+  })
+
+  it('网址后粘连中文时截断，并在结果里说明实际读了哪个网址（3.6.2）', async () => {
+    const seen = []
+    global.uni.request = (opts) => { seen.push(opts.url); opts.success({ statusCode: 200, data: PAGE_HTML }) }
+    const r = await executeReadUrl('https://www.example.com/post看这个')
+    expect(r.ok).toBe(true)
+    expect(seen).toEqual(['https://www.example.com/post'])
+    expect(r.text).toContain('网址后面的文字没有当网址用')
   })
 
   it('直连失败且没有第三方 Key：如实报错', async () => {
