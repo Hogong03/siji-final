@@ -6,6 +6,38 @@
 
 export const V35 = [
   {
+    version: '3.5.21',
+    date: '2026-09-15',
+    title: '3.5.21 进入总结带一串预置按钮 + 回去接着聊时销毁这条伪对话',
+    summary: [
+      '总结这条对话自带按钮，不用自己想说什么：有进展给「查看详情 / 看计划」，有记录给「看新记录」，有账单播报给「看账单」，写着低落给「聊聊现在的状态」，另外固定给「记一笔 / 写个记录 / 定个计划」，最后是「返回旧对话」',
+      '按钮分两种行为：navigate 直接跳页（查看详情 / 看计划 / 看新记录 / 看账单），prefill 只把话术填进输入框（记一笔 / 写个记录 / 定个计划），填完还能自己改，不会替你发出去',
+      '点「回去接着聊」时销毁这条伪对话：只带总结或欢迎语、没真聊过的对话直接删掉，不在会话列表里留一条只有开场白的壳；真聊过的对话照旧保留，只切过去',
+      '工程：utils/enter-dialogue.js 新增 buildEnterButtons（纯函数，按摘要内容生成按钮）；composables/useChatSession.js 的 resumeBack 先删空壳再切会话；pages/chat/index.vue 的 .enter-actions 改 v-for 渲染，旧的「查看详情」单独判断逻辑删除',
+      '测试：tests/enter-dialogue.test.js 增 6 例（上下文按钮 / 通用按钮 / 去重 / 纯数据可落盘），tests/chat-session.test.js 增 4 例（销毁总结壳 / 销毁欢迎语壳 / 真聊过不销毁 / 没有目标不切），全量 61 文件 / 825 用例全绿'
+    ],
+    categories: [
+      {
+        title: '总结消息的预置按钮（3.5.21）',
+        items: [
+          'utils/enter-dialogue.js：新增 buildEnterButtons(summary)，返回 [{ key, label, action, value }]，action 为 navigate（value 是路由）或 prefill（value 是预置话术）；按钮顺序即渲染顺序',
+          '上下文按钮按摘要内容给：eventsTotal > 0 → 查看详情（跳打卡记录，复用 enterSummaryRoute）+ 看计划；diaryCount > 0 → 看新记录；weekBill.text 有值 → 看账单；moodDip → 聊聊现在的状态（prefill）',
+          '通用按钮固定三个：记一笔（prefill 记一笔 ）/ 写个记录（prefill 写个记录：）/ 定个计划（prefill 帮我定个计划）；「返回旧对话」不进这个列表 —— 它要 resumeTarget，只有页面知道指向哪条，仍由页面追加为 primary 按钮',
+          'buildEnterSummaryMessage 把按钮挂到消息的 _enterButtons 字段（纯数据，可 JSON 序列化，跟着会话一起落盘）；老消息没有该字段时 v-for 渲染为空，只剩「返回旧对话」，不会渲染出错',
+          'pages/chat/index.vue：.enter-actions 由两条写死的按钮改成 v-for="btn in (msg._enterButtons || [])"，新增 handleEnterButton(btn) 分发 —— navigate 先 dismissEnterSummary() 推进确认基线再 uni.navigateTo，prefill 走 handleWelcomeChip 填输入框（复用欢迎语快捷示例那套）；样式沿用 .enter-btn，父容器 flex-wrap 自动换行'
+        ]
+      },
+      {
+        title: '回去接着聊销毁伪对话（3.5.21）',
+        items: [
+          'composables/useChatSession.js：resumeBack() 在 switchConversation 之前，先判断当前对话（且不是目标那条）是否 isEmptyConversation —— 是就 store.deleteConversation(current.id)，直接销毁',
+          '判定口径复用 3.5.19 的空会话定义（没有消息 / 只有欢迎语 / 只有进入总结消息），所以「只有总结」「只有欢迎语」两种壳都会被销毁；带用户消息或 AI 回复的对话一律保留',
+          'store.deleteConversation 已在仓库内存在（从数组里移除、必要时改活跃 id、落盘），本次未改 store；删除后紧接着 switchConversation 把活跃会话指回目标，不存在悬空 id'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.5.20',
     date: '2026-09-15',
     title: '3.5.20 进入总结直接覆盖开场白（不再叠在欢迎语下面）',

@@ -1,14 +1,14 @@
 /**
  * test: 进入总结写成对话消息（3.5.19）
  *
- * 覆盖 utils/enter-dialogue.js：正文行、开场白、消息组装、去重签名与落盘判定。
+ * 覆盖 utils/enter-dialogue.js：正文行、开场白、消息组装、去重签名与落盘判定、预置按钮（3.5.21）。
  */
 import { describe, it, expect } from 'vitest'
 import './setup.js'
 import {
   ENTER_SUMMARY_FLAG, ENTER_LINE_LIMIT, buildEnterOpener, buildEnterLines,
   buildEnterSummaryMessage, enterSummaryRoute, enterSummarySignature,
-  shouldAppendEnterSummary, isEnterSummaryMessage
+  shouldAppendEnterSummary, isEnterSummaryMessage, buildEnterButtons
 } from '../utils/enter-dialogue.js'
 
 const NOW = new Date(2026, 8, 15, 15, 30, 0).getTime()
@@ -174,5 +174,60 @@ describe('签名与去重判定', () => {
     expect(shouldAppendEnterSummary(s, sig)).toBe(false)
     expect(shouldAppendEnterSummary(summary({ diaryCount: 4 }), sig)).toBe(true)
     expect(shouldAppendEnterSummary(null, sig)).toBe(false)
+  })
+})
+
+/* ==================== 3.5.21：消息里的预置按钮 ==================== */
+
+describe('buildEnterButtons：对话里预置的按钮', () => {
+  it('有进展才给「查看详情 / 看计划」，路由跟摘要一致', () => {
+    const list = buildEnterButtons(summary())
+    const keys = list.map(b => b.key)
+    expect(keys).toContain('detail')
+    expect(keys).toContain('plan')
+    expect(list.find(b => b.key === 'detail').action).toBe('navigate')
+    expect(list.find(b => b.key === 'detail').value).toBe(enterSummaryRoute(summary()))
+    expect(list.find(b => b.key === 'plan').value).toBe('/pages/plan/index')
+  })
+
+  it('没有进展就没有详情与看计划，只剩记录与通用按钮', () => {
+    const keys = buildEnterButtons(summary({ events: [], eventsTotal: 0 })).map(b => b.key)
+    expect(keys).not.toContain('detail')
+    expect(keys).not.toContain('plan')
+    expect(keys).toContain('diary')
+  })
+
+  it('记录 / 账单 / 低落各自带自己的按钮', () => {
+    expect(buildEnterButtons(summary({ diaryCount: 0 })).map(b => b.key)).not.toContain('diary')
+    expect(buildEnterButtons(summary({ weekBill: { text: '本周花了 120' } })).map(b => b.key)).toContain('bill')
+    expect(buildEnterButtons(summary({ moodDip: false })).map(b => b.key)).not.toContain('mood')
+    const mood = buildEnterButtons(summary({ moodDip: true })).find(b => b.key === 'mood')
+    expect(mood.action).toBe('prefill')
+    expect(mood.value).toContain('状态')
+  })
+
+  it('通用按钮总在：记一笔 / 写个记录 / 定个计划，都是填话术不是直接发', () => {
+    const list = buildEnterButtons(summary({ events: [], eventsTotal: 0, diaryCount: 0 }))
+    const quick = list.filter(b => b.action === 'prefill').map(b => b.key)
+    expect(quick).toEqual(['note', 'diary-new', 'plan-new'])
+    list.forEach(b => {
+      expect(typeof b.label).toBe('string')
+      expect(b.label.length).toBeGreaterThan(0)
+      expect(['navigate', 'prefill']).toContain(b.action)
+    })
+  })
+
+  it('没有重复按钮，空输入返回空数组', () => {
+    const keys = buildEnterButtons(summary()).map(b => b.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(buildEnterButtons(null)).toEqual([])
+    expect(buildEnterButtons(undefined)).toEqual([])
+  })
+
+  it('按钮是纯数据，能跟着消息一起落盘', () => {
+    const msg = buildEnterSummaryMessage(summary(), at(15))
+    expect(Array.isArray(msg._enterButtons)).toBe(true)
+    expect(msg._enterButtons.length).toBeGreaterThan(3)
+    expect(JSON.parse(JSON.stringify(msg))._enterButtons).toEqual(msg._enterButtons)
   })
 })

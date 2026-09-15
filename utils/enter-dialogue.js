@@ -5,6 +5,9 @@
  * 摘要作为 AI 的一条消息直接落在新对话里（说话的口吻、能接着聊），消息下方挂
  * 「查看详情 / 返回旧对话」两个操作，这样「看总结」和「继续说话 / 回旧对话」在同一处完成。
  *
+ * 消息同时带上预置按钮（3.5.21）：点「记一笔 / 写个记录 / 定个计划」把话术填进输入框，
+ * 点「查看详情 / 看计划 / 看新记录 / 看账单」直接跳对应页面。
+ *
  * 纯函数、不依赖 uni，可直接单测（tests/enter-dialogue.test.js）。
  * 数据来源见 utils/enter-summary.js（本文件只负责把数据写成话）。
  */
@@ -60,6 +63,38 @@ export function buildEnterLines(summary) {
 }
 
 /**
+ * 摘要消息里预置的按钮（3.5.21）
+ *
+ * 对话形式：点一下就能接着做，不用自己想说什么。四类 ——
+ *   上下文（摘要里提到什么就给什么入口）/ 通用（记账、记录、计划）/ 情绪提示 / 返回旧对话（页面追加，见下）
+ * 顺序即渲染顺序；「返回旧对话」不放这里，它要 resumeTarget，只有页面知道该指向哪条。
+ *
+ * @param {Object} summary buildEnterSummary 的返回值
+ * @returns {Array<{key: string, label: string, action: 'navigate'|'prefill', value: string}>} action 为 navigate 时 value 是路由，prefill 时是预置话术
+ */
+export function buildEnterButtons(summary) {
+  const out = []
+  if (!summary) return out
+  const add = (key, label, action, value) => {
+    if (out.some(b => b.key === key)) return
+    out.push({ key: key, label: label, action: action, value: value })
+  }
+
+  if ((summary.eventsTotal || 0) > 0) {
+    add('detail', '查看详情', 'navigate', enterSummaryRoute(summary))
+    add('plan', '看计划', 'navigate', '/pages/plan/index')
+  }
+  if ((summary.diaryCount || 0) > 0) add('diary', '看新记录', 'navigate', '/pages/diary/list')
+  if (summary.weekBill && summary.weekBill.text) add('bill', '看账单', 'navigate', '/pages/bill/index')
+  if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
+
+  add('note', '记一笔', 'prefill', '记一笔 ')
+  add('diary-new', '写个记录', 'prefill', '写个记录：')
+  add('plan-new', '定个计划', 'prefill', '帮我定个计划')
+  return out
+}
+
+/**
  * 把进入总结写成一条可入对话的 AI 消息
  * @param {Object} summary useEnterSummary 的 pending 值
  * @param {number} [now]
@@ -80,6 +115,7 @@ export function buildEnterSummaryMessage(summary, now = Date.now()) {
     role: 'assistant',
     content: content,
     _enterSummaryKind: summary.source === 'away' ? 'away' : 'cold',
+    _enterButtons: buildEnterButtons(summary),
     _enterSummaryDigest: {
       eventsTotal: summary.eventsTotal || 0,
       diaryCount: summary.diaryCount || 0,

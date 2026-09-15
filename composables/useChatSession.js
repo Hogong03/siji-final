@@ -8,6 +8,7 @@
  *
  * 3.5.19：有进入总结时，开场白换成总结消息（伪对话），欢迎语不再重复发；
  * 3.5.20：总结落消息前先丢掉已写下的欢迎语（覆盖，不是追加）。
+ * 3.5.21：总结消息带预置按钮；点「回去接着聊」时销毁这条伪对话（没真聊过的不留壳）。
  * 总结消息自带「返回旧对话」，空态入口卡此时自动让位（见 chat-session 的 shouldOfferResume）。
  */
 import { ref, computed, watch } from 'vue'
@@ -59,10 +60,18 @@ export function useChatSession(store, getWelcomeMessage) {
     return true
   }
 
-  /** 回到最近一条有内容的对话；成功返回 true */
+  /**
+   * 回到最近一条有内容的对话；成功返回 true
+   * 3.5.21：回去＝离开这条伪对话，只带总结 / 欢迎语、没真聊过的当前对话直接销毁，
+   * 不在列表里留一条「只有开场白」的壳（用户点了回去，就不会再想回来）
+   */
   function resumeBack() {
     const conv = resumeTarget.value
     if (!conv) return false
+    const current = store.activeConversation
+    if (current && current.id !== conv.id && isEmptyConversation(current)) {
+      store.deleteConversation(current.id)
+    }
     store.switchConversation(conv.id)
     return true
   }

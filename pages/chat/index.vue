@@ -115,11 +115,19 @@ const summaryReturnVisible = computed(
   () => !!resumeTarget.value && isEmptyConversation(store.activeConversation)
 )
 
-/** 总结消息上的「查看详情」：按摘要内容去打卡记录或记录列表 */
-function openEnterSummaryDetail(msg) {
-  const digest = (msg && msg._enterSummaryDigest) || {}
+/**
+ * 总结消息里预置按钮的分发（3.5.21）
+ * navigate：先推进确认基线（看过就不再报）再跳页；prefill：把预置话术填进输入框，用户自己改
+ * @param {Object} btn { key, label, action, value }，由 utils/enter-dialogue.js 的 buildEnterButtons 生成
+ */
+function handleEnterButton(btn) {
+  if (!btn) return
   dismissEnterSummary()
-  uni.navigateTo({ url: digest.route || '/pages/diary/list' })
+  if (btn.action === 'prefill') {
+    handleWelcomeChip(btn.value || '')
+    return
+  }
+  uni.navigateTo({ url: btn.value || '/pages/diary/list' })
 }
 
 // ===== 会话管理 =====
@@ -540,14 +548,15 @@ function handleWelcomeChip(text) {
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
           />
-            <!-- 进入总结消息的操作行：查看详情 / 返回旧对话（3.5.19） -->
+            <!-- 进入总结消息的操作行：预置按钮（3.5.21，按钮由 utils/enter-dialogue.js 按摘要内容生成）+ 返回旧对话 -->
             <view v-if="msg._isEnterSummary && !simulationMode" class="enter-actions">
               <view
-                v-if="msg._enterSummaryDigest && (msg._enterSummaryDigest.eventsTotal > 0 || msg._enterSummaryDigest.diaryCount > 0)"
+                v-for="btn in (msg._enterButtons || [])"
+                :key="btn.key"
                 class="enter-btn"
-                @tap="openEnterSummaryDetail(msg)"
+                @tap="handleEnterButton(btn)"
               >
-                <text class="enter-btn-text">查看详情</text>
+                <text class="enter-btn-text">{{ btn.label }}</text>
               </view>
               <view
                 v-if="summaryReturnVisible"

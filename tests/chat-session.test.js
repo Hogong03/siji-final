@@ -420,3 +420,67 @@ describe('useChatSession：开场白换成总结消息（3.5.19）', () => {
     expect(s.resumeVisible.value).toBe(false)
   })
 })
+
+/* ==================== 3.5.21：回去接着聊时销毁这条伪对话 ==================== */
+
+describe('useChatSession：回去接着聊销毁伪对话（3.5.21）', () => {
+  let store
+  let scope
+  beforeEach(() => {
+    resetStorage()
+    setActivePinia(createPinia())
+    store = useChatStore()
+    resetColdStart()
+    scope = effectScope()
+  })
+
+  function session() {
+    return scope.run(() => useChatSession(store, () => '你好，我是思迹。'))
+  }
+
+  it('只有一条总结消息的当前对话，点回去就被销毁', () => {
+    const old = store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    s.maybeStartFreshSession({ enterSummary: summaryData() })
+    const shellId = store.activeConversationId
+    expect(shellId).not.toBe(old.id)
+    expect(s.resumeBack()).toBe(true)
+    expect(store.activeConversationId).toBe(old.id)
+    expect(store.conversations.map(c => c.id)).toEqual([old.id])
+    expect(store.conversations.some(c => c.id === shellId)).toBe(false)
+  })
+
+  it('只有欢迎语的壳同样销毁', () => {
+    const old = store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    s.maybeStartFreshSession()
+    expect(store.messages[0]._isWelcome).toBe(true)
+    s.resumeBack()
+    expect(store.conversations.map(c => c.id)).toEqual([old.id])
+  })
+
+  it('已经真聊过的当前对话不销毁，只切过去', () => {
+    const old = store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    s.maybeStartFreshSession({ enterSummary: summaryData() })
+    const fresh = store.activeConversationId
+    store.addMessage({ role: 'user', content: '今天想聊聊' })
+    expect(s.resumeBack()).toBe(true)
+    expect(store.activeConversationId).toBe(old.id)
+    expect(store.conversations.map(c => c.id)).toContain(fresh)
+    expect(store.conversations).toHaveLength(2)
+  })
+
+  it('没有可回去的对话时不销毁也不切换', () => {
+    const only = store.createConversation()
+    store.addMessage({ role: 'user', content: '在吗' })
+    const s = session()
+    expect(s.resumeTarget.value).toBeNull()
+    expect(s.resumeBack()).toBe(false)
+    expect(store.activeConversationId).toBe(only.id)
+    expect(store.conversations).toHaveLength(1)
+  })
+})
