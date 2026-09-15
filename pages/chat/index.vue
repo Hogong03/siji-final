@@ -269,6 +269,7 @@ onHide(() => {
 
 // ===== 发送/停止/图片 =====
 const pendingImage = ref(null)
+const pendingFile = ref(null)
 
 function handleSend(text) {
   const message = text || inputText.value.trim()
@@ -277,12 +278,16 @@ function handleSend(text) {
   agentHintDismissed.value = true
   forceShouldAutoScroll()
   const img = pendingImage.value
-  engineSend(message, inputAreaRef, scrollToBottom, img, { startStreamScroll, stopStreamScroll, scrollToBottomAnchor })
+  const file = pendingFile.value
+  engineSend(message, inputAreaRef, scrollToBottom, img, { startStreamScroll, stopStreamScroll, scrollToBottomAnchor }, { file })
   pendingImage.value = null
+  pendingFile.value = null
 }
 
 function onImageSelected(data) { pendingImage.value = data }
 function onImageCleared() { pendingImage.value = null }
+function onFileSelected(r) { pendingFile.value = r }
+function onFileCleared() { pendingFile.value = null }
 
 function handleStop() {
   stopStreamScroll()
@@ -684,7 +689,7 @@ function handleWelcomeChip(text) {
     </view>
 
     <!-- 输入区 -->
-    <InputArea ref="inputAreaRef" v-model="inputText" :disabled="isSending" :is-sending="isSending" @send="handleSend" @stop="handleStop" @image-selected="onImageSelected" @image-cleared="onImageCleared" />
+    <InputArea ref="inputAreaRef" v-model="inputText" :disabled="isSending" :is-sending="isSending" @send="handleSend" @stop="handleStop" @image-selected="onImageSelected" @image-cleared="onImageCleared" @file-selected="onFileSelected" @file-cleared="onFileCleared" />
 
     <!-- AI 使用说明 Modal -->
     <GuideModal :show="showGuide" @close="showGuide = false" />

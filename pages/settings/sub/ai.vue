@@ -9,8 +9,13 @@ import { useAppStore } from '@/store/index.js'
 import {
   AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getConfiguredProviderIds, supportsVision,
   listSearchBackends, isSearchEnabled, setSearchEnabled, getSearchBackendId, setSearchBackend,
-  setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig, searchStatusText
+  setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig, searchStatusText,
+  listReadBackends, isReadEnabled, setReadEnabled, getReadBackendId, setReadBackend,
+  setOwnReadKey, hasOwnReadKey, readStatusText
 } from '@/utils/api.js'
+import {
+  listDocBackends, getDocBackendId, setDocBackend, setOwnDocKey, hasOwnDocKey, docStatusText
+} from '@/utils/files/index.js'
 // getApiKey 已废弃 — 直接从 store.providerKeys 读取（已由 crypto.js 解密）
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
@@ -154,6 +159,97 @@ function clearSearchKey() {
   setOwnSearchKey('')
   searchKeyInput.value = ''
   refreshSearchStatus()
+  uni.showToast({ title: '已清除', icon: 'none' })
+}
+
+/* ---- 读网址（3.6.0：直连抓取优先，第三方阅读兜底） ---- */
+const readBackends = listReadBackends()
+const readEnabled = ref(isReadEnabled())
+const readBackendId = ref(getReadBackendId())
+const readKeyInput = ref('')
+const readOwnKeyConfigured = ref(hasOwnReadKey())
+const readStatus = ref(readStatusText())
+const currentReadBackend = computed(
+  () => readBackends.find(b => b.id === readBackendId.value) || readBackends[0]
+)
+
+function refreshReadStatus() {
+  readStatus.value = readStatusText()
+  readOwnKeyConfigured.value = hasOwnReadKey()
+}
+
+function toggleReadUrl() {
+  readEnabled.value = !readEnabled.value
+  setReadEnabled(readEnabled.value)
+  refreshReadStatus()
+}
+
+function chooseReadBackend(id) {
+  if (readBackendId.value === id) return
+  readBackendId.value = id
+  setReadBackend(id)
+  readKeyInput.value = ''
+  refreshReadStatus()
+}
+
+function saveReadKey() {
+  const value = readKeyInput.value.trim()
+  if (!value) {
+    uni.showToast({ title: '请先填写 Key', icon: 'none' })
+    return
+  }
+  setOwnReadKey(value)
+  readKeyInput.value = ''
+  refreshReadStatus()
+  uni.showToast({ title: '已保存', icon: 'success' })
+}
+
+function clearReadKey() {
+  setOwnReadKey('')
+  readKeyInput.value = ''
+  refreshReadStatus()
+  uni.showToast({ title: '已清除', icon: 'none' })
+}
+
+/* ---- 读文件（3.6.0：文本本地直读，二进制文档走解析后端） ---- */
+const docBackends = listDocBackends()
+const docBackendId = ref(getDocBackendId())
+const docKeyInput = ref('')
+const docOwnKeyConfigured = ref(hasOwnDocKey())
+const docStatus = ref(docStatusText())
+const currentDocBackend = computed(
+  () => docBackends.find(b => b.id === docBackendId.value) || docBackends[0]
+)
+
+function refreshDocStatus() {
+  docStatus.value = docStatusText()
+  docOwnKeyConfigured.value = hasOwnDocKey()
+}
+
+function chooseDocBackend(id) {
+  if (docBackendId.value === id) return
+  docBackendId.value = id
+  setDocBackend(id)
+  docKeyInput.value = ''
+  refreshDocStatus()
+}
+
+function saveDocKey() {
+  const value = docKeyInput.value.trim()
+  if (!value) {
+    uni.showToast({ title: '请先填写 Key', icon: 'none' })
+    return
+  }
+  setOwnDocKey(value)
+  docKeyInput.value = ''
+  refreshDocStatus()
+  uni.showToast({ title: '已保存', icon: 'success' })
+}
+
+function clearDocKey() {
+  setOwnDocKey('')
+  docKeyInput.value = ''
+  refreshDocStatus()
   uni.showToast({ title: '已清除', icon: 'none' })
 }
 
@@ -502,6 +598,103 @@ async function testConnection() {
           <text v-if="searchOwnKeyConfigured" class="key-action test" @tap="clearSearchKey">清除</text>
         </view>
       </view>
+    </view>
+
+    <!-- 读网址：直连抓取优先，第三方阅读兜底 -->
+    <view class="search-card">
+      <view class="search-head">
+        <view class="search-head-text">
+          <text class="search-title">读网址</text>
+          <text class="search-subtitle">{{ readStatus }}</text>
+        </view>
+        <view class="search-switch" :class="{ on: readEnabled }" @tap="toggleReadUrl">
+          <view class="search-knob" />
+        </view>
+      </view>
+
+      <text class="search-hint">把网址发给 AI，它会先读正文再回答。默认直连抓取，免 Key、零成本；直连抓不到（H5 跨域、JS 渲染页）时会自动改用第三方阅读服务再试一次。</text>
+
+      <view class="search-backend-list">
+        <view
+          v-for="b in readBackends"
+          :key="b.id"
+          class="search-backend"
+          :class="{ active: readBackendId === b.id }"
+          @tap="chooseReadBackend(b.id)"
+        >
+          <view class="search-backend-main">
+            <text class="search-backend-name">{{ b.name }}</text>
+            <text class="search-backend-desc">{{ b.desc }}</text>
+          </view>
+          <view class="search-check" v-if="readBackendId === b.id">
+            <text>✓</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="config-section" v-if="currentReadBackend.needsKey">
+        <text class="config-label">{{ currentReadBackend.keyLabel }}</text>
+        <text class="config-hint">留空即自动复用联网搜索里填的同一个 Tavily Key</text>
+        <view class="key-input-row">
+          <input
+            v-model="readKeyInput"
+            class="key-input"
+            type="password"
+            :placeholder="currentReadBackend.keyPlaceholder"
+            maxlength="200"
+          />
+          <text class="key-action save" @tap="saveReadKey">保存</text>
+          <text v-if="readOwnKeyConfigured" class="key-action test" @tap="clearReadKey">清除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 读文件：文本本地直读，PDF / Office 走解析后端 -->
+    <view class="search-card">
+      <view class="search-head">
+        <view class="search-head-text">
+          <text class="search-title">读文件</text>
+          <text class="search-subtitle">{{ docStatus }}</text>
+        </view>
+      </view>
+
+      <text class="search-hint">聊天输入框左侧的「文件」按钮：txt / md / csv / json / 代码 / 字幕这类文本本地直读，零配置不上传；pdf / doc / xlsx / ppt 交给解析后端。</text>
+
+      <view class="search-backend-list">
+        <view
+          v-for="b in docBackends"
+          :key="b.id"
+          class="search-backend"
+          :class="{ active: docBackendId === b.id }"
+          @tap="chooseDocBackend(b.id)"
+        >
+          <view class="search-backend-main">
+            <text class="search-backend-name">{{ b.name }}</text>
+            <text class="search-backend-desc">{{ b.desc }}</text>
+          </view>
+          <view class="search-check" v-if="docBackendId === b.id">
+            <text>✓</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="config-section">
+        <text class="config-label">{{ currentDocBackend.keyLabel }}</text>
+        <text class="config-hint">留空即自动复用同名 AI 厂商 Key</text>
+        <view class="key-input-row">
+          <input
+            v-model="docKeyInput"
+            class="key-input"
+            type="password"
+            :placeholder="currentDocBackend.keyPlaceholder"
+            maxlength="200"
+          />
+          <text class="key-action save" @tap="saveDocKey">保存</text>
+          <text v-if="docOwnKeyConfigured" class="key-action test" @tap="clearDocKey">清除</text>
+        </view>
+      </view>
+
+      <text class="search-hint">平台差异：H5 与微信小程序可以选文件；App 端系统文件选择需要原生插件，先用截图识别或把文字粘贴进来。</text>
     </view>
 
     <!-- 说明 -->

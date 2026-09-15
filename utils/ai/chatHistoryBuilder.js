@@ -11,15 +11,29 @@
  * @returns {Array|null} chatHistory - AI 请求格式的历史消息数组
  */
 export function buildChatHistory(messages) {
-  let chatHistory = messages
+  const list = messages
     .filter(m => {
       if (m.role === 'user') return m.content && m.content.trim()
       if (m.role === 'assistant') return !m.loading && (m.aiReply || m.content)
       return false
     })
     .slice(-15)
-    .map(m => {
+
+  // 3.6.0 读文件：窗口内最后一条带文件的用户消息保留正文（追问还问得上），更早的只留一张卡片摘要
+  let lastFileIdx = -1
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (list[i].role === 'user' && list[i].fileText) { lastFileIdx = i; break }
+  }
+
+  let chatHistory = list
+    .map((m, i) => {
       let content = m.aiReply || m.content
+
+      if (m.role === 'user' && m.file) {
+        const name = m.file.name || '文件'
+        if (i === lastFileIdx) content = '[文件 ' + name + ']\n' + m.fileText + '\n\n' + content
+        else content = '[已读过文件 ' + name + '] ' + content
+      }
 
       // 单执行结果摘要
       if (m.role === 'assistant' && m.execResult) {

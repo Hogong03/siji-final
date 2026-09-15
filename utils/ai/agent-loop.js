@@ -19,6 +19,7 @@ import { executeTool, QUERY_TOOLS, needsConfirmation, TOOL_LABELS, getTruncateLi
 import { parseAiResponse } from './response-parser.js'
 import { AGENT_TOOL_INSTRUCTION } from './prompt-actions.js'
 import { executeWebSearch } from './tools/web-search.js'
+import { executeReadUrl } from './tools/read-url.js'
 import { callWithTools } from './agent-transport.js'
 import { logger } from '../logger.js'
 
@@ -174,10 +175,11 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
           return { call, fnName, fnArgs: null, toolResult: argErrorResult(fnName, parsed.reason) }
         }
         const fnArgs = parsed.args
-        // web_search 独立执行（网络调用，不走 store）
-        const toolResult = fnName === 'web_search'
-          ? await executeWebSearch(fnArgs.query)
-          : executeTool(store, fnName, fnArgs)
+        // web_search / read_url 独立执行（网络调用，不走 store）
+        let toolResult
+        if (fnName === 'web_search') toolResult = await executeWebSearch(fnArgs.query)
+        else if (fnName === 'read_url') toolResult = await executeReadUrl(fnArgs.url)
+        else toolResult = executeTool(store, fnName, fnArgs)
         return { call, fnName, fnArgs, toolResult }
       }))
       for (const { call, fnName, fnArgs, toolResult } of queryResults) {

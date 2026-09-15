@@ -8,6 +8,7 @@
 import { getReasoningConfig } from './providers.js'
 import { TOOL_DEFINITIONS } from './tools.js'
 import { isWebSearchAvailable } from './search-config.js'
+import { isReadUrlAvailable } from './read-config.js'
 import { chatRequestChunkedStream } from './chat-chunked.js'
 import { logger } from '../logger.js'
 /**
@@ -247,6 +248,7 @@ function buildToolList(provider, model) {
   // web_search 已入全局注册表；搜索后端配好 Key 才注入，跟聊天用哪个厂商无关（3.5.18）
   const tools = TOOL_DEFINITIONS
     .filter(t => t.name !== 'web_search' || isWebSearchAvailable())
+    .filter(t => t.name !== 'read_url' || isReadUrlAvailable())
     .map(t => ({
     type: 'function',
     function: {

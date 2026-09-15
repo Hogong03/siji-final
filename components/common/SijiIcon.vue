@@ -29,7 +29,7 @@ const ICON_MAP = {
   'dumbbell': '⏣', 'trend': '↗', 'relation': '⊕', 'voice-wave': '∿',
   'camera': '◉', 'search': '⌕', 'chevron-down': '▼',
   'chevron-right': '›', 'chevron-left': '‹', 'lock': '⚿',
-  'unlock': '∅', 'user': '◉', 'image': '◐',
+  'unlock': '∅', 'user': '◉', 'image': '◐', 'file': '▢',
   // 厂商：用首字母缩写
   'provider-ds': 'D', 'provider-oa': 'O', 'provider-ms': 'M',
   'provider-zg': 'Z', 'provider-qw': 'Q',

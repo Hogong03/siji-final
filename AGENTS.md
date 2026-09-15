@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 61 文件 / 825 用例，Vitest，`npx vitest run` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.5.21（进入总结改成伪对话：总结作为 AI 消息落进新对话并覆盖开场白，消息里带一串预置按钮（看计划 / 看新记录 / 看账单 / 记一笔 / 写个记录 / 定个计划 / 返回旧对话），点「回去接着聊」时销毁这条伪对话。含 3.5.20 的覆盖开场白、3.5.19 的伪对话、3.5.18 的记忆语义扩展与联网搜索解耦） |
+| 测试 | 63 文件 / 894 用例，Vitest，`npx vitest run` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.6.0（读网址 + 读文件：把网址发给 AI 会先读正文再回答（默认直连抓取，失败自动换 Tavily 重试一次）；输入框左侧新增「文件」按钮，文本类文件本地直读、pdf/office 走解析后端；文件正文只进本次请求，重试与追问都带得上。含 3.5.21 的进入总结伪对话与预置按钮） |
 
 ---
 
@@ -138,14 +138,15 @@
 ├── composables/        # 组合式函数（useChatEngine/useDiaryList/useDiaryAI 等）
 ├── store/              # Pinia（data.js + executors/ + chat/）
 ├── utils/
-│   ├── ai/             # AI 核心引擎（agent-loop/agent-transport/chat-sse/tools/prompt-builder/response-parser/autoExecutor/search-config/search-adapters 等）
+│   ├── ai/             # AI 核心引擎（agent-loop/agent-transport/chat-sse/tools/prompt-builder/response-parser/autoExecutor/search-config/search-adapters、3.6.0 的 read-adapters/read-config/html-text 等）
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.5.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.6.js）
+│   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 61 文件 825 用例
+├── tests/              # 63 文件 894 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -174,10 +175,11 @@
 
 ### 工具注册表
 
-- 37 个工具（实测 utils/ai/tools/ 下 14 个域文件）：记录(5) + 账单(4) + 计划(5) + 反馈(5) + 标签(4) + 关系(3) + 决策(3) + 个人信息(2) + 微光(2) + Agent(1) + 对话查询(1) + 撤销(1) + 联网(1)
-- QUERY_TOOLS（只读自动执行，15 个）：query_diary / query_bill / query_stat / query_plan / query_relation / query_decision / query_combined / get_profile / summarize_diaries / query_feedback / query_feedback_stats / query_tags / query_conversations / query_glimmers / web_search
+- 38 个工具（实测 utils/ai/tools/ 下 14 个域文件）：记录(5) + 账单(4) + 计划(5) + 反馈(5) + 标签(4) + 关系(3) + 决策(3) + 个人信息(2) + 微光(2) + Agent(1) + 对话查询(1) + 撤销(1) + 联网(1) + 读网址(1)
+- QUERY_TOOLS（只读自动执行，16 个）：query_diary / query_bill / query_stat / query_plan / query_relation / query_decision / query_combined / get_profile / summarize_diaries / query_feedback / query_feedback_stats / query_tags / query_conversations / query_glimmers / web_search / read_url
 - CONFIRM_TOOLS：`delete_feedback`
 - web_search 注入门控与聊天厂商解耦（3.5.18）：由 `utils/ai/search-config.js` 的可用性裁决决定，不再是「只有智谱才注入」
+- read_url 同样按配置门控（3.6.0）：由 `utils/ai/read-config.js` 裁决（关掉开关 / 需要 Key 的后端没 Key 就不注入），默认直连抓取免 Key 可用；执行在 agent-loop 的独立网络分支（不写 store）
 - 动态确认阈值：amount >= 500 需确认
 - executeTool() 分发：标签工具直接调 tags.js，其余走 store.executeAction()
 
@@ -254,6 +256,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记忆注入 | `utils/memory/context.js` 的 `buildMemoryContext` + `utils/memory-rank.js`（门面 `utils/memory.js` 只做转出，别把逻辑写回门面） |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms`（扩展词必须再切二元组） |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端注册表 / 请求 / 解析）+ `utils/ai/search-config.js`（开关 / 后端 / Key 裁决）+ `pages/settings/sub/ai.vue` 的"联网搜索"卡片 |
+| 改读网址 | `utils/ai/read-adapters.js`（direct 直连 / tavily 阅读）+ `utils/ai/read-config.js`（开关 / 后端 / Key 裁决）+ `utils/ai/html-text.js`（本地 HTML 转文本）+ `utils/ai/tools/read-url.js`（直连失败自动兜底）+ `pages/settings/sub/ai.vue` 的"读网址"卡片 |
+| 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装）+ `doc-parse.js`（解析后端）+ `picker.js`（选文件）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
 | 改每周账单播报 | `utils/bill-weekly.js`（口径与文案）+ `composables/useEnterSummary.js`（接线）+ `pages/chat/index.vue` 卡片「账」行 |
 | 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
@@ -271,7 +275,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `3.5.js`；聚合入口 `utils/storage/version-data.js` 不用改）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `3.6.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）
@@ -305,8 +309,10 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 61 文件 / 825 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 63 文件 / 894 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
+- 读文件的平台事实（别照抄 H5 逻辑）：`uni.chooseFile` 官方支持表 H5 √ / App ✗ / 微信小程序 ✗（小程序走 `wx.chooseMessageFile`）；所以 App 端「文件」按钮给的是提示（截图识别 / 粘贴文字）而不是选择器，要真机支持文件选择得配原生插件
+- 文件正文占上下文：单个文件上限 8000 字（`MAX_FILE_CHARS`，与 `read_url` 的工具截断同一口径），聊天历史只保留窗口内最近一条带文件消息的正文，更早的降级成「已读过文件 xxx」卡片 —— 改这块要连带跑 `tests/file-read.test.js`
 - 完整交接文档见 `CODEX_HANDOFF.md`

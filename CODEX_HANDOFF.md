@@ -2,7 +2,7 @@
 
 > 本文件供 AI 编码助手（Codex/Claude/Cursor 等）快速接手项目开发。
 > 包含项目架构、核心约定、代码风格、禁用项、关键模块索引。
-> 最后更新：2026-09-14
+> 最后更新：2026-09-15
 
 ---
 
@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 61 文件 / 825 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.5.21（进入总结改成伪对话：总结作为 AI 消息落进新对话、覆盖开场白，消息里带一串预置按钮（看计划 / 看新记录 / 看账单 / 记一笔 / 写个记录 / 定个计划 / 返回旧对话），点「回去接着聊」销毁这条伪对话。含 3.5.20 的覆盖开场白、3.5.19 的伪对话、3.5.18 的记忆语义扩展与联网搜索解耦） |
+| 测试 | 63 文件 / 894 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.6.0（读网址 + 读文件：read_url 工具（直连抓取优先，失败自动换 Tavily 重试一次）+ 输入框「文件」按钮（文本本地直读 / pdf 与 office 走 Moonshot 解析后端）+ 设置页两张配置卡。含 3.5.21 的进入总结伪对话与预置按钮） |
 
 ---
 
@@ -77,7 +77,18 @@
 │   │   ├── chat-store.js       # 聊天会话存储
 │   │   ├── search-adapters.js  # 联网搜索后端注册表（3.5.18）
 │   │   ├── search-config.js    # 联网搜索开关 / 后端 / Key 裁决（3.5.18）
+│   │   ├── read-adapters.js    # 读网址后端注册表：direct 直连 / tavily（3.6.0）
+│   │   ├── read-config.js      # 读网址开关 / 后端 / Key 裁决（3.6.0）
+│   │   ├── html-text.js        # HTML 转纯文本（纯函数，不碰 DOM，小程序可用）（3.6.0）
+│   │   └── tools/read-url.js   # read_url 工具：直连失败自动兜底第三方（3.6.0）
 │   │   └── constants.js        # 共享正则与类型映射
+│   ├── files/          # 读文件（3.6.0）
+│   │   ├── file-types.js  # 扩展名 / MIME 分类、5MB 上限、picker 后缀
+│   │   ├── file-text.js   # 去 BOM、二进制判定、截断 8000 字、拼装给模型
+│   │   ├── local-io.js    # 三端本地读：H5 FileReader / App plus.io / 小程序 FileSystemManager
+│   │   ├── doc-parse.js   # 文档解析后端注册表（Moonshot：上传 → 取正文 → 尽力删）
+│   │   ├── picker.js      # 三端选文件，统一成 { path, name, size, mime, file }
+│   │   └── index.js       # readPickedFile 统一入口 + 卡片文案
 │   ├── storage/        # 存储层（按领域分文件）
 │   │   ├── diary.js    # 记录存储（按月分片 diary_YYYY-MM）
 │   │   ├── bill.js     # 账单存储（按月分片 bill_YYYY-MM）
@@ -139,8 +150,8 @@
 
 ### 3.2 工具注册表（tools.js）
 
-- **31 个工具**：记录(5) + 账单(4) + 计划(4) + 个人信息(2) + 关系(3) + 决策(3) + 通用(1) + 反馈(5) + 标签(4)；schema 按领域拆到 `utils/ai/tools/{domain}.js`，执行器在 `utils/ai/tools/executor.js`
-- **QUERY_TOOLS**（只读自动执行）：query_diary/bill/stat/plan/relation/decision/combined + get_profile + summarize_diaries + query_feedback/feedback_stats + query_tags
+- **38 个工具**：记录(5) + 账单(4) + 计划(5) + 反馈(5) + 标签(4) + 关系(3) + 决策(3) + 个人信息(2) + 微光(2) + Agent(1) + 对话查询(1) + 撤销(1) + 联网(1) + 读网址(1)；schema 按领域拆到 `utils/ai/tools/{domain}.js`，执行器在 `utils/ai/tools/executor.js`
+- **QUERY_TOOLS**（只读自动执行）：query_diary/bill/stat/plan/relation/decision/combined + get_profile + summarize_diaries + query_feedback/feedback_stats + query_tags + query_conversations + query_glimmers + web_search + read_url（16 个，与 `utils/ai/tools/index.js` 的 Set 一一对应）
 - **CONFIRM_TOOLS**（需确认）：空集（delete_* 未注册到 Agent）
 - **动态确认阈值**：create_bill/update_bill 的 amount >= 500 需确认
 - **executeTool()** 分发：标签工具直接调 tags.js，其余走 `store.executeAction()`
@@ -313,6 +324,7 @@ npx vitest run
 - [ ] 真机验收 3.5.19-3.5.21 进入总结伪对话（冷启动开场白是总结而非欢迎语 / 欢迎语被顶掉只剩一条 / 回前台插消息 / 预置按钮换行排版与点击跳转 / prefill 按钮填输入框 / 点「返回旧对话」后伪对话被销毁 / 深色模式）+ H5 渲染截图留存
 - [ ] 真机验收 3.5.18 联网搜索设置卡片（开关 / 后端切换 / Key 保存清除）+ H5 渲染截图留存
 - [ ] Tavily 后端线上验证（代码与解析已被单测覆盖，尚未用真实 Key 跑过一次）
+- [ ] 真机验收 3.6.0 读网址与读文件（App 端直连抓取真实网页 / 粘一个网址看是否自动调 read_url / 文件按钮在 App 端的提示文案 / H5 选文本文件与 PDF 各一次 / Moonshot 解析后端用真实 Key 跑一次 / H5 渲染截图留存）
 - [ ] 真机验证 AI 纠错流程（先 query 再 update 的完整链路）
 
 ### P2
@@ -324,7 +336,7 @@ npx vitest run
 - [ ] plan/index.vue 拆分
 - [ ] 真机验证对话尺（App 端 scroll-into-view 扩窗跳转与 touchmove 拖动；H5 已验收）
 - [x] 拆分 `utils/memory.js`（692 → 门面 60 行 + `utils/memory/` 八块；memory 系列 70 用例全绿）
-- [ ] 拆分 `composables/useChatEngine.js`（518 行）：`handleSend` 主体约 390 行（图片识别 → 流式 → pumpDisplay → 动作执行）抽到 `utils/ai/send-pipeline.js`，引擎只留状态与编排；抽完必须跑 `tests/agent-engine-smoke.test.js` + 真机发一轮图文消息
+- [ ] 拆分 `composables/useChatEngine.js`（530 行）：`handleSend` 主体约 390 行（图片识别 → 流式 → pumpDisplay → 动作执行）抽到 `utils/ai/send-pipeline.js`，引擎只留状态与编排；抽完必须跑 `tests/agent-engine-smoke.test.js` + 真机发一轮图文消息
 - [ ] 拆分 UI 组件：`pages/chat/index.vue`（636 行）/ `components/plan/PlanChildPlans.vue`（591 行）/ `pages/settings/sub/memory.vue`（549 行）/ `pages/settings/sub/relations.vue`（385 行）/ `pages/settings/sub/relation-detail.vue`（368 行）；抽聊天页卡片前先读 AGENTS.md「注意事项」里的 scoped 样式约束，且必须真机验收
 - [x] 状态觉察之外的 P3：账单周播报三数字（`utils/bill-weekly.js`）、社交能量预算 + 回复草稿（`utils/social-quota.js`）——3.5.14 完成
 - [ ] response-parser.js 空回复兜底测试
@@ -356,6 +368,8 @@ npx vitest run
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
+| 改读网址 | `utils/ai/read-adapters.js` + `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
+| 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |
 | 改长期记忆 | `utils/memory.js`（门面）→ `utils/memory/xxx.js` 对应职责文件 |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |

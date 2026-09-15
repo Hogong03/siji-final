@@ -113,6 +113,17 @@ export async function retryLastMessage(store, handleSend, options = {}, inputAre
 
   const message = options.message || lastUserMsg.content
   const imageData = options.image || lastUserMsg.image || null
+  // 3.6.0 读文件：文件正文存在消息字段里，重试要原样带上，否则重试等于把文件丢了
+  let retryOptions = options
+  if (!options.file && lastUserMsg.fileText) {
+    const meta = lastUserMsg.file || {}
+    retryOptions = Object.assign({}, options, {
+      file: {
+        ok: true, text: lastUserMsg.fileText, name: meta.name || '文件',
+        sizeText: meta.sizeText || '', lines: meta.lines || 0, truncated: !!meta.truncated
+      }
+    })
+  }
 
   const prevProvider = store.aiProvider
   const prevModel = store.aiModel
@@ -133,7 +144,7 @@ export async function retryLastMessage(store, handleSend, options = {}, inputAre
     }
   }
 
-  await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers, options)
+  await handleSend(message, inputAreaRef, scrollToBottom, imageData, scrollHelpers, retryOptions)
 }
 
 /** 离线检测并返回本地操作提示 */

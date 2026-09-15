@@ -40,6 +40,17 @@ const emit = defineEmits([
   'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase'
 ])
 
+/** 文件卡文案：名称 · 大小 · 行数（3.6.0 读文件） */
+const fileLabel = computed(() => {
+  const f = props.message?.file
+  if (!f) return ''
+  const parts = [f.name || '文件']
+  if (f.sizeText) parts.push(f.sizeText)
+  if (f.lines) parts.push(f.lines + ' 行')
+  if (f.truncated) parts.push('已截断')
+  return parts.join(' · ')
+})
+
 /** 点击图片预览 */
 function onImageTap() {
   if (imageSrc.value) previewImage([imageSrc.value], 0)
@@ -201,6 +212,11 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
           <image v-if="message.image && !imageFailed" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" @error="onImageError" />
           <view v-else-if="message.image && imageFailed" class="bubble-image-fallback" @tap="onImageTap">
             <text class="bubble-image-fallback-text">图片已失效</text>
+          </view>
+          <!-- 3.6.0 读文件：只挂一张文件卡，正文不进气泡（太长） -->
+          <view v-if="message.file" class="bubble-file">
+            <text class="bubble-file-badge">文件</text>
+            <text class="bubble-file-name">{{ fileLabel }}</text>
           </view>
           <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
           <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />

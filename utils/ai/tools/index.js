@@ -14,6 +14,7 @@ import { TAGS_TOOLS } from './tags.js'
 import { CONVERSATION_TOOLS } from './chat.js'
 import { GLIMMER_TOOLS } from './glimmer.js'
 import { WEB_SEARCH_TOOL } from './web-search.js'
+import { READ_URL_TOOL } from './read-url.js'
 import { AGENT_TOOLS } from './agent.js'
 
 export const TOOL_DEFINITIONS = [
@@ -29,7 +30,8 @@ export const TOOL_DEFINITIONS = [
   ...CONVERSATION_TOOLS,
   ...GLIMMER_TOOLS,
   ...AGENT_TOOLS,
-  WEB_SEARCH_TOOL, // D2 联网搜索（智谱专用，agent-loop 按厂商门控执行）
+  WEB_SEARCH_TOOL, // D2 联网搜索（agent-loop 按搜索后端门控执行）
+  READ_URL_TOOL,   // 3.6.0 读网址（agent-loop 独立网络分支执行）
 ]
 
 
@@ -46,7 +48,8 @@ export const QUERY_TOOLS = new Set([
   'query_feedback', 'query_feedback_stats', 'query_tags',
   'query_conversations',  // 3.2 M3 旧话检索（只读）
   'query_glimmers',        // 3.4 M2 微光本（只读）
-  'web_search'  // D2 联网搜索（只读，智谱 Web Search API，agent-loop 独立执行）
+  'web_search', // D2 联网搜索（只读，agent-loop 独立执行）
+  'read_url'    // 3.6.0 读网址（只读，agent-loop 独立执行）
 ])
 
 /** 工具中文标签（确认卡/进度提示共用，避免暴露英文工具名） */
@@ -75,6 +78,7 @@ export const TOOL_LABELS = {
   add_tag: '添加标签',
   update_tag_category: '修改标签分类',
   remove_tag: '删除标签',
+  read_url: '读网页',
   query_conversations: '检索会话',
   extract_todos: '提取待办',
   create_agent: '创建 Agent',

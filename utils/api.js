@@ -99,3 +99,12 @@ export {
   getOwnSearchKey, setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig,
   isWebSearchAvailable, searchStatusText
 } from './ai/search-config.js'
+// 3.6.0：读网址后端与配置（设置页 / Agent 工具门控共用）
+export {
+  READ_BACKENDS, DEFAULT_READ_BACKEND, getReadBackend, listReadBackends, normalizeUrl, hostOf
+} from './ai/read-adapters.js'
+export {
+  READ_KEYS, isReadEnabled, setReadEnabled, getReadBackendId, setReadBackend,
+  getOwnReadKey, setOwnReadKey, hasOwnReadKey, resolveReadConfig,
+  isReadUrlAvailable, readStatusText
+} from './ai/read-config.js'

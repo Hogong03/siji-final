@@ -18,6 +18,7 @@ const TOOL_RESULT_TRUNCATE_MAP = {
   query_conversations: 1500, // 会话检索摘录（3.2 M3）
   get_profile: 1000,     // 用户画像
   summarize_diaries: 2000, // 总结报告
+  read_url: 8000,        // 读网址：正文本身就长，上限即抓取上限（3.6.0）
   default: 2000
 }
 export function getTruncateLimit(toolName) {

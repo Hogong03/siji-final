@@ -30,6 +30,7 @@ import {
   handleCancelAction as _handleCancelAction
 } from '@/composables/useChatActions.js'
 import { recognizeImage } from '@/utils/ai/vision-bridge.js'
+import { buildFileContext, composeFileMessage } from '@/utils/files/file-text.js'
 
 export function useChatEngine() {
   const store = useAppStore()
@@ -109,7 +110,13 @@ export function useChatEngine() {
     const sendInstr = (sendOpts && sendOpts.appendInstruction && typeof sendOpts.appendInstruction === 'string')
       ? sendOpts.appendInstruction.trim()
       : ''
-    const plainMessage = sendInstr ? `${message}\n\n${sendInstr}` : message
+    // 3.6.0 读文件：正文只进本次请求与消息的 fileText 字段，不写进 content（气泡里用户原话保持原样）
+    const fileInfo = (sendOpts && sendOpts.file && sendOpts.file.ok && sendOpts.file.text) ? sendOpts.file : null
+    const fileContext = fileInfo ? buildFileContext(fileInfo) : ''
+    const fileMeta = fileInfo
+      ? { name: fileInfo.name || '文件', sizeText: fileInfo.sizeText || '', lines: fileInfo.lines || 0, truncated: !!fileInfo.truncated }
+      : null
+    const plainMessage = composeFileMessage(fileContext, sendInstr ? `${message}\n\n${sendInstr}` : message)
     currentSuggestions.value = []
     nextStep.value = null
     if (!store.hasApiKey) {
@@ -142,7 +149,10 @@ export function useChatEngine() {
     const stopStream = scrollHelpers?.stopStreamScroll
     const chatHistory = buildChatHistory(store.messages)
 
-    const userMsg = store.addMessage({ role: 'user', content: message, image: imageData || undefined })
+    const userMsg = store.addMessage({
+      role: 'user', content: message, image: imageData || undefined,
+      file: fileMeta || undefined, fileText: fileContext || undefined
+    })
     // 图片保存（异步，不阻塞发送）— 传消息引用，避免跨会话回写找错消息
     if (imageData?.base64 && userMsg) saveImageAsync(imageData, store, userMsg)
     inputAreaRef?.value?.reset()
@@ -190,7 +200,7 @@ export function useChatEngine() {
         onStatus: (toolNames) => {
           // 工具执行进度反馈 — 更新当前消息的临时状态
           if (toolNames && toolNames.length > 0) {
-            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', update_plan_phase: '更新阶段', update_plan_subtask: '更新子项', create_relation: '创建关系', update_relation: '修改关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', create_feedback: '提交反馈', add_tag: '添加标签', update_tag_category: '修改标签分类', remove_tag: '删除标签', create_agent: '创建 Agent', undo_last: '撤销操作' }
+            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', update_plan_phase: '更新阶段', update_plan_subtask: '更新子项', create_relation: '创建关系', update_relation: '修改关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', create_feedback: '提交反馈', add_tag: '添加标签', update_tag_category: '修改标签分类', remove_tag: '删除标签', create_agent: '创建 Agent', undo_last: '撤销操作', web_search: '联网搜索', read_url: '读网页' }
             const label = toolNames.map(n => labels[n] || n).join('、')
             safeUpdate({ loading: true, statusHint: `正在${label}…` })
           }
@@ -225,6 +235,7 @@ export function useChatEngine() {
       const userSelectedModel = store.aiModel
       const userModelSupportsVision = !!getProvider(cfg.provider).visionModels?.includes(userSelectedModel)
       let combinedMessage = plainMessage
+      let visionCombined = false
       if (imageData && message && !userModelSupportsVision) {
         // 用户同时输入了图片和有意义的文字 → 两步组合
         logger.info('[ChatEngine] 图片+文字组合模式，先识别图片')
@@ -234,6 +245,7 @@ export function useChatEngine() {
         if (imageDesc) {
           // 拼接：用户原始文字 + 图片识别结果
           combinedMessage = `${plainMessage}\n\n[图片识别结果]\n${imageDesc}`
+          visionCombined = true
           // 回切到用户选中的文字模型处理「图片描述+指令」，避免纯视觉模型对纯文本请求返回空
           cfg.model = userSelectedModel
           logger.info('[ChatEngine] 图片识别完成，组合消息长度:', combinedMessage.length)
@@ -243,7 +255,7 @@ export function useChatEngine() {
         }
       }
       // 两步组合后不再传 image 给文字模型（已转为文本描述）
-      if (imageData && combinedMessage !== message) {
+      if (imageData && visionCombined) {
         delete cfg.image
       }
 
