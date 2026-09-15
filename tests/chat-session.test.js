@@ -3,6 +3,7 @@
  *
  * 覆盖：空会话判定、回去接着聊的候选挑选、入口卡的显示条件、时间说法、
  * 冷启动标志只消费一次、store.pruneEmptyConversations 不误删。
+ * 3.5.19：进入总结落成对话消息；3.5.20：总结覆盖开场白而不是追加。
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -362,6 +363,42 @@ describe('useChatSession：开场白换成总结消息（3.5.19）', () => {
     expect(s.appendEnterSummary({ events: [], eventsTotal: 0, diaryCount: 0 })).toBe(false)
     expect(s.appendEnterSummary(null)).toBe(false)
     expect(store.messages).toHaveLength(1)
+  })
+
+  /* ---- 3.5.20：总结直接覆盖开场白，不叠在欢迎语下面 ---- */
+
+  it('欢迎语已在场上时，总结顶掉它而不是叠在下面', () => {
+    store.createConversation()
+    const s = session()
+    store.addMessage({ role: 'assistant', content: '你好，我是思迹。', _isWelcome: true })
+    expect(s.appendEnterSummary(summaryData())).toBe(true)
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0]._isEnterSummary).toBe(true)
+    expect(store.messages[0]._isWelcome).toBeUndefined()
+  })
+
+  it('覆盖开场白不动真实对话', () => {
+    store.createConversation()
+    const s = session()
+    store.addMessage({ role: 'assistant', content: '你好，我是思迹。', _isWelcome: true })
+    store.addMessage({ role: 'user', content: '在吗' })
+    expect(s.appendEnterSummary(summaryData())).toBe(true)
+    expect(store.messages).toHaveLength(2)
+    expect(store.messages[0].content).toBe('在吗')
+    expect(store.messages[1]._isEnterSummary).toBe(true)
+  })
+
+  it('store.dropWelcomeMessages：只清欢迎语并返回条数，没有则返回 0', () => {
+    store.createConversation()
+    const s = session()
+    expect(store.dropWelcomeMessages()).toBe(0)
+    s.appendEnterSummary(summaryData())
+    expect(store.dropWelcomeMessages()).toBe(0)
+    store.addMessage({ role: 'assistant', content: '你好', _isWelcome: true })
+    store.addMessage({ role: 'assistant', content: '你好', _isWelcome: true })
+    expect(store.dropWelcomeMessages()).toBe(2)
+    expect(store.messages).toHaveLength(1)
+    expect(store.messages[0]._isEnterSummary).toBe(true)
   })
 
   it('只带总结的会话仍是空壳，冷启动清理时会被清掉', () => {

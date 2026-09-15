@@ -163,6 +163,25 @@ export const useChatStore = defineStore('chat', () => {
     doPersist()
   }
 
+  /**
+   * 丢掉当前会话里的欢迎语占位（3.5.20）
+   * 开场白只是占位，真实内容进来就该顶掉它 —— 进入总结落成消息前先调这个，
+   * 否则总结会叠在欢迎语下面，变成「先打招呼再汇报」两条开场白。
+   * @returns {number} 清掉的条数（没有欢迎语返回 0）
+   */
+  function dropWelcomeMessages() {
+    const conv = conversations.value.find(c => c.id === activeConversationId.value)
+    if (!conv || !Array.isArray(conv.messages)) return 0
+    const kept = conv.messages.filter(m => !(m && m._isWelcome))
+    if (kept.length === conv.messages.length) return 0
+    const removed = conv.messages.length - kept.length
+    conv.messages = kept
+    conv.updatedAt = Date.now()
+    conv._slimCache = null
+    doPersist()
+    return removed
+  }
+
   // ==================== 消息操作 ====================
 
   function addMessage(message) {
@@ -246,7 +265,7 @@ export const useChatStore = defineStore('chat', () => {
     // actions
     setCurrentMode, setConversationId,
     createConversation, switchConversation, deleteConversation, renameConversation, pruneEmptyConversations,
-    addMessage, updateLastMessage, updateLastMessageFor, updateConversationSummary, clearMessages,
+    addMessage, updateLastMessage, updateLastMessageFor, updateConversationSummary, clearMessages, dropWelcomeMessages,
     addTagToConversation, removeTagFromConversation, setConversationTags,
     persistHistory, restoreHistory,
     flushPersist: flushHistory,

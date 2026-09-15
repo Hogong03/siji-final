@@ -7,6 +7,7 @@
  *   - 新对话空态 → 给出「回去接着聊（最近一条）」与「选择历史对话」两个入口，可关
  *
  * 3.5.19：有进入总结时，开场白换成总结消息（伪对话），欢迎语不再重复发；
+ * 3.5.20：总结落消息前先丢掉已写下的欢迎语（覆盖，不是追加）。
  * 总结消息自带「返回旧对话」，空态入口卡此时自动让位（见 chat-session 的 shouldOfferResume）。
  */
 import { ref, computed, watch } from 'vue'
@@ -52,6 +53,8 @@ export function useChatSession(store, getWelcomeMessage) {
   function appendEnterSummary(summary) {
     const message = buildEnterSummaryMessage(summary)
     if (!message) return false
+    // 直接覆盖开场白：欢迎语是占位，总结进来就该顶掉它，不叠在下面（3.5.20）
+    store.dropWelcomeMessages()
     store.addMessage(message)
     return true
   }

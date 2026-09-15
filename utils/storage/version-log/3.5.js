@@ -5,7 +5,29 @@
  */
 
 export const V35 = [
-
+  {
+    version: '3.5.20',
+    date: '2026-09-15',
+    title: '3.5.20 进入总结直接覆盖开场白（不再叠在欢迎语下面）',
+    summary: [
+      '进入总结直接顶掉开场白：新对话里已经写下的欢迎语会被总结覆盖，不再出现「先打招呼、再汇报进展」两条开场白 —— 此前总结是追加在欢迎语下面',
+      '只覆盖开场白，不动真实对话：已经聊过的会话照旧把总结追加到末尾；欢迎语本来就是占位，这跟首次发消息时自动清除欢迎语是同一个处置',
+      '两条来路都覆盖：冷启动 appReady 之后的宽窗口结算，与回前台算出的增量，都走 appendEnterSummary，落消息前先清欢迎语',
+      '工程：store/chat.js 新增 dropWelcomeMessages()（只清 _isWelcome / 返回清掉条数 / 失效会话预览缓存并落盘），composables/useChatSession.js 接线；tests/chat-session.test.js 增 3 例，全量 61 文件 / 815 用例全绿'
+    ],
+    categories: [
+      {
+        title: '进入总结覆盖开场白（3.5.20）',
+        items: [
+          'store/chat.js：新增 dropWelcomeMessages() —— 过滤掉当前会话里的 _isWelcome 消息，返回清掉的条数；有变化才写，同时清 _slimCache 并 doPersist()；没有欢迎语返回 0，可重复调用（幂等）',
+          'composables/useChatSession.js：appendEnterSummary 在 addMessage 之前调用 store.dropWelcomeMessages()，欢迎语与总结不会同时存在',
+          '为什么必须覆盖：欢迎语由 pages/chat/index.vue 的 onMounted 与 composables/useConversationManager.js 的新建/切换对话写入，而进入总结可能晚一步到（回前台增量、appReady 之后的冷启动结算），追加就会出现两条开场白',
+          '测试：tests/chat-session.test.js 增 3 例 —— 欢迎语已在场上时总结顶掉它而不是叠在下面 / 覆盖开场白不动真实对话 / dropWelcomeMessages 只清欢迎语并返回条数',
+          '未改动：composables/useChatEngine.js 首次发消息清欢迎语的既有逻辑保持原样（同样语义，两处互不影响）'
+        ]
+      }
+    ]
+  },
   {
     version: '3.5.19',
     date: '2026-09-15',

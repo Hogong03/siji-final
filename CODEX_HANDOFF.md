@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 61 文件 / 812 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.5.19（进入总结改成伪对话：总结作为 AI 消息落进新对话，消息下挂「查看详情 / 返回旧对话」，不再是顶部卡片。含 3.5.18 的记忆语义扩展与联网搜索解耦、3.5.17 的对话尺、3.5.16 的每次进来都是新对话、3.5.15 的白屏修复） |
+| 测试 | 61 文件 / 815 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.5.20（进入总结改成伪对话并直接覆盖开场白：总结作为 AI 消息落进新对话，欢迎语被顶掉，消息下挂「查看详情 / 返回旧对话」，不再是顶部卡片。含 3.5.19 的伪对话、3.5.18 的记忆语义扩展与联网搜索解耦、3.5.17 的对话尺、3.5.16 的每次进来都是新对话） |
 
 ---
 
@@ -49,7 +49,7 @@
 │   ├── useDiaryAI.js     # 记录 AI 摘要/改写
 │   ├── useTagPicker.js   # 标签选择器
 │   ├── useDiaryImages.js # 记录图片管理
-│   ├── useChatSession.js # 冷启动新对话编排 + 进入总结当开场白（3.5.16 / 3.5.19）
+│   ├── useChatSession.js # 冷启动新对话编排 + 进入总结覆盖开场白（3.5.16 / 3.5.19 / 3.5.20）
 │   └── useChatRuler.js   # 对话尺：滚动同步与触摸跳转（3.5.17）
 ├── store/              # Pinia 状态管理
 │   ├── data.js         # 数据操作 Store（AI 执行分发 + 撤销栈 + 就地编辑）
@@ -113,7 +113,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（61 文件 812 用例，Vitest）
+├── tests/              # 测试（61 文件 815 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -310,7 +310,7 @@ npx vitest run
 - [x] 补核心业务测试（executors 14 例 + prompt-builder 11 例；stream-parser/chat-store 待补）
 - [x] 拆分 reminder.js（已完成：现 65 行 + `utils/reminder/` 目录）
 - [ ] 标签种类管理 UI 适配（detail.vue 标签选择器增加种类分组）
-- [ ] 真机验收 3.5.19 进入总结伪对话（冷启动开场白 / 回前台插消息 / 「返回旧对话」按钮 / 深色模式）+ H5 渲染截图留存
+- [ ] 真机验收 3.5.19 + 3.5.20 进入总结伪对话与覆盖开场白（冷启动开场白是总结而非欢迎语 / 欢迎语被顶掉只剩一条 / 回前台插消息 / 「返回旧对话」按钮 / 深色模式）+ H5 渲染截图留存
 - [ ] 真机验收 3.5.18 联网搜索设置卡片（开关 / 后端切换 / Key 保存清除）+ H5 渲染截图留存
 - [ ] Tavily 后端线上验证（代码与解析已被单测覆盖，尚未用真实 Key 跑过一次）
 - [ ] 真机验证 AI 纠错流程（先 query 再 update 的完整链路）
@@ -352,7 +352,7 @@ npx vitest run
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 加测试 | `tests/xxx.test.js` |
 | 改每周账单播报 | `utils/bill-weekly.js` + `composables/useEnterSummary.js` + `pages/chat/index.vue` |
-| 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名）+ `composables/useChatSession.js` 的 `appendEnterSummary` + `utils/chat-session.js`（空壳/让位）+ `pages/chat/index.vue` 的 `.enter-actions` |
+| 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名）+ `composables/useChatSession.js` 的 `appendEnterSummary` + `utils/chat-session.js`（空壳/让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `pages/chat/index.vue` 的 `.enter-actions` |
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
