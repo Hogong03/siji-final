@@ -365,8 +365,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `571807a` (fix: 3.5.20 进入总结直接覆盖开场白（不再叠在欢迎语下面）)
-- 远端：`origin/main`，2026-09-15 推送成功（`4ac3d0d..571807a`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `191895e` (feat: 3.5.21 进入总结带预置按钮 + 回去接着聊时销毁伪对话)
+- 远端：`origin/main`，2026-09-15 推送成功（`bdaea24..191895e`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
