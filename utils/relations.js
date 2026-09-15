@@ -114,6 +114,13 @@ export function getInteractions(relationId) {
   }
 }
 
+/** 获取全部互动（未删除，按时间倒序）——供周额度统计等只读场景使用 */
+export function getAllInteractions() {
+  return getRawInteractions()
+    .filter(i => i.is_deleted !== 1)
+    .sort((a, b) => (Number(b.date) || Number(b.created_at) || 0) - (Number(a.date) || Number(a.created_at) || 0))
+}
+
 /** 获取最近 N 条互动 */
 export function getRecentInteractions(limit = 10) {
   try {

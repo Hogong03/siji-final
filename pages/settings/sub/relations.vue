@@ -18,6 +18,9 @@
       </view>
     </view>
 
+    <!-- 本周社交额度（自己定，不设则不显示） -->
+    <SocialQuotaBar :revision="quotaRevision" />
+
     <!-- 顶部统计 -->
     <view class="stats-bar">
       <view class="stat-item">
@@ -158,6 +161,7 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats } from '@/utils/relations.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import SocialQuotaBar from '@/components/common/SocialQuotaBar.vue'
 
 const statusBarHeight = ref(20)
 try {
@@ -229,6 +233,7 @@ const list = ref([])
 const filteredList = ref([])
 const keyword = ref('')
 const stats = ref({ total: 0, interactionCount: 0, avgScore: 0 })
+const quotaRevision = ref(0)
 const showAddForm = ref(false)
 const editMode = ref(false)
 const editingId = ref(null)
@@ -253,6 +258,7 @@ function loadData() {
   list.value = getAllRelations()
   filteredList.value = list.value
   stats.value = getRelationsStats()
+  quotaRevision.value += 1
 }
 
 function handleSearch() {

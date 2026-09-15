@@ -14,6 +14,7 @@ import { logger } from '@/utils/logger.js'
 import { debouncedPersist, flushPersist, persistConversations as _persist, persistActiveId } from './chat/persist.js'
 import { restoreHistory as _restoreHistory } from './chat/restore.js'
 import { setConvTags, getConvTags, addConvTag } from '@/utils/conv-tags.js'
+import { isEmptyConversation } from '@/utils/chat-session.js'
 
 export const useChatStore = defineStore('chat', () => {
   // ==================== State ====================
@@ -79,6 +80,24 @@ export const useChatStore = defineStore('chat', () => {
       activeConversationId.value = id
       persistActiveId(id)
     }
+  }
+
+  /**
+   * 清理空会话（3.5.16）：冷启动换新对话前调用，避免每次冷启动在列表里堆一个空壳。
+   * keepId 指定的会话无条件保留。返回移除条数。
+   */
+  function pruneEmptyConversations(keepId = '') {
+    const before = conversations.value
+    const kept = before.filter(c => c.id === keepId || !isEmptyConversation(c))
+    const removed = before.length - kept.length
+    if (removed === 0) return 0
+    conversations.value = kept
+    if (!kept.some(c => c.id === activeConversationId.value)) {
+      activeConversationId.value = kept.length > 0 ? kept[kept.length - 1].id : ''
+      persistActiveId(activeConversationId.value)
+    }
+    doPersist()
+    return removed
   }
 
   function deleteConversation(id) {
@@ -226,7 +245,7 @@ export const useChatStore = defineStore('chat', () => {
     modeLabel, messages, conversationId, activeConversation, conversationCount,
     // actions
     setCurrentMode, setConversationId,
-    createConversation, switchConversation, deleteConversation, renameConversation,
+    createConversation, switchConversation, deleteConversation, renameConversation, pruneEmptyConversations,
     addMessage, updateLastMessage, updateLastMessageFor, updateConversationSummary, clearMessages,
     addTagToConversation, removeTagFromConversation, setConversationTags,
     persistHistory, restoreHistory,

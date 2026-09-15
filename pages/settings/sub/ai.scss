@@ -463,3 +463,132 @@
     line-height: 1.8;
   }
 }
+
+/* 联网搜索（3.5.18） */
+.search-card {
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: #FFFFFF;
+  border-radius: $radius-md;
+  border: 1rpx solid #E4E4E7;
+  box-sizing: border-box;
+
+  .search-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+  }
+
+  .search-head-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .search-title {
+    font-size: $font-sm;
+    font-weight: 600;
+    color: #18181B;
+  }
+
+  .search-subtitle {
+    font-size: $font-xs;
+    color: #A1A1AA;
+    margin-top: 4rpx;
+  }
+
+  .search-switch {
+    width: 84rpx;
+    height: 48rpx;
+    border-radius: 24rpx;
+    background: #E4E4E7;
+    padding: 4rpx;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+
+    .search-knob {
+      width: 40rpx;
+      height: 40rpx;
+      border-radius: 50%;
+      background: #FFFFFF;
+      transition: transform $transition-fast;
+    }
+
+    &.on {
+      background: #000000;
+
+      .search-knob {
+        transform: translateX(36rpx);
+      }
+    }
+  }
+
+  .search-hint {
+    font-size: $font-xs;
+    color: #A1A1AA;
+    display: block;
+    line-height: 1.6;
+    margin-top: $spacing-sm;
+  }
+
+  .search-backend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    margin-top: $spacing-sm;
+  }
+
+  .search-backend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+    padding: 16rpx;
+    background: #FAFAFA;
+    border-radius: $radius-sm;
+    border: 1rpx solid #E4E4E7;
+    box-sizing: border-box;
+
+    &.active {
+      border-color: #18181B;
+      background: #F4F4F5;
+    }
+
+    .search-backend-main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-backend-name {
+      font-size: $font-xs;
+      font-weight: 600;
+      color: #18181B;
+    }
+
+    .search-backend-desc {
+      font-size: $font-xs;
+      color: #A1A1AA;
+      margin-top: 4rpx;
+      line-height: 1.5;
+    }
+
+    .search-check {
+      width: 32rpx;
+      height: 32rpx;
+      border-radius: 50%;
+      background: #000000;
+      color: #FFFFFF;
+      font-size: 20rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+}

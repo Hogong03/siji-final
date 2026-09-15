@@ -181,7 +181,7 @@ describe('连续口径：weekly 看周，其余看天', () => {
     expect(weeklyStreakOf(three)).toBeGreaterThanOrEqual(1)
   })
 
-  it('weekly 计划打卡后按「周」给回执（不再是永远触发不了的「天」）', () => {
+  it('weekly 计划打卡后按「周」给回执（走今天打卡，任意星期几都成立）', () => {
     const plan = makePlan({
       client_id: 'w1',
       recur_type: 'weekly',
@@ -189,7 +189,9 @@ describe('连续口径：weekly 看周，其余看天', () => {
       checkins: [{ date: weekStartYmd(-1), at: 1 }]
     })
     const api = mount(plan)
-    api.onCalBackfill(weekStartYmd(0))
+    // 补记这条路径在周一没有「本周的历史日」可补，回执口径改用今天打卡验证；
+    // 补记链路本身由上面的「窗口内的历史日：确认后补记那天」覆盖
+    api.submitCheckIn()
     expect(toasts).toEqual(['连续 2 周达标，稳'])
   })
 

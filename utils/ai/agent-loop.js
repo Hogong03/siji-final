@@ -176,7 +176,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         const fnArgs = parsed.args
         // web_search 独立执行（网络调用，不走 store）
         const toolResult = fnName === 'web_search'
-          ? await executeWebSearch(fnArgs.query, apiKey)
+          ? await executeWebSearch(fnArgs.query)
           : executeTool(store, fnName, fnArgs)
         return { call, fnName, fnArgs, toolResult }
       }))

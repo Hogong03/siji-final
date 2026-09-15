@@ -12,6 +12,7 @@ import { buildChatHistory } from '@/utils/ai/chatHistoryBuilder.js'
 import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
 import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
 import { mergeSuggestions } from '@/utils/ai/chat-suggestion.js'
+import { pickNextStep, shouldOfferNextStep, markNextStepShown } from '@/utils/next-step.js'
 import { needsConfirmation } from '@/utils/ai/tools.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
@@ -46,6 +47,8 @@ export function useChatEngine() {
   const pendingActions = ref([])
   const pendingReply = ref('')
   const currentSuggestions = ref([])
+  // 3.5.13：对话收尾的最小行动单卡（每天最多一次，可关）
+  const nextStep = ref(null)
   const sendStage = ref('idle')
   const sendElapsedMs = ref(0)
   let _sendTimer = null
@@ -76,6 +79,30 @@ export function useChatEngine() {
   const { getWelcomeMessage } = useWelcomeMessage()
 
   /** 发送消息 */
+  /**
+   * 对话收尾给一个可点的下一步（3.5.13）
+   * 条件：本轮没有待确认操作、没有轻追问 chips、非模拟演练、今天还没给过、确实有候选
+   */
+  function offerNextStep() {
+    if (nextStep.value) return
+    if (simulationMode.value) return
+    if (currentSuggestions.value.length > 0) return
+    try {
+      if (!shouldOfferNextStep()) return
+      const item = pickNextStep()
+      if (!item) return
+      nextStep.value = item
+      markNextStepShown()
+    } catch (e) {
+      /* 保守：单卡失败不影响对话 */
+    }
+  }
+
+  /** 用户点掉单卡 */
+  function clearNextStep() {
+    nextStep.value = null
+  }
+
   async function handleSend(text, inputAreaRef, scrollToBottom, imageData, scrollHelpers, sendOpts = {}) {
     const message = text || ''
     if (!message || isSending.value) return
@@ -84,6 +111,7 @@ export function useChatEngine() {
       : ''
     const plainMessage = sendInstr ? `${message}\n\n${sendInstr}` : message
     currentSuggestions.value = []
+    nextStep.value = null
     if (!store.hasApiKey) {
       uni.showToast({ title: '请先在设置中配置 API Key', icon: 'none' })
       return
@@ -396,6 +424,7 @@ export function useChatEngine() {
           currentSuggestions.value = pickSuggestions(result, reply)
         }
       }
+      offerNextStep()
       if (result.conversation_id) store.setConversationId(result.conversation_id)
 
       // 长期记忆
@@ -481,6 +510,7 @@ export function useChatEngine() {
 
   return {
     isSending, stopSignal, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
+    nextStep, clearNextStep,
     simulationMode,
     getWelcomeMessage, handleSend, handleStop, handleRetry,
     handleConfirmAction, handleCancelAction, initSimulation

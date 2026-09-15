@@ -20,11 +20,13 @@ import { useChatEngine } from '@/composables/useChatEngine.js'
 import { useScrollControl } from '@/composables/useScrollControl.js'
 import { useConversationManager } from '@/composables/useConversationManager.js'
 import { useRetryBar } from '@/composables/useRetryBar.js'
+import { useChatSession } from '@/composables/useChatSession.js'
 import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
 import { useEnterSummary } from '@/composables/useEnterSummary.js'
-import { formatSummaryTime } from '@/utils/enter-summary.js'
+import { formatSummaryTime, formatAwaySpan } from '@/utils/enter-summary.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
+import { useChatRuler } from '@/composables/useChatRuler.js'
 
 const store = useAppStore()
 const inputText = ref('')
@@ -33,6 +35,7 @@ const inputAreaRef = ref(null)
 // ===== 聊天核心逻辑 =====
 const {
   isSending, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
+  nextStep, clearNextStep,
   simulationMode,
   getWelcomeMessage, handleSend: engineSend, handleStop: engineStop, handleRetry: engineRetry,
   handleConfirmAction, handleCancelAction, initSimulation
@@ -80,7 +83,7 @@ function handleRephraseReply() {
   engineRetry({ appendInstruction: REPHRASE_HINT }, inputAreaRef, scrollToBottom, chatScrollHelpers)
 }
 
-// ===== 冷启动进入总结卡片（3.4.5）=====
+// ===== 进入总结卡片（3.4.5 冷启动 / 3.5.12 回前台增量）=====
 const { pending: enterSummary, dismiss: dismissEnterSummary } = useEnterSummary()
 const enterSummaryEvents = computed(() => {
   const s = enterSummary.value
@@ -99,6 +102,26 @@ const enterSummaryExtra = computed(() => {
 const enterSummaryDiary = computed(() => (enterSummary.value && enterSummary.value.diaryCount) || 0)
 // 3.5.3：全局连续打卡天数（计划打卡日期的并集，从今天/昨天向前数）
 const enterSummaryStreak = computed(() => (enterSummary.value && enterSummary.value.streak) || 0)
+// 3.5.12：回前台增量换标题 + 标出离开时长（冷启动保持原文案；「刚刚」不显示时长）
+const enterSummaryHead = computed(() => {
+  const s = enterSummary.value
+  if (!s) return ''
+  return s.source === 'away' ? '欢迎回来 · 这段时间的进展' : '回来啦 · 新进展小结'
+})
+// 3.5.13：连续两天记录低落 → 只提醒休息，不催进度、不评分
+const enterSummaryMood = computed(() => !!(enterSummary.value && enterSummary.value.moodDip))
+// 3.5.14：每周账单播报（本周支出 / 主要花在哪 / 比上周）
+const enterSummaryBill = computed(() => {
+  const s = enterSummary.value
+  return (s && s.weekBill && s.weekBill.text) || ''
+})
+const enterSummarySpan = computed(() => {
+  const s = enterSummary.value
+  if (!s) return ''
+  const span = formatAwaySpan(s.awayMs)
+  if (!span || span === '刚刚') return ''
+  return s.source === 'away' ? ('离开 ' + span) : ('距上次小结 ' + span)
+})
 function openEnterSummaryDetail() {
   const s = enterSummary.value
   const goPlan = !!s && s.eventsTotal > 0
@@ -115,6 +138,17 @@ const {
   handleRenameConversation, handleAddTag
 } = useConversationManager(store, getWelcomeMessage, resetScrollState)
 
+// ===== 冷启动新对话 + 新对话空态入口（3.5.16）=====
+const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, maybeStartFreshSession } =
+  useChatSession(store, getWelcomeMessage)
+
+function handleResumeBack() {
+  if (resumeBack()) resetScrollState()
+}
+function handleResumePick() {
+  toggleConvList()
+}
+
 // ===== 重试栏 + 网络横幅 =====
 const {
   showRetryBar, retryMessage, retryImage, pendingRetryData, retryTitle,
@@ -129,10 +163,12 @@ function handleRetryEdit() { _handleRetryEdit(inputAreaRef) }
 // 发送中切换/新建/删除会话 — 先停止当前请求，防止流式内容串写会话
 function handleNewConversation() {
   if (isSending.value) handleStop()
+  resetRuler()
   _handleNewConversation()
 }
 function handleSwitchConversation(id) {
   if (isSending.value) handleStop()
+  resetRuler()
   _handleSwitchConversation(id)
 }
 function handleDeleteConversation(conv) {
@@ -151,9 +187,21 @@ const { handleConfirmActionCard } = useChatNavigation()
 // ===== 虚拟消息列表 =====
 const allMessages = computed(() => store.messages)
 const {
-  visibleMessages, hasMore, isLoadingMore,
+  visibleMessages, hasMore, isLoadingMore, visibleCount,
   checkLoadMore: _checkLoadMore, reset: resetVirtual, toVisibleIndex, toGlobalIndex
 } = useVirtualMessages(allMessages)
+// ===== 对话尺（3.5.17）：消息够长时左侧出现刻度尺，点/拖快速跳转 =====
+const {
+  rulerVisible, rulerTicks, rulerActiveKey,
+  rulerViewportStyle, rulerPreview, rulerPreviewStyle,
+  syncRulerScroll, resetRuler,
+  handleRulerTouchStart, handleRulerTouchMove, handleRulerTouchEnd, handleRulerTap
+} = useChatRuler({
+  allMessages,
+  visibleCount,
+  scrollIntoView,
+  scrollWithAnim
+})
 
 // ===== 滚动事件 wrapper（叠加虚拟列表加载检查） =====
 const _origHandleScroll = handleScroll
@@ -161,11 +209,15 @@ function wrappedHandleScroll(e) {
   _origHandleScroll(e)
   const { scrollTop, scrollHeight } = e.detail
   _checkLoadMore(scrollTop, scrollHeight)
+  syncRulerScroll(e)
 }
 
 // ===== 页面生命周期 =====
+let _deepLinkSim = false
+
 onLoad((options) => {
   if (options && options.simulation) {
+    _deepLinkSim = true
     initSimulation({
       simulation: options.simulation,
       mode: options.mode || 'social',
@@ -182,11 +234,21 @@ let _pendingSimParams = null
 const _simHandler = (params) => { _pendingSimParams = params }
 uni.$on('init-simulation', _simHandler)
 
+// 外部页面投递一段待发送文本（关系页起草回复等）：先进缓冲区，onShow 时落到输入框
+let _pendingPrefill = ''
+const _prefillHandler = (text) => { if (text) _pendingPrefill = String(text) }
+uni.$on('prefill-input', _prefillHandler)
+
 onShow(() => {
   if (_pendingSimParams) {
     const params = _pendingSimParams
     _pendingSimParams = null
     initSimulation(params)
+  }
+  if (_pendingPrefill) {
+    const text = _pendingPrefill
+    _pendingPrefill = ''
+    nextTick(() => { if (inputAreaRef.value) inputAreaRef.value.setText(text) })
   }
   syncAllMessageTags()
   resetVirtual()
@@ -200,6 +262,7 @@ onShow(() => {
 
 onHide(() => {
   _pendingSimParams = null
+  _pendingPrefill = ''
   stopStreamScroll()
 })
 
@@ -228,6 +291,14 @@ function handleStop() {
 function handleSuggestion(text) {
   currentSuggestions.value = []
   handleSend(text)
+}
+
+// 3.5.13：最小行动单卡 —— 点进计划详情，或直接关掉
+function handleNextStep() {
+  const item = nextStep.value
+  clearNextStep()
+  if (!item) return
+  uni.navigateTo({ url: '/pages/plan/detail?clientId=' + item.client_id })
 }
 
 function handleEditOwn(content) {
@@ -325,6 +396,8 @@ watch(showModelSwitch, (v, prev) => {
 
 // ===== onMounted =====
 onMounted(() => {
+  // 冷启动：清空壳 → 停在一条新对话上（回前台不触发，避免打断打字）
+  maybeStartFreshSession({ pendingSimulation: !!_pendingSimParams || _deepLinkSim })
   // 保护：如果 activeConversationId 指向的会话不存在（数据损坏/迁移），强制创建
   if (!store.activeConversation) {
     store.createConversation()
@@ -354,6 +427,7 @@ onMounted(() => {
 onUnmounted(() => {
   uni.$off('welcome-chip-tap', handleWelcomeChip)
   uni.$off('init-simulation', _simHandler)
+  uni.$off('prefill-input', _prefillHandler)
 })
 
 function handleWelcomeChip(text) {
@@ -388,11 +462,12 @@ function handleWelcomeChip(text) {
       </view>
     </view>
 
-    <!-- 冷启动进入总结卡片（3.4.5：计划完成/打卡 + 新增记录） -->
+    <!-- 进入总结卡片（3.4.5 冷启动 / 3.5.12 回前台增量：计划完成/打卡 + 新增记录） -->
     <view v-if="enterSummary" class="summary-card">
       <view class="summary-head">
         <view class="summary-badge" />
-        <text class="summary-head-title">回来啦 · 新进展小结</text>
+        <text class="summary-head-title">{{ enterSummaryHead }}</text>
+        <text v-if="enterSummarySpan" class="summary-head-meta">{{ enterSummarySpan }}</text>
       </view>
       <view class="summary-list">
         <view v-for="(ev, ei) in enterSummaryEvents" :key="ei" class="summary-line">
@@ -410,6 +485,14 @@ function handleWelcomeChip(text) {
         <view v-if="enterSummaryStreak >= 2" class="summary-line">
           <text class="summary-kind kind-streak">连续</text>
           <text class="summary-line-title">已连续打卡 {{ enterSummaryStreak }} 天</text>
+        </view>
+        <view v-if="enterSummaryMood" class="summary-line">
+          <text class="summary-kind kind-mood">休息</text>
+          <text class="summary-line-title">这两天记录里写着低落，今天慢一点也算数</text>
+        </view>
+        <view v-if="enterSummaryBill" class="summary-line">
+          <text class="summary-kind kind-bill">账</text>
+          <text class="summary-line-title">{{ enterSummaryBill }}</text>
         </view>
       </view>
       <view class="summary-actions">
@@ -445,43 +528,107 @@ function handleWelcomeChip(text) {
       <text class="sim-banner-hint">说「复盘」结束</text>
     </view>
 
-    <!-- 消息列表 -->
-    <scroll-view 
-      id="chat-scroll" 
-      class="chat-scroll" 
-      scroll-y 
-      :scroll-with-animation="scrollWithAnim" 
-      :scroll-top="scrollTopValue" 
-      :scroll-into-view="scrollIntoView"
-      @scroll="wrappedHandleScroll"
-    >
-      <!-- 加载更多提示 -->
-      <view v-if="hasMore" class="load-more-hint">
-        <text v-if="isLoadingMore">加载中...</text>
-        <text v-else>上拉加载更多</text>
+    <!-- 消息区：滚动列表 + 对话尺（3.5.17） -->
+    <view class="messages-wrap" :class="{ 'has-ruler': rulerVisible }">
+      <scroll-view 
+        id="chat-scroll" 
+        class="chat-scroll" 
+        scroll-y 
+        :scroll-with-animation="scrollWithAnim" 
+        :scroll-top="scrollTopValue" 
+        :scroll-into-view="scrollIntoView"
+        @scroll="wrappedHandleScroll"
+      >
+        <!-- 加载更多提示 -->
+        <view v-if="hasMore" class="load-more-hint">
+          <text v-if="isLoadingMore">加载中...</text>
+          <text v-else>上拉加载更多</text>
+        </view>
+        <view class="messages-list">
+          <view
+            v-for="(msg, vi) in visibleMessages" :key="toGlobalIndex(vi)"
+            :id="'msg-' + toGlobalIndex(vi)"
+            class="msg-anchor"
+          >
+            <MessageBubble
+            :message="msg"
+            :prev-role="vi > 0 ? visibleMessages[vi - 1].role : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].role : '')"
+            :is-last="vi === visibleMessages.length - 1"
+            :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
+            @confirm-action="handleConfirmActionCard"
+            @confirm-pending="handleConfirmAction"
+            @cancel-pending="handleCancelAction"
+            @update-tags="handleUpdateTags"
+            @edit-own="handleEditOwn"
+            @regenerate="handleRegenerateReply"
+            @rephrase="handleRephraseReply"
+          />
+          </view>
+          <!-- 新对话空态：回去接着聊 / 选择历史对话（3.5.16，可关） -->
+          <view v-if="resumeVisible && !simulationMode" class="resume-card">
+            <view class="resume-head">
+              <text class="resume-label">这是新对话</text>
+              <view class="resume-close" @tap="dismissResume">
+                <text class="resume-close-icon">×</text>
+              </view>
+            </view>
+            <view class="resume-main" @tap="handleResumeBack">
+              <text class="resume-title">{{ resumeTarget.title || '上次的对话' }}</text>
+              <text class="resume-meta">{{ resumeAge }}<text v-if="resumeCount > 0"> · {{ resumeCount }} 条消息</text></text>
+            </view>
+            <view class="resume-actions">
+              <view class="resume-btn resume-btn-primary" @tap="handleResumeBack">回去接着聊</view>
+              <view class="resume-btn" @tap="handleResumePick">选择历史对话</view>
+            </view>
+          </view>
+
+          <view id="chat-bottom" style="height: 16rpx" />
+        </view>
+      </scroll-view>
+
+      <!-- 对话尺：消息够长时出现在聊天区左侧，轻点/拖动刻度即可跳转 -->
+      <view
+        v-if="rulerVisible"
+        id="chat-ruler"
+        class="chat-ruler"
+        @touchstart="handleRulerTouchStart"
+        @touchmove="handleRulerTouchMove"
+        @touchend="handleRulerTouchEnd"
+        @touchcancel="handleRulerTouchEnd"
+        @tap="handleRulerTap"
+      >
+        <view id="chat-ruler-track" class="ruler-track">
+          <view class="ruler-viewport" :style="rulerViewportStyle" />
+          <view
+            v-for="t in rulerTicks" :key="t.key"
+            class="ruler-tick"
+            :class="{ 'tick-user': t.role === 'user', 'tick-active': t.key === rulerActiveKey }"
+            :style="{ top: t.percent + '%' }"
+          >
+            <view class="ruler-bar" />
+          </view>
+          <view v-if="rulerPreview" class="ruler-preview" :style="rulerPreviewStyle">
+            <text class="ruler-preview-text">{{ rulerPreview.label }}</text>
+          </view>
+        </view>
       </view>
-      <view class="messages-list">
-        <MessageBubble
-          v-for="(msg, vi) in visibleMessages" :key="toGlobalIndex(vi)"
-          :message="msg"
-          :prev-role="vi > 0 ? visibleMessages[vi - 1].role : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].role : '')"
-          :is-last="vi === visibleMessages.length - 1"
-          :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
-          @confirm-action="handleConfirmActionCard"
-          @confirm-pending="handleConfirmAction"
-          @cancel-pending="handleCancelAction"
-          @update-tags="handleUpdateTags"
-          @edit-own="handleEditOwn"
-          @regenerate="handleRegenerateReply"
-          @rephrase="handleRephraseReply"
-        />
-        <view id="chat-bottom" style="height: 16rpx" />
-      </view>
-    </scroll-view>
+    </view>
 
     <!-- 回到底部按钮 -->
     <view v-if="showBackToBottom" class="back-to-bottom" @tap="backToBottom">
       <SijiIcon name="arrow-down" size="sm" color="#71717A" />
+    </view>
+
+    <!-- 对话后的最小行动单卡（3.5.13：每天最多一次，可关，不追问） -->
+    <view v-if="nextStep && !isSending" class="next-step-card">
+      <view class="next-step-main" @tap="handleNextStep">
+        <text class="next-step-label">今天可以从这件开始</text>
+        <text class="next-step-title">{{ nextStep.title }}</text>
+        <text v-if="nextStep.minutes > 0" class="next-step-meta">约 {{ nextStep.minutes }} 分钟</text>
+      </view>
+      <view class="next-step-close" @tap="clearNextStep">
+        <text class="next-step-close-icon">×</text>
+      </view>
     </view>
 
     <!-- 快捷建议按钮 -->

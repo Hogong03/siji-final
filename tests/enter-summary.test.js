@@ -1,8 +1,11 @@
 /**
- * enter-summary.js 测试（3.4.5：冷启动进入总结，纯函数口径）
+ * enter-summary.js 测试（3.4.5：冷启动进入总结，纯函数口径 / 3.5.12：回前台增量窗口裁决）
  */
 import { describe, it, expect } from 'vitest'
-import { buildEnterSummary, monthsBetween, monthKeyOf, formatSummaryTime, calcGlobalStreak } from '@/utils/enter-summary.js'
+import {
+  buildEnterSummary, monthsBetween, monthKeyOf, formatSummaryTime, calcGlobalStreak,
+  resolveSummaryWindow, formatAwaySpan, SUMMARY_QUIET_MS, scanMoodDip
+} from '@/utils/enter-summary.js'
 
 const T0 = new Date(2026, 8, 9, 8, 0, 0).getTime() // 2026-09-09 08:00
 const DAY = 24 * 60 * 60 * 1000
@@ -159,5 +162,127 @@ describe('calcGlobalStreak：全局连续打卡天数（3.5.3）', () => {
     const r = buildEnterSummary({ plans, since: T0 - DAY - 1000, now })
     expect(r.streak).toBe(2)
     expect(r.eventsTotal).toBe(2)
+  })
+})
+
+describe('resolveSummaryWindow：回前台增量窗口裁决（3.5.12）', () => {
+  const NOW = new Date(2026, 8, 14, 10, 0, 0).getTime()
+  const MIN = 60 * 1000
+
+  it('离开基线晚于确认基线时优先用它，awayMs 为真实离开时长', () => {
+    const r = resolveSummaryWindow({
+      confirmBaseline: NOW - 5 * 60 * MIN,
+      leaveBaseline: NOW - 30 * MIN,
+      now: NOW
+    })
+    expect(r).toMatchObject({ skip: false, reason: 'ready', since: NOW - 30 * MIN, awayMs: 30 * MIN })
+  })
+
+  it('进程被杀没写离开基线时回落确认基线', () => {
+    const r = resolveSummaryWindow({ confirmBaseline: NOW - 2 * MIN, leaveBaseline: 0, now: NOW })
+    expect(r).toMatchObject({ skip: false, reason: 'ready', since: NOW - 2 * MIN, awayMs: 2 * MIN })
+  })
+
+  it('已有未读卡片时不重算，避免叠卡', () => {
+    const r = resolveSummaryWindow({
+      confirmBaseline: NOW - MIN, leaveBaseline: NOW - MIN, now: NOW, hasPending: true
+    })
+    expect(r.skip).toBe(true)
+    expect(r.reason).toBe('pending')
+  })
+
+  it('60s 内重复回前台被节流，超过间隔放行；本会话没算过时直接放行', () => {
+    const base = { confirmBaseline: NOW - 10 * MIN, leaveBaseline: NOW - 10 * MIN, now: NOW }
+    expect(resolveSummaryWindow({ ...base, lastCalcAt: NOW - 20 * 1000 }))
+      .toMatchObject({ skip: true, reason: 'throttled' })
+    expect(resolveSummaryWindow({ ...base, lastCalcAt: NOW - 61 * 1000 }).skip).toBe(false)
+    expect(resolveSummaryWindow({ ...base, lastCalcAt: 0 }).skip).toBe(false)
+    expect(SUMMARY_QUIET_MS).toBe(60 * 1000)
+  })
+
+  it('lastCalcAt 落在未来（设备时钟回拨）时不节流', () => {
+    const r = resolveSummaryWindow({
+      confirmBaseline: NOW - 10 * MIN, leaveBaseline: NOW - 10 * MIN, now: NOW, lastCalcAt: NOW + 5 * MIN
+    })
+    expect(r.skip).toBe(false)
+    expect(r.awayMs).toBe(10 * MIN)
+  })
+
+  it('节流间隔可自定义', () => {
+    const base = { confirmBaseline: NOW - MIN, leaveBaseline: NOW - MIN, now: NOW, lastCalcAt: NOW - 5 * 1000 }
+    expect(resolveSummaryWindow({ ...base, quietMs: 1000 }).skip).toBe(false)
+  })
+
+  it('基线未武装（首次升级）时不弹历史，且不给出窗口', () => {
+    const r = resolveSummaryWindow({ confirmBaseline: 0, leaveBaseline: NOW - MIN, now: NOW })
+    expect(r).toMatchObject({ skip: true, reason: 'unarmed', since: 0, awayMs: 0 })
+  })
+
+  it('基线晚于当前时间（时钟回拨）时跳过', () => {
+    const r = resolveSummaryWindow({
+      confirmBaseline: NOW + MIN, leaveBaseline: NOW + MIN, now: NOW, lastCalcAt: NOW - 5 * MIN
+    })
+    expect(r).toMatchObject({ skip: true, reason: 'skew' })
+  })
+})
+
+describe('formatAwaySpan：离开时长文案（3.5.12）', () => {
+  it('分档输出，非法输入给空串', () => {
+    expect(formatAwaySpan(0)).toBe('')
+    expect(formatAwaySpan(-1)).toBe('')
+    expect(formatAwaySpan(NaN)).toBe('')
+    expect(formatAwaySpan(30 * 1000)).toBe('刚刚')
+    expect(formatAwaySpan(20 * 60 * 1000)).toBe('20 分钟')
+    expect(formatAwaySpan(3 * 60 * 60 * 1000)).toBe('3 小时')
+    expect(formatAwaySpan(50 * 60 * 60 * 1000)).toBe('2 天')
+  })
+})
+
+describe('scanMoodDip：连续两天低落（3.5.13）', () => {
+  const NOW = new Date(2026, 8, 14, 20, 0, 0).getTime()
+  const DAY = 24 * 60 * 60 * 1000
+  const SINCE = NOW - 3 * DAY
+
+  function readerOf(list) {
+    return (month) => (month === '2026-09' ? list : [])
+  }
+  function entry(id, at, emotion, extra) {
+    return Object.assign({ client_id: id, created_at: at, is_deleted: 0, emotion: emotion }, extra)
+  }
+
+  it('最近两个记录日都是低落 → true', () => {
+    const list = [entry('a', NOW - DAY, '低落'), entry('b', NOW - 3600 * 1000, '低落')]
+    expect(scanMoodDip({ since: SINCE, now: NOW, diaryReader: readerOf(list) })).toBe(true)
+  })
+
+  it('只有一天低落 → false', () => {
+    const list = [entry('a', NOW - DAY, '低落'), entry('b', NOW - 3600 * 1000, '平静')]
+    expect(scanMoodDip({ since: SINCE, now: NOW, diaryReader: readerOf(list) })).toBe(false)
+  })
+
+  it('两个记录日不相邻（中间断档）→ false', () => {
+    const list = [entry('a', NOW - 3 * DAY, '低落'), entry('b', NOW - 3600 * 1000, '低落')]
+    expect(scanMoodDip({ since: SINCE, now: NOW, diaryReader: readerOf(list) })).toBe(false)
+  })
+
+  it('同一天多条要全部低落才算', () => {
+    const list = [
+      entry('a', NOW - DAY, '低落'),
+      entry('b', NOW - 2 * 3600 * 1000, '低落'),
+      entry('c', NOW - 3600 * 1000, '平静')
+    ]
+    expect(scanMoodDip({ since: SINCE, now: NOW, diaryReader: readerOf(list) })).toBe(false)
+  })
+
+  it('窗口外、已删除、无情绪字段都不计，缺基线或缺 reader → false', () => {
+    const list = [
+      entry('old', NOW - 10 * DAY, '低落'),
+      entry('del', NOW - DAY, '低落', { is_deleted: 1 }),
+      entry('noemo', NOW - 3600 * 1000, '低落', { emotion: '' })
+    ]
+    const reader = readerOf(list)
+    expect(scanMoodDip({ since: SINCE, now: NOW, diaryReader: reader })).toBe(false)
+    expect(scanMoodDip({ since: 0, now: NOW, diaryReader: reader })).toBe(false)
+    expect(scanMoodDip({ since: SINCE, now: NOW })).toBe(false)
   })
 })

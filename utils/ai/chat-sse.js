@@ -7,6 +7,7 @@
 import { getProvider, supportsStreamStructuredOutput, getReasoningConfig } from './providers.js'
 import { parseAiResponse } from './response-parser.js'
 import { buildChatMessages, getRecentHistory } from './chat-helpers.js'
+import { chatRequest as chatRequestNonStream } from './chat-request.js'
 import { simulatedStream } from './chat-simulated.js'
 import { logger } from '../logger.js'
 // ==================== 真实 SSE 流式（H5）====================

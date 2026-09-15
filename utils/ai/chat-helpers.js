@@ -10,6 +10,7 @@ import { buildRelationsContext, detectMentionedRelations } from '@/utils/relatio
 import { buildDecisionsContext } from '@/utils/decisions.js'
 import { buildPlanContext } from '@/utils/plan-context.js'
 import { energyScan } from '@/utils/energy-context.js'
+import { buildProgressDigest } from '@/utils/progress-digest.js'
 import { buildVisionMessage } from '@/utils/image.js'
 import { logger } from '../logger.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
@@ -91,6 +92,12 @@ export function buildChatMessages(userMessage, history, cfg) {
   const planCtx = buildPlanContext(userMessage, energy.level === 'low' || energy.level === 'very_low' ? { noNudge: true } : undefined)
   if (planCtx) {
     system += planCtx
+  }
+
+  // 3.5.13：动静摘要 — 上次结算以来的完成/打卡/新增记录，让 AI 续得上「你不在时」发生的事
+  const progressDigest = buildProgressDigest()
+  if (progressDigest) {
+    system += progressDigest
   }
 
   // 不再单独注入 detectMentionedRelations，避免重复

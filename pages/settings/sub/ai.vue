@@ -6,7 +6,11 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getConfiguredProviderIds, supportsVision } from '@/utils/api.js'
+import {
+  AI_PROVIDERS, getProviderDefaultModel, chatRequest, isOnline, getConfiguredProviderIds, supportsVision,
+  listSearchBackends, isSearchEnabled, setSearchEnabled, getSearchBackendId, setSearchBackend,
+  setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig, searchStatusText
+} from '@/utils/api.js'
 // getApiKey 已废弃 — 直接从 store.providerKeys 读取（已由 crypto.js 解密）
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
@@ -102,6 +106,55 @@ function loadCustomProviders() {
 
 function saveCustomProviders() {
   asyncSetStorageJSON('siji_custom_providers', customProviders.value)
+}
+
+/* ---- 联网搜索（3.5.18：搜索后端与聊天厂商解耦） ---- */
+const searchBackends = listSearchBackends()
+const searchEnabled = ref(isSearchEnabled())
+const searchBackendId = ref(getSearchBackendId())
+const searchKeyInput = ref('')
+const searchOwnKeyConfigured = ref(hasOwnSearchKey())
+const searchStatus = ref(searchStatusText())
+const currentSearchBackend = computed(
+  () => searchBackends.find(b => b.id === searchBackendId.value) || searchBackends[0]
+)
+
+function refreshSearchStatus() {
+  searchStatus.value = searchStatusText()
+  searchOwnKeyConfigured.value = hasOwnSearchKey()
+}
+
+function toggleWebSearch() {
+  searchEnabled.value = !searchEnabled.value
+  setSearchEnabled(searchEnabled.value)
+  refreshSearchStatus()
+}
+
+function chooseSearchBackend(id) {
+  if (searchBackendId.value === id) return
+  searchBackendId.value = id
+  setSearchBackend(id)
+  searchKeyInput.value = ''
+  refreshSearchStatus()
+}
+
+function saveSearchKey() {
+  const value = searchKeyInput.value.trim()
+  if (!value) {
+    uni.showToast({ title: '请先填写 Key', icon: 'none' })
+    return
+  }
+  setOwnSearchKey(value)
+  searchKeyInput.value = ''
+  refreshSearchStatus()
+  uni.showToast({ title: '已保存', icon: 'success' })
+}
+
+function clearSearchKey() {
+  setOwnSearchKey('')
+  searchKeyInput.value = ''
+  refreshSearchStatus()
+  uni.showToast({ title: '已清除', icon: 'none' })
 }
 
 /* ---- 厂商选择 ---- */
@@ -399,6 +452,55 @@ async function testConnection() {
       <view class="form-actions">
         <button class="btn-cancel" @tap="showCustomForm = false">取消</button>
         <button class="btn-save" @tap="saveCustomProvider">保存并切换</button>
+      </view>
+    </view>
+
+    <!-- 联网搜索：搜索后端独立于聊天厂商 -->
+    <view class="search-card">
+      <view class="search-head">
+        <view class="search-head-text">
+          <text class="search-title">联网搜索</text>
+          <text class="search-subtitle">{{ searchStatus }}</text>
+        </view>
+        <view class="search-switch" :class="{ on: searchEnabled }" @tap="toggleWebSearch">
+          <view class="search-knob" />
+        </view>
+      </view>
+
+      <text class="search-hint">搜索走独立后端，与聊天厂商无关：聊天用 DeepSeek / 通义 / Kimi 都能联网。开启后 AI 询问时效性信息时会自动搜索。</text>
+
+      <view class="search-backend-list">
+        <view
+          v-for="b in searchBackends"
+          :key="b.id"
+          class="search-backend"
+          :class="{ active: searchBackendId === b.id }"
+          @tap="chooseSearchBackend(b.id)"
+        >
+          <view class="search-backend-main">
+            <text class="search-backend-name">{{ b.name }}</text>
+            <text class="search-backend-desc">{{ b.desc }}</text>
+          </view>
+          <view class="search-check" v-if="searchBackendId === b.id">
+            <text>✓</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="config-section">
+        <text class="config-label">{{ currentSearchBackend.keyLabel }}</text>
+        <text class="config-hint">{{ currentSearchBackend.providerId ? '留空即自动复用同名 AI 厂商 Key' : '该后端需单独填写 Key' }}</text>
+        <view class="key-input-row">
+          <input
+            v-model="searchKeyInput"
+            class="key-input"
+            type="password"
+            :placeholder="currentSearchBackend.keyPlaceholder"
+            maxlength="200"
+          />
+          <text class="key-action save" @tap="saveSearchKey">保存</text>
+          <text v-if="searchOwnKeyConfigured" class="key-action test" @tap="clearSearchKey">清除</text>
+        </view>
       </view>
     </view>
 

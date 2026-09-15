@@ -165,6 +165,7 @@ export const useAppStore = defineStore('app', () => {
     setConversationId: chat.setConversationId,
     createConversation: createConversationWithAgent,
     switchConversation: chat.switchConversation,
+    pruneEmptyConversations: chat.pruneEmptyConversations,
     deleteConversation: chat.deleteConversation,
     renameConversation: chat.renameConversation,
     addTagToConversation: chat.addTagToConversation,

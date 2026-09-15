@@ -36,6 +36,11 @@
         <text class="section-text">{{ relation.notes }}</text>
       </view>
 
+      <!-- 回一条：三条可延后不消失的草稿 -->
+      <view class="section">
+        <ReplyDrafts :relation="relation" />
+      </view>
+
       <!-- 互动记录 -->
       <view class="section">
         <view class="section-header">
@@ -142,6 +147,7 @@ import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getRelationById, getInteractions, logInteraction, deleteRelation, updateRelation } from '@/utils/relations.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import ReplyDrafts from '@/components/relation/ReplyDrafts.vue'
 
 const relationId = ref('')
 const relation = ref(null)

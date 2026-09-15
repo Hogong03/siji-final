@@ -2,7 +2,7 @@
 
 > 本文件供 AI 编码助手（Codex/Claude/Cursor 等）快速接手项目开发。
 > 包含项目架构、核心约定、代码风格、禁用项、关键模块索引。
-> 最后更新：2026-09-13
+> 最后更新：2026-09-14
 
 ---
 
@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 45 文件 / 530 用例全通过，Vitest 框架 |
-| 版本 | v3.5.10（介绍网站新增 44 秒介绍片：滚到静音播、滚走暂停，1080p 无音轨） |
+| 测试 | 60 文件 / 784 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.5.18（记忆检索语义扩展：同义分组 + 拼音桥接；联网搜索与聊天厂商解耦，搜索后端独立配置。含 3.5.17 的对话尺、3.5.16 的每次进来都是新对话、3.5.15 的白屏修复、3.5.14 的账单播报与记忆拆分） |
 
 ---
 
@@ -40,14 +40,17 @@
 ├── components/         # 全局组件
 │   ├── chat/           # 对话相关（MessageBubble/ExecResultCard/ConversationPanel/OnboardingGuide/MarkdownRenderer/InputArea）
 │   ├── bill/           # 账单组件
-│   ├── common/         # 通用组件（SijiIcon/VirtualList 等）
+│   ├── common/         # 通用组件（SijiIcon/VirtualList/SocialQuotaBar 等）
+│   ├── relation/       # 人脉组件（ReplyDrafts：回一条草稿）
 │   └── plan/           # 计划组件
 ├── composables/        # 组合式函数
-│   ├── useChatEngine.js  # 聊天引擎（345 行，核心）
+│   ├── useChatEngine.js  # 聊天引擎（518 行，核心，待拆）
 │   ├── useDiaryList.js   # 记录列表逻辑
 │   ├── useDiaryAI.js     # 记录 AI 摘要/改写
 │   ├── useTagPicker.js   # 标签选择器
-│   └── useDiaryImages.js # 记录图片管理
+│   ├── useDiaryImages.js # 记录图片管理
+│   ├── useChatSession.js # 冷启动新对话编排（3.5.16）
+│   └── useChatRuler.js   # 对话尺：滚动同步与触摸跳转（3.5.17）
 ├── store/              # Pinia 状态管理
 │   ├── data.js         # 数据操作 Store（AI 执行分发 + 撤销栈 + 就地编辑）
 │   ├── executors/      # 按领域拆分的 executor
@@ -72,6 +75,8 @@
 │   │   ├── providers.js        # 4 厂商注册表
 │   │   ├── chat-helpers.js     # 消息构建
 │   │   ├── chat-store.js       # 聊天会话存储
+│   │   ├── search-adapters.js  # 联网搜索后端注册表（3.5.18）
+│   │   ├── search-config.js    # 联网搜索开关 / 后端 / Key 裁决（3.5.18）
 │   │   └── constants.js        # 共享正则与类型映射
 │   ├── storage/        # 存储层（按领域分文件）
 │   │   ├── diary.js    # 记录存储（按月分片 diary_YYYY-MM）
@@ -85,6 +90,20 @@
 │   │   ├── search.js   # 搜索索引
 │   │   ├── export.js   # 数据导出
 │   │   └── helpers.js  # 存储工具函数
+│   ├── memory/         # 长期记忆分模块（3.5.14 从 692 行单文件拆出）
+│   │   ├── store.js          # CRUD + 开关 + 过期清理
+│   │   ├── normalize.js      # 文本归一化（去重与治理共用）
+│   │   ├── governance.js     # 合并 / 隐藏 / 删除 / 归类修正
+│   │   ├── context.js        # buildMemoryContext（注入提示词的摘要）
+│   │   ├── profile-values.js # 画像字段值（过滤冗余记忆）
+│   │   ├── profile-link.js   # 记忆采纳进画像
+│   │   ├── monthly.js        # 月度记忆卡
+│   │   └── auto-extract.js   # 对话后提取 + AI 摘要
+│   ├── memory.js       # 长期记忆门面（只做转出，60 行）
+│   ├── memory-synonyms.js # 记忆语义扩展：同义分组 34 组 + 拼音词表 47 词（3.5.18）
+│   ├── chat-session.js # 冷启动新对话判定（3.5.16）
+│   ├── chat-ruler.js   # 对话尺纯计算：阈值 / 刻度 / 视口（3.5.17）
+│   ├── social-quota.js # 社交额度与回复草稿（3.5.14）
 │   ├── reminder/       # 提醒模块
 │   ├── crypto.js       # API Key 加解密（XOR+Base64）
 │   ├── logger.js       # 日志
@@ -93,7 +112,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（15 文件 94 用例）
+├── tests/              # 测试（60 文件 784 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -288,8 +307,10 @@ npx vitest run
 ### P1（高优先）
 
 - [x] 补核心业务测试（executors 14 例 + prompt-builder 11 例；stream-parser/chat-store 待补）
-- [ ] 拆分 reminder.js（426 行，ROI 最高）
+- [x] 拆分 reminder.js（已完成：现 65 行 + `utils/reminder/` 目录）
 - [ ] 标签种类管理 UI 适配（detail.vue 标签选择器增加种类分组）
+- [ ] 真机验收 3.5.18 联网搜索设置卡片（开关 / 后端切换 / Key 保存清除）+ H5 渲染截图留存
+- [ ] Tavily 后端线上验证（代码与解析已被单测覆盖，尚未用真实 Key 跑过一次）
 - [ ] 真机验证 AI 纠错流程（先 query 再 update 的完整链路）
 
 ### P2
@@ -299,6 +320,11 @@ npx vitest run
 - [ ] 补全 SijiIcon 图标映射（缺 more/chat 等）
 - [ ] 真机验证清单 20 项
 - [ ] plan/index.vue 拆分
+- [ ] 真机验证对话尺（App 端 scroll-into-view 扩窗跳转与 touchmove 拖动；H5 已验收）
+- [x] 拆分 `utils/memory.js`（692 → 门面 60 行 + `utils/memory/` 八块；memory 系列 70 用例全绿）
+- [ ] 拆分 `composables/useChatEngine.js`（518 行）：`handleSend` 主体约 390 行（图片识别 → 流式 → pumpDisplay → 动作执行）抽到 `utils/ai/send-pipeline.js`，引擎只留状态与编排；抽完必须跑 `tests/agent-engine-smoke.test.js` + 真机发一轮图文消息
+- [ ] 拆分 UI 组件：`pages/chat/index.vue`（636 行）/ `components/plan/PlanChildPlans.vue`（591 行）/ `pages/settings/sub/memory.vue`（549 行）/ `pages/settings/sub/relations.vue`（385 行）/ `pages/settings/sub/relation-detail.vue`（368 行）；抽聊天页卡片前先读 AGENTS.md「注意事项」里的 scoped 样式约束，且必须真机验收
+- [x] 状态觉察之外的 P3：账单周播报三数字（`utils/bill-weekly.js`）、社交能量预算 + 回复草稿（`utils/social-quota.js`）——3.5.14 完成
 - [ ] response-parser.js 空回复兜底测试
 - [ ] voice recognition（需接原生插件）
 
@@ -323,6 +349,12 @@ npx vitest run
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 加测试 | `tests/xxx.test.js` |
+| 改每周账单播报 | `utils/bill-weekly.js` + `composables/useEnterSummary.js` + `pages/chat/index.vue` |
+| 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
+| 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
+| 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
+| 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |
+| 改长期记忆 | `utils/memory.js`（门面）→ `utils/memory/xxx.js` 对应职责文件 |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
 | 记录类型 | `pages/diary/detail.vue` RECORD_TYPES 常量 |
 

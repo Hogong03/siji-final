@@ -89,3 +89,13 @@ export {
   getDefaultConfig, buildProviderRequest,
   chatRequest, chatRequestStream, generateConversationTitle
 }
+
+// 3.5.18：联网搜索后端与聊天厂商解耦，配置读写统一从这里出（设置页 / Agent 注入门控共用）
+export {
+  SEARCH_BACKENDS, DEFAULT_SEARCH_BACKEND, getSearchBackend, listSearchBackends
+} from './ai/search-adapters.js'
+export {
+  SEARCH_KEYS, isSearchEnabled, setSearchEnabled, getSearchBackendId, setSearchBackend,
+  getOwnSearchKey, setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig,
+  isWebSearchAvailable, searchStatusText
+} from './ai/search-config.js'

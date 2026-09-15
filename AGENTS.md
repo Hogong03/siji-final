@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 45 文件 / 530 用例，Vitest，`npx vitest run` 实测全绿（exit 0） |
-| 版本 | v3.5.10（介绍网站新增 44 秒介绍片：滚到静音播、滚走暂停，1080p 无音轨） |
+| 测试 | 60 文件 / 784 用例，Vitest，`npx vitest run` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.5.18（记忆检索语义扩展：同义分组 + 拼音桥接；联网搜索与聊天厂商解耦，搜索后端独立配置。含 3.5.17 的对话尺、3.5.16 的每次进来都是新对话、3.5.15 的白屏修复、3.5.14 的账单播报与记忆拆分） |
 
 ---
 
@@ -124,8 +124,8 @@
 - **新增更新/删除类 action**：只加 CORE_ACTIONS（不给 Agent 自动执行）
 - **改完 action 后必须**：`bumpDataVersion()` 失效缓存 + 跑 `tests/action-schema-consistency.test.js`
 - 4 厂商均 `supportsToolCalling: true`
-- Agent 不做删除类破坏性操作（delete_* 未注册到 TOOL_DEFINITIONS）
-- `CONFIRM_TOOLS` 为空集；动态确认阈值：create_bill/update_bill 的 amount >= 500
+- Agent 不做删除类破坏性操作：TOOL_DEFINITIONS 只注册 `delete_feedback`，且它必须登记在 `CONFIRM_TOOLS`（开了「AI 自动执行写操作」也要确认）；今后新增 delete_* 必须同步登记 CONFIRM_TOOLS
+- `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500
 
 ---
 
@@ -138,12 +138,14 @@
 ├── composables/        # 组合式函数（useChatEngine/useDiaryList/useDiaryAI 等）
 ├── store/              # Pinia（data.js + executors/ + chat/）
 ├── utils/
-│   ├── ai/             # AI 核心引擎（agent-loop/tools/prompt-builder/response-parser/autoExecutor 等）
+│   ├── ai/             # AI 核心引擎（agent-loop/agent-transport/chat-sse/tools/prompt-builder/response-parser/autoExecutor/search-config/search-adapters 等）
+│   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
+│   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
 │   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.5.js）
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 45 文件 530 用例
+├── tests/              # 60 文件 784 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -172,9 +174,10 @@
 
 ### 工具注册表
 
-- 31 个工具：记录(5) + 账单(4) + 计划(4) + 个人信息(2) + 关系(3) + 决策(3) + 通用(1) + 反馈(5) + 标签(4)
-- QUERY_TOOLS（只读自动执行）：query_diary/bill/stat/plan/relation/decision/combined + get_profile + summarize_diaries + query_feedback/feedback_stats + query_tags
-- CONFIRM_TOOLS：空集
+- 37 个工具（实测 utils/ai/tools/ 下 14 个域文件）：记录(5) + 账单(4) + 计划(5) + 反馈(5) + 标签(4) + 关系(3) + 决策(3) + 个人信息(2) + 微光(2) + Agent(1) + 对话查询(1) + 撤销(1) + 联网(1)
+- QUERY_TOOLS（只读自动执行，15 个）：query_diary / query_bill / query_stat / query_plan / query_relation / query_decision / query_combined / get_profile / summarize_diaries / query_feedback / query_feedback_stats / query_tags / query_conversations / query_glimmers / web_search
+- CONFIRM_TOOLS：`delete_feedback`
+- web_search 注入门控与聊天厂商解耦（3.5.18）：由 `utils/ai/search-config.js` 的可用性裁决决定，不再是「只有智谱才注入」
 - 动态确认阈值：amount >= 500 需确认
 - executeTool() 分发：标签工具直接调 tags.js，其余走 store.executeAction()
 
@@ -188,10 +191,10 @@
 
 | 厂商 | 模型 | supportsResponseFormat | supportsToolCalling |
 |------|------|------------------------|---------------------|
-| DeepSeek | V4 Flash / V4 Pro | true | true |
-| 智谱 GLM | GLM-4 Flash / 4.7 Flash / 5.1 / 5.2 | false | true |
-| 通义千问 | Turbo / Max / Plus | false | true |
-| Moonshot | v1-8k / v1-32k | true | true |
+| DeepSeek | V4 Flash / V4 Pro / V4 Flash Vision(实验) | true | true |
+| 智谱 GLM | GLM-5.3 / 5.3 Flash / 5.2 / 5.1 / 4.7 Flash / 4 Flash | false | true |
+| 通义千问 | Qwen3.8 Flash / 3.7 Plus / 3.8 Max / 3.5 Omni Plus | false | true |
+| Moonshot | Kimi 3 / K2.7 Code / K2.7 Code 高速版 / K2.6 | true | true |
 
 ### 内置 Agent
 
@@ -243,6 +246,17 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改全局样式 | `uni.scss` + `App.vue` |
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
+| 改 Agent 入口判定 | `utils/ai/chat-stream.js` 的 `isClearlyCasual`（闲聊 / 工具循环分流） |
+| 改 Agent 请求传输 | `utils/ai/agent-transport.js`（超时 / 重试 / 流式三端分支） |
+| 改进入总结卡片 | `composables/useEnterSummary.js`（两条基线 + 节流）+ `utils/enter-summary.js`（窗口裁决/聚合/低落扫描）+ `pages/chat/index.vue` 卡片 |
+| 改 AI 动静摘要 | `utils/progress-digest.js`（组装）+ `utils/ai/chat-helpers.js`（buildChatMessages 注入点） |
+| 改冷启动新对话 | `utils/chat-session.js`（判定）+ `composables/useChatSession.js`（编排）+ `pages/chat/index.vue` onMounted 与 `.resume-*` 卡片 | `utils/next-step.js`（选取与每天一次）+ `composables/useChatEngine.js` offerNextStep + `pages/chat/index.vue` 卡片 |
+| 改记忆注入 | `utils/memory/context.js` 的 `buildMemoryContext` + `utils/memory-rank.js`（门面 `utils/memory.js` 只做转出，别把逻辑写回门面） |
+| 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms`（扩展词必须再切二元组） |
+| 改联网搜索 | `utils/ai/search-adapters.js`（后端注册表 / 请求 / 解析）+ `utils/ai/search-config.js`（开关 / 后端 / Key 裁决）+ `pages/settings/sub/ai.vue` 的"联网搜索"卡片 |
+| 改每周账单播报 | `utils/bill-weekly.js`（口径与文案）+ `composables/useEnterSummary.js`（接线）+ `pages/chat/index.vue` 卡片「账」行 |
+| 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
+| 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
@@ -266,9 +280,21 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ---
 
+## 发布规矩（必须遵守）
+
+**每次重大更新必须上传 git，禁止只改本地就算完：**
+
+1. 判定「重大更新」：新增/删除功能、改 AI 行为或工具、改存储结构、修用户可感知的 Bug、提升版本号 —— 命中任意一条即算
+2. 流程：全量测试跑绿 → `manifest.json` 与版本日志已更新 → `git add -A` → `git commit` → `git push`
+3. 提交信息格式：`<type>: <版本号> <一句话>`，type 取 feat / fix / docs / refactor / chore（例：`feat: 3.5.18 记忆语义扩展 + 联网搜索与聊天厂商解耦`）
+4. 推送失败（网络 / 认证）必须当场报告，禁止静默跳过；`http.sslVerify` 保持 true，不要为绕证书问题改全局配置
+5. 提交前 `git status --short` 扫一遍：截图、日志、临时脚本（`.playwright-cli/`、`*.log`、`siji-*.cjs`）一律清掉，不进仓库
+
+---
+
 ## Git 状态
 
-- 当前 HEAD: `673e0b1` (chore: 新增 AGENTS.md 供 Codex 接手开发)
+- 当前 HEAD: `43182fc` (chore: 同步本地修改 v3.5.10)
 - GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
@@ -278,5 +304,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 45 文件 / 530 用例全绿，exit 0
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 60 文件 / 784 用例全绿（exit 0）
+- vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
+- 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
+- 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.summary-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
 - 完整交接文档见 `CODEX_HANDOFF.md`

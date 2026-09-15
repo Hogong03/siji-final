@@ -1,11 +1,17 @@
 /**
- * memory-rank.js — 记忆相关度排序（BM25 简化版 + 时间衰减）
+ * memory-rank.js — 记忆相关度排序（BM25 简化版 + 时间衰减 + 语义扩展）
  *
  * 3.5.11：长期记忆注入从「最近 N 条」改为「按当前消息检索 top-N」，
  * 解决长期使用后早期关键记忆被最近条目挤出上下文的问题。
  *
+ * 3.5.18：查询词表先过 memory-synonyms.js 做同义分组 + 拼音桥接扩展，
+ * 再按权重累加 BM25 分（字面 1.0 / 全拼 0.75 / 首字母 0.65 / 同义扩 0.6），
+ * 修「用户说对象、记忆里写女朋友就召不回来」。
+ *
  * 纯函数、不依赖 uni，可直接单测（tests/memory-rank.test.js）。
  */
+
+import { expandTerms } from './memory-synonyms.js'
 
 /** CJK 连续片段（含日文假名、韩文音节） */
 const CJK_RUN_RE = /[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]+/g
@@ -52,11 +58,44 @@ export function tokenize(text) {
 }
 
 /**
+ * 构建带权重的检索项
+ *
+ * 基础分词 →（可选）同义 / 拼音扩展 → 扩展结果回落进同一 bigram 空间，同词取最高权重。
+ * 关键：扩展出的整词（如「女朋友」）必须再切一次二元组，否则永远匹配不上同样按二元组
+ * 切分的文档词表（历史 bug：扩展词直接参与匹配，召回为 0）。
+ *
+ * @param {string} query
+ * @param {boolean} [includeSynonyms]
+ * @returns {Array<{term:string, weight:number, from:string}>}
+ */
+export function buildQueryTerms(query, includeSynonyms = true) {
+  const base = [...new Set(tokenize(query))]
+  const source = includeSynonyms
+    ? expandTerms(base)
+    : base.map(term => ({ term, weight: 1, from: 'self' }))
+
+  const weight = new Map()
+  const origin = new Map()
+  for (const item of source) {
+    for (const token of tokenize(item.term)) {
+      // 扩展词只取二元组：末位单字是分词器补的，参与匹配只会引噪声（伴侣 → 侣、妻子 → 子）
+      if (item.from !== 'self' && item.term.length > 1 && token.length === 1) continue
+      const prev = weight.get(token)
+      if (prev === undefined || item.weight > prev) {
+        weight.set(token, item.weight)
+        origin.set(token, item.from)
+      }
+    }
+  }
+  return [...weight.entries()].map(([term, w]) => ({ term, weight: w, from: origin.get(term) }))
+}
+
+/**
  * 计算每条记忆与 query 的相关度分数
  * 分数 = BM25(词项) * 分类权重 * 时间衰减权重（衰减以加项形式并入）
  * @param {string} query 当前用户消息
  * @param {Array} memories 记忆列表（{content, category, createdAt, updatedAt}）
- * @param {Object} [opts] { now:Number }
+ * @param {Object} [opts] { now:Number, includeSynonyms:Boolean }
  * @returns {Array<{memory:Object, score:Number, rank:Number}>} 按 rank 倒序
  */
 export function rankMemories(query, memories, opts = {}) {
@@ -64,7 +103,8 @@ export function rankMemories(query, memories, opts = {}) {
   if (list.length === 0) return []
 
   const now = typeof opts.now === 'number' ? opts.now : Date.now()
-  const queryTerms = [...new Set(tokenize(query))]
+  // 3.5.18：语义扩展（同义分组 + 拼音桥接）。includeSynonyms:false 可退回纯字面匹配
+  const queryTerms = buildQueryTerms(query, opts.includeSynonyms !== false)
 
   const docTokens = list.map(m => tokenize(m.content))
   const df = new Map()
@@ -78,12 +118,12 @@ export function rankMemories(query, memories, opts = {}) {
     for (const t of docTokens[i]) tf.set(t, (tf.get(t) || 0) + 1)
 
     let score = 0
-    for (const term of queryTerms) {
+    for (const { term, weight } of queryTerms) {
       const freq = tf.get(term) || 0
       if (freq === 0) continue
       const docFreq = df.get(term) || 1
       const idf = Math.log(1 + (total - docFreq + 0.5) / (docFreq + 0.5))
-      score += idf * (freq / (freq + K1))
+      score += weight * idf * (freq / (freq + K1))
     }
 
     const ts = memory.updatedAt || memory.createdAt || 0
@@ -103,7 +143,7 @@ export function rankMemories(query, memories, opts = {}) {
  * 有相关命中 → 按相关度排序取前 limit 条；无命中（或 query 为空）→ 回落最近 limit 条
  * @param {string} query
  * @param {Array} memories
- * @param {Object} [opts] { limit:Number, now:Number }
+ * @param {Object} [opts] { limit:Number, now:Number, includeSynonyms:Boolean }
  * @returns {Array} 记忆列表
  */
 export function selectMemories(query, memories, opts = {}) {

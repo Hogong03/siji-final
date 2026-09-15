@@ -7,7 +7,7 @@
  */
 import { getReasoningConfig } from './providers.js'
 import { TOOL_DEFINITIONS } from './tools.js'
-import { isWebSearchEnabled } from './tools/web-search.js'
+import { isWebSearchAvailable } from './search-config.js'
 import { chatRequestChunkedStream } from './chat-chunked.js'
 import { logger } from '../logger.js'
 /**
@@ -242,11 +242,11 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
   })
 }
 
-/** 构建本轮 tools 列表：全局工具 + 智谱专用 web_search（按厂商注入） */
+/** 构建本轮 tools 列表：全局工具 + 已配置好的 web_search（门控与聊天厂商无关） */
 function buildToolList(provider, model) {
-  // web_search 已入全局注册表，但仅智谱厂商可用：非智谱过滤，智谱重新注入
+  // web_search 已入全局注册表；搜索后端配好 Key 才注入，跟聊天用哪个厂商无关（3.5.18）
   const tools = TOOL_DEFINITIONS
-    .filter(t => t.name !== 'web_search' || isWebSearchEnabled(provider.id))
+    .filter(t => t.name !== 'web_search' || isWebSearchAvailable())
     .map(t => ({
     type: 'function',
     function: {

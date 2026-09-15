@@ -33,7 +33,9 @@
 		checkVersionUpdate
 	} from '@/utils/version-check.js'
 	import {
-		initEnterSummary
+		initEnterSummary,
+		markLeaveBaseline,
+		refreshEnterSummary
 	} from '@/composables/useEnterSummary.js'
 
 	const store = useAppStore()
@@ -67,7 +69,7 @@
 				rebuildIndex()
 				initReminder(getPlanList)
 				startReminderChecker()
-				// 3.4.5：冷启动进入总结（计划完成/打卡 + 新增记录，仅冷启动计算一次）
+				// 3.4.5 / 3.5.12：进入总结（冷启动 + 回前台两条路径，回前台结算见 onShow）
 				initEnterSummary()
 			} catch (e) {
 				console.warn('[思迹] Init failed:', e.message)
@@ -141,10 +143,23 @@
 		} catch (e) {
 			/* ignore */
 		}
+
+		// 3.5.12：回前台算「你不在时」的增量总结（60s 节流，后台不轮询、不设定时器）
+		try {
+			refreshEnterSummary()
+		} catch (e) {
+			/* ignore */
+		}
 	})
 
 	onHide(() => {
 		logger.log('[思迹] Hide')
+		// 3.5.12：记下离开时刻，回前台据此算增量总结
+		try {
+			markLeaveBaseline()
+		} catch (e) {
+			/* ignore */
+		}
 		// flush 防抖队列 — 确保后台切换时数据不丢
 		store.flushPersist && store.flushPersist()
 	})

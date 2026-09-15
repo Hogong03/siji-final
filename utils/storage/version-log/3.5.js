@@ -1,10 +1,362 @@
 /**
- * 版本日志数据段：3.5.10 - 3.5.4（新版本在前）
+ * 版本日志数据段：3.5.11 - 3.5.4（新版本在前）
  *
  * 纯数据，无逻辑；由 utils/storage/version-data.js 聚合后经 getDefaultHistory() 导出。
  */
 
 export const V35 = [
+  {
+    version: '3.5.18',
+    date: '2026-09-15',
+    title: '3.5.18 记忆检索加语义扩展（换种说法也能召回）+ 联网搜索与聊天厂商解耦',
+    summary: [
+      '换个说法也召得回来：记忆检索加同义分组与拼音桥接 —— 用户说「对象」、记忆里写「女朋友」以前拿 0 分，现在能命中；「jihua / jh」这类拼音输入同样桥接到「计划」',
+      '联网搜索不再看聊天厂商脸色：搜索后端独立配置（智谱 Web Search / Tavily），聊天换 DeepSeek / 通义 / Kimi 都能联网；此前非智谱厂商下 web_search 工具被整条过滤掉',
+      '智谱用户零配置：搜索 Key 留空时自动复用同名 AI 厂商 Key，原行为不变；关掉总开关就一条都不搜，传 Key 也绕不过开关',
+      '设置新增入口：设置 → AI 配置 → 联网搜索（开关 / 后端选择 / 独立 Key 输入与清除 / 状态行）',
+      '工程：新增 utils/memory-synonyms.js、utils/ai/search-adapters.js、utils/ai/search-config.js 与 2 个测试文件；全量 60 文件 / 784 用例全绿'
+    ],
+    categories: [
+      {
+        title: '记忆语义扩展（3.5.18）',
+        items: [
+          'utils/memory-synonyms.js（新增 225 行，纯函数、不碰 uni）：SYNONYM_GROUPS 收录 34 组口语变体（对象 / 女友 / 媳妇 / 老婆 / 伴侣 互认，焦虑 / 内耗 / 担心 互认等），DOMAIN_LEXICON 收录 47 个高频域内词的拼音（全拼 + 首字母）',
+          '权重设计：字面命中 1.0、全拼 0.75、首字母 0.65、同义扩展 0.6、拼音再取同义 0.45；单组扩展上限 8 词，防超大组把分数摊平',
+          'utils/memory-rank.js：新增 export buildQueryTerms —— 扩展出的整词必须再切一次二元组才能进入检索空间（扩展词直接参与匹配时召回恒为 0，这是本次关键坑），并跳过扩展词的末位单字噪声（伴侣 → 侣、妻子 → 子）',
+          'rankMemories / selectMemories 增加 opts.includeSynonyms（默认开），传 false 退回纯字面匹配，便于 A/B 与回归对照',
+          '明确边界：拼音桥接只覆盖词表内约 50 词（不是全量拼音库），同义表是人工维护的口语表；不做指代消解与向量检索',
+          '测试：tests/memory-semantic.test.js（新增 25 例）覆盖同义扩展、拼音桥接、权重取高、噪声过滤、语义召回回归（说对象召回女朋友）、对照组（关扩展则 0 分）、端到端注入 buildMemoryContext'
+        ]
+      },
+      {
+        title: '联网搜索解耦（3.5.18）',
+        items: [
+          'utils/ai/search-adapters.js（新增 126 行）：SEARCH_BACKENDS 后端注册表，每个后端只提供元信息 + buildRequest(query, key) + parseResponse(res)，新增后端零改动其余代码；内置 zhipu（search_pro，线上原实现不变）与 tavily（按官方文档实现，解析有单测覆盖，线上待真机跑一次）',
+          'utils/ai/search-config.js（新增 120 行）：开关（siji_web_search_enabled，缺省视为开启）、后端（siji_web_search_backend）、独立 Key（siji_web_search_key，enc2 加密）三件套；resolveSearchConfig 裁决 available / reason(ok|disabled|no_key) / source(own|provider|none)',
+          'Key 回落链：独立 Key → 同名 AI 厂商 Key（智谱用户零配置）→ 无。切到没有同名厂商的后端（Tavily）时不会误用 AI Key',
+          'utils/ai/tools/web-search.js：删除 isWebSearchEnabled(providerId) 厂商硬门控，改用 search-config 裁决；executeWebSearch 不再接收 apiKey 参数，改为内部解析；关闭状态下即使传入 Key 也拒绝执行',
+          'utils/ai/agent-transport.js：buildToolList 的 web_search 过滤条件由 isWebSearchEnabled(provider.id) 改为 isWebSearchAvailable()，工具注入与聊天厂商彻底无关',
+          'utils/ai/agent-loop.js：web_search 分支改调 executeWebSearch(query)；utils/api.js 增加 search-adapters / search-config 门面导出',
+          'pages/settings/sub/ai.vue + ai.scss：新增「联网搜索」卡片（开关 / 后端单选 / Key 输入保存清除 / 状态行「已配置（独立 Key）| 已配置（复用 AI 厂商 Key）| 未配置 Key，无法联网 | 已关闭」），样式复用 config-section / key-input-row，纯黑白灰阶、零阴影零渐变',
+          '测试：tests/web-search-config.test.js（新增 23 例）覆盖请求体结构（智谱 Bearer / Tavily body）、响应解析（含空结果与 HTTP 错误）、Key 加密落盘、厂商复用、开关优先级、后端切换、执行路径（成功 / 失败 / 空关键词 / 70 字截断）'
+        ]
+      },
+      {
+        title: '测试与文档（3.5.18）',
+        items: [
+          'tests/agent-engine-smoke.test.js：联网搜索用例从「仅智谱启用」改为「配置驱动」；tests/ai-module-imports.test.js 的 WATCHED / FILES 纳入 search-config、search-adapters、web-search、memory-synonyms，补上 resolveSearchConfig / getSearchBackend / expandTerms / buildQueryTerms 的静态 import 断言',
+          '全量测试：60 文件 / 784 用例，全绿（较 3.5.17 的 58 文件 / 731 用例净增 2 文件 53 例）',
+          'pages/settings/sub/ai.scss 用 sass 单独编译通过（含新增 .search-card 全部分块）'
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.17',
+    date: '2026-09-15',
+    title: '3.5.17 对话尺：消息够 20 条时聊天区左侧出现竖向刻度，点一下直达那一段对话',
+    summary: [
+      '够长才出现：会话消息数达到 20 条时，聊天区左侧冒出一条竖向刻度尺；短对话不显示、不占宽、不挤压输入区',
+      '刻度锚点取用户消息：每个刻度对应一处提问位置（用户消息不足 6 条时退化为全部消息）；刻度超过 28 个自动降采样且首尾必留，长对话不会糊成一条',
+      '点、拖都能跳：轻点刻度直达那条消息，按住上下滑连续跳（120ms 节流）；跳转前先把虚拟窗口扩到目标位置（上方保留 5 条上下文），再交给 scroll-into-view 精确定位',
+      '两个辅助视图：刻度右侧滑出 18 字预览（图片消息显示「[图片]」）；刻度尺上的视口指示条按真实滚动比例移动，并高亮当前所在的一段',
+      '工程：新增 utils/chat-ruler.js（纯计算）+ composables/useChatRuler.js（滚动与触摸编排）+ tests/chat-ruler.test.js（31 例）；全量 58 文件 / 731 用例全绿'
+    ],
+    categories: [
+      {
+        title: '对话尺（3.5.17）',
+        items: [
+          'utils/chat-ruler.js（新增 139 行，纯函数、不碰 DOM 与 store）：shouldShowRuler（阈值 RULER_MIN_MESSAGES = 20）/ summarizeMessage（压平空白 + 18 字截断 + 图片占位）/ buildRulerTicks（锚点判定、降采样、百分比）/ viewportRange / pickTickByPercent / pickTickByScroll / percentFromY / resolveWindowSize（跳转窗口条数，上方保留 RULER_KEEP_ABOVE = 5）',
+          '百分比统一保留两位小数，避免 App 端 style 绑定里出现长浮点串；viewportRange 对首帧 scrollHeight 为 0 和视口高于内容两种情况都给安全值，视口条不会跳到尺外',
+          'composables/useChatRuler.js（新增 210 行）：rulerVisible / rulerTicks / rulerActiveKey / rulerDragging / rulerViewportStyle / rulerPreview / rulerPreviewStyle / syncRulerScroll / jumpToTick / resetRuler / handleRulerTouchStart / Move / End / handleRulerTap',
+          '跳转链路：resolveWindowSize 先扩 visibleCount → nextTick → applyScrollIntoView（msg-N 锚点）；扩窗后 90ms 再补一次跳转，兜住 App 端布局比 H5 慢一帧的情况',
+          '双通道输入：H5 鼠标走 @tap（只认带 clientY 的事件，避免 App 端 tap 与 touch 重复触发两次跳转）；App 触摸走 touchstart / move / end / cancel，位移超过 8px 才算拖动（否则按轻点处理），拖动期间按 120ms 节流',
+          '刻度尺尺寸用 uni.createSelectorQuery 量 #chat-scroll 与 #chat-ruler-track（150ms 防抖）；量不到时退回 0-100 全跨度，视口条不会卡死',
+          'pages/chat/index.vue：messages-wrap 包住 scroll-view 并按 rulerVisible 加 has-ruler（列表左内边距 +44rpx 让开刻度）；每条消息外包 #msg-<globalIndex> 锚点视图；handleNewConversation / handleSwitchConversation 首行 resetRuler()，换会话不残留上一条对话的高亮与预览',
+          'pages/chat/chat.scss：轨道贴左 4rpx、宽 40rpx，刻度弹条 20rpx（用户消息 #A1A1AA、当前段 28rpx×6rpx 纯黑），视口指示 4rpx 灰条（#D4D4D8、深色 #3F3F46），预览卡 340rpx 位于刻度右侧；纯黑白灰阶、零阴影零渐变、色值硬编码不依赖 CSS 变量，深色覆盖齐全'
+        ]
+      },
+      {
+        title: '测试（3.5.17）',
+        items: [
+          'tests/chat-ruler.test.js（新增 31 例）：显示阈值边界（19 / 20 / 非法输入）、预览文案（压平空白 / 截断 / 图片占位 / 空消息）、刻度生成（用户锚点、退化全部消息、降采样首尾必留、28 上限、百分比精度）、viewportRange 边界、最近刻度挑选、触摸坐标换算、resolveWindowSize 扩窗与保留上下文、useChatRuler 滚动同步与三种触摸手势',
+          '全量：58 文件 / 731 用例，全绿（exit 0；3.5.16 基线 57 / 700）',
+          'H5 已验收（iPhone 390×844 视口、61 条消息）：渲染 28 个刻度，点轨道 4% / 50% / 97% 分别滚到 198 / 2623 / 5096，msg-28 精确对齐视口顶部，视口指示条随滚动同步；App 端 scroll-into-view 与 touchmove 待 HBuilderX 真机确认',
+          'AGENTS.md / CODEX_HANDOFF.md：测试数字、版本行、关键文件速查同步到本轮'
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.16',
+    date: '2026-09-15',
+    title: '3.5.16 每次进来都是新对话：空对话上给「回去接着聊 / 选择历史对话」两个入口',
+    summary: [
+      '冷启动停在一条新对话上：以前启动会把上次聊到一半的会话直接铺开，容易被旧话题带着走；现在每次启动都是新对话，欢迎语待发，旧对话原样留在列表里（不删、不挪、不改）',
+      '回前台、切 Tab、从设置页回来都不换会话：只有本次进程第一次进入对话页才换新（模块内标志只 true 一次），正在打字时切回来不会被清空',
+      '新对话空态两个入口：「回去接着聊」一键回到最近一条有内容的对话（标题 + 今天 10:20 / 昨天 / 3 天前 + 条数），「选择历史对话」打开会话面板（搜索 / 标签 / 分组都还在）；卡片可关，换会话后重新给一次',
+      '不留空壳：冷启动换新前顺手清掉历史空会话（没有消息或只有欢迎语的），列表不会被每次启动堆出来的空对话塞满',
+      '工程：新增 utils/chat-session.js（纯判定）+ composables/useChatSession.js（编排）+ tests/chat-session.test.js（28 例）；全量 57 文件 / 700 用例全绿'
+    ],
+    categories: [
+      {
+        title: '冷启动新对话（3.5.16）',
+        items: [
+          'utils/chat-session.js（新增 101 行）：isEmptyConversation / pickResumeConversation / shouldOfferResume / formatConversationAge / consumeColdStart（进程内只 true 一次）/ resetColdStart（测试用）；不碰存储、不 import store',
+          '空会话口径：没有 messages，或消息全是欢迎语（_isWelcome）；带 summary 的会话不算空（消息可能被裁剪过，不能当壳删掉）',
+          'composables/useChatSession.js（新增 76 行）：maybeStartFreshSession 编排（清空壳 → 当前会话有内容才新开 → 补欢迎语）+ resume 状态（目标 / 可见 / 时间 / 条数 / 关闭 / 回去）',
+          'pages/chat/index.vue：onMounted 首行调 maybeStartFreshSession（模拟演练待进入、模拟深链场景跳过不换）；onLoad 记 _deepLinkSim；既有「activeConversation 不存在就新建」「空会话补欢迎语」两条兜底保留',
+          'store/chat.js：新增 pruneEmptyConversations(keepId) —— 清理空壳，活跃指针被清掉时落到最后一条并同步 persistActiveId；keepId 无条件保留；store/index.js 透传',
+          '行为边界：冷启动标志只生效一次，回前台 / 切 Tab / 从别的页面回来都不换会话，不会打断正在进行的输入'
+        ]
+      },
+      {
+        title: '新对话空态入口（3.5.16）',
+        items: [
+          'pages/chat/index.vue + pages/chat/chat.scss：新对话卡片「这是新对话」+ 最近一条对话（标题 / 时间 / 条数）+「回去接着聊 / 选择历史对话」两个按钮 + 关闭按钮；纯黑白灰阶、零阴影，深色覆盖齐全（.resume-* 一组）',
+          'utils/chat-session.js：时间说法「刚刚 / N 分钟前 / 今天 HH:MM / 昨天 HH:MM / N 天前 / M月D日」；设备时钟回拨按「刚刚」，非法输入给空串',
+          '入口只在「当前会话为空 + 有其他有内容的对话」时出现；关掉后本次会话不再出现，切到别的会话再回来会重新给一次',
+          '回到上次：直接 switchConversation（读同一份会话数据，消息、Agent 绑定、标签都不变），切完滚到底部'
+        ]
+      },
+      {
+        title: '测试（3.5.16）',
+        items: [
+          'tests/chat-session.test.js（新增 28 例）：空会话判定 5 例、候选挑选 5 例（排除当前 / 跳过空壳 / 取最近 / 回落 createdAt / 无候选）、入口显示条件 4 例（含 activeId 指向不存在会话时照样给入口）、时间说法 4 例、冷启动标志只真一次、pruneEmptyConversations 3 例、useChatSession 编排 7 例（含「回前台只换一次」与「模拟演练不换会话」）',
+          '全量：57 文件 / 700 用例，全绿（exit 0；3.5.15 基线 56 / 672）',
+          'AGENTS.md / CODEX_HANDOFF.md：测试数字、版本行、关键文件速查同步到本轮'
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.15',
+    date: '2026-09-14',
+    title: '3.5.15 修白屏：记忆模块拆分漏导出 currentMonth，并补一条静态检查拦住同类错误',
+    summary: [
+      '修白屏：3.5.14 拆分长期记忆时漏了 utils/memory/monthly.js 的 currentMonth 导出，HBuilder X 的 dev server（原生 ESM）直接抛 does not provide an export named currentMonth，对话页起不来（import 阶段就抛）；已补导出，链路恢复',
+      '为什么测试没拦住：vitest 走 esbuild 互操作，缺的具名导出会静默变成 undefined —— 拆 memory 时 STORAGE_KEY / persist 也是同一个坑（当时把记忆写进了名为 undefined 的存储键）；只有 HBuilder X 的原生 ESM 才会当场报错，所以这类错必须静态查',
+      '新增 tests/module-exports.test.js：静态解析 utils / composables / store / pages / components 下 318 个源文件的 import，逐个核对目标模块确实导出该名字（写了 export * 的模块跳过，不误报优先）；已用「临时去掉 export」的方式验证它会失败',
+      '全量 56 文件 / 672 用例全绿（3.5.14 基线 55 / 670）'
+    ],
+    categories: [
+      {
+        title: '修复（3.5.15）',
+        items: [
+          'utils/memory/monthly.js：currentMonth 补上 export —— utils/memory/auto-extract.js 的 aiSummarizeConversation 用它给月度记忆卡归月，缺导出时 HBuilder X dev 直接白屏（import 阶段就抛）',
+          '影响面：H5 开发端（dev server）必现；App / 小程序端打包同样会在编译期报同类错误；修复后对话页与记忆提取链路恢复'
+        ]
+      },
+      {
+        title: '防回归（3.5.15）',
+        items: [
+          'tests/module-exports.test.js（新增 2 例）：扫描 318 个 .js/.vue（.vue 只取 script 块），按「具名 import 的名字必须在目标模块被导出」逐条核对；@/ 与 ./ ../ 三种写法都解析，目录 spec 回落 index.js',
+          '判断口径：export function/const/let/var/class、export { a as b }、export { x } from …；目标模块含 export * 时整块跳过（静态无法枚举，宁可漏报不误报）',
+          '验证方式：临时把 monthly.js 的 currentMonth 去掉 export，该用例失败并指名 \'utils/memory/auto-extract.js -> ./monthly.js :: currentMonth\'，恢复导出后通过',
+          '全量：56 文件 / 672 用例，全绿（exit 0）'
+        ]
+      },
+      {
+        title: '文档（3.5.15）',
+        items: [
+          'AGENTS.md 注意事项新增：vitest 抓不到「import 了不存在的导出」（esbuild 互操作下变 undefined），改动模块导出后必须跑 tests/module-exports.test.js；这条同样解释了为什么 HBuilder X 里才会白屏',
+          'AGENTS.md / CODEX_HANDOFF.md：测试数字与版本行同步到 56 文件 / 672 用例、v3.5.15'
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.14',
+    date: '2026-09-14',
+    title: '3.5.14 三条只读能力：每周账单播报、社交额度、回复草稿，顺带把 692 行的记忆模块拆成八块',
+    summary: [
+      '每周账单播报：进入总结卡多一行「账」——本周花了多少、主要花在哪、比上周多还是少，每周只报一次（按本周周一记 key）；上周没有记录就直说，不设预算警告、不做评价（铁律 1：不制造新的失败感）',
+      '社交额度（能量预算）：关系页可以自己定「每周几次社交」，顶部一行「本周社交 2/3 · 还能放 1 次」；计数口径是同一天同一个人算一次，排满只说「剩下的下周再说也行」，没设定就不显示',
+      '回复草稿：人物详情页新增「回一条」——三条「可以延后，但不会消失」的草稿，点一下复制；也可以复制提示词并跳到对话让思迹起草（新增 prefill-input 通道，文案直接落进输入框）',
+      '工程：utils/memory.js 692 行拆成 utils/memory/ 八块 + 60 行门面（旧引用一字不改，27 个旧导出逐个钉住，memory 系列 74 用例全绿）；全量 55 文件 / 670 用例全绿',
+      '待拆登记：useChatEngine.js（518 行，handleSend 主体约 390 行）与 pages/chat/index.vue（636 行）、PlanChildPlans.vue（591 行）、memory.vue（549 行）留到下一轮，UI 拆分必须把 scoped 样式一起搬并真机验收'
+    ],
+    categories: [
+      {
+        title: '每周账单播报（3.5.14）',
+        items: [
+          'utils/bill-weekly.js（新增 151 行）：formatMoney / weekKeyOf / sumExpenseIn / buildWeeklyBill / formatWeeklyBillLine / readBillsForWeeks / shouldAnnounceWeeklyBill / markWeeklyBillAnnounced / buildWeeklyBillAnnouncement',
+          'utils/bill-weekly.js：区间左闭右开；type 兼容「expense」与 0，收入（income / 1）不计；没有 bill_date 时用 created_at 兜底，两者都非法才跳过；按分类累计并取金额最大的分类作为「主要花在哪」',
+          'utils/bill-weekly.js：上周为 0 时 diffPct 返回 null（文案「上周没有支出记录」，不算百分比）；持平日 diffPct 为 0（文案「和上周差不多」）',
+          'utils/bill-weekly.js：readBillsForWeeks 用 monthsBetween(上周起点, 现在) 拼齐跨月分片 —— 本周周一落在上个月时也要读到上周所在分片（例：9-02 的本周起点是 8-31，需同时读 bill_2026-08 与 bill_2026-09）',
+          'utils/bill-weekly.js：播报 key 为 siji_bill_weekly_at，存「本周周一日期」，生成即标记（由 useEnterSummary 写），跨周自动恢复；本周没有支出时返回 null 且不消耗额度',
+          'composables/useEnterSummary.js：结算里调 buildWeeklyBillAnnouncement({ now })，结果挂 weekBill；只有账单播报也算有内容（会出卡），空内容判定加 !weekBill',
+          'pages/chat/index.vue + pages/chat/chat.scss：总结卡新增「账」行（enterSummaryBill）与 .kind-bill 样式（浅色 #FEF3C7 / #92400E，深色 rgba(245,158,11,0.18) / #FCD34D）',
+          'tests/bill-weekly.test.js（新增 25 例）：区间边界、type 兼容、created_at 兜底、分类累计、非数组与非法日期、周对比（null / 0 / 正负）、无支出返回空串、每周一次与跨周恢复、跨月分片合并并排除已删除'
+        ]
+      },
+      {
+        title: '社交能量预算与回复草稿（3.5.14）',
+        items: [
+          'utils/social-quota.js（新增 127 行）：getWeeklyQuota / setWeeklyQuota（0-30 取整，0 或非法值 = 关闭显示）、countSocialTouches、formatSocialQuotaLine、buildSocialQuota、buildReplyDrafts、buildReplyPrompt',
+          'utils/social-quota.js：计数口径「同一天 + 同一个人只算一次社交」，按 relation_id / relation_name 加日期去重；date 缺失回落 created_at；已删除不计；额度由用户自己设，系统不发额度、不催不评',
+          'utils/social-quota.js：三条草稿分别是「先接住 / 约个时间 / 一句话结」，语气约定写着「不写检讨、不拉长、不承诺立刻回」，单条 ≤ 60 字；buildReplyPrompt 把对象、场景与语气要求一次性写清（可直接粘给 AI）',
+          'utils/relations.js：新增 getAllInteractions()（未删除、按时间倒序），供周额度统计等只读场景使用；原 getRecentInteractions 不动',
+          'components/common/SocialQuotaBar.vue（新增 191 行）：关系页顶部一行额度 + 设定弹窗（数字输入，0 = 不显示）；未设置时显示「要不要给社交定个每周次数？」；深色覆盖齐全，零阴影零渐变',
+          'components/relation/ReplyDrafts.vue（新增 167 行）：人物详情页「回一条」——三条草稿点一下复制，另有「让思迹起草」（复制提示词 + 跳对话）',
+          'pages/chat/index.vue：新增 prefill-input 通道（缓冲区 + onShow 落到输入框），关系页起草的提示词一跳进来就在输入框里；onHide 清缓冲、onUnmounted 解绑',
+          'tests/social-quota.test.js（新增 20 例）：额度钳制、同日同人去重、区间左闭右开、已删除排除、created_at 兜底、文案三态（未设置 / 有余量 / 排满）、草稿语气红线（不含「你应该 / 必须 / 尽快」等）、与 logInteraction 的联通'
+        ]
+      },
+      {
+        title: '记忆模块拆分（3.5.14）',
+        items: [
+          'utils/memory.js：692 行 → 60 行门面，只做转出，全部旧引用（composables / store / pages / tests 共 8 处）一字不改',
+          'utils/memory/store.js（136 行）：CRUD + 记忆开关 + 过期清理，导出 STORAGE_KEY 与 persist 供治理模块复用',
+          'utils/memory/normalize.js（22 行）：normalizeMemoryText（去空白标点、全半角统一、小写、去「我今天 / 我想 / 打算」前缀），去重与治理共用一套口径',
+          'utils/memory/governance.js（156 行）：重复组发现、已整合超期隐藏候选、other 归类建议、applyGovernance、restoreHiddenMemory',
+          'utils/memory/context.js（75 行）：buildMemoryContext —— 相关度选池（上限 30 条）→ 过滤已在画像中的偏好 → 按分类分组，另附月度卡与结构化记忆',
+          'utils/memory/profile-values.js（34 行）：画像字段值提取（含噪声词表），context 与 monthly 共用',
+          'utils/memory/profile-link.js（134 行）：记忆采纳进画像（单条 / 批量 / AI 写画像后回标记）',
+          'utils/memory/monthly.js（70 行）：月度记忆卡（siji_monthly_memory，最多 12 个月 × 20 条）',
+          'utils/memory/auto-extract.js（114 行）：对话后的本地规则提取 + 可选 AI 摘要',
+          'tests/memory-facade.test.js（新增 4 例）：27 个旧导出逐个核对、模块间私有依赖（persist / STORAGE_KEY）不外露、八个分模块可单独导入、归一化口径与治理共用同一实现'
+        ]
+      },
+      {
+        title: '测试与工程（3.5.14）',
+        items: [
+          '全量：55 文件 / 670 用例，全绿（exit 0；3.5.13 基线 52 / 621）',
+          '新增 tests/bill-weekly.test.js（25 例）、tests/social-quota.test.js（20 例）、tests/memory-facade.test.js（4 例）；拆分后 memory-governance / memory-profile / memory-rank / memory-structured / ai-module-imports 共 70 例逐项复跑通过',
+          'AGENTS.md：测试数字、版本行、关键文件速查（每周账单播报 / 社交额度与草稿 / 长期记忆）同步；注意事项新增「记忆模块拆分后改哪一块」与「关系页额度条组件自带样式」',
+          'CODEX_HANDOFF.md：目录结构与待办清单同步；待拆文件登记更新为 useChatEngine.js（518）/ pages/chat/index.vue（636）/ PlanChildPlans.vue（591）/ pages/settings/sub/memory.vue（549），并写明 useChatEngine 的拆法（handleSend 主体 ~390 行抽到 utils/ai/send-pipeline.js）'
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.13',
+    date: '2026-09-14',
+    title: '3.5.13 持续性收口：AI 也知道「你不在时」发生了什么，对话后给一个可点的下一步',
+    summary: [
+      '动静摘要进 AI 上下文：发消息前把「上次离开以来的完成/打卡 + 今天累计 + 连续打卡天数」压成 2-3 行注入 system，AI 能自然续上你的进展（不再每次都说「我看看记录」）；只含已发生的事，未完成事项永不出现',
+      '最小行动单卡：一次对话后，如果这轮没有待确认操作、没有轻追问 chips，就在输入框上方给一张「今天可以从这件开始」单卡（取今日行动条里最小的一件，约 X 分钟），点进计划详情；每天最多一次、随时可关、不追问',
+      '修掉跨会话重复报：以前不点「知道了」直接退出应用，下次冷启动会把同一批进展再报一遍（窗口只认确认基线）；现在窗口取「确认基线与离开基线里更晚的那个」，卡片一展示就推进离开基线，冷启动与回前台口径完全一致',
+      '连续两天低落只提醒休息：最近两个相邻记录日的情绪都是低落时，总结卡多一行「这两天记录里写着低落，今天慢一点也算数」——不诊断、不评分、不催进度',
+      '工程：修掉每个周一必失败的 plan-checkin 用例，全量 52 文件 / 621 用例全绿（首次 0 失败）；新增 progress-digest / next-step 两个纯逻辑模块与对应测试',
+    ],
+    categories: [
+      {
+        title: 'AI 动静摘要（3.5.13）',
+        items: [
+          'utils/enter-summary.js：导出 CONFIRM_KEY / LEAVE_KEY（卡片与 AI 摘要共用同一对基线，不再各写一份 key 字符串）；新增 countEventsByKind(plans, since, now) → { done, checkin }，与 buildEnterSummary 同一套过滤规则',
+          'utils/progress-digest.js（新增 75 行）：buildProgressDigest({ plans, now }) 输出「· 上次离开（3 小时）：完成 1 项、打卡 2 次 / · 今天：… / · 连续打卡 N 天」，无内容返回空串不占 token；只读当前月记录分片，不落盘',
+          'utils/ai/chat-helpers.js：buildChatMessages 在计划上下文之后注入动静摘要，附「只在你自然需要时引用，不要逐条复述，不要提未完成的事」约束（铁律 8）',
+          'tests/progress-digest.test.js（新增 7 例）：空内容不注入 / 计数与窗口时长 / 更晚基线优先（已报过不重复）/ 窗口外与已删除不计 / 未武装只报今天 / 记录计数与连续天数 / 默认 getPlanList',
+        ]
+      },
+      {
+        title: '最小行动单卡（3.5.13）',
+        items: [
+          'utils/next-step.js（新增 59 行）：pickNextStep（复用 collectDailySuggestions，与计划页今日行动条同一口径）/ shouldOfferNextStep / markNextStepShown，siji_next_step_shown 记「今天已给过」',
+          'composables/useChatEngine.js：新增 nextStep 状态与 offerNextStep()（待确认操作、轻追问 chips、模拟演练、今天已给过、无候选都不出卡）与 clearNextStep()；发送开始时收起旧卡，回复成功且无待确认时触发',
+          'pages/chat/index.vue + pages/chat/chat.scss：输入框上方单卡（标签 + 标题 + 约 X 分钟 + 关闭），点击跳 /pages/plan/detail?clientId=…；纯黑白灰阶、零阴影、带深色覆盖',
+          'tests/next-step.test.js（新增 5 例）：最小叶子、跨主计划取更小、全完成/冷藏/删除返回 null、默认走 getPlanList、每天一次与跨天恢复',
+        ]
+      },
+      {
+        title: '口径统一与休息提示（3.5.13）',
+        items: [
+          'composables/useEnterSummary.js：initEnterSummary 窗口起点改为 max(确认基线, 离开基线)（此前只看确认基线，不点「知道了」直接杀进程会把同一批进展再报一遍）；本次冷启动若 onShow 已出卡则不覆盖；卡片展示即推进离开基线',
+          'utils/enter-summary.js：新增 scanMoodDip({ since, now, diaryReader }) —— 最近两个相邻记录日都含低落关键词才成立，同一天多条要全部低落，窗口外/已删除/无情绪字段不计',
+          'composables/useEnterSummary.js：结算结果附 moodDip，只有休息提示也算有内容（会出卡）',
+          'pages/chat/index.vue + chat.scss：总结卡新增「休息」行与 .kind-mood 中性灰样式（含深色），不催不评',
+          'tests/enter-summary.test.js 增 scanMoodDip 5 例；tests/enter-summary-refresh.test.js 增 3 例（展示推进离开基线 / onShow→appReady 不覆盖已挂起卡片 / 进程重启不重复报）+ 1 例 moodDip 接线',
+        ]
+      },
+      {
+        title: '测试与工程（3.5.13）',
+        items: [
+          'tests/plan-checkin.test.js：weekly 回执用例改走「今天打卡」——补记在周一没有「本周历史日」可补，导致每个周一必失败；补记链路仍由 daily 用例覆盖',
+          '全量：52 文件 / 621 用例，全绿（首次 0 失败）',
+          'CODEX_HANDOFF 待办清单：勾掉已完成的「拆分 reminder.js」（现 65 行 + utils/reminder/ 目录）',
+          '待拆文件登记（含约束）：pages/chat/index.vue 616 行 —— 抽卡片组件必须把 chat.scss 里的 .summary-*/.next-step-* 一起搬进新组件的 scoped 样式（父页 scoped 样式不会作用于子组件内部元素），需真机验收',
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.12',
+    date: '2026-09-14',
+    title: '3.5.12 持续性总结：回前台算「你不在时」的增量进展，与冷启动卡片共用一条确认基线',
+    summary: [
+      '持续性落地（方案 B：时间线增量）：以前只在冷启动算一次总结，切后台再回来什么都不提；现在 App.vue onHide 记下离开时刻、onShow 结算「离开 → 现在」的增量 —— 计划完成、打卡、新增记录都按这段时间报，回来就看到刚才发生了什么',
+      '只报增量、不重复报：新增离开基线 siji_enter_summary_leave_at（onHide 写），确认基线 siji_enter_summary_at 仍在点「知道了/查看详情」时推进；进程被杀没写离开基线就回落确认基线，同一段进展不会重复弹',
+      '不刷屏：60s 节流 + 已有未读卡片时不重算（被节流跳过时不推进窗口，那段进展下次补上）；后台不轮询、不设定时器，只在切回前台时算一次，不拿电量换「持续性」',
+      '卡片文案区分来源：冷启动保持「回来啦 · 新进展小结」，回前台换「欢迎回来 · 这段时间的进展」并标出离开时长（刚刚/分钟/小时/天）；不催不罚，不写「你已 N 天没打卡」',
+      '新增 tests/enter-summary-refresh.test.js（8 例，假定时器驱动）与 resolveSummaryWindow/formatAwaySpan 单测（9 例）：窗口裁决、节流、未读卡片保护、时钟回拨容错全覆盖',
+    ],
+    categories: [
+      {
+        title: '进入总结 · 前台恢复增量（3.5.12）',
+        items: [
+          'utils/enter-summary.js：新增 SUMMARY_QUIET_MS(60s) 与 resolveSummaryWindow({ confirmBaseline, leaveBaseline, now, lastCalcAt, hasPending, quietMs })，返回 skip + reason(ready|pending|unarmed|throttled|skew) + since + awayMs；离开基线晚于确认基线时优先用它（增量小），否则回落确认基线（进程被杀场景）',
+          'utils/enter-summary.js：节流判定为 last > 0 && now > last && now - last < quietMs —— lastCalcAt 落在未来（设备时钟回拨）时不节流，避免卡死不再结算',
+          'utils/enter-summary.js：新增 formatAwaySpan(ms) —— 刚刚 / N 分钟 / N 小时 / N 天，非法输入返回空串',
+          'composables/useEnterSummary.js：新增 markLeaveBaseline()（onHide 写 siji_enter_summary_leave_at）与 refreshEnterSummary()（onShow 结算增量，无内容推进确认基线）；initEnterSummary 保留冷启动语义并记录 lastCalcAt 参与节流；dismissEnterSummary 同时推进两条基线',
+          'App.vue：onShow 中 checkAllReminders 之后调 refreshEnterSummary（try/catch 兜底）；onHide 中先 markLeaveBaseline 再 flushPersist',
+          'pages/chat/index.vue：卡片标题改走 enterSummaryHead（冷启动/前台两套文案），新增 enterSummarySpan 副标题（离开 X 小时 / 距上次小结 X 天）；pages/chat/chat.scss 新增 .summary-head-meta（含深色覆盖）',
+        ]
+      },
+      {
+        title: '测试与验收（3.5.12）',
+        items: [
+          'tests/enter-summary.test.js：新增 resolveSummaryWindow 8 例（离开基线优先、回落确认基线、未读卡片、60s 节流、时钟回拨不节流、自定义间隔、未武装、基线超前）+ formatAwaySpan 1 例',
+          'tests/enter-summary-refresh.test.js（新增 8 例）：冷启动静默武装 / 算出窗口事件并标记 cold / 空窗口推进基线；回前台取离开基线只报新事件、已有未读卡片不重算、60s 节流不推进窗口且下次补算、空窗口推进确认基线、进程被杀回落确认基线',
+          '全量：50 文件 / 600 用例，599 通过（唯一失败是 plan-checkin 周一日期相关历史用例，非本次回归）',
+        ]
+      }
+    ]
+  },
+  {
+    version: '3.5.11',
+    date: '2026-09-14',
+    title: '3.5.11 Agent 三处硬化：入口门控反转 + 记忆相关度检索 + 工具失败自纠，并修掉 App 端 Agent 崩溃',
+    summary: [
+      '入口门控反转：只有「明显闲聊」（≤14 字、无数字、无数据域词、无疑问句式）才走单轮流式快通道，其余全部进工具循环 —— 修掉「说『记录』AI 却不执行」这类漏执行（旧白名单正则不命中就永远调不到工具）',
+      '长期记忆注入从「最近 30 条」改为按当前消息相关度检索（BM25 简化 + 45 天半衰期，事实/偏好加权），无命中回落最近 30 条：用久了早期关键事实不再被新条目挤出上下文',
+      '工具参数解析失败不再静默用 {} 执行：把「参数不是合法 JSON」回传模型让它重发；本轮写入失败时追加 [系统] 纠正指令，禁止把失败文本当结论回复用户',
+      '修掉 App 端 Agent 崩溃：agent-loop 里 chatRequestChunkedStream 从未 import，真机走到最终轮流式必抛 ReferenceError（H5 因条件编译被剥离，只在 App 暴露）',
+      '文件瘦身：agent-loop 544 → 283 行，新增 agent-transport / call-utils / chat-sse / chat-simulated 四个模块，全部回到 300 行红线内；删除死常量 MAX_QUERY_RESULTS',
+    ],
+    categories: [
+      {
+        title: 'Agent 循环 3.5.11',
+        items: [
+          'utils/ai/chat-stream.js：门控反转 —— 新增 isClearlyCasual()（≤14 字 + 无数字 + 无数据域词 + 无疑问句式才判闲聊）并导出 CASUAL_MAX_LEN；删除 looksDataQuery / isCommandMessage 白名单正则',
+          'utils/ai/agent-loop.js：工具参数解析改走 parseToolArgs，失败回传错误文本并记 ok:false（不再用空对象调用工具）；本轮写入失败时追加 [系统] 本轮写入未成功… 的 user 消息（用 TOOL_LABELS 中文标签），要求模型修正参数重试',
+          'utils/ai/tools/call-utils.js（新增 53 行）：TOOL_RESULT_TRUNCATE_MAP / getTruncateLimit / parseToolArgs / argErrorResult 从 agent-loop 下沉，经 tools.js 门面导出',
+          'utils/ai/agent-transport.js（新增 260 行）：callWithTools / callWithRetry / callWithToolsStream / callWithToolsSSE / buildToolList 拆出，并补上缺失的 chatRequestChunkedStream import（App 端 ReferenceError 修复）',
+          'utils/ai/chat-sse.js（新增 181 行）：H5 真实 SSE 流式拆出；utils/ai/chat-simulated.js（新增 56 行）：降级模拟逐字拆出（单独 import chat-request，不引入循环依赖）',
+          'utils/ai/prompt-actions.js：AGENT_TOOL_INSTRUCTION 移入（agent-loop 原样 re-export 兼容旧引用），并新增「多步任务先在心里列步骤」「工具返回失败必须换参数或先 query_* 定位后重试一次」两条',
+        ],
+      },
+      {
+        title: '记忆检索 3.5.11',
+        items: [
+          'utils/memory-rank.js（新增 121 行）：分词（CJK 二元组 + ASCII 单词）、BM25 简化打分（k1=1.2 + IDF）、分类权重（事实/偏好 1.25、事件 1.1、对话摘要 0.85）、45 天半衰期时间衰减',
+          'utils/memory.js：buildMemoryContext(query) 支持传当前消息，改用 selectMemories() 选池（上限仍 30 条），保留「已采纳 / 与画像重复」过滤不变',
+          'utils/ai/chat-helpers.js：buildChatMessages 把 userMessage 传给 buildMemoryContext，记忆注入随当前消息走',
+        ],
+      },
+      {
+        title: '安全与测试 3.5.11',
+        items: [
+          'utils/ai/tools/index.js：delete_feedback 登记进 CONFIRM_TOOLS —— 开了「AI 自动执行写操作」也必须在确认卡上点确认才能删',
+          'tests/memory-rank.test.js（新增 10 条）：分词 / 排序 / 无命中回落 / 分类权重 / buildMemoryContext 接入',
+          'tests/agent-gate.test.js（新增 22 条）：9 例明显闲聊走快通道、「记录 / 记账 / 和某人吃饭」等 10 例必须进工具循环、超长消息必进循环',
+          'tests/agent-arg-recovery.test.js（新增 8 条）：parseToolArgs 边界、失败原因回传后模型重发、写入失败自检注入 [系统] 指令',
+          'tests/ai-module-imports.test.js（新增 12 条）：静态校验 AI 核心模块「用到但没 import」——本次重构已靠它抓出 chat-sse.js 漏 import chatRequestNonStream',
+          'tests/agent-tools.test.js 与 tests/action-schema-consistency.test.js：CONFIRM_TOOLS 断言从「空集」更新为「只登记真实存在的删除类工具」',
+        ],
+      },
+    ],
+  },
   {
     version: '3.5.10',
     date: '2026-09-13',

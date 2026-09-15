@@ -550,6 +550,142 @@
   }
 }
 
+/* ─── 对话后的最小行动单卡（3.5.13：每天最多一次，可关） ─── */
+.next-step-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin: 12rpx $spacing-md 4rpx;
+  padding: 16rpx 20rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 14rpx;
+  flex-shrink: 0;
+}
+
+.next-step-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.next-step-label {
+  font-size: 20rpx;
+  color: #A1A1AA;
+}
+
+.next-step-title {
+  font-size: $font-sm;
+  font-weight: 600;
+  color: #18181B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.next-step-meta {
+  font-size: 20rpx;
+  color: #71717A;
+}
+
+.next-step-close {
+  flex-shrink: 0;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.next-step-close-icon {
+  font-size: 32rpx;
+  line-height: 1;
+  color: #A1A1AA;
+}
+
+/* ─── 新对话空态：回去接着聊 / 选择历史对话（3.5.16） ─── */
+.resume-card {
+  margin: 12rpx $spacing-md;
+  padding: 20rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 14rpx;
+}
+
+.resume-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.resume-label {
+  font-size: 20rpx;
+  color: #A1A1AA;
+}
+
+.resume-close {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resume-close-icon {
+  font-size: 30rpx;
+  line-height: 1;
+  color: #A1A1AA;
+}
+
+.resume-main {
+  margin-top: 8rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.resume-title {
+  font-size: $font-sm;
+  font-weight: 600;
+  color: #18181B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-meta {
+  font-size: 20rpx;
+  color: #71717A;
+}
+
+.resume-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: 16rpx;
+}
+
+.resume-btn {
+  flex: 1;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  font-size: $font-xs;
+  background: #F4F4F5;
+  color: #18181B;
+  border-radius: 10rpx;
+}
+
+.resume-btn:active {
+  opacity: 0.7;
+}
+
+.resume-btn-primary {
+  background: #000000;
+  color: #FFFFFF;
+}
+
 /* ─── 发送中状态行（3.4.4 P1：正在思考/回复 + 计时） ─── */
 .sending-strip {
   display: flex;
@@ -766,6 +902,22 @@
     color: #FAFAFA;
     border: 1rpx solid #27272A;
   }
+  .next-step-card {
+    background: #18181B;
+    border-color: #27272A;
+  }
+  .next-step-label {
+    color: #71717A;
+  }
+  .next-step-title {
+    color: #FAFAFA;
+  }
+  .next-step-meta {
+    color: #A1A1AA;
+  }
+  .next-step-close-icon {
+    color: #71717A;
+  }
   .retry-bar {
     background: #18181B;
     border-top: 1rpx solid #27272A;
@@ -888,7 +1040,7 @@
   }
 }
 
-/* ─── 冷启动进入总结卡片（3.4.5） ─── */
+/* ─── 进入总结卡片（3.4.5 冷启动 / 3.5.12 回前台增量） ─── */
 .summary-card {
   background: #FFFFFF;
   border: 1rpx solid #E4E4E7;
@@ -917,6 +1069,13 @@
   font-size: $font-sm;
   font-weight: 700;
   color: #18181B;
+}
+
+.summary-head-meta {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 20rpx;
+  color: #A1A1AA;
 }
 
 .summary-list {
@@ -962,6 +1121,18 @@
 .kind-streak {
   background: rgba(16, 185, 129, 0.12);
   color: #059669;
+}
+
+.kind-mood {
+  background: #F4F4F5;
+  border: 1rpx solid #E4E4E7;
+  color: #52525B;
+  box-sizing: border-box;
+}
+
+.kind-bill {
+  background: #FEF3C7;
+  color: #92400E;
 }
 
 .summary-line-title {
@@ -1010,6 +1181,95 @@
   font-weight: 600;
 }
 
+// ==================== 对话尺（3.5.17）====================
+// 消息够长时出现在聊天区左侧：刻度=跳转锚点，竖条=当前视口
+.messages-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  @include flex-col;
+}
+
+// 对话尺出现时给消息区留出左侧轨道，避免挡住 AI 气泡
+.messages-wrap.has-ruler .messages-list {
+  padding-left: 44rpx;
+}
+
+.chat-ruler {
+  position: absolute;
+  left: 4rpx;
+  top: 0;
+  bottom: 0;
+  width: 40rpx;
+  padding: 28rpx 0;
+  box-sizing: border-box;
+  z-index: 4;
+}
+
+.ruler-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ruler-viewport {
+  position: absolute;
+  left: 2rpx;
+  width: 4rpx;
+  border-radius: 2rpx;
+  background: #D4D4D8;
+}
+
+.ruler-tick {
+  position: absolute;
+  left: 12rpx;
+  right: 0;
+  height: 20rpx;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+}
+
+.ruler-bar {
+  width: 14rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #E4E4E7;
+  transition: width 0.12s ease, background-color 0.12s ease;
+}
+
+.ruler-tick.tick-user .ruler-bar {
+  background: #A1A1AA;
+}
+
+.ruler-tick.tick-active .ruler-bar {
+  width: 28rpx;
+  height: 6rpx;
+  background: #000000;
+}
+
+.ruler-preview {
+  position: absolute;
+  left: 56rpx;
+  width: 340rpx;
+  padding: 12rpx 18rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 12rpx;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.ruler-preview-text {
+  display: block;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #3F3F46;
+  @include text-ellipsis;
+}
+
 @media (prefers-color-scheme: dark) {
   .summary-card {
     background: #18181B;
@@ -1022,6 +1282,10 @@
 
   .summary-head-title {
     color: #FAFAFA;
+  }
+
+  .summary-head-meta {
+    color: #52525B;
   }
 
   .kind-done {
@@ -1045,6 +1309,17 @@
     color: #34D399;
   }
 
+  .kind-mood {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #A1A1AA;
+  }
+
+  .kind-bill {
+    background: rgba(245, 158, 11, 0.18);
+    color: #FCD34D;
+  }
+
   .summary-line-title {
     color: #D4D4D8;
   }
@@ -1064,4 +1339,55 @@
     border-color: #FAFAFA;
     color: #000000;
   }
+
+  .resume-card {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .resume-title {
+    color: #FAFAFA;
+  }
+
+  .resume-label,
+  .resume-meta,
+  .resume-close-icon {
+    color: #A1A1AA;
+  }
+
+  .resume-btn {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+
+  .resume-btn-primary {
+    background: #FAFAFA;
+    color: #000000;
+  }
+
+  .ruler-viewport {
+    background: #3F3F46;
+  }
+
+  .ruler-bar {
+    background: #27272A;
+  }
+
+  .ruler-tick.tick-user .ruler-bar {
+    background: #52525B;
+  }
+
+  .ruler-tick.tick-active .ruler-bar {
+    background: #FAFAFA;
+  }
+
+  .ruler-preview {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .ruler-preview-text {
+    color: #D4D4D8;
+  }
+
 }
