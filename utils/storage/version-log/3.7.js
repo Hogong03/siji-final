@@ -6,6 +6,36 @@
 
 export const V37 = [
   {
+    version: '3.7.6',
+    date: '2026-09-17',
+    title: '3.7.6 修 Android 选文件拷贝失败：路径归一 + 三级兜底 + 文本直读保底',
+    summary: [
+      '真机反馈「文件能看见但提示拷贝失败」：最可能是 plus.io.convertLocalFileSystemURL 给的是 file:// URL，而 FileOutputStream 只认裸路径 —— 新增 toNativePath 统一去前缀（顺带处理 // 开头的情况）',
+      '拷贝改成三级兜底：字节数组流拷贝（依赖最少，content:// 的流都支持 read/write）→ FileChannel.transferFrom（Java 侧整块搬）→ 文本直读兜底；content:// 的流在部分机型上 getChannel 不可用，所以不能只靠 transferFrom',
+      '拷完验一次：resolveLocalFileSystemURL 读真实字节数，0 字节当失败处理（以前空文件会被当成成功，用户拿到的是「这个文件是空的」）',
+      '文本类文件无论如何都附一份 inlineText（Java 侧直接读文本，不需要字节数组）：拷贝彻底失败也能把 txt / md / csv 读进来 —— 用户最常见的需求先保住',
+      '失败原因按阶段给（open-input / resolve-path / stream-fail:xxx / channel-fail:xxx）：下次真机再失败，报错本身就指到具体哪一步'
+    ],
+    categories: [
+      {
+        title: 'Android 拷贝加固（3.7.6）',
+        items: [
+          'utils/files/android-picker.js：新增 toNativePath（纯函数，去 file:// 前缀）；newByteBuffer 同时尝试 plus.android.newObject(\'[B\', n) 与 java.lang.reflect.Array.newInstance；copyViaStream / copyViaChannel 两条独立策略 + readUriAsText 文本兜底；copyContentUriToSandbox 返回 { ok, bytes, text, stage }，stage 记录走到哪一步、哪一步失败',
+          'utils/files/android-picker.js：verifySandboxFile 用 resolveLocalFileSystemURL + entry.file 读真实大小做校验；pickFileViaAndroid 在 kind === \'text\' 且拷贝失败但有 inlineText 时仍返回 ok（path 置空，交给上层用正文）',
+          'utils/files/index.js：readPickedFile 优先用 pick.inlineText（文本类且有内容时直接清洗截断，不碰本地文件读取）'
+        ]
+      },
+      {
+        title: '测试（3.7.6）',
+        items: [
+          'tests/file-pick-android.test.js（17 例，本轮 +5）：toNativePath 四态；file:// URL 下仍能拷成功；文本文件拷贝全败时靠 inlineText 返回 ok 且 readPickedFile 能出正文；二进制拷贝失败如实报错且带 stage；0 字节当失败',
+          '假 plus 现在覆盖字节数组策略（input.read + output.write）、channel 策略、文本读取三条路，用例按策略分支断言',
+          '全量：70 文件 / 1002 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.5',
     date: '2026-09-17',
     title: '3.7.5 Android 真机可以选文件了：系统选择器 + 拷进沙盒，零插件零权限',

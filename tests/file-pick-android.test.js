@@ -10,9 +10,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import './setup.js'
 import {
-  safeFileName, uploadRelPath, isAndroidRuntime, pickFileViaAndroid,
+  safeFileName, uploadRelPath, toNativePath, isAndroidRuntime, pickFileViaAndroid,
   copyContentUriToSandbox, REQ_PICK_FILE, UPLOAD_DIR
 } from '../utils/files/android-picker.js'
+import { readPickedFile } from '../utils/files/index.js'
 import { pickOneFile, appPickRoute, APP_PICK_HINT } from '../utils/files/picker.js'
 
 describe('纯函数：文件名消毒与落地路径', () => {
@@ -93,7 +94,17 @@ function fakePlus(options = {}) {
             getString: (i) => (i === 0 ? meta.name : String(meta.size)),
             close: () => {}
           }),
-          openInputStream: () => ({ getChannel: () => ({ close() {} }), available: () => meta.size, close() {} })
+          openInputStream: () => ({
+            getChannel: () => ({ close() {} }),
+            available: () => meta.size,
+            read: function (buf, off, len) {
+              if (options.readFails) throw new Error('read-denied')
+              if (this.__done) return -1
+              this.__done = true
+              return Math.min(meta.size, len)
+            },
+            close() {}
+          })
         }
       },
       // 模拟用户选完：回来后由被测代码挂上的 onActivityResult 接管（用 this 取，拿到的就是它）
@@ -125,23 +136,33 @@ function fakePlus(options = {}) {
         }
         if (name === 'java.io.FileOutputStream') {
           return function (path) {
+            this.path = path
             this.getChannel = () => ({
-              transferFrom: (inCh, pos, count) => { calls.copied.push({ path, count }); return count },
+              transferFrom: (inCh, pos, count) => { calls.copied.push({ via: 'channel', path, count }); return options.channelMoves === 0 ? 0 : count },
               write: () => {},
               close: () => {}
             })
+            this.write = () => { calls.copied.push({ via: 'stream', path }) }
+            this.flush = () => {}
             this.close = () => {}
-            calls.copied.push({ open: path })
+          }
+        }
+        if (name === 'java.io.BufferedReader' || name === 'java.io.InputStreamReader') {
+          return function () {
+            let served = 0
+            this.readLine = () => (served++ < (options.textLines || 0) ? 'line' + served : null)
+            this.close = () => {}
           }
         }
         return function () {}
       },
-      newObject: () => ({})
+      newObject: () => (options.noByteBuffer ? null : { sig: '[B' })
     },
     io: {
       PRIVATE_DOC: 'PRIVATE_DOC',
       requestFileSystem: (type, ok) => ok({ root: { getDirectory: (n, o, cb) => cb({}) } }),
-      convertLocalFileSystemURL: (rel) => '/storage/emulated/0/Android/data/app/doc/' + rel.replace('_doc/', '')
+      convertLocalFileSystemURL: (rel) => (options.fileUrl ? 'file://' : '') + '/storage/emulated/0/Android/data/app/doc/' + rel.replace('_doc/', ''),
+      resolveLocalFileSystemURL: (rel, ok) => ok({ file: (cb) => cb({ size: options.verifySize === undefined ? meta.size : options.verifySize }) })
     }
   }
   return { plus: that, calls }
@@ -153,7 +174,7 @@ describe('pickFileViaAndroid：选 → 拷 → 交回沙盒路径', () => {
   afterEach(() => { global.plus = original })
 
   it('选中一个 txt：返回沙盒相对路径 + 绝对路径 + 消毒后的名字', async () => {
-    const { plus: fake, calls } = fakePlus()
+    const { plus: fake, calls } = fakePlus({ textLines: 2 })
     global.plus = fake
     const r = await pickFileViaAndroid()
     expect(r.ok).toBe(true)
@@ -164,8 +185,9 @@ describe('pickFileViaAndroid：选 → 拷 → 交回沙盒路径', () => {
     expect(r.pick.size).toBe(2048)
     expect(r.pick.mime).toBe('text/plain')
     expect(calls.started).toEqual([REQ_PICK_FILE])
-    // 真的调了拷贝（transferFrom），不是只返回了个路径
-    expect(calls.copied.some(c => c.count === 2048)).toBe(true)
+    // 真的拷了（字节数组策略），不是只返回了个路径
+    expect(calls.copied.some(c => c.via === 'stream')).toBe(true)
+    expect(r.pick.inlineText).toBe('line1\nline2')
   })
 
   it('用户取消：静默返回，不带提示文案', async () => {
@@ -196,8 +218,62 @@ describe('copyContentUriToSandbox：失败不炸', () => {
   const original = global.plus
   afterEach(() => { global.plus = original })
 
-  it('取不到 session 时返回 false', () => {
+  it('取不到输入流：给出 stage 便于定位，不抛异常', async () => {
     global.plus = { os: { name: 'Android' }, android: { runtimeMainActivity: () => ({ getContentResolver: () => ({ openInputStream: () => null }) }) } }
-    expect(copyContentUriToSandbox('content://x', '_doc/upload/a.txt')).toBe(false)
+    const r = await copyContentUriToSandbox('content://x', '_doc/upload/a.txt')
+    expect(r.ok).toBe(false)
+    expect(r.stage).toBe('open-input')
+  })
+})
+
+describe('3.7.6 加固：路径归一 / 文本兜底 / 失败原因可定位', () => {
+  const original = global.plus
+  afterEach(() => { global.plus = original })
+
+  it('toNativePath：file:// 前缀要去掉，FileOutputStream 只认裸路径（真机拷贝失败的第一嫌疑人）', () => {
+    expect(toNativePath('file:///storage/emulated/0/doc/a.txt')).toBe('/storage/emulated/0/doc/a.txt')
+    expect(toNativePath('/storage/emulated/0/doc/a.txt')).toBe('/storage/emulated/0/doc/a.txt')
+    expect(toNativePath('  file:///a/b.txt ')).toBe('/a/b.txt')
+    expect(toNativePath('')).toBe('')
+  })
+
+  it('convertLocalFileSystemURL 给 file:// URL 时，路径归一化后仍能拷成功', async () => {
+    const { plus: fake, calls } = fakePlus({ fileUrl: true, textLines: 2 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(calls.copied.some(c => c.via === 'stream')).toBe(true)
+  })
+
+  it('文本类文件：拷贝彻底失败也能靠 inlineText 读进来（返回 ok 且 path 为空）', async () => {
+    const { plus: fake } = fakePlus({ readFails: true, noByteBuffer: true, channelMoves: 0, textLines: 3, verifySize: 0 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(r.pick.inlineText).toContain('line1')
+    expect(r.pick.path).toBe('')
+    // 交给 readPickedFile 也能直接出正文，不再走本地文件读取
+    const read = await readPickedFile(r.pick)
+    expect(read.ok).toBe(true)
+    expect(read.text).toContain('line1')
+  })
+
+  it('二进制文件拷贝失败：如实报错并带上失败阶段', async () => {
+    const { plus: fake } = fakePlus({
+      readFails: true, noByteBuffer: true, channelMoves: 0, verifySize: 0,
+      meta: { name: '真题.pdf', size: 4096, mime: 'application/pdf' }
+    })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(false)
+    expect(r.reason).toContain('拷贝失败')
+    expect(r.reason).toContain('stream-fail')
+  })
+
+  it('拷完是 0 字节：当失败处理（不再把空文件当成功）', async () => {
+    const { plus: fake } = fakePlus({ verifySize: 0, meta: { name: '真题.pdf', size: 4096, mime: 'application/pdf' } })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(false)
   })
 })

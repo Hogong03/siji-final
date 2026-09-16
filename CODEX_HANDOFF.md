@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 69 文件 / 985 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.7.4（自检口径自证：`EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL` + `formatFailureReport(rows, meta)` 头部带口径与应用版本；语料 23 条） |
+| 测试 | 70 文件 / 1002 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.7.6（Android 选文件：`utils/files/android-picker.js` 系统选择器 + 拷贝三级兜底 + `toNativePath`；`readPickedFile` 认 `pick.inlineText`；含 3.7.5 / 3.7.4 的改动） |
 
 ---
 
@@ -376,6 +376,7 @@ npx vitest run
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
 | 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
+| 改 App 端选文件（踩坑记录） | 真机「文件能看见但拷贝失败」的两个嫌疑人：`convertLocalFileSystemURL` 给 `file://` URL（`FileOutputStream` 只认裸路径 → `toNativePath`）、content:// 的流 `getChannel()` 不可用（→ 字节数组流拷贝优先，`transferFrom` 只作第二策略）；文本类永远留 `inlineText` 兜底 |
 | 改 App 端选文件 | `utils/files/android-picker.js`（Android 系统选择器 + `safeFileName` / `uploadRelPath` 纯函数 + `copyContentUriToSandbox`）+ `utils/files/picker.js` 的 `appPickRoute` + `doc-parse.js` 的 `absPath` 优先 |
 | 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |

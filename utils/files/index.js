@@ -14,7 +14,7 @@ export * from './file-types.js'
 export * from './file-text.js'
 export { readLocalText, readLocalBase64 } from './local-io.js'
 export { pickOneFile, toPick, APP_PICK_HINT } from './picker.js'
-export { isAndroidRuntime, pickFileViaAndroid, safeFileName, uploadRelPath, copyContentUriToSandbox, UPLOAD_DIR, REQ_PICK_FILE } from './android-picker.js'
+export { isAndroidRuntime, pickFileViaAndroid, safeFileName, uploadRelPath, toNativePath, copyContentUriToSandbox, UPLOAD_DIR, REQ_PICK_FILE } from './android-picker.js'
 export { parseDocument, resolveDocConfig, docStatusText, isDocParseAvailable, setDocBackend, getDocBackendId, setOwnDocKey, hasOwnDocKey, listDocBackends, DOC_BACKENDS, DOC_KEYS } from './doc-parse.js'
 
 /** 不支持的格式给什么建议（统一文案，别在各页面各写一遍） */
@@ -44,6 +44,16 @@ export function readPickedFile(pick) {
   const sizeCheck = checkSize(p.size)
   if (!sizeCheck.ok) {
     return Promise.resolve(Object.assign({ ok: false, reason: sizeCheck.reason }, base))
+  }
+
+  // Android 选文件时 Java 侧顺手读好的文本（拷贝失败也能读进来，见 android-picker.js）
+  if (kind === 'text' && typeof p.inlineText === 'string' && p.inlineText) {
+    const cleaned = cleanFileText(p.inlineText)
+    if (!cleaned) return Promise.resolve(Object.assign({ ok: false, reason: '这个文件是空的' }, base))
+    if (looksBinary(cleaned)) {
+      return Promise.resolve(Object.assign({ ok: false, reason: '这不是文本文件（可能是改了后缀的二进制文件）' }, base))
+    }
+    return Promise.resolve(finish(cleaned, base))
   }
 
   if (kind === 'document') {
