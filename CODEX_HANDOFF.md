@@ -370,6 +370,7 @@ npx vitest run
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` / `execCardText`）+ `utils/ai/autoExecutor.js`（agent 路径落盘点）+ `components/chat/ExecResultCard.vue` + `composables/useChatNavigation.js` 的 `canOpenType` |
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（基础集 / 收窄集）+ `utils/ai/autoExecutor.js`（两条路径闸门一致）+ `utils/ai/fallback.js`（提取）+ `agent-loop.js` 透传标记。教训：改声称正则必须同时看 Agent 路径（autoExecutor.js:29）与 JSON 路径（autoExecutor.js:140） |
 | 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` + `composables/useChatEngine.js` 的确认分支 + `utils/ai/response-parser.js` 的 `normalizeActions` |
+| AI 效果自检基线 | `docs/AI效果自检基线.md`（通过 / 兜底 / 跳过三档读法 + 每次跑完登记一行 + 扩语料的五条规矩） |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL` + `pages/settings/sub/ai-eval.vue` 的 reportMeta —— 改度量语义时必须 bump，否则又是一份「不知道哪套代码跑的」报告 |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（23 条语料，纯数据，日期现算）+ `runner.js` 的 `buildEvalContext` / `resolveCase`（数据前置与占位符）+ 缺前置判 SKIP |+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
