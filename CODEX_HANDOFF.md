@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 66 文件 / 942 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.7.0（AI 效果自检：`utils/ai/eval/cases.js` 22 条真实语料 + `runner.js` 判定跑分 + `agent-loop.js` 的 `cfg.dryRun` 干跑（不落库、不联网）+ `pages/settings/sub/ai-eval.vue`；含 3.6.2 的读网址修复与 3.6.1 的「回去接着聊」跳转修复） |
+| 测试 | 67 文件 / 960 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.7.1（自检口径修正：干跑只拦写操作与联网工具、`mergeExecutedTools` 合并 tool_calls 与 JSON action、兜底档 `CASE_STATUS.FALLBACK`；真 Bug 修复：Agent 路径兜底闸门漏认「记好了 / 记下来了」→ 记录与账单静默丢失） |
 
 ---
 
@@ -124,7 +124,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（66 文件 942 用例，Vitest）
+├── tests/              # 测试（67 文件 960 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -368,6 +368,7 @@ npx vitest run
 | 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名/`buildEnterButtons` 预置按钮）+ `composables/useChatSession.js` 的 `appendEnterSummary` 与 `resumeBack`（回去时销毁伪对话）+ `utils/chat-session.js`（空壳/让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `pages/chat/index.vue` 的 `.enter-actions` 与 `handleEnterButton` |
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` / `execCardText`）+ `utils/ai/autoExecutor.js`（agent 路径落盘点）+ `components/chat/ExecResultCard.vue` + `composables/useChatNavigation.js` 的 `canOpenType` |
+| 改声称操作 / 兜底 | `utils/ai/constants.js`（基础集 / 收窄集）+ `utils/ai/autoExecutor.js`（两条路径闸门一致）+ `utils/ai/fallback.js`（提取）+ `agent-loop.js` 透传标记。教训：改声称正则必须同时看 Agent 路径（autoExecutor.js:29）与 JSON 路径（autoExecutor.js:140） |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（22 条语料，纯数据，日期现算）+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
