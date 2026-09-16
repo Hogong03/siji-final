@@ -1,0 +1,195 @@
+/* 记录阅读页（3.9.0）— 纯黑白灰阶，零阴影零渐变；CSS 变量禁用，全部硬编码 */
+
+.read-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #FFFFFF;
+  box-sizing: border-box;
+}
+
+/* ─── 头部 ─── */
+.read-head {
+  padding: 24rpx 28rpx 16rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+  flex-shrink: 0;
+}
+
+.read-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #09090B;
+  line-height: 1.35;
+}
+
+.read-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.read-meta-text {
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+
+.read-tag {
+  font-size: 22rpx;
+  color: #71717A;
+  background: #F4F4F5;
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+}
+
+.read-edit {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: #18181B;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 10rpx;
+  padding: 6rpx 20rpx;
+}
+
+.read-edit:active {
+  opacity: 0.6;
+}
+
+/* ─── 正文区 ─── */
+.read-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.read-scroll {
+  height: 100%;
+}
+
+.read-content {
+  padding: 20rpx 28rpx 0;
+}
+
+/* 有尺子时右边留出尺子宽度，正文不贴边 */
+.read-body.has-ruler .read-content {
+  padding-left: 68rpx;
+}
+
+.read-section {
+  margin-bottom: 28rpx;
+}
+
+.read-section-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #09090B;
+  line-height: 1.4;
+  margin-bottom: 10rpx;
+  /* 小节标题左侧一道黑竖线：章节感 */
+  border-left: 6rpx solid #000000;
+  padding-left: 16rpx;
+}
+
+.read-bottom-space {
+  height: 120rpx;
+}
+
+.read-empty {
+  padding: 80rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.read-empty-text {
+  font-size: 26rpx;
+  color: #A1A1AA;
+}
+
+/* ─── 目录尺 ─── */
+.read-ruler {
+  position: absolute;
+  left: 8rpx;
+  top: 24rpx;
+  bottom: 24rpx;
+  width: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.ruler-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 视口指示：当前可见范围 */
+.ruler-viewport {
+  position: absolute;
+  left: 26rpx;
+  width: 4rpx;
+  background: #D4D4D8;
+  border-radius: 4rpx;
+}
+
+/* 刻度：每小节一个，文字标题在预览里显示 */
+.ruler-tick {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+}
+
+.ruler-bar {
+  position: absolute;
+  left: 20rpx;
+  top: -2rpx;
+  width: 16rpx;
+  height: 4rpx;
+  background: #A1A1AA;
+  border-radius: 4rpx;
+}
+
+.ruler-tick.tick-active .ruler-bar {
+  background: #000000;
+  width: 26rpx;
+  top: -3rpx;
+  height: 6rpx;
+}
+
+/* 拖动预览：小节名 */
+.ruler-preview {
+  position: absolute;
+  left: 46rpx;
+  transform: translateY(-50%);
+  background: #000000;
+  border-radius: 8rpx;
+  padding: 6rpx 14rpx;
+  max-width: 420rpx;
+}
+
+.ruler-preview-text {
+  font-size: 22rpx;
+  color: #FFFFFF;
+  white-space: nowrap;
+}
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .read-page { background: #000000; }
+  .read-head { border-color: #27272A; }
+  .read-title { color: #FAFAFA; }
+  .read-tag { background: #18181B; color: #A1A1AA; }
+  .read-edit { color: #FAFAFA; border-color: #3F3F46; }
+  .read-section-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+  .read-empty-text { color: #52525B; }
+  .ruler-viewport { background: #3F3F46; }
+  .ruler-bar { background: #52525B; }
+  .ruler-tick.tick-active .ruler-bar { background: #FAFAFA; }
+  .ruler-preview { background: #FAFAFA; }
+  .ruler-preview-text { color: #000000; }
+}

@@ -453,6 +453,8 @@
   .filter-bar { background: #18181B; border-bottom-color: #27272A; }
   .filter-type-label { color: #F4F4F5; }
   .filter-toggle { color: #71717A; }
+  .read-entry { border-color: #3F3F46; }
+  .read-entry-text { color: #FAFAFA; }
   .meta-section-title { color: #71717A; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
@@ -552,6 +554,28 @@
   font-size: 24rpx;
   color: #A1A1AA;
   padding: 4rpx 12rpx;
+}
+
+/* 阅读入口（3.9.0）：有内容的老记录才显示，进阅读页看章节版 */
+.read-entry {
+  border: 1rpx solid #E4E4E7;
+  border-radius: 10rpx;
+  padding: 4rpx 18rpx;
+  margin-right: 8rpx;
+}
+
+.read-entry-text {
+  font-size: 24rpx;
+  color: #18181B;
+}
+
+.read-entry:active {
+  opacity: 0.6;
+}
+
+.filter-toggle-wrap {
+  display: flex;
+  align-items: center;
 }
 /* ─── 筛选面板（分类/标签独立分行） ─── */
 .meta-panel {

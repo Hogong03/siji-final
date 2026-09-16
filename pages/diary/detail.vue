@@ -113,6 +113,12 @@ function closeTypePicker() {
 
 let leaveConfirmed = false
 
+/** 进入阅读页（长文按章节读，左侧目录尺跳小节） */
+function goRead() {
+  if (isNew.value) return
+  uni.navigateTo({ url: `/pages/diary/read?clientId=${diaryId.value}&month=${month.value}` })
+}
+
 function goBack() {
   leaveConfirmed = true
   uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/diary/list' }) })
@@ -242,8 +248,13 @@ const emotionLabel = computed(() => {
           <text class="filter-type-icon">{{ currentType.icon }}</text>
           <text class="filter-type-label">{{ currentType.label }}</text>
         </view>
-        <view class="filter-right" @tap="showMetaPanel = !showMetaPanel">
-          <text class="filter-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
+        <view class="filter-right">
+          <view v-if="!isNew && form.content.trim()" class="read-entry" @tap="goRead">
+            <text class="read-entry-text">阅读</text>
+          </view>
+          <view class="filter-toggle-wrap" @tap="showMetaPanel = !showMetaPanel">
+            <text class="filter-toggle">{{ showMetaPanel ? '▲' : '▼' }}</text>
+          </view>
         </view>
       </view>
 

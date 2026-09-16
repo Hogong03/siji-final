@@ -259,6 +259,14 @@
      }
     },
     {
+     "path": "read",
+     "style": {
+      "navigationBarTitleText": "阅读",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
      "path": "trash",
      "style": {
       "navigationBarTitleText": "回收站",

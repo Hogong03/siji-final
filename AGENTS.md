@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 71 文件 / 1025 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.8.0（内置 12 条六级技巧到记录里，标签「技巧」，写作/阅读/听力/翻译各 3 条，按 client_id 跨月判重补发） |
+| 测试 | 72 文件 / 1043 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.9.0（记录**长文阅读页** `pages/diary/read.vue` + 左侧**目录尺**（复用对话尺的换算与触摸手感，跳转走锚点）；六级技巧改成 4 章长文，旧 12 条短技巧自动软删） |
 
 ---
 
@@ -142,11 +142,11 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.8.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.9.js）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 71 文件 1025 用例
+├── tests/              # 72 文件 1043 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -265,6 +265,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` 压缩 / `execCardText` 卡片文案）+ `utils/ai/autoExecutor.js`（agent 路径 `compact` 落盘点）+ `components/chat/ExecResultCard.vue`（`toolCardText` 分支）+ `composables/useChatNavigation.js` 的 `canOpenType`（有没有页面可跳） |
+| 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
@@ -323,7 +324,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 71 文件 / 1025 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 72 文件 / 1043 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
