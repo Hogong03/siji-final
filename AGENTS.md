@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 65 文件 / 917 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.6.2（读网址：网址前后粘连的中文不再带偏抓取，直连失败的原因按平台给；搜索 / 读网页的执行卡只留摘要不落整包结果；含 3.6.1 的「回去接着聊」跳转修复） |
+| 测试 | 66 文件 / 942 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.7.0（AI 效果自检：22 条真实语料干跑跑分 + 通过率页面；含 3.6.2 的读网址修复与 3.6.1 的「回去接着聊」跳转修复） |
 
 ---
 
@@ -146,7 +146,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 63 文件 894 用例
+├── tests/              # 66 文件 942 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -266,7 +266,9 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
 | 改版本号读取 / 反馈导出 | `utils/version-check.js`（`primeAppVersion` 读资源包版本 + `getVersion`；基座里 `plus.runtime.version` 是宿主版本）+ `pages/settings/sub/dev-feedback.vue`（导出头部 meta）+ `utils/dev-feedback.js`（纯函数） |
+| 改 AI 效果自检 | `utils/ai/eval/cases.js`（22 条语料，纯数据，日期现算）+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
+| App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
 | 记录类型 | `pages/diary/detail.vue` RECORD_TYPES 常量 |
@@ -301,7 +303,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `0dc583b` (fix: 3.6.2 读网址不再被粘连的中文带偏 + 失败原因按平台 + 搜索卡只留摘要)
+- 当前 HEAD: 3.7.0 AI 效果自检（见 `utils/storage/version-log/3.7.js`）
 - 远端：`origin/main`，2026-09-15 推送成功（`46ab2b4..b5b07d4`）
 - 上一次 push 曾遇到 HTTP 502（GitHub 网关侧），重试即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过
 - `http.sslVerify` 保持 true（2026-08-20 恢复）
@@ -312,7 +314,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 65 文件 / 917 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 66 文件 / 942 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
