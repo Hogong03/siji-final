@@ -6,6 +6,51 @@
 
 export const V37 = [
   {
+    version: '3.7.1',
+    date: '2026-09-16',
+    title: '3.7.1 自检首跑 16/23：3 条修自检口径、2 条真 Bug（AI 说「记好了」但记录没落库）',
+    summary: [
+      '自检口径修正一：干跑只拦写操作与联网工具，查询类（query_plan 等只读）照常真跑 —— 3.7.0 把查询也换成占位文本，模型拿不到计划 client_id，只能照着占位瞎答（plan-add-child 与 plan-checkin 两条失败都出在这）',
+      '自检口径修正二：工具序列合并两条执行路径（原生 tool_calls + 老 JSON action）—— 3.7.0 只认 tool_calls，把 5 条本来会正常执行的记账 / 记录判成了「没调工具」',
+      '自检新增兜底档（页面显示 ~）：模型既没调工具也没回 JSON、只口头答应时，若前端兜底能救回写入则单独计数 —— 它不算通过，因为「靠正则救回来」不等于「AI 会拆解」，这正是你排第一的痛点的量化证据',
+      '真 Bug 一：Agent 路径的兜底闸门只认收窄集（已记… / 记下了 / 记了一笔），而实测模型最常说的是「记好了 / 记下来了 / 记下来啦」—— 全部漏过兜底，于是记录与账单一分没写、用户却被告知记好了（静默丢数据）；基础集补 11 个说法，收窄集补 12 个，Agent 闸门与 JSON 路径对齐，并把 response-parser 的 _opClaimWithoutAction 从 agent-loop 透传出来',
+      '真 Bug 二：记账兜底认不出「记一笔 / 记账」这类指令（「记一笔昨天的午饭 25」里没有任何花销动词，兜底压根不进来）；补指令词并按原话补日期（昨天 / 前天），模型不调工具时也能把账救回来',
+      '剩下的 plan-add-child / plan-checkin 需要你复跑确认：它们依赖你库里真实的计划名与数据，若确实没有「英语听力」这个计划，那条语料的期望就不成立，按你实际的计划名改语料'
+    ],
+    categories: [
+      {
+        title: '自检口径修正（3.7.1）',
+        items: [
+          'utils/ai/agent-loop.js：dryRun 收窄为「只拦写操作 + NETWORK_TOOLS（web_search / read_url）」，查询类走真实 executeTool —— 自检必须让模型看到真实数据，否则测的是它瞎猜的能力',
+          'utils/ai/eval/runner.js：新增 mergeExecutedTools(result)，把 tool_calls 与 action / actions 合并成一条工具序列（标 source: tool | json）；runCase 增加 jsonTools 与兜底档判定 detectFallback（闸门与 autoExecutor 一致），formatFailureReport 标出「其中 N 步走 JSON 兜底」',
+          'pages/settings/sub/ai-eval.vue：runAgentLoop 传真 store（查询要真跑）；实际工具行标注 JSON 兜底步数；状态符号 ✓ / ~（兜底）/ × / !（出错）并加图例；汇总行单独显示「靠兜底 N」',
+          'utils/ai/eval/cases.js 未改：语料本身没问题，问题在度量口径（这是本次最重要的一条结论）'
+        ]
+      },
+      {
+        title: '真 Bug：口头声称但没落库（3.7.1）',
+        items: [
+          '根因：两套声称正则 —— 基础集 OP_CLAIM_RE（response-parser 用，含「记好了」）与收窄集 OP_CLAIM_RE_FALLBACK（兜底闸门用，只含「已记…/帮你记…/记下了/记了一笔」）。JSON 路径的闸门是「收窄集 || parser 标记」，认得出「记好了」；Agent 路径的闸门只有收窄集，认不出 —— 而 Agent 路径是工具调用厂商的默认路径',
+          '后果：模型在 5 条语料上没调工具、只回「记好了 / 记下来了 / 记下来啦」，前端兜底不触发 → 记录与账单一分没写，用户看到的是「记好了」（静默数据丢失，比报错更难发现）',
+          'utils/ai/constants.js：OP_CLAIM_WORDS 补 11 个说法（记下来了 / 记下来啦 / 记录下来 / 已记下 / 记上了 / 存好了 / 加好了 / 建好了 / 创建好了 / 添加好了 / 保存好了），OP_CLAIM_RE_FALLBACK 同步补齐并含「记好了」',
+          'utils/ai/autoExecutor.js：Agent 路径闸门改为「收窄集 || 基础集 || result._opClaimWithoutAction」，与 JSON 路径同一套判断',
+          'utils/ai/agent-loop.js：无工具调用分支的返回值补 _opClaimWithoutAction 透传（原来直接丢，Agent 路径拿不到 parser 的标记）',
+          'utils/ai/fallback.js：记账分支 billKeywords 补「记一笔 / 记一下账 / 记个账 / 记笔账 / 记账」；金额取「元 / 块」后缀优先、否则最后一个数字；按原话里的今天 / 昨天 / 前天补 bill_date（normalizeDateStr）',
+          'utils/ai/eval/runner.js 的 detectFallback 同步成「收窄集 || 基础集」，确保自检度量与实际兜底行为一致'
+        ]
+      },
+      {
+        title: '测试（3.7.1）',
+        items: [
+          'tests/op-claim-guard.test.js（+8 例）：五条实测回复（记好了 / 记下来了 / 记下来啦）必须被两套正则认出；普通闲聊（我记得你说过想去爬山）不许误判；记账兜底四例（昨天 / 前天 / 无日期 / 元后缀优先）与「记录类仍走 create_diary」的对照',
+          'tests/ai-eval-fallback.test.js（新增 6 例）：兜底档判定（算 fallback 不算 fail）、没声称操作时仍判 fail、只查回复的用例不打兜底档、真调工具时不会被打成兜底、汇总三档分开计数',
+          'tests/ai-eval.test.js：干跑用例改成 3.7.1 口径（查询真跑、写被闸门挡、store 传 null 不炸）+ mergeExecutedTools 五例',
+          '全量：67 文件 / 960 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.0',
     date: '2026-09-16',
     title: '3.7.0 AI 效果自检：22 条真实语料跑一遍，改提示词第一次有数字对照',

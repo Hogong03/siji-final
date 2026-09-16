@@ -11,8 +11,9 @@
  *
  * 3.5.11：请求传输（HTTP/SSE/App chunked/重试）拆到 agent-transport.js；
  *         工具参数解析失败不再静默用 {} 执行，改为回传模型自纠；写入失败追加自检提示。
- * 3.7.0：cfg.dryRun 干跑模式 —— AI 效果自检用，只记录要调什么工具、什么参数，
- *         既不落库也不发网络请求（工具结果换成占位），避免自检污染真实数据。
+ * 3.7.0：cfg.dryRun 干跑模式 —— AI 效果自检用，不落库、不发网络请求，避免自检污染真实数据。
+ * 3.7.1：干跑收窄成「只拦写操作 + 两个联网工具」——查询（query_plan 等）必须真跑，
+ *         否则模型拿不到 client_id 这类真实标识，只能照着占位文本瞎答（3.7.0 首跑 7 条失败全出在这）。
  */
 
 import { getProvider } from './providers.js'
@@ -26,6 +27,9 @@ import { callWithTools } from './agent-transport.js'
 import { logger } from '../logger.js'
 
 const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
+
+/** 干跑时也要拦住的联网工具：跑批不该产生真实网络请求（工具选择与它们的内容无关） */
+const NETWORK_TOOLS = new Set(['web_search', 'read_url'])
 
 /**
  * 干跑结果（3.7.0）：模拟一次工具调用的返回，不碰 store、不发网络请求
@@ -116,6 +120,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         action: result.action,
         actions: result.actions,
         suggestions: result.suggestions,
+        // 3.7.1：透传「声称操作但没有 action」标记，供 autoExecutor 的兜底闸门使用
+        _opClaimWithoutAction: result._opClaimWithoutAction === true,
         toolCalls,
         execResults,
         conversation_id: response.id || conversationId
@@ -193,7 +199,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         const fnArgs = parsed.args
         // web_search / read_url 独立执行（网络调用，不走 store）
         let toolResult
-        if (dryRun) toolResult = dryRunResult(fnName, fnArgs)
+        // 查询类（除联网）照常真跑：只读、不改数据，模型必须看到真实数据才谈得上「拆解」
+        if (dryRun && NETWORK_TOOLS.has(fnName)) toolResult = dryRunResult(fnName, fnArgs)
         else if (fnName === 'web_search') toolResult = await executeWebSearch(fnArgs.query)
         else if (fnName === 'read_url') toolResult = await executeReadUrl(fnArgs.url)
         else toolResult = executeTool(store, fnName, fnArgs)

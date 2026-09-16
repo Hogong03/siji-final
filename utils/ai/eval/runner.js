@@ -5,15 +5,46 @@
  * 不碰 store、不发请求 —— 模型调用由调用方以 runner 函数注入
  * （页面里是真请求，测试里是 cfg._mockResponder），这样判定逻辑可以被单测钉死。
  *
- * 干跑模式在 utils/ai/agent-loop.js 的 cfg.dryRun：只记录「要调什么工具」，不落任何数据。
+ * 干跑模式在 utils/ai/agent-loop.js 的 cfg.dryRun：写操作与联网工具换成占位，查询类照常真跑。
+ *
+ * 3.7.1：引擎有两条执行路径 —— 原生工具调用（tool_calls，走循环）与老 JSON action（模型只回
+ * JSON 时由 response-parser 解析）。用户可感知的结果是「到底落库没有」，所以两条都必须计入工具
+ * 序列；3.7.0 首跑只认 tool_calls，把 5 条本来会正常执行的记账 / 记录判成了「没调工具」。
+ *
+ * 3.7.1 另立一档 fallback：模型既没调工具、也没回 JSON，只口头说「记好了」时，前端 extractFallbackAction
+ * 还能从用户原话里正则兜出一条写入 —— 结果会落库，但这不是 AI 会拆解，是兜底在救场。
+ * 这一档单独计数（不算通过），因为它正是「AI 拆解能力差」的量化证据。
  */
+import { extractFallbackAction } from '../fallback.js'
+import { OP_CLAIM_RE, OP_CLAIM_RE_FALLBACK } from '../constants.js'
 
 /** 用例结果状态 */
 export const CASE_STATUS = {
   PASS: 'pass',
   FAIL: 'fail',
+  FALLBACK: 'fallback',
   ERROR: 'error',
   SKIP: 'skip'
+}
+
+/**
+ * 把两条执行路径合并成一条工具序列（3.7.1）
+ * @param {Object} result runAgentLoop 的返回值
+ * @returns {Array<{name: string, args: Object, source: 'tool'|'json'}>}
+ */
+export function mergeExecutedTools(result) {
+  const out = []
+  const calls = (result && Array.isArray(result.toolCalls)) ? result.toolCalls : []
+  calls.forEach((c) => {
+    if (c && c.name) out.push({ name: c.name, args: c.args || {}, source: 'tool' })
+  })
+  const acts = []
+  if (result && Array.isArray(result.actions) && result.actions.length > 0) acts.push(...result.actions)
+  else if (result && result.action && result.action.type && result.action.type !== 'multi') acts.push(result.action)
+  acts.forEach((a) => {
+    if (a && a.type) out.push({ name: a.type, args: a.payload || {}, source: 'json' })
+  })
+  return out
 }
 
 /** 取出工具名序列（容忍 args 解析失败留下的 null） */
@@ -25,6 +56,29 @@ export function toolNamesOf(toolCalls) {
 
 function indexOfFirst(names, name) {
   return names.indexOf(name)
+}
+
+/**
+ * 这条失败能不能被前端兜底救回来（模型口头声称 + 原话能正则提取出写入动作）
+ * @param {Object} caze
+ * @param {Object} res runner 的返回
+ * @param {Array<string>} failures
+ * @returns {Object|null} 兜底动作 { type, payload }
+ */
+function detectFallback(caze, res, failures) {
+  const expect = (caze && caze.expect) || {}
+  const wantsTools = (expect.tools && expect.tools.length > 0) || (expect.toolsAny && expect.toolsAny.length > 0)
+  if (!wantsTools) return null
+  const missing = failures.some((t) => t.indexOf('缺少工具') === 0 || t.indexOf('这几个工具至少要调一个') === 0)
+  if (!missing) return null
+  const reply = (res && res.reply) || ''
+  // 与 autoExecutor 的闸门保持一致（收窄集 + 基础集）
+  if (!OP_CLAIM_RE_FALLBACK.test(reply) && !OP_CLAIM_RE.test(reply)) return null
+  try {
+    return extractFallbackAction(caze.message, reply)
+  } catch (e) {
+    return null
+  }
 }
 
 function checkArgs(expect, ctx, failures) {
@@ -120,13 +174,18 @@ export async function runCase(runner, caze) {
   try {
     const res = (await runner(caze.message, caze)) || {}
     const judged = judgeCase(caze, res)
+    const fallbackAction = judged.pass ? null : detectFallback(caze, res, judged.failures)
+    const failures = judged.failures.slice()
+    if (fallbackAction) failures.push('模型没调工具，靠前端兜底执行（' + fallbackAction.type + '）——结果能落库，但不是 AI 会拆解')
     return {
       id: caze.id,
       title: caze.title,
       message: caze.message,
-      status: judged.pass ? CASE_STATUS.PASS : CASE_STATUS.FAIL,
-      failures: judged.failures,
+      status: judged.pass ? CASE_STATUS.PASS : (fallbackAction ? CASE_STATUS.FALLBACK : CASE_STATUS.FAIL),
+      failures: failures,
       gotTools: judged.gotTools,
+      jsonTools: ((res.toolCalls || []).filter(t => t && t.source === 'json')).map(t => t.name),
+      fallbackType: fallbackAction ? fallbackAction.type : '',
       reply: res.reply || '',
       ms: Date.now() - startedAt
     }
@@ -174,12 +233,14 @@ export function summarizeResults(rows) {
   const list = Array.isArray(rows) ? rows : []
   const pass = list.filter((r) => r.status === CASE_STATUS.PASS).length
   const fail = list.filter((r) => r.status === CASE_STATUS.FAIL).length
+  const fallback = list.filter((r) => r.status === CASE_STATUS.FALLBACK).length
   const error = list.filter((r) => r.status === CASE_STATUS.ERROR).length
   const total = list.length
   return {
     total,
     pass,
     fail,
+    fallback,
     error,
     rate: total > 0 ? Math.round((pass / total) * 100) : 0,
     ms: list.reduce((s, r) => s + (r.ms || 0), 0)
@@ -199,7 +260,7 @@ export function formatFailureReport(rows) {
     '# 思迹 AI 效果自检',
     '',
     `- 通过：${sum.pass}/${sum.total}（${sum.rate}%）`,
-    `- 未通过：${sum.fail}，请求出错：${sum.error}`,
+    `- 未通过：${sum.fail}，靠前端兜底：${sum.fallback}，请求出错：${sum.error}`,
     ''
   ]
   if (bad.length === 0) {
@@ -209,7 +270,9 @@ export function formatFailureReport(rows) {
   bad.forEach((r) => {
     lines.push(`## ${r.title}（${r.id}）`)
     lines.push(`- 原话：${r.message}`)
-    lines.push(`- 实际工具：${r.gotTools.length ? r.gotTools.join(' → ') : '（没调工具）'}`)
+    const toolsLine = r.gotTools.length ? r.gotTools.join(' → ') : '（没调工具）'
+    const jsonNote = (r.jsonTools && r.jsonTools.length) ? `（其中 ${r.jsonTools.length} 步走 JSON 兜底）` : ''
+    lines.push(`- 实际工具：${toolsLine}${jsonNote}`)
     lines.push(`- 未通过原因：${(r.failures || []).join('；')}`)
     if (r.reply) lines.push(`- 回复节选：${String(r.reply).replace(/\s+/g, ' ').slice(0, 120)}`)
     lines.push('')

@@ -9,6 +9,7 @@
  */
 
 import { OP_CLAIM_RE_FALLBACK, RELATION_KEYWORDS_RE, RELATION_TYPES } from './constants.js'
+import { normalizeDateStr } from '../store-helpers.js'
 
 /** 前端兜底提取 */
 export function extractFallbackAction(userMessage, aiReply) {
@@ -105,12 +106,24 @@ export function extractFallbackAction(userMessage, aiReply) {
   }
 
   // === 记账 ===
-  const billKeywords = /花了|消费|买了|付了|收入|收到|转了|开销/
+  // 3.7.1：补「记一笔 / 记账」这类指令词（实测语料「记一笔昨天的午饭 25」里没有任何
+  // 花销动词，以前兜底压根不进来，模型不调工具就等于静默丢一条账），并按原话补日期
+  const billKeywords = /花了|消费|买了|付了|收入|收到|转了|开销|记一笔|记一下账|记个账|记笔账|记账/
   if (billKeywords.test(userMessage) && /记/.test(reply)) {
-    let m = userMessage.match(/(\d+(?:\.\d+)?)\s*[元块]/) || userMessage.match(/(\d+(?:\.\d+)?)$/)
-    if (m) {
+    const nums = userMessage.match(/\d+(?:\.\d+)?/g)
+    let amount = NaN
+    if (nums && nums.length > 0) {
+      // 带「元/块」的优先；否则取最后一个数字（「记一笔昨天的午饭 25」）
+      const yuan = userMessage.match(/(\d+(?:\.\d+)?)\s*[元块]/)
+      amount = parseFloat(yuan ? yuan[1] : nums[nums.length - 1])
+    }
+    if (Number.isFinite(amount)) {
       const isIncome = /收入|收到|转了/.test(userMessage)
-      return { type: 'create_bill', payload: { type: isIncome ? 'income' : 'expense', amount: parseFloat(m[1]), category: '其他', note: '' }, needConfirm: false }
+      const dayToken = (userMessage.match(/(今天|昨天|前天)/) || [])[1] || ''
+      const billDate = dayToken ? normalizeDateStr(dayToken) : ''
+      const payload = { type: isIncome ? 'income' : 'expense', amount: amount, category: '其他', note: '' }
+      if (billDate) payload.bill_date = billDate
+      return { type: 'create_bill', payload: payload, needConfirm: false }
     }
   }
 

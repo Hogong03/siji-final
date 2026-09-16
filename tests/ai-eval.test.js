@@ -10,7 +10,7 @@ import './setup.js'
 import { EVAL_CASES, EXPECT_KEYS, dayStr } from '../utils/ai/eval/cases.js'
 import {
   CASE_STATUS, toolNamesOf, judgeCase, runCase, runCases,
-  summarizeResults, formatFailureReport
+  summarizeResults, formatFailureReport, mergeExecutedTools
 } from '../utils/ai/eval/runner.js'
 import { runAgentLoop } from '../utils/ai/agent-loop.js'
 
@@ -214,6 +214,21 @@ describe('干跑模式：自检不写真实数据', () => {
     }
   }
 
+  /** 最小 store：只实现查询类要用的 executeAction，记录调用次数 */
+  function makeStore() {
+    const executeAction = vi.fn(({ type }) => {
+      if (type === 'query_plan') {
+        return {
+          success: true,
+          message: '找到 1 个计划',
+          detail: { type: 'query_plan', count: 1, items: [{ client_id: 'plan_001', title: '六级备考计划', status: 1 }] }
+        }
+      }
+      return { success: true, message: 'ok', detail: { type } }
+    })
+    return { store: { executeAction }, executeAction }
+  }
+
   function cfgWith(responder) {
     return {
       provider: 'deepseek',
@@ -225,28 +240,40 @@ describe('干跑模式：自检不写真实数据', () => {
     }
   }
 
-  it('工具调用照常记录，写入被确认闸门挡住（默认设置下不落库、store 传 null 也不炸）', async () => {
-    const executeAction = vi.fn()
+  it('查询真跑、写入被闸门挡住：模型能拿到真实 client_id，数据一行没动', async () => {
+    const executor = makeStore()
     const responder = scriptedResponder([
       [{ name: 'query_plan', args: { status: 'all' } }],
       [{ name: 'update_plan', args: { client_id: 'plan_001', deadline: '2026-12-12' } }],
       '计划已改到 12 月 12 日。'
     ])
-    const result = await runAgentLoop(null, '把计划改到 12 月 12 日', 'eval', cfgWith(responder), [])
+    const result = await runAgentLoop(executor.store, '把计划改到 12 月 12 日', 'eval', cfgWith(responder), [])
 
     // 选了什么工具、什么顺序 —— 这正是自检要测的东西，两侧都完整记下来
     expect(result.toolCalls.map(c => c.name)).toEqual(['query_plan', 'update_plan'])
     expect(result.toolCalls[0].args).toEqual({ status: 'all' })
     expect(result.toolCalls[1].args.client_id).toBe('plan_001')
-    // 默认设置下写操作需确认 → 闸门挡在写入之前，自检不可能污染数据
+    // 查询只读、照常执行：模型拿到的就是真实数据（3.7.0 用占位结果，模型只能瞎答）
+    const read = result.execResults.find(r => r.name === 'query_plan')
+    expect(read.ok).toBe(true)
+    expect(read.detail.count).toBe(1)
+    expect(executor.executeAction).toHaveBeenCalledTimes(1)
+    expect(executor.executeAction).toHaveBeenCalledWith({ type: 'query_plan', payload: { status: 'all' } })
+    // 写操作被确认闸门挡在写入之前：自检不可能污染数据
     const write = result.execResults.find(r => r.name === 'update_plan')
     expect(write.confirm).toBe(true)
     expect(write.ok).toBe(false)
-    // 只读工具在干跑下用占位结果，不打真实查询
-    const read = result.execResults.find(r => r.name === 'query_plan')
-    expect(read.ok).toBe(true)
-    expect(read.detail.dryRun).toBe(true)
-    expect(executeAction).not.toHaveBeenCalled()
+  })
+
+  it('store 传 null 也不炸（查询失败被 executeTool 兜住，写依旧不落库）', async () => {
+    const responder = scriptedResponder([
+      [{ name: 'query_plan', args: {} }],
+      [{ name: 'update_plan', args: { client_id: 'plan_001' } }],
+      '好。'
+    ])
+    const result = await runAgentLoop(null, '改计划', 'eval', cfgWith(responder), [])
+    expect(result.toolCalls.map(c => c.name)).toEqual(['query_plan', 'update_plan'])
+    expect(result.execResults.find(r => r.name === 'query_plan').ok).toBe(false)
   })
 
   it('关掉确认闸门（siji_auto_write）后干跑真正走 dryRunResult：ok 为真、标记 dryRun、依旧不写库', async () => {
@@ -285,6 +312,42 @@ describe('干跑模式：自检不写真实数据', () => {
     global.uni.request = originalRequest
     expect(requested).toBe(false)
     expect(result.toolCalls[0].name).toBe('read_url')
+  })
+
+  it('两条执行路径合并：tool_calls 与老 JSON action 都算「用了工具」（3.7.1）', async () => {
+    // 原生工具调用
+    expect(mergeExecutedTools({ toolCalls: [{ name: 'create_bill', args: { amount: 25 } }] }))
+      .toEqual([{ name: 'create_bill', args: { amount: 25 }, source: 'tool' }])
+    // 老 JSON action（模型没调工具、只回 JSON）→ response-parser 解析出的 action
+    expect(mergeExecutedTools({ toolCalls: [], action: { type: 'create_diary', payload: { content: 'x' } } }))
+      .toEqual([{ name: 'create_diary', args: { content: 'x' }, source: 'json' }])
+    // 复合意图的 actions 数组
+    const multi = mergeExecutedTools({ toolCalls: [], actions: [{ type: 'create_bill', payload: {} }, { type: 'create_diary', payload: {} }] })
+    expect(multi.map(t => t.name)).toEqual(['create_bill', 'create_diary'])
+    expect(multi.every(t => t.source === 'json')).toBe(true)
+    // 什么都没调 → 空（判定层据此报「缺少工具」）
+    expect(mergeExecutedTools({ toolCalls: [] })).toEqual([])
+    expect(mergeExecutedTools(null)).toEqual([])
+  })
+
+  it('JSON 兜底路径的用例不再被判成「没调工具」', async () => {
+    const caze = { id: 'json-path', title: '记账走 JSON 兜底', message: '记一笔午饭 25', expect: { tools: ['create_bill'] } }
+    const row = await runCase(async () => ({
+      toolCalls: mergeExecutedTools({ toolCalls: [], action: { type: 'create_bill', payload: { amount: 25, bill_date: dayStr(0) } } }),
+      reply: '记好了，午饭 ¥25'
+    }), caze)
+    expect(row.status).toBe(CASE_STATUS.PASS)
+    expect(row.gotTools).toEqual(['create_bill'])
+    expect(row.jsonTools).toEqual(['create_bill'])
+  })
+
+  it('失败明细会标出 JSON 兜底步数', async () => {
+    const rows = [{
+      id: 'x', title: 'X', status: CASE_STATUS.FAIL, ms: 1,
+      gotTools: ['create_bill'], jsonTools: ['create_bill'], failures: ['缺少工具 create_diary'], message: 'm'
+    }]
+    const text = formatFailureReport(rows)
+    expect(text).toContain('其中 1 步走 JSON 兜底')
   })
 
   it('整套语料能在干跑下跑完（用脚本化回复验证编排，不打真实模型）', async () => {

@@ -7,7 +7,7 @@
 
 import { logger } from '@/utils/logger.js'
 import { extractFallbackAction } from '@/utils/ai/fallback.js'
-import { OP_CLAIM_RE_FALLBACK, OP_CLAIM_REPLACE_RE, OP_REQUEST_RE } from '@/utils/ai/constants.js'
+import { OP_CLAIM_RE, OP_CLAIM_RE_FALLBACK, OP_CLAIM_REPLACE_RE, OP_REQUEST_RE } from '@/utils/ai/constants.js'
 import { compactExecDetail } from '@/utils/ai/exec-payload.js'
 
 /**
@@ -26,7 +26,11 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
     const successCards = execResults.filter(r => r.ok && r.detail && !r.name?.startsWith('query_'))
     // === Agent 兜底：模型声称已操作但未调用写入工具 → 前端提取执行 ===
     if (successCards.length === 0 && !result._stopped) {
+      // 3.7.1：与 JSON 路径同一套判断 —— 收窄集 + 基础集 + response-parser 的标记，
+      // 以前这里只认收窄集，「记下来了」这类说法漏过兜底，写入静默丢失
       const opClaimed = OP_CLAIM_RE_FALLBACK.test(reply || '')
+        || OP_CLAIM_RE.test(reply || '')
+        || result._opClaimWithoutAction === true
       if (opClaimed) {
         const fallbackAction = extractFallbackAction(userMessage || '', reply || '')
         if (fallbackAction) {
