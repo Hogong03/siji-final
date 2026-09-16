@@ -61,6 +61,7 @@ function go(target) {
     privacy: '/pages/settings/sub/privacy',
     feedback: '/pages/settings/sub/feedback-list',
     devFeedback: '/pages/settings/sub/dev-feedback',
+    aiEval: '/pages/settings/sub/ai-eval',
     about: '/pages/settings/sub/about',
     version: '/pages/settings/sub/version-history',
   }
@@ -150,6 +151,11 @@ function go(target) {
         <view class="row card-press" @tap="go('devFeedback')">
           <SijiIcon name="bug" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">开发者反馈</text></view>
+          <text class="row-arrow">›</text>
+        </view>
+        <view class="row card-press" @tap="go('aiEval')">
+          <SijiIcon name="stats" size="lg" class="row-icon" />
+          <view class="row-body"><text class="row-label">AI 效果自检</text></view>
           <text class="row-arrow">›</text>
         </view>
       </view>

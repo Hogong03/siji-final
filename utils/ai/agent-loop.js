@@ -11,6 +11,8 @@
  *
  * 3.5.11：请求传输（HTTP/SSE/App chunked/重试）拆到 agent-transport.js；
  *         工具参数解析失败不再静默用 {} 执行，改为回传模型自纠；写入失败追加自检提示。
+ * 3.7.0：cfg.dryRun 干跑模式 —— AI 效果自检用，只记录要调什么工具、什么参数，
+ *         既不落库也不发网络请求（工具结果换成占位），避免自检污染真实数据。
  */
 
 import { getProvider } from './providers.js'
@@ -25,6 +27,19 @@ import { logger } from '../logger.js'
 
 const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
 
+/**
+ * 干跑结果（3.7.0）：模拟一次工具调用的返回，不碰 store、不发网络请求
+ * @param {string} name 工具名
+ * @param {Object} args 工具参数
+ */
+function dryRunResult(name, args) {
+  return {
+    ok: true,
+    text: `（演练）已记录要执行：${name}`,
+    detail: { type: name, payload: args, dryRun: true }
+  }
+}
+
 
 
 /**
@@ -38,6 +53,7 @@ const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
  */
 export async function runAgentLoop(store, message, conversationId, cfg, history, onChunk, onStatus) {
   const provider = getProvider(cfg.provider)
+  const dryRun = !!cfg.dryRun   // 效果自检：只记录工具调用，不写数据（store 可为 null）
   const apiKey = cfg.apiKey || ''
   const chatHistory = history || []
 
@@ -177,7 +193,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         const fnArgs = parsed.args
         // web_search / read_url 独立执行（网络调用，不走 store）
         let toolResult
-        if (fnName === 'web_search') toolResult = await executeWebSearch(fnArgs.query)
+        if (dryRun) toolResult = dryRunResult(fnName, fnArgs)
+        else if (fnName === 'web_search') toolResult = await executeWebSearch(fnArgs.query)
         else if (fnName === 'read_url') toolResult = await executeReadUrl(fnArgs.url)
         else toolResult = executeTool(store, fnName, fnArgs)
         return { call, fnName, fnArgs, toolResult }
@@ -213,7 +230,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       }
       const fnArgs = parsed.args
 
-      const toolResult = executeTool(store, fnName, fnArgs)
+      const toolResult = dryRun ? dryRunResult(fnName, fnArgs) : executeTool(store, fnName, fnArgs)
       toolCalls.push({ name: fnName, args: fnArgs })
       execResults.push({
         name: fnName, ok: toolResult.ok,

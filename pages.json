@@ -106,6 +106,14 @@
      }
     },
     {
+     "path": "ai-eval",
+     "style": {
+      "navigationBarTitleText": "AI 效果自检",
+      "navigationBarBackgroundColor": "#FFFFFF",
+      "navigationBarTextStyle": "black"
+     }
+    },
+    {
      "path": "ai",
      "style": {
       "navigationBarTitleText": "AI 模型配置",
