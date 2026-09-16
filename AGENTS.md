@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 68 文件 / 973 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.7.2（自检语料改绑真实数据：`{plan}` / `{billAmount}` 占位符 + 缺前置判跳过；拦住模型幻觉的动作类型 —— `store.isKnownActionType` 白名单 + `executeTool` 工具名白名单） |
+| 测试 | 69 文件 / 984 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.7.3（修确认闸门被绕过：`runAgentChat` 只在真跑过工具时才认 agent 模式，JSON 回退走确认 + 执行；确认判定收进 `utils/ai/confirm-gate.js` 供聊天页与自检共用；`parseAiResponse` 拍平嵌套 multi） |
 
 ---
 
@@ -146,7 +146,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 68 文件 973 用例
+├── tests/              # 69 文件 984 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -266,6 +266,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
 | 改版本号读取 / 反馈导出 | `utils/version-check.js`（`primeAppVersion` 读资源包版本 + `getVersion`；基座里 `plus.runtime.version` 是宿主版本）+ `pages/settings/sub/dev-feedback.vue`（导出头部 meta）+ `utils/dev-feedback.js`（纯函数） |
+| 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`，聊天页与自检共用一份）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` 的 `_agentMode` 判定 + `utils/ai/response-parser.js` 的 `normalizeActions`（嵌套 multi 拍平） |
 | 改动作类型白名单 | `store/data.js` 的 `isKnownActionType`（ACTION_MAP 是唯一事实来源）+ `store/index.js` 透传 + `utils/ai/autoExecutor.js` 的 `keepKnownActions`（幻觉类型按无 action 处理）+ `utils/ai/tools/executor.js` 的 `TOOL_NAMES`（不存在的工具名明确回传） |
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（22 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置，缺前置判跳过）+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
@@ -316,7 +317,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 68 文件 / 973 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 69 文件 / 984 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
