@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 70 文件 / 1007 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.7.7（Android 选文件真因：Uri 不能 `String()` —— 传对象；`openContentStream` 三级开流 + `pickUriFrom` 退 ClipData + 阶段名拆细） |
+| 测试 | 70 文件 / 1011 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.7.8（plus.android 类导入：`invokeSafe` + `importSafe`、`plus.io` 直读 `content://` 的文本兜底、阶段名带三级清单与 URI 原文） |
 
 ---
 
@@ -376,6 +376,7 @@ npx vitest run
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
 | 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
+| 改 App 端选文件（踩坑记录，按真机失败顺序） | ④「open-all-failed」→ **类没导入**：对象方法直接调用会抛，必须 `invokeSafe`（直接调 → `plus.android.invoke`）或先 `importClass`（类名 + 实例）|
 | 改 App 端选文件（踩坑记录，按真机失败顺序） | ①「拷贝失败」→ `convertLocalFileSystemURL` 给 `file://` URL，`FileOutputStream` 只认裸路径（`toNativePath`）②「拷贝失败（open-input）」→ **Uri 被 `String()` 字符串化**，必须传 Java 对象 ③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`）；文本类始终留 `inlineText` 兜底 |
 | 改 App 端选文件 | `utils/files/android-picker.js`（Android 系统选择器 + `safeFileName` / `uploadRelPath` 纯函数 + `copyContentUriToSandbox`）+ `utils/files/picker.js` 的 `appPickRoute` + `doc-parse.js` 的 `absPath` 优先 |
 | 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |

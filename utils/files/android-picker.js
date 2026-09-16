@@ -22,6 +22,12 @@
  *   openAssetFileDescriptor.createInputStream()；阶段名拆细（get-resolver / open-input /
  *   open-descriptor / open-asset / open-all-failed），下次失败能直接指到哪一步。
  *
+ * 3.7.8（真机仍报 open-all-failed）：三种开流全在 resolver 这一层失败，通常不是 provider 拒绝，
+ *   而是 plus.android 没导入类 —— 对象方法直接调用会抛，得先 importClass 或用 plus.android.invoke。
+ *   现在每个调用都走 invokeSafe（先直接调，失败退 plus.android.invoke），并对 uri / resolver /
+ *   data 逐个 importClass；另加 plus.io 兜底（plus.io 在 Android 上能直接解析 content://，
+ *   解析得动就由它读文本，完全不碰 ContentResolver）；失败文案带上 URI 原文与阶段，便于一次定位。
+ *
  * 平台差异：
  *   Android 本文件
  *   iOS     无等价物（UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动），走 picker.js 的提示
@@ -149,6 +155,37 @@ function ensureUploadDir() {
   })
 }
 
+/** importClass 的安全包装（类名不存在时不抛） */
+function importSafe(name) {
+  try { return plus.android.importClass(name) } catch (e) { return null }
+}
+
+/**
+ * 调 Java 对象方法：先直接调，抛错再退 plus.android.invoke（未导入类时直接调会抛）
+ * 3.7.8：真机 open-all-failed 的元凶多半在这里 —— 直接调用拿不到方法
+ * @returns {*} 调用结果，两条都不行返回 undefined
+ */
+function invokeSafe(obj, method, ...args) {
+  if (!obj) return undefined
+  try {
+    if (typeof obj[method] === 'function') return obj[method].apply(obj, args)
+  } catch (e) { /* 落到 invoke */ }
+  try {
+    if (plus.android.invoke) return plus.android.invoke(obj, method, ...args)
+  } catch (e) { /* 两条都不行 */ }
+  return undefined
+}
+
+/** Uri / resolver 的可读文本（只用于诊断文案，失败给空串） */
+function uriDebugText(uri) {
+  try {
+    const t = plus.android.invoke ? plus.android.invoke(uri, 'toString') : String(uri)
+    return String(t || '')
+  } catch (e) {
+    return ''
+  }
+}
+
 /** 异常信息取字符串（plus 的异常对象未必有 message） */
 function errText(e) {
   return String((e && (e.message || e.msg)) || e || 'unknown')
@@ -163,37 +200,46 @@ function errText(e) {
  * @returns {{ input: Object|null, closer: Object|null, stage: string }}
  */
 function openContentStream(uri) {
-  let resolver = null
-  try {
-    resolver = plus.android.runtimeMainActivity().getContentResolver()
-  } catch (e) {
-    return { input: null, closer: null, stage: 'get-resolver:' + errText(e) }
-  }
+  const attempts = []
+  // 3.7.8：先把类导进来 —— 没导入时对象方法直接调用一律抛，三种开流会一起失败
+  importSafe('android.content.ContentResolver')
+  importSafe('android.net.Uri')
+  try { plus.android.importClass(uri) } catch (e) { /* 实例类导入失败不致命 */ }
+
+  const main = invokeSafe(plus.android.runtimeMainActivity(), 'getContentResolver') ||
+    (() => { try { return plus.android.runtimeMainActivity().getContentResolver() } catch (e) { return null } })()
+  const resolver = main
   if (!resolver) return { input: null, closer: null, stage: 'get-resolver' }
+  try { plus.android.importClass(resolver) } catch (e) { /* 同上 */ }
 
-  try {
-    const s = resolver.openInputStream(uri)
-    if (s) return { input: s, closer: null, stage: 'open-input' }
-  } catch (e) { /* 落到下一级 */ }
+  // 1) openInputStream
+  const s1 = invokeSafe(resolver, 'openInputStream', uri)
+  if (s1) return { input: s1, closer: null, stage: 'open-input' }
+  attempts.push('openInputStream')
 
-  try {
-    const pfd = resolver.openFileDescriptor(uri, 'r')
-    if (pfd) {
-      const FileInputStream = plus.android.importClass('java.io.FileInputStream')
-      const s = new FileInputStream(pfd.getFileDescriptor())
-      if (s) return { input: s, closer: pfd, stage: 'open-descriptor' }
+  // 2) openFileDescriptor + FileInputStream(fd)
+  const pfd = invokeSafe(resolver, 'openFileDescriptor', uri, 'r')
+  if (pfd) {
+    const fd = invokeSafe(pfd, 'getFileDescriptor')
+    const FileInputStream = importSafe('java.io.FileInputStream')
+    if (fd && FileInputStream) {
+      try {
+        const s2 = new FileInputStream(fd)
+        if (s2) return { input: s2, closer: pfd, stage: 'open-descriptor' }
+      } catch (e) { /* 继续 */ }
     }
-  } catch (e) { /* 落到下一级 */ }
+  }
+  attempts.push('openFileDescriptor')
 
-  try {
-    const afd = resolver.openAssetFileDescriptor(uri, 'r')
-    if (afd) {
-      const s = afd.createInputStream()
-      if (s) return { input: s, closer: afd, stage: 'open-asset' }
-    }
-  } catch (e) { /* 三级都不行 */ }
+  // 3) openAssetFileDescriptor().createInputStream()
+  const afd = invokeSafe(resolver, 'openAssetFileDescriptor', uri, 'r')
+  if (afd) {
+    const s3 = invokeSafe(afd, 'createInputStream')
+    if (s3) return { input: s3, closer: afd, stage: 'open-asset' }
+  }
+  attempts.push('openAssetFileDescriptor')
 
-  return { input: null, closer: null, stage: 'open-all-failed' }
+  return { input: null, closer: null, stage: 'open-all-failed:' + attempts.join('/') + ':' + uriDebugText(uri) }
 }
 
 /** 安静关闭（输入流与描述符都要关，关不掉也不能抛） */
@@ -284,7 +330,33 @@ function readUriAsText(input) {
   }
 }
 
-/** 拷完确认文件真的落地且非空 */
+/**
+ * plus.io 兜底：Android 上 plus.io 能直接解析 content://（不经 ContentResolver）
+ * 解析得动就由它读文本 —— 二进制仍需拷贝，但文本类这条路最稳
+ * @param {string} uriText
+ * @returns {Promise<string|null>}
+ */
+function readUriTextByPlusIo(uriText) {
+  return new Promise((resolve) => {
+    if (!uriText) { resolve(null); return }
+    try {
+      plus.io.resolveLocalFileSystemURL(uriText, (entry) => {
+        entry.file((f) => {
+          try {
+            const fr = new plus.io.FileReader()
+            fr.onloadend = (e) => resolve(e && e.target ? String(e.target.result || '') : null)
+            fr.onerror = () => resolve(null)
+            fr.readAsText(f)
+          } catch (e2) {
+            resolve(null)
+          }
+        }, () => resolve(null))
+      }, () => resolve(null))
+    } catch (e) {
+      resolve(null)
+    }
+  })
+}
 function verifySandboxFile(relPath) {
   return new Promise((resolve) => {
     try {
@@ -360,8 +432,17 @@ export function copyContentUriToSandbox(uri, relPath, opts = {}) {
 
     if (!stage) stage = 'open-failed:' + firstOpenStage
 
-    verifySandboxFile(relPath).then((size) => {
-      const ok = size > 0
+    verifySandboxFile(relPath).then(async (size) => {
+      let ok = size > 0
+      // 开流全败时的最后一条路：plus.io 直接解析 content://（Android 支持），能读就读文本
+      if (!ok && opts.wantsText && !text) {
+        const viaIo = await readUriTextByPlusIo(opts.uriText)
+        if (viaIo) {
+          text = viaIo
+          ok = false   // 没拷进沙盒，但正文拿到了 —— 上层按 inlineText 走
+          stage = 'plusio-text-only'
+        }
+      }
       resolve({ ok: ok, bytes: ok ? size : bytes, text: text, stage: stage, verified: size, openStage: firstOpenStage })
     })
   })
@@ -405,7 +486,8 @@ export function pickFileViaAndroid() {
           const rel = uploadRelPath(meta.name)
           ensureUploadDir().then((dirOk) => {
             if (!dirOk) { done({ ok: false, reason: '应用目录不可写（_doc/upload 建不出来）' }); return }
-            copyContentUriToSandbox(uri, rel, { wantsText: kind === 'text' }).then((cp) => {
+            const uriText = uriDebugText(uri)
+            copyContentUriToSandbox(uri, rel, { wantsText: kind === 'text', uriText: uriText }).then((cp) => {
               const base = {
                 name: name,
                 size: meta.size || cp.bytes,
@@ -415,7 +497,7 @@ export function pickFileViaAndroid() {
                 inlineText: cp.text || ''
               }
               if (cp.ok) { done({ ok: true, pick: base }); return }
-              // 拷贝没成：文本类还有 inlineText 兜底
+              // 拷贝没成：文本类还有 inlineText 兜底（含 plus.io 直读那条路）
               if (kind === 'text' && cp.text) {
                 logger.warn('[FilePick] 拷贝失败但读到文本，走 inlineText', cp.stage)
                 done({ ok: true, pick: Object.assign(base, { path: '', absPath: '', inlineText: cp.text }) })
@@ -426,7 +508,7 @@ export function pickFileViaAndroid() {
               done({
                 ok: false,
                 reason: openFailed
-                  ? '打不开这个文件（' + cp.stage + '）：云盘 / 在线文档类的文件先下载到手机再选，或换一个文件试试'
+                  ? '打不开这个文件：' + cp.stage + '。云盘 / 在线文档 / 微信里的文件，先在文件管理器里「保存到手机」再从下载目录选；或截图发我识别'
                   : '拷贝失败（' + cp.stage + '），换一种方式试试'
               })
             })

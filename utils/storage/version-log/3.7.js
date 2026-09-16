@@ -6,6 +6,36 @@
 
 export const V37 = [
   {
+    version: '3.7.8',
+    date: '2026-09-17',
+    title: '3.7.8 Android 选文件：类没导入才是真因（invoke 兜底 + plus.io 直读）',
+    summary: [
+      '真机仍报 open-all-failed：三种开流全在 resolver 这一层失败，原因不是 provider 拒绝，而是 plus.android 没导入类 —— 未导入时对象方法直接调用会抛。现在每个调用都走 invokeSafe：先直接调，抛错就退 plus.android.invoke（该 API 不需要预先导入类）',
+      '开流前显式导入 android.content.ContentResolver 与 android.net.Uri（类名导入），并对 uri / resolver 实例各调一次 importClass（实例类导入，两种导入方式在真机上都有人踩过）',
+      'plus.io 兜底：Android 上 plus.io 能直接解析 content://（不经 ContentResolver）—— 文本类文件在 resolver 全败时由它读正文，路径置空、正文进 inlineText，用户照样能问文件内容',
+      '失败文案带上「试过哪三级 + URI 原文」（如 open-all-failed:openInputStream/openFileDescriptor/openAssetFileDescriptor:content://…）—— 下次再失败，报错本身就是证据，不用来回猜',
+      '打不开时的建议更具体：云盘 / 在线文档 / 微信里的文件先在文件管理器里「保存到手机」再从下载目录选，或截图发我识别'
+    ],
+    categories: [
+      {
+        title: 'Android 选文件真因（3.7.8）',
+        items: [
+          'utils/files/android-picker.js：新增 importSafe（importClass 的安全包装）与 invokeSafe（直接调 → plus.android.invoke 二级兜底）；openContentStream 每个调用都走 invokeSafe，并显式导入 ContentResolver / Uri 类与实例；阶段名追加试过的三级与 URI 原文',
+          'utils/files/android-picker.js：新增 readUriTextByPlusIo（plus.io.resolveLocalFileSystemURL + FileReader.readAsText 直读 content://）；copyContentUriToSandbox 在开流全败且要文本时走这条路，返回 stage = plusio-text-only',
+          'utils/files/android-picker.js：uriDebugText 用 plus.android.invoke(uri, \'toString\') 取 URI 原文（诊断用，不参与逻辑）'
+        ]
+      },
+      {
+        title: '测试（3.7.8）',
+        items: [
+          'tests/file-pick-android.test.js（26 例，本轮 +4）：直接调对象方法一律抛错时 invoke 仍能走通（假 plus 用 Proxy 模拟「没导入类」，并把原对象挂在 __raw 供 invoke 取）；ContentResolver 与 Uri 的类确实被导入；resolver 全败但 plus.io 能解析 content:// 时文本仍读得进来；阶段名带三级清单与 URI 原文',
+          '测试文件整份重写：假 plus 的开关集中到一处（openFails / onlyFd / invokeFails / noByteBuffer / channelMoves / verifySize / textLines / plusIoText / clipOnly / fileUrl），后面几版再加开关只动这一处',
+          '全量：70 文件 / 1011 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.7',
     date: '2026-09-17',
     title: '3.7.7 真因：Uri 被字符串化导致 openInputStream 失败（Android 选文件终于能读）',
