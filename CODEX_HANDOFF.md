@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 68 文件 / 973 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.7.2（自检数据前置：`buildEvalContext` 从真实计划/账单取值 + `resolveCase` 占位符 `{plan}` / `{billAmount}` + 缺前置判 SKIP 且不进分母；幻觉动作类型：`store.isKnownActionType` + `autoExecutor.keepKnownActions` + `executeTool` 的 `TOOL_NAMES` 白名单） |
+| 测试 | 69 文件 / 984 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.7.3（确认闸门：`utils/ai/confirm-gate.js` 单一判定 + `runAgentChat` 的 `_agentMode` 只在真跑过工具时为真（否则 JSON 回退绕过确认、大额记账直接落库）+ `parseAiResponse` 拍平嵌套 multi + `isKnownActionType` 不认 multi） |
 
 ---
 
@@ -124,7 +124,7 @@
 ├── config/             # 配置
 ├── common/             # 公共资源
 ├── static/             # 静态资源（图标/图片）
-├── tests/              # 测试（68 文件 973 用例，Vitest）
+├── tests/              # 测试（69 文件 984 用例，Vitest）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM，编辑需注意）
 ├── manifest.json       # 应用配置
@@ -369,6 +369,7 @@ npx vitest run
 | 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` / `execCardText`）+ `utils/ai/autoExecutor.js`（agent 路径落盘点）+ `components/chat/ExecResultCard.vue` + `composables/useChatNavigation.js` 的 `canOpenType` |
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（基础集 / 收窄集）+ `utils/ai/autoExecutor.js`（两条路径闸门一致）+ `utils/ai/fallback.js`（提取）+ `agent-loop.js` 透传标记。教训：改声称正则必须同时看 Agent 路径（autoExecutor.js:29）与 JSON 路径（autoExecutor.js:140） |
+| 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` + `composables/useChatEngine.js` 的确认分支 + `utils/ai/response-parser.js` 的 `normalizeActions` |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（22 条语料，纯数据，日期现算）+ `runner.js` 的 `buildEvalContext` / `resolveCase`（数据前置与占位符）+ 缺前置判 SKIP |+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
