@@ -28,6 +28,12 @@
  *   data 逐个 importClass；另加 plus.io 兜底（plus.io 在 Android 上能直接解析 content://，
  *   解析得动就由它读文本，完全不碰 ContentResolver）；失败文案带上 URI 原文与阶段，便于一次定位。
  *
+ * 3.7.9（真机报 stream-fail:input.read is not a function|channel-fail:input.getChannel is not a function）：
+ *   流打开了，但**流对象自己的方法同样没导入** —— read / getChannel 直接调不到。
+ *   修法：所有 Java 调用（read / write / flush / close / readLine / getChannel / transferFrom / available）
+ *   统一走 invokeSafe；每个实例（输入流、输出流、reader、channel）用前先 importClass；
+ *   拿不到 getChannel 时退 java.nio.channels.Channels.newChannel(input) 再 transferFrom。
+ *
  * 平台差异：
  *   Android 本文件
  *   iOS     无等价物（UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动），走 picker.js 的提示
@@ -176,6 +182,15 @@ function invokeSafe(obj, method, ...args) {
   return undefined
 }
 
+/**
+ * 导入实例对象的类（3.7.9）：流对象的方法也要导入才调得动
+ * @returns {Object} 原对象，便于链式使用
+ */
+function importInstance(obj) {
+  try { if (obj && plus.android.importClass) plus.android.importClass(obj) } catch (e) { /* 导入失败不致命 */ }
+  return obj
+}
+
 /** Uri / resolver 的可读文本（只用于诊断文案，失败给空串） */
 function uriDebugText(uri) {
   try {
@@ -244,8 +259,9 @@ function openContentStream(uri) {
 
 /** 安静关闭（输入流与描述符都要关，关不掉也不能抛） */
 function closeQuiet(opened) {
-  try { if (opened && opened.input && opened.input.close) opened.input.close() } catch (e) { /* ignore */ }
-  try { if (opened && opened.closer && opened.closer.close) opened.closer.close() } catch (e) { /* ignore */ }
+  if (!opened) return
+  invokeSafe(opened.input, 'close')
+  invokeSafe(opened.closer, 'close')
 }
 
 /** 建一个 Java byte[] 缓冲（两条路都不行就返回 null，让上层换策略） */
@@ -267,23 +283,25 @@ function newByteBuffer(size) {
  * @returns {number} 写入字节数；失败抛异常
  */
 function copyViaStream(input, absPath) {
-  const FileOutputStream = plus.android.importClass('java.io.FileOutputStream')
-  const out = new FileOutputStream(absPath)
+  importInstance(input)
+  const FileOutputStream = importSafe('java.io.FileOutputStream')
+  if (!FileOutputStream) throw new Error('no-FileOutputStream')
+  const out = importInstance(new FileOutputStream(absPath))
   const buffer = newByteBuffer(COPY_BUFFER)
   if (!buffer) {
-    // 没有 byte[] 就只能靠 transferFrom（策略二）
-    out.close()
+    // 没有 byte[] 就只能靠 channel（策略二）
+    invokeSafe(out, 'close')
     throw new Error('no-byte-buffer')
   }
   let len = 0
   let total = 0
-  while ((len = input.read(buffer, 0, COPY_BUFFER)) > 0) {
-    out.write(buffer, 0, len)
+  while ((len = Number(invokeSafe(input, 'read', buffer, 0, COPY_BUFFER))) > 0) {
+    invokeSafe(out, 'write', buffer, 0, len)
     total += len
     if (total > MAX_FILE_BYTES * 2) break
   }
-  out.flush()
-  out.close()
+  invokeSafe(out, 'flush')
+  invokeSafe(out, 'close')
   return total
 }
 
@@ -292,15 +310,26 @@ function copyViaStream(input, absPath) {
  * @returns {number} 写入字节数；失败抛异常
  */
 function copyViaChannel(input, absPath) {
-  const FileOutputStream = plus.android.importClass('java.io.FileOutputStream')
-  const inChannel = input.getChannel()
-  const out = new FileOutputStream(absPath)
-  const outChannel = out.getChannel()
-  const avail = Number(input.available()) || 0
+  importInstance(input)
+  const FileOutputStream = importSafe('java.io.FileOutputStream')
+  if (!FileOutputStream) throw new Error('no-FileOutputStream')
+  const Channels = importSafe('java.nio.channels.Channels')
+
+  // 输入 channel：优先 getChannel；拿不到就用 Channels.newChannel(流)（3.7.9）
+  let inChannel = invokeSafe(input, 'getChannel')
+  if (!inChannel && Channels && Channels.newChannel) inChannel = Channels.newChannel(input)
+  if (!inChannel) throw new Error('no-input-channel')
+
+  const out = importInstance(new FileOutputStream(absPath))
+  let outChannel = invokeSafe(out, 'getChannel')
+  if (!outChannel && Channels && Channels.newChannel) outChannel = Channels.newChannel(out)
+  if (!outChannel) throw new Error('no-output-channel')
+
+  const avail = Number(invokeSafe(input, 'available')) || 0
   const count = avail > 0 ? avail : MAX_FILE_BYTES
-  const moved = Number(outChannel.transferFrom(inChannel, 0, count)) || 0
-  outChannel.close()
-  out.close()
+  const moved = Number(invokeSafe(outChannel, 'transferFrom', inChannel, 0, count)) || 0
+  invokeSafe(outChannel, 'close')
+  invokeSafe(out, 'close')
   if (moved <= 0 && avail > 0) throw new Error('transfer-copied-nothing')
   return moved
 }
@@ -312,18 +341,20 @@ function copyViaChannel(input, absPath) {
  */
 function readUriAsText(input) {
   try {
-    const BufferedReader = plus.android.importClass('java.io.BufferedReader')
-    const InputStreamReader = plus.android.importClass('java.io.InputStreamReader')
-    const reader = new BufferedReader(new InputStreamReader(input, 'UTF-8'))
+    importInstance(input)
+    const BufferedReader = importSafe('java.io.BufferedReader')
+    const InputStreamReader = importSafe('java.io.InputStreamReader')
+    if (!BufferedReader || !InputStreamReader) return null
+    const reader = importInstance(new BufferedReader(new InputStreamReader(input, 'UTF-8')))
     const lines = []
     let line = null
     let guard = 0
-    while ((line = reader.readLine()) !== null && guard < 40000) {
+    while ((line = invokeSafe(reader, 'readLine')) != null && guard < 40000) {
       lines.push(String(line))
       guard++
       if (lines.join('\n').length > 200000) break
     }
-    reader.close()
+    invokeSafe(reader, 'close')
     return lines.join('\n')
   } catch (e) {
     return null

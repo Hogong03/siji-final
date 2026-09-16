@@ -6,6 +6,36 @@
 
 export const V37 = [
   {
+    version: '3.7.9',
+    date: '2026-09-17',
+    title: '3.7.9 Android 选文件：流对象的方法也没导入（拷贝这一层全部走 invoke）',
+    summary: [
+      '真机报 stream-fail:input.read is not a function|channel-fail:input.getChannel is not a function —— 流已经打开（3.7.8 的 invokeSafe 生效了），但**流对象自己的方法同样需要导入**才能调：read / getChannel 直接调用一律抛',
+      '所有 Java 调用统一走 invokeSafe：输入流与输出流的 read / write / flush / close、BufferedReader.readLine、available、channel 的 transferFrom 全部走「直接调 → plus.android.invoke」二级兜底；每个实例（输入流、输出流、reader、channel）用前先 importClass 导入实例类',
+      '输入流没有 getChannel 时退 java.nio.channels.Channels.newChannel(input) 再 transferFrom（输出侧同理），不再直接失败',
+      '字节数组缓冲仍优先（读一次一整块），拿不到 byte[] 才走 channel —— 两条路都靠 invoke，所以「没导入类」不再能拦住拷贝',
+      '测试：假 plus 增加 streamGuarded（把输入流包成「方法调不通」）与 noGetChannel / Channels 兜底两个开关，用例断言 read 确实走了 invoke、Channels.newChannel 确实被调用'
+    ],
+    categories: [
+      {
+        title: '流对象调用（3.7.9）',
+        items: [
+          'utils/files/android-picker.js：新增 importInstance(obj)（实例类导入）；copyViaStream / copyViaChannel / readUriAsText / closeQuiet 的每个 Java 调用改走 invokeSafe，构造 FileOutputStream / FileInputStream / BufferedReader / InputStreamReader 前先 importSafe 类名，实例用前 importInstance',
+          'utils/files/android-picker.js：copyViaChannel 在 getChannel 拿不到时用 java.nio.channels.Channels.newChannel(流) 造 channel（输入输出两侧都试）；返回的字节数仍以沙盒校验为准',
+          'utils/files/android-picker.js：newByteBuffer 拿不到缓冲时不再直接判失败，交给 channel 策略（错误信息 no-byte-buffer 保留在 stage 里）'
+        ]
+      },
+      {
+        title: '测试（3.7.9）',
+        items: [
+          'tests/file-pick-android.test.js（29 例，本轮 +3）：流对象方法调不通时 read 走 invoke 完成拷贝（同时覆盖 resolver 层的 invokeFails）、没有 getChannel 时退 Channels.newChannel（断言 channels-new 被调用且 transferFrom 仍在输出 channel 上）、拷完字节数与流可读量一致',
+          '假 plus 的 guard 改成「由调用方决定包不包」（原来只有 invokeFails 才包，导致 streamGuarded 开关不生效 —— 这本身是个测试假象，先修掉再写用例）',
+          '全量：70 文件 / 1014 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.8',
     date: '2026-09-17',
     title: '3.7.8 Android 选文件：类没导入才是真因（invoke 兜底 + plus.io 直读）',

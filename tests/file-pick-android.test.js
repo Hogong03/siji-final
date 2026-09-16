@@ -123,8 +123,8 @@ function fakePlus(options = {}) {
       calls.openedWith.push(u)
       if (options.openFails) throw new Error('security-denied')
       if (options.openReturnsNull) return null
-      return {
-        getChannel: () => ({ close() {} }),
+      const stream = {
+        __done: false,
         available: () => meta.size,
         read: function (buf, off, len) {
           if (options.readFails) throw new Error('read-denied')
@@ -134,6 +134,9 @@ function fakePlus(options = {}) {
         },
         close() {}
       }
+      if (!options.noGetChannel) stream.getChannel = () => ({ close() {} })
+      // 3.7.9：流对象的方法也没导入时，直接调用会抛（invoke 才调得动）
+      return options.streamGuarded ? guard(stream) : stream
     },
     openFileDescriptor: () => (options.onlyFd ? { getFileDescriptor: () => ({ fd: 1 }), close() {} } : null),
     openAssetFileDescriptor: () => null
@@ -159,7 +162,6 @@ function fakePlus(options = {}) {
    * 真机上 plus.android.invoke(obj, ...) 不需要导入类就能调到方法，所以走 invoke 时要能拿到原对象
    */
   function guard(obj) {
-    if (!options.invokeFails) return obj
     return new Proxy(obj, {
       get(target, prop) {
         if (prop === '__raw') return target
@@ -206,6 +208,19 @@ function fakePlus(options = {}) {
           return Math.min(meta.size, len)
         }
         this.close = () => {}
+      }
+    }
+    if (name === 'java.nio.channels.Channels') {
+      return {
+        newChannel: (stream) => {
+          calls.copied.push({ via: 'channels-new' })
+          return {
+          __isChannel: true,
+          transferFrom: (src, pos, count) => { calls.copied.push({ via: 'channels-transfer', count }); return count },
+          write: () => {},
+          close: () => {}
+          }
+        }
       }
     }
     if (name === 'java.io.BufferedReader' || name === 'java.io.InputStreamReader') {
@@ -485,5 +500,44 @@ describe('3.7.8：类没导入（直接调不通）时靠 plus.android.invoke + 
     }
     const r = await copyContentUriToSandbox('content://x', '_doc/upload/a.txt')
     expect(r.ok).toBe(false)
+  })
+})
+
+/* ==================== 3.7.9：流对象的方法也要走 invoke ==================== */
+
+describe('3.7.9：流对象方法没导入 / 没有 getChannel 时的拷贝', () => {
+  const original = global.plus
+  afterEach(() => { global.plus = original })
+
+  it('流对象的 read 直接调不通（真机 stream-fail:input.read is not a function）→ 靠 invoke 完成拷贝', async () => {
+    // invokeFails 覆盖 resolver 层（3.7.8），streamGuarded 单独把输入流也包成「方法调不通」（3.7.9）
+    const { plus: fake, calls } = fakePlus({ invokeFails: true, streamGuarded: true, textLines: 2 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(calls.copied.some(c => c.via === 'stream')).toBe(true)
+    // 流自己的 read 也只能靠 plus.android.invoke 调到
+    expect(calls.invoked).toContain('read')
+    // 输出流没被包，直接调得通（不必绕 invoke）
+    expect(calls.invoked).not.toContain('write')
+  })
+
+  it('输入流没有 getChannel（真机 channel-fail:input.getChannel is not a function）→ 退 Channels.newChannel', async () => {
+    const { plus: fake, calls } = fakePlus({ noByteBuffer: true, noGetChannel: true, textLines: 1 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    // getChannel 拿不到 → 用 Channels.newChannel(input) 造输入 channel
+    expect(calls.copied.some(c => c.via === 'channels-new')).toBe(true)
+    // transferFrom 仍在输出流的 channel 上调用
+    expect(calls.copied.some(c => c.via === 'channel')).toBe(true)
+  })
+
+  it('拷贝后写出的字节数与流实际可读量一致（不是靠返回值糊弄）', async () => {
+    const { plus: fake } = fakePlus({ textLines: 0 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(r.pick.size).toBe(2048)
   })
 })
