@@ -75,6 +75,14 @@ export {
   setPlanRecur
 } from './storage/plan.js'
 
+// 内置种子数据：六级技巧记录（3.8.0）
+export {
+  ensureCet6Tips,
+  CET6_TIPS,
+  CET6_TIP_IDS,
+  CET6_TIP_TAG
+} from './storage/cet6-tips.js'
+
 // 本地索引 & 全局搜索
 export {
   rebuildIndex,

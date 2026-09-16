@@ -22,6 +22,7 @@
 	import {
 		rebuildIndex,
 		ensureDefaultTemplates,
+		ensureCet6Tips,
 		getPlanList
 	} from '@/utils/storage.js'
 	import {
@@ -69,6 +70,8 @@
 			store.restoreNonCriticalFromStorage()
 			try {
 				ensureDefaultTemplates()
+				// 六级技巧记录（3.8.0）：按 client_id 增量补发，用户删掉的不再补
+				ensureCet6Tips()
 				rebuildIndex()
 				initReminder(getPlanList)
 				startReminderChecker()

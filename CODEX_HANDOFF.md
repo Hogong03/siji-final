@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 70 文件 / 1014 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.7.9（流对象方法也要走 `invokeSafe`：`read` / `write` / `readLine` / `getChannel` / `transferFrom` 全部 `invokeSafe` + `importInstance`；`getChannel` 缺失退 `Channels.newChannel`） |
+| 测试 | 71 文件 / 1025 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.8.0（内置六级技巧：`utils/storage/cet6-tips.js` 12 条 + `ensureCet6Tips` 跨月增量补发 + 标签「技巧」注册到学习种类；`App.vue` appReady 调用） |
 
 ---
 
