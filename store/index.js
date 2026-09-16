@@ -191,6 +191,7 @@ export const useAppStore = defineStore('app', () => {
     // ==================== 数据操作 ====================
     executeAction: data.executeAction,
     executeActions: data.executeActions,
+    isKnownActionType: data.isKnownActionType,
     getUndoCount: data.getUndoCount,
     createPlanFromTemplate: data.createPlanFromTemplate,
     execCreatePlanTemplate: data.execCreatePlanTemplate,

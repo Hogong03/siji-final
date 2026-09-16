@@ -365,7 +365,9 @@ describe('干跑模式：自检不写真实数据', () => {
         id: 'x'
       }
     }
-    const rows = await runCases((message) => runAgentLoop(null, message, 'eval', cfgWith(responder), []), EVAL_CASES)
+    // 带 needs 的用例要有数据前置才跑（这里给一条假计划，账单缺省 → 那条会跳过）
+    const ctx = { plan: '测试计划', planId: 'plan_001' }
+    const rows = await runCases((message) => runAgentLoop(null, message, 'eval', cfgWith(responder), []), EVAL_CASES, { ctx })
     expect(rows).toHaveLength(EVAL_CASES.length)
     expect(rows.every(r => r.status !== CASE_STATUS.ERROR)).toBe(true)
     expect(executeAction).not.toHaveBeenCalled()

@@ -12,6 +12,10 @@
  *  - 默认设置下写操作还要过确认闸门，自检不可能污染真实数据
  *  - 语料里没有隐私内容（都是历史反馈里的原话）
  *
+ * 3.7.2 数据前置：涉及「某个已存在的计划 / 某一笔账单」的语料用 {plan} / {billAmount} 占位，
+ * 跑批前从你的真实数据取值；取不到就判跳过（不算失败）—— 3.7.1 首跑那 4 条失败就是语料
+ * 引用了你库里并不存在的计划名。
+ *
  * 代价：会真实调用你配置的模型，22 条约 22 次请求。
  */
 import { ref, computed } from 'vue'
@@ -19,7 +23,11 @@ import { onShow } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
 import { runAgentLoop } from '@/utils/ai/agent-loop.js'
 import { EVAL_CASES } from '@/utils/ai/eval/cases.js'
-import { runCases, summarizeResults, formatFailureReport, mergeExecutedTools, CASE_STATUS } from '@/utils/ai/eval/runner.js'
+import {
+  runCases, summarizeResults, formatFailureReport, mergeExecutedTools,
+  buildEvalContext, CASE_STATUS
+} from '@/utils/ai/eval/runner.js'
+import { executeTool } from '@/utils/ai/tools.js'
 
 const store = useAppStore()
 
@@ -31,6 +39,34 @@ const expandedId = ref('')
 const copied = ref(false)
 
 const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
+const evalCtx = ref(null)
+
+/**
+ * 取数据前置：一条进行中的计划 + 最近一笔支出账单（都是只读查询，query_plan / query_bill）
+ * 语料里的 {plan} / {billAmount} 由它填值；取不到时相关用例判跳过
+ */
+function fetchEvalContext() {
+  const plans = []
+  const bills = []
+  try {
+    const r = executeTool(store, 'query_plan', { status: 'active' })
+    if (r && r.detail && Array.isArray(r.detail.items)) plans.push(...r.detail.items)
+  } catch (e) { /* 取不到就是没有前置，交给跳过判定 */ }
+  try {
+    const r = executeTool(store, 'query_bill', {})
+    if (r && r.detail && Array.isArray(r.detail.items)) bills.push(...r.detail.items)
+  } catch (e) { /* 同上 */ }
+  return buildEvalContext({ plans, bills })
+}
+
+const ctxText = computed(() => {
+  const c = evalCtx.value
+  if (!c) return ''
+  const parts = []
+  parts.push(c.plan ? `计划「${c.plan}」` : '计划（无进行中的计划）')
+  parts.push(c.billAmount > 0 ? `最近一笔支出 ¥${c.billAmount}` : '账单（本月没有支出）')
+  return '数据前置：' + parts.join(' · ')
+})
 const modelText = computed(() => `${store.currentProviderName || ''} · ${store.modelName || store.aiModel || ''}`)
 const summary = computed(() => summarizeResults(rows.value))
 const hasResult = computed(() => rows.value.length > 0)
@@ -73,7 +109,8 @@ function makeRunner() {
     // store 传真的：查询类在干跑下照常执行（只读），写操作在 agent-loop 里被替换成占位
     const result = await runAgentLoop(store, message, 'eval', cfg, [])
     return {
-      toolCalls: mergeExecutedTools(result),
+      // 幻觉出来的动作类型（实测出现过 batch）不算数，与 autoExecutor 的闸门一致
+      toolCalls: mergeExecutedTools(result, { isKnownType: (t) => store.isKnownActionType(t) }),
       reply: result.reply || '',
       confirm: (result.execResults || []).some(r => r && r.confirm)
     }
@@ -91,8 +128,10 @@ async function startEval() {
   expandedId.value = ''
   stopRef.stopped = false
   progress.value = { done: 0, total: EVAL_CASES.length }
+  evalCtx.value = fetchEvalContext()
   try {
     const out = await runCases(makeRunner(), EVAL_CASES, {
+      ctx: evalCtx.value,
       stopRef: stopRef,
       onProgress: (done, total, row) => {
         progress.value = { done, total }
@@ -139,6 +178,7 @@ function copyFailures() {
 function statusMark(row) {
   if (row.status === CASE_STATUS.PASS) return '✓'
   if (row.status === CASE_STATUS.FALLBACK) return '~'
+  if (row.status === CASE_STATUS.SKIP) return '–'
   return row.status === CASE_STATUS.ERROR ? '!' : '×'
 }
 
@@ -149,12 +189,15 @@ onShow(() => { copied.value = false })
   <view class="ai-eval-page">
     <view class="intro">
       <text class="intro-text">把历史反馈里的真实语料跑一遍，看 AI 选了什么工具、顺序对不对。干跑：写操作不落库、不联网，查询类照常读你的真实数据。会真实调用你配置的模型（{{ progress.total }} 条约 {{ progress.total }} 次请求）。</text>
-      <text class="intro-note">✓ 通过　~ 靠前端兜底（模型没调工具，结果仍会落库）　× 未通过　! 请求出错</text>
+      <text class="intro-note">✓ 通过　~ 靠前端兜底（模型没调工具，结果仍会落库）　× 未通过　– 跳过（缺数据前置）　! 请求出错</text>
     </view>
 
     <view class="env-row">
       <text class="env-label">当前模型</text>
       <text class="env-value">{{ modelText || '未配置' }}</text>
+    </view>
+    <view v-if="evalCtx" class="env-row">
+      <text class="env-label">{{ ctxText }}</text>
     </view>
     <view v-if="!hasKey" class="warn-row">
       <text class="warn-text">没填 API Key，先去「设置 → AI 配置」填好再回来跑</text>
@@ -188,14 +231,14 @@ onShow(() => { copied.value = false })
     <!-- 汇总 -->
     <view v-if="hasResult" class="summary">
       <text class="summary-rate">{{ summary.rate }}%</text>
-      <text class="summary-meta">通过 {{ summary.pass }}/{{ summary.total }}<text v-if="summary.fail > 0"> · 未过 {{ summary.fail }}</text><text v-if="summary.fallback > 0"> · 靠兜底 {{ summary.fallback }}</text><text v-if="summary.error > 0"> · 出错 {{ summary.error }}</text> · 用时 {{ Math.round(summary.ms / 1000) }}s</text>
+      <text class="summary-meta">通过 {{ summary.pass }}/{{ summary.scored }}<text v-if="summary.fail > 0"> · 未过 {{ summary.fail }}</text><text v-if="summary.fallback > 0"> · 靠兜底 {{ summary.fallback }}</text><text v-if="summary.skip > 0"> · 跳过 {{ summary.skip }}</text><text v-if="summary.error > 0"> · 出错 {{ summary.error }}</text> · 用时 {{ Math.round(summary.ms / 1000) }}s</text>
     </view>
 
     <!-- 结果列表 -->
     <view v-if="hasResult" class="list">
       <view v-for="row in rows" :key="row.id" class="row" @tap="toggleRow(row)">
         <view class="row-head">
-          <text class="row-mark" :class="{ ok: row.status === CASE_STATUS.PASS, err: row.status === CASE_STATUS.ERROR, soft: row.status === CASE_STATUS.FALLBACK }">{{ statusMark(row) }}</text>
+          <text class="row-mark" :class="{ ok: row.status === CASE_STATUS.PASS, err: row.status === CASE_STATUS.ERROR || row.status === CASE_STATUS.SKIP, soft: row.status === CASE_STATUS.FALLBACK }">{{ statusMark(row) }}</text>
           <view class="row-body">
             <text class="row-title">{{ row.title }}</text>
             <text class="row-tools">实际：{{ gotText(row) }}</text>
@@ -221,7 +264,7 @@ onShow(() => { copied.value = false })
     </view>
 
     <view v-if="!hasResult && !running" class="empty">
-      <text class="empty-text">还没跑过。点上面的「开始自检」，22 条约 2-4 分钟。</text>
+      <text class="empty-text">还没跑过。点上面的「开始自检」，{{ progress.total }} 条约 2-4 分钟。</text>
     </view>
 
     <view style="height: 80rpx" />

@@ -116,6 +116,22 @@ export const useDataStore = defineStore('data', () => {
     create_agent:         execCreateAgent,
   }
 
+  /**
+   * action 类型白名单校验（3.7.2）
+   *
+   * 模型会幻觉出不存在的动作类型（2026-09-16 实测返回过 type: 'batch'，它想表达复合意图）。
+   * 拿假类型去 executeAction 只会得到「未知操作类型」，而且上层会把它当成「执行了但失败」，
+   * 兜底与提示都接管不了 —— 于是那句「都记好了」既没落库也没人纠正。
+   * 校验放在这里：ACTION_MAP 是唯一事实来源，别在别处再抄一份类型清单。
+   * @param {string} type
+   * @returns {boolean}
+   */
+  function isKnownActionType(type) {
+    if (!type || type === 'none') return false
+    if (type === 'undo_last' || type === 'multi') return true
+    return Object.prototype.hasOwnProperty.call(ACTION_MAP, type)
+  }
+
   function executeAction(action) {
     if (!action || !action.type || action.type === 'none') {
       return { success: false, message: '无需执行', detail: null }
@@ -361,7 +377,7 @@ export const useDataStore = defineStore('data', () => {
   }
 
   return {
-    executeAction, executeActions,
+    executeAction, executeActions, isKnownActionType,
     updateBill, updateDiary, updatePlan,
     createPlanFromTemplate, execCreatePlanTemplate,
     getUndoCount,

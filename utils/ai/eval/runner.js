@@ -14,6 +14,9 @@
  * 3.7.1 另立一档 fallback：模型既没调工具、也没回 JSON，只口头说「记好了」时，前端 extractFallbackAction
  * 还能从用户原话里正则兜出一条写入 —— 结果会落库，但这不是 AI 会拆解，是兜底在救场。
  * 这一档单独计数（不算通过），因为它正是「AI 拆解能力差」的量化证据。
+ *
+ * 3.7.2 数据前置：语料里的 {plan} / {billAmount} 由 buildEvalContext 从真实数据取值，
+ * 取不到就判 SKIP（不算失败）—— 3.7.1 首跑那 4 条失败就是语料引用了你库里并不存在的计划。
  */
 import { extractFallbackAction } from '../fallback.js'
 import { OP_CLAIM_RE, OP_CLAIM_RE_FALLBACK } from '../constants.js'
@@ -27,12 +30,60 @@ export const CASE_STATUS = {
   SKIP: 'skip'
 }
 
+/** 数据前置的中文说法（缺前置时告诉用户缺什么） */
+export const NEED_LABELS = {
+  plan: '一条进行中的计划',
+  bill: '一笔支出账单'
+}
+
+/**
+ * 从真实数据里取值，供语料里的占位符使用（3.7.2）
+ * @param {Object} data { plans, bills } 由调用方用 query_plan / query_bill 取回
+ * @returns {Object} { plan, planId, bill, billAmount, billAmountPlus }
+ */
+export function buildEvalContext(data = {}) {
+  const plans = (Array.isArray(data.plans) ? data.plans : []).filter((p) => p && p.title && p.status !== 2)
+  const plan = plans[0] || null
+  const bills = (Array.isArray(data.bills) ? data.bills : []).filter((b) => b && b.type === 'expense' && Number(b.amount) > 0)
+  const bill = bills[0] || null
+  return {
+    plan: plan ? String(plan.title) : '',
+    planId: plan ? String(plan.client_id || '') : '',
+    bill: bill ? String(bill.category || bill.note || '账单') : '',
+    billAmount: bill ? Number(bill.amount) : 0,
+    billAmountPlus: bill ? Number(bill.amount) + 18 : 0
+  }
+}
+
+/**
+ * 解析用例的占位符与数据前置
+ * @param {Object} caze
+ * @param {Object} ctx buildEvalContext 的返回值
+ * @returns {{ ok: boolean, message: string, missing: string[] }}
+ */
+export function resolveCase(caze, ctx) {
+  const needs = (caze && caze.needs) ? String(caze.needs).split(',').map((t) => t.trim()).filter(Boolean) : []
+  const data = ctx || {}
+  // 缺前置：值为空串 / 0 / null 都算缺（金额为 0 的账单不能拿来改）
+  const missing = needs.filter((k) => {
+    const v = data[k]
+    return v === undefined || v === null || v === ''
+  })
+  const message = String((caze && caze.message) || '').replace(/\{(\w+)\}/g, (raw, key) => {
+    const v = data[key]
+    return (v === undefined || v === null || v === '') ? raw : String(v)
+  })
+  return { ok: missing.length === 0, message, missing }
+}
+
 /**
  * 把两条执行路径合并成一条工具序列（3.7.1）
  * @param {Object} result runAgentLoop 的返回值
+ * @param {Object} [opts] { isKnownType: (type) => boolean } 过滤模型幻觉出来的动作类型（3.7.2）
  * @returns {Array<{name: string, args: Object, source: 'tool'|'json'}>}
  */
-export function mergeExecutedTools(result) {
+export function mergeExecutedTools(result, opts = {}) {
+  const isKnown = typeof opts.isKnownType === 'function' ? opts.isKnownType : null
   const out = []
   const calls = (result && Array.isArray(result.toolCalls)) ? result.toolCalls : []
   calls.forEach((c) => {
@@ -42,7 +93,9 @@ export function mergeExecutedTools(result) {
   if (result && Array.isArray(result.actions) && result.actions.length > 0) acts.push(...result.actions)
   else if (result && result.action && result.action.type && result.action.type !== 'multi') acts.push(result.action)
   acts.forEach((a) => {
-    if (a && a.type) out.push({ name: a.type, args: a.payload || {}, source: 'json' })
+    if (!a || !a.type) return
+    if (isKnown && !isKnown(a.type)) return
+    out.push({ name: a.type, args: a.payload || {}, source: 'json' })
   })
   return out
 }
@@ -169,18 +222,35 @@ export function judgeCase(caze, ctx) {
  * @param {Object} caze
  * @returns {Promise<Object>} 结果行
  */
-export async function runCase(runner, caze) {
+export async function runCase(runner, caze, ctx) {
   const startedAt = Date.now()
+  const resolved = resolveCase(caze, ctx)
+  if (!resolved.ok) {
+    const need = resolved.missing.map((k) => NEED_LABELS[k] || k).join('、')
+    return {
+      id: caze.id,
+      title: caze.title,
+      message: resolved.message,
+      status: CASE_STATUS.SKIP,
+      failures: [`缺少数据前置：${need}（不算失败，先建一条再跑）`],
+      gotTools: [],
+      jsonTools: [],
+      fallbackType: '',
+      reply: '',
+      ms: 0
+    }
+  }
+  const caseForRun = Object.assign({}, caze, { message: resolved.message })
   try {
-    const res = (await runner(caze.message, caze)) || {}
-    const judged = judgeCase(caze, res)
-    const fallbackAction = judged.pass ? null : detectFallback(caze, res, judged.failures)
+    const res = (await runner(resolved.message, caseForRun)) || {}
+    const judged = judgeCase(caseForRun, res)
+    const fallbackAction = judged.pass ? null : detectFallback(caseForRun, res, judged.failures)
     const failures = judged.failures.slice()
     if (fallbackAction) failures.push('模型没调工具，靠前端兜底执行（' + fallbackAction.type + '）——结果能落库，但不是 AI 会拆解')
     return {
       id: caze.id,
       title: caze.title,
-      message: caze.message,
+      message: resolved.message,
       status: judged.pass ? CASE_STATUS.PASS : (fallbackAction ? CASE_STATUS.FALLBACK : CASE_STATUS.FAIL),
       failures: failures,
       gotTools: judged.gotTools,
@@ -193,7 +263,7 @@ export async function runCase(runner, caze) {
     return {
       id: caze.id,
       title: caze.title,
-      message: caze.message,
+      message: resolved.message,
       status: CASE_STATUS.ERROR,
       failures: ['请求失败：' + ((e && e.message) || e)],
       gotTools: [],
@@ -214,10 +284,11 @@ export async function runCases(runner, cases, opts = {}) {
   const list = Array.isArray(cases) ? cases : []
   const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null
   const stopRef = opts.stopRef || null
+  const ctx = opts.ctx || null
   const rows = []
   for (let i = 0; i < list.length; i++) {
     if (stopRef && stopRef.stopped) break
-    const row = await runCase(runner, list[i])
+    const row = await runCase(runner, list[i], ctx)
     rows.push(row)
     if (onProgress) onProgress(rows.length, list.length, row)
   }
@@ -235,14 +306,19 @@ export function summarizeResults(rows) {
   const fail = list.filter((r) => r.status === CASE_STATUS.FAIL).length
   const fallback = list.filter((r) => r.status === CASE_STATUS.FALLBACK).length
   const error = list.filter((r) => r.status === CASE_STATUS.ERROR).length
+  const skip = list.filter((r) => r.status === CASE_STATUS.SKIP).length
   const total = list.length
+  // 跳过的（缺数据前置）不进分母：没跑过的用例不该拉低通过率
+  const scored = total - skip
   return {
     total,
     pass,
     fail,
     fallback,
     error,
-    rate: total > 0 ? Math.round((pass / total) * 100) : 0,
+    skip,
+    scored,
+    rate: scored > 0 ? Math.round((pass / scored) * 100) : 0,
     ms: list.reduce((s, r) => s + (r.ms || 0), 0)
   }
 }
@@ -259,7 +335,7 @@ export function formatFailureReport(rows) {
   const lines = [
     '# 思迹 AI 效果自检',
     '',
-    `- 通过：${sum.pass}/${sum.total}（${sum.rate}%）`,
+    `- 通过：${sum.pass}/${sum.scored}（${sum.rate}%）${sum.skip > 0 ? `，跳过 ${sum.skip} 条（缺数据前置）` : ''}`,
     `- 未通过：${sum.fail}，靠前端兜底：${sum.fallback}，请求出错：${sum.error}`,
     ''
   ]

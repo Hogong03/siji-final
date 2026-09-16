@@ -18,6 +18,13 @@ import { compactExecDetail } from '@/utils/ai/exec-payload.js'
  * @param {string} userMessage - 用户原始消息
  * @param {Object} options - { source: 'agent' | 'json' }，agent 模式跳过执行步骤
  */
+/** action 类型白名单过滤（3.7.2）：store 没提供校验函数时一律放行，保持向后兼容 */
+function keepKnownActions(store, list) {
+  const arr = Array.isArray(list) ? list : []
+  if (!store || typeof store.isKnownActionType !== 'function') return arr
+  return arr.filter((a) => a && store.isKnownActionType(a.type))
+}
+
 export function autoExecuteAndDisplay(store, result, reply, userMessage, options = {}) {
   const { source = 'json' } = options
   // === Agent 模式：工具已在循环内执行，仅渲染结果卡片 ===
@@ -80,6 +87,18 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
   let execResults = []
   let displayContent = reply
 
+  // 3.7.2：复合动作里有幻觉类型时先滤掉（全滤空则按无 action 处理，交给兜底）
+  if (result.actions && result.actions.length > 1) {
+    const knownActions = keepKnownActions(store, result.actions)
+    if (knownActions.length === 0) {
+      logger.warn('[AutoExecutor] 复合动作全是未知类型，按无 action 处理')
+      result.actions = []
+      result.action = null
+    } else {
+      result.actions = knownActions
+    }
+  }
+
   if (result.actions && result.actions.length > 1) {
     const multiResult = store.executeActions(result.actions)
     execResults = multiResult.results || []
@@ -106,6 +125,11 @@ export function autoExecuteAndDisplay(store, result, reply, userMessage, options
   // === 单 action 执行 ===
   let effectiveAction = (result.actions && result.actions.length === 1)
     ? result.actions[0] : result.action
+  // 3.7.2：未知动作类型（实测出现过 type: 'batch'）不执行，落回「声称操作但无 action」
+  if (effectiveAction && effectiveAction.type && keepKnownActions(store, [effectiveAction]).length === 0) {
+    logger.warn('[AutoExecutor] 未知 action 类型，按无 action 处理:', effectiveAction.type)
+    effectiveAction = null
+  }
   
   // 注：原二次 JSON 提取逻辑已删除——response-parser 已做充分兜底，
   // action 为 null 就是 null，不应在 autoExecutor 再试一次

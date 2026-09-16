@@ -4,7 +4,7 @@
  */
 import { logger } from '../../logger.js'
 import { addCustomTag, getTagsByCategory, removeCustomTag, updateTagCategory } from '../../storage/tags.js'
-import { needsConfirmation, TOOL_LABELS } from './index.js'
+import { needsConfirmation, TOOL_LABELS, TOOL_DEFINITIONS } from './index.js'
 import { buildAgentPayload } from './agent.js'
 import { searchConversations } from '../../chat-search.js'
 
@@ -15,8 +15,14 @@ import { searchConversations } from '../../chat-search.js'
  * @param {Object} args - 工具参数
  * @returns {{ ok:boolean, text:string, detail:any, confirm?:boolean }} 格式化的自然语言结果
  */
+/** 已注册的工具名（3.7.2：模型偶尔会调一个不存在的工具，实测出现过 'batch'） */
+const TOOL_NAMES = new Set(TOOL_DEFINITIONS.map(t => t.name))
+
 export function executeTool(store, name, args = {}) {
   try {
+    if (!TOOL_NAMES.has(name)) {
+      return { ok: false, text: `不存在名为 ${name} 的工具，请从工具列表里选择可用的工具重新调用`, detail: null }
+    }
     // 确认闸门前置：写操作默认需用户确认（3.0 M3），查询/撤销直接放行
     if (needsConfirmation(name, args)) {
       const label = TOOL_LABELS[name] || name

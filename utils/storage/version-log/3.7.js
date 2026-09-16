@@ -6,6 +6,45 @@
 
 export const V37 = [
   {
+    version: '3.7.2',
+    date: '2026-09-17',
+    title: '3.7.2 自检去掉 4 条假失败（语料改绑真实数据）+ 拦住模型幻觉的动作类型',
+    summary: [
+      '4 条「失败」是语料写死了并不存在的计划名：你库里只有「一年读完12本有意思的书」，没有六级备考计划 / 学英语计划 / 英语听力计划，也没有 ¥35 的午饭账单 —— 模型查完如实说「没找到，要不要新建」，行为正确却被判失败。语料改用 {plan} / {billAmount} 占位符，跑批前从你的真实数据取值（页面显示「数据前置」那一行）',
+      '取不到前置就判跳过（–），不算失败、也不进通过率分母 —— 页面图例与汇总行同步；自检口径从此不再绑定某个具体计划名',
+      '真 Bug：模型幻觉出不存在的动作类型（这次实测返回 type: batch，它想表达复合意图），以前拿假类型直接 executeAction → 得到「未知操作类型」，上层却当成「执行了但失败」，兜底与提示都接管不了 —— 于是「都记好了」既没落库也没人纠正',
+      '修法：store/data.js 新增 isKnownActionType(type)（ACTION_MAP 是唯一事实来源，不在别处再抄一份清单），autoExecutor 的 JSON 路径先过白名单再执行，未知类型落回「声称操作但无 action」交给兜底与提示；executeTool 也补了工具名白名单 —— 调用不存在的工具名会明确回传「不存在名为 X 的工具」，让模型自纠而不是静默失败',
+      '自检的合并逻辑与 autoExecutor 用同一套校验（页面把 store.isKnownActionType 传进 mergeExecutedTools），所以自检看到的工具链就是 App 真实会执行的工具链'
+    ],
+    categories: [
+      {
+        title: '自检数据前置（3.7.2）',
+        items: [
+          'utils/ai/eval/cases.js：5 条与真实数据挂钩的语料改成占位符 —— plan-change-content / plan-change-deadline / plan-add-child / plan-checkin 用 {plan}，bill-correction 用 {billAmount} 与 {billAmountPlus}（原金额 +18），并新增 needs 字段声明前置（plan / bill）',
+          'utils/ai/eval/runner.js：新增 buildEvalContext({plans,bills})（取第一条进行中计划、第一笔支出账单；收入不算、已完成计划不算）、resolveCase(caze,ctx)（占位符替换 + 缺前置判定，缺值时保留 {plan} 原样），runCase 缺前置直接返回 SKIP 并说明缺什么（不打模型），summarizeResults 增加 skip / scored，通过率按 scored 算，formatFailureReport 单列跳过条数',
+          'pages/settings/sub/ai-eval.vue：跑批前用 executeTool 查真实计划与账单填 evalCtx，页面顶部显示「数据前置：计划「X」 · 最近一笔支出 ¥Y」；状态符号补 –（跳过）；汇总行显示「跳过 N」'
+        ]
+      },
+      {
+        title: '幻觉动作类型（3.7.2）',
+        items: [
+          'store/data.js：新增 isKnownActionType(type) —— undo_last / multi 与 ACTION_MAP 里的类型才算合法，其余（含 none）一律假；store/index.js 透传为 data.isKnownActionType',
+          'utils/ai/autoExecutor.js：新增 keepKnownActions(store, list)；复合动作先滤掉未知类型（全滤空则按无 action 处理），单动作路径同样校验，未知类型不执行、落回「声称操作但无 action」的兜底与提示链路',
+          'utils/ai/tools/executor.js：新增 TOOL_NAMES 白名单（来自 TOOL_DEFINITIONS），调用不存在的工具名直接回传「不存在名为 X 的工具，请从工具列表里选择可用的工具重新调用」—— 以前会一路走到 store.executeAction 才报「未知操作类型」',
+          'utils/ai/eval/runner.js：mergeExecutedTools(result, opts) 支持 isKnownType，幻觉类型不计入工具链（与 App 一致）'
+        ]
+      },
+      {
+        title: '测试（3.7.2）',
+        items: [
+          'tests/ai-eval-context.test.js（新增 13 例）：buildEvalContext 取值与边界（已完成计划不算、收入不算、空数据）、resolveCase 占位符替换与缺前置、缺前置判跳过且不打模型、有前置用真实名字跑、跳过不进通过率分母、22 条语料里带 needs 的都能取到值；幻觉动作四条（isKnownActionType 判定、未知 action 不落到 executeAction 且兜底救回可救的那半、自检合并同样不认 batch、不存在的工具名明确回传）',
+          'tests/ai-eval.test.js：整套语料那条补数据前置（否则带 needs 的用例判跳过）',
+          '全量：68 文件 / 973 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.1',
     date: '2026-09-16',
     title: '3.7.1 自检首跑 16/23：3 条修自检口径、2 条真 Bug（AI 说「记好了」但记录没落库）',

@@ -13,8 +13,14 @@
  *   args        { 工具名: (args, allToolCalls) => boolean }
  *   confirm     期望走「需用户确认」闸门
  *   replyIncludes / replyExcludes  最终回复必须 / 不许包含的子串
+ *   needs       数据前置（3.7.2）：plan / bill。缺前置时该条判跳过，不算失败
  *
  * 日期一律现算（dayStr），不写死日期 —— 写死会让用例在特定日子里假失败。
+ *
+ * 3.7.2：涉及「某个已存在的计划 / 某一笔账单」的语料不再写死名字 —— 3.7.1 首跑里
+ * 那 4 条的失败全是这个原因：语料里假设的「六级备考计划 / 学英语计划」根本不在你库里，
+ * 模型查完如实说「没找到，要不要新建」，行为正确却被判失败。改用 {plan} / {billAmount}
+ * 占位符，跑批前从你真实数据里取值（见 runner.buildEvalContext）。
  */
 
 /** 相对今天偏移 n 天的 YYYY-MM-DD */
@@ -35,7 +41,8 @@ export const EVAL_CASES = [
   {
     id: 'plan-change-content',
     title: '计划内容变更 → 改原计划，不许新建',
-    message: '六级备考计划改一下，从现在开始每天背 30 个单词，别再按 50 个来了',
+    needs: 'plan',
+    message: '「{plan}」改一下，从现在开始每天读 20 页，别再按原来的节奏来了',
     expect: {
       tools: ['update_plan'],
       order: [['query_plan', 'update_plan']],
@@ -45,7 +52,8 @@ export const EVAL_CASES = [
   {
     id: 'plan-change-deadline',
     title: '改计划截止时间 → 先查后改',
-    message: '把学英语的那个计划的截止时间改到 12 月 12 日',
+    needs: 'plan',
+    message: '把「{plan}」的截止时间改到 12 月 12 日',
     expect: {
       tools: ['update_plan'],
       order: [['query_plan', 'update_plan']],
@@ -55,7 +63,8 @@ export const EVAL_CASES = [
   {
     id: 'plan-add-child',
     title: '给计划补一条子计划 → update 不 create',
-    message: '给六级那个计划再加一条：每天精听一篇对话，十分钟就够',
+    needs: 'plan',
+    message: '给「{plan}」再加一条：每天读 20 页，二十分钟就够',
     expect: {
       tools: ['update_plan'],
       forbid: ['create_plan', 'create_plan_phases']
@@ -73,7 +82,8 @@ export const EVAL_CASES = [
   {
     id: 'plan-checkin',
     title: '计划打卡 → 打卡工具，不许新建计划',
-    message: '今天的英语听力打卡完成了',
+    needs: 'plan',
+    message: '「{plan}」今天的打卡完成了',
     expect: {
       tools: ['log_plan_checkin'],
       forbid: ['create_plan', 'create_diary']
@@ -162,7 +172,8 @@ export const EVAL_CASES = [
   {
     id: 'bill-correction',
     title: '记错了 → 先查后改，不许新增一条',
-    message: '刚才那笔午饭不是 35，是 53，改一下',
+    needs: 'bill',
+    message: '刚才那笔记账金额写错了，不是 {billAmount} 是 {billAmountPlus}，改一下',
     expect: {
       order: [['query_bill', 'update_bill']],
       tools: ['update_bill'],
