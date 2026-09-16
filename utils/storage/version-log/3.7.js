@@ -6,6 +6,34 @@
 
 export const V37 = [
   {
+    version: '3.7.7',
+    date: '2026-09-17',
+    title: '3.7.7 真因：Uri 被字符串化导致 openInputStream 失败（Android 选文件终于能读）',
+    summary: [
+      '真机报「拷贝失败（open-input）」的真因：`String(data.getData())` 拿到的不是可用 URI，再喂回 openInputStream 必然失败 —— 改为把 Java 的 Uri 对象一路传下去，绝不字符串化；getData 为空时退到 ClipData 取 Uri（少数 provider 把结果放那里）',
+      '开流改成三级：openInputStream → openFileDescriptor + FileInputStream(fd)（部分 ROM 只给文件描述符）→ openAssetFileDescriptor().createInputStream()',
+      '阶段名拆细并逐级尝试三次开流：get-resolver / open-input / open-descriptor / open-asset / open-all-failed / stream-fail:x / channel-fail:x —— 每条策略各开一次流（上次复用已被读掉一半的流是隐患），结束都安静关闭（输入流与描述符都要关）',
+      '打不开时的文案变成可执行的建议：云盘 / 在线文档类的文件先下载到手机再选；不再只说「换一种方式试试」',
+      '测试用假 plus 覆盖：Uri 必须以对象传进去（回归点，禁止 String()）、openInputStream 抛异常时退 fd 链仍能拷成功、三级都打不开时二进制文件如实失败并给建议、文本文件在开流失败时也如实失败（不假装读到了）、getData 为空走 ClipData'
+    ],
+    categories: [
+      {
+        title: 'Android 选文件真因与修法（3.7.7）',
+        items: [
+          'utils/files/android-picker.js：新增 pickUriFrom(data)（getData → ClipData.getItemAt(0).getUri）与 openContentStream(uri)（三级开流，返回 input / closer / stage）；closeQuiet 同时关输入流与文件描述符；copyContentUriToSandbox 每条策略各开一次流，stage 记录走到哪一步，并返回 openStage',
+          'utils/files/android-picker.js：copyViaStream / copyViaChannel / readUriAsText 签名不变（只吃 input），picker 里去掉 String(uri)；失败文案按 open-failed 前缀分叉'
+        ]
+      },
+      {
+        title: '测试（3.7.7）',
+        items: [
+          'tests/file-pick-android.test.js（22 例，本轮 +5）：Uri 以对象传入（首例断言 openedWith[0] 就是 getData 返回的那个对象）、openInputStream 抛错退 fd 链、三级全败的二进制与文本两条路径如实失败、getData 为空退 ClipData；假 plus 的 verifySize / openFails / onlyFd / clipOnly / textLines 五个开关',
+          '全量：70 文件 / 1007 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.6',
     date: '2026-09-17',
     title: '3.7.6 修 Android 选文件拷贝失败：路径归一 + 三级兜底 + 文本直读保底',

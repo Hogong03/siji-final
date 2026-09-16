@@ -79,8 +79,8 @@ describe('pickOneFile 路由：Android 走选择器，其它平台给提示', ()
 
 /** 假 plus：把「选 → 描述 → 拷贝 → 返回」这条链跑通 */
 function fakePlus(options = {}) {
-  const calls = { started: [], requested: 0, copied: [] }
-  const uri = options.uri || 'content://com.android.providers.downloads/document/42'
+  const calls = { started: [], requested: 0, copied: [], openedWith: [] }
+  const uri = options.uri || { uri: 'content://com.android.providers.downloads/document/42' }
   const meta = options.meta || { name: '六级真题.txt', size: 2048, mime: 'text/plain' }
 
   function activity() {
@@ -94,17 +94,24 @@ function fakePlus(options = {}) {
             getString: (i) => (i === 0 ? meta.name : String(meta.size)),
             close: () => {}
           }),
-          openInputStream: () => ({
-            getChannel: () => ({ close() {} }),
-            available: () => meta.size,
-            read: function (buf, off, len) {
-              if (options.readFails) throw new Error('read-denied')
-              if (this.__done) return -1
-              this.__done = true
-              return Math.min(meta.size, len)
-            },
-            close() {}
-          })
+          openInputStream: (u) => {
+            calls.openedWith.push(u)
+            if (options.openFails) throw new Error('security-denied')
+            if (options.openReturnsNull) return null
+            return {
+              getChannel: () => ({ close() {} }),
+              available: () => meta.size,
+              read: function (buf, off, len) {
+                if (options.readFails) throw new Error('read-denied')
+                if (this.__done) return -1
+                this.__done = true
+                return Math.min(meta.size, len)
+              },
+              close() {}
+            }
+          },
+          openFileDescriptor: () => (options.onlyFd ? { getFileDescriptor: () => ({ fd: 1 }), close() {} } : null),
+          openAssetFileDescriptor: () => null
         }
       },
       // 模拟用户选完：回来后由被测代码挂上的 onActivityResult 接管（用 this 取，拿到的就是它）
@@ -112,7 +119,10 @@ function fakePlus(options = {}) {
         calls.started.push(code)
         calls.requested++
         if (typeof this.onActivityResult === 'function') {
-          this.onActivityResult(code, options.cancel ? 0 : -1, { getData: () => uri })
+          this.onActivityResult(code, options.cancel ? 0 : -1, {
+            getData: () => (options.clipOnly ? null : uri),
+            getClipData: () => (options.clipOnly ? { getItemAt: () => ({ getUri: () => uri }) } : null)
+          })
         }
       },
       // 由被测代码覆盖
@@ -147,6 +157,15 @@ function fakePlus(options = {}) {
             this.close = () => {}
           }
         }
+        if (name === 'java.io.FileInputStream') {
+          return function (fd) {
+            this.__fd = fd
+            this.getChannel = () => ({ close() {} })
+            this.available = () => meta.size
+            this.read = function (buf, off, len) { if (this.__done) return -1; this.__done = true; return Math.min(meta.size, len) }
+            this.close = () => {}
+          }
+        }
         if (name === 'java.io.BufferedReader' || name === 'java.io.InputStreamReader') {
           return function () {
             let served = 0
@@ -174,7 +193,8 @@ describe('pickFileViaAndroid：选 → 拷 → 交回沙盒路径', () => {
   afterEach(() => { global.plus = original })
 
   it('选中一个 txt：返回沙盒相对路径 + 绝对路径 + 消毒后的名字', async () => {
-    const { plus: fake, calls } = fakePlus({ textLines: 2 })
+    const fakeUri = { uri: 'content://doc/42' }
+    const { plus: fake, calls } = fakePlus({ textLines: 2, uri: fakeUri })
     global.plus = fake
     const r = await pickFileViaAndroid()
     expect(r.ok).toBe(true)
@@ -185,6 +205,10 @@ describe('pickFileViaAndroid：选 → 拷 → 交回沙盒路径', () => {
     expect(r.pick.size).toBe(2048)
     expect(r.pick.mime).toBe('text/plain')
     expect(calls.started).toEqual([REQ_PICK_FILE])
+    // 3.7.7 回归点：喂给 openInputStream 的必须是 getData() 那个对象本身，不能是 String(uri)
+    expect(calls.openedWith.length).toBeGreaterThan(0)
+    expect(calls.openedWith[0]).toBe(fakeUri)
+    expect(typeof calls.openedWith[0]).toBe('object')
     // 真的拷了（字节数组策略），不是只返回了个路径
     expect(calls.copied.some(c => c.via === 'stream')).toBe(true)
     expect(r.pick.inlineText).toBe('line1\nline2')
@@ -218,11 +242,15 @@ describe('copyContentUriToSandbox：失败不炸', () => {
   const original = global.plus
   afterEach(() => { global.plus = original })
 
-  it('取不到输入流：给出 stage 便于定位，不抛异常', async () => {
-    global.plus = { os: { name: 'Android' }, android: { runtimeMainActivity: () => ({ getContentResolver: () => ({ openInputStream: () => null }) }) } }
+  it('三级开流都不可用：给出 stage 便于定位，不抛异常', async () => {
+    global.plus = {
+      os: { name: 'Android' },
+      io: { convertLocalFileSystemURL: (rel) => '/abs/' + rel },
+      android: { runtimeMainActivity: () => ({ getContentResolver: () => ({ openInputStream: () => null }) }) }
+    }
     const r = await copyContentUriToSandbox('content://x', '_doc/upload/a.txt')
     expect(r.ok).toBe(false)
-    expect(r.stage).toBe('open-input')
+    expect(r.stage).toBe('open-failed:open-all-failed')
   })
 })
 
@@ -275,5 +303,58 @@ describe('3.7.6 加固：路径归一 / 文本兜底 / 失败原因可定位', (
     global.plus = fake
     const r = await pickFileViaAndroid()
     expect(r.ok).toBe(false)
+  })
+})
+
+describe('3.7.7 修「拷贝失败（open-input）」', () => {
+  const original = global.plus
+  afterEach(() => { global.plus = original })
+
+  it('Uri 不是字符串：String() 出来的东西喂回 openInputStream 必然失败，现在传对象本身', async () => {
+    const uri = { uri: 'content://media/1', toString: () => '[object Object]' }
+    const { plus: fake, calls } = fakePlus({ uri: uri, textLines: 1 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(calls.openedWith.length).toBeGreaterThan(0)
+    calls.openedWith.forEach((u) => expect(typeof u).toBe('object'))
+  })
+
+  it('openInputStream 抛异常时退到 openFileDescriptor + FileInputStream，照样拷成功', async () => {
+    const { plus: fake, calls } = fakePlus({ openFails: true, onlyFd: true, textLines: 1 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
+    expect(calls.copied.some(c => c.via === 'stream')).toBe(true)
+  })
+
+  it('三级都打不开（二进制文件）：报错给可执行建议（云盘文件先下载到手机）', async () => {
+    // 用 pdf 试：文本类还有 inlineText 兜底，二进制没有，才能看到这条失败文案
+    const { plus: fake } = fakePlus({
+      openFails: true, verifySize: 0,
+      meta: { name: '真题.pdf', size: 4096, mime: 'application/pdf' }
+    })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(false)
+    expect(r.reason).toContain('打不开这个文件')
+    expect(r.reason).toContain('云盘')
+  })
+
+  it('三级都打不开（文本文件）：仍靠 inlineText 读进来 —— 打不开流时文本兜底也拿不到，如实失败', async () => {
+    const { plus: fake } = fakePlus({ openFails: true, verifySize: 0, textLines: 2 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    // 开流失败时 inlineText 也读不到（同一个流），所以这条必须如实报失败，不能假装读到了
+    expect(r.ok).toBe(false)
+    expect(r.reason).toContain('打不开这个文件')
+  })
+
+  it('getData 为空时退到 ClipData 取 Uri', async () => {
+    const uri = { uri: 'content://clip/9' }
+    const { plus: fake } = fakePlus({ uri: uri, clipOnly: true, textLines: 1 })
+    global.plus = fake
+    const r = await pickFileViaAndroid()
+    expect(r.ok).toBe(true)
   })
 })

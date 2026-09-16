@@ -15,6 +15,13 @@
  *      拷贝彻底失败也能把 txt / md / csv 读进来
  *   5. 每条失败路径给不同的原因文案 —— 下次真机再失败，一眼能定位在哪一步
  *
+ * 3.7.7（真机报「拷贝失败（open-input）」）：打不开流的原因是 Uri 被字符串化了 ——
+ *   `String(data.getData())` 得到的不是可用的 URI 字符串，再喂回 openInputStream 必然失败。
+ *   改为把 Java 的 Uri **对象**一路传到 openInputStream / openFileDescriptor（不要 String()）。
+ *   同时把开流做成三级：openInputStream → openFileDescriptor + FileInputStream(fd) →
+ *   openAssetFileDescriptor.createInputStream()；阶段名拆细（get-resolver / open-input /
+ *   open-descriptor / open-asset / open-all-failed），下次失败能直接指到哪一步。
+ *
  * 平台差异：
  *   Android 本文件
  *   iOS     无等价物（UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动），走 picker.js 的提示
@@ -89,6 +96,23 @@ export function isAndroidRuntime() {
   }
 }
 
+/**
+ * 从返回的 Intent 里取 Uri 对象（3.7.7）
+ * 多数情况在 data.getData()；少数 provider 把结果放在 ClipData 里
+ * @returns {Object|null} Java Uri 对象（**不要转成字符串**）
+ */
+function pickUriFrom(data) {
+  try {
+    const uri = data.getData()
+    if (uri) return uri
+  } catch (e) { /* 落到 ClipData */ }
+  try {
+    const clip = data.getClipData()
+    if (clip && clip.getItemAt(0)) return clip.getItemAt(0).getUri()
+  } catch (e) { /* 都没有 */ }
+  return null
+}
+
 /** 读 content:// 的显示名 / 大小 / MIME（选不到就留空，不阻断流程） */
 function describeUri(uri) {
   const out = { name: '', size: 0, mime: '' }
@@ -123,6 +147,59 @@ function ensureUploadDir() {
       resolve(false)
     }
   })
+}
+
+/** 异常信息取字符串（plus 的异常对象未必有 message） */
+function errText(e) {
+  return String((e && (e.message || e.msg)) || e || 'unknown')
+}
+
+/**
+ * 打开 content:// 的输入流（三级）
+ * 1) openInputStream：最省事，多数 provider 支持
+ * 2) openFileDescriptor + FileInputStream(fd)：部分 ROM / provider 只给文件描述符
+ * 3) openAssetFileDescriptor().createInputStream()：少见的第三种实现
+ * @param {Object} uri Java 的 Uri 对象（**不要传字符串**）
+ * @returns {{ input: Object|null, closer: Object|null, stage: string }}
+ */
+function openContentStream(uri) {
+  let resolver = null
+  try {
+    resolver = plus.android.runtimeMainActivity().getContentResolver()
+  } catch (e) {
+    return { input: null, closer: null, stage: 'get-resolver:' + errText(e) }
+  }
+  if (!resolver) return { input: null, closer: null, stage: 'get-resolver' }
+
+  try {
+    const s = resolver.openInputStream(uri)
+    if (s) return { input: s, closer: null, stage: 'open-input' }
+  } catch (e) { /* 落到下一级 */ }
+
+  try {
+    const pfd = resolver.openFileDescriptor(uri, 'r')
+    if (pfd) {
+      const FileInputStream = plus.android.importClass('java.io.FileInputStream')
+      const s = new FileInputStream(pfd.getFileDescriptor())
+      if (s) return { input: s, closer: pfd, stage: 'open-descriptor' }
+    }
+  } catch (e) { /* 落到下一级 */ }
+
+  try {
+    const afd = resolver.openAssetFileDescriptor(uri, 'r')
+    if (afd) {
+      const s = afd.createInputStream()
+      if (s) return { input: s, closer: afd, stage: 'open-asset' }
+    }
+  } catch (e) { /* 三级都不行 */ }
+
+  return { input: null, closer: null, stage: 'open-all-failed' }
+}
+
+/** 安静关闭（输入流与描述符都要关，关不掉也不能抛） */
+function closeQuiet(opened) {
+  try { if (opened && opened.input && opened.input.close) opened.input.close() } catch (e) { /* ignore */ }
+  try { if (opened && opened.closer && opened.closer.close) opened.closer.close() } catch (e) { /* ignore */ }
 }
 
 /** 建一个 Java byte[] 缓冲（两条路都不行就返回 null，让上层换策略） */
@@ -229,19 +306,10 @@ function verifySandboxFile(relPath) {
  */
 export function copyContentUriToSandbox(uri, relPath, opts = {}) {
   return new Promise((resolve) => {
-    let input = null
+    let absPath = ''
     try {
-      input = plus.android.runtimeMainActivity().getContentResolver().openInputStream(uri)
-    } catch (e) {
-      resolve({ ok: false, bytes: 0, text: null, stage: 'open-input' })
-      return
-    }
-    if (!input) {
-      resolve({ ok: false, bytes: 0, text: null, stage: 'open-input' })
-      return
-    }
-
-    const absPath = toNativePath(plus.io.convertLocalFileSystemURL(relPath))
+      absPath = toNativePath(plus.io.convertLocalFileSystemURL(relPath))
+    } catch (e) { /* 下面统一判空 */ }
     if (!absPath) {
       resolve({ ok: false, bytes: 0, text: null, stage: 'resolve-path' })
       return
@@ -249,38 +317,52 @@ export function copyContentUriToSandbox(uri, relPath, opts = {}) {
 
     let bytes = 0
     let stage = ''
-    // 策略一：字节数组流拷贝
-    try {
-      bytes = copyViaStream(input, absPath)
-      stage = 'stream'
-    } catch (e1) {
-      stage = 'stream-fail:' + ((e1 && e1.message) || e1)
-      // 策略二：FileChannel（重开一次流，策略一可能已经读掉一部分）
+    let firstOpenStage = ''
+
+    // 策略一：字节数组流拷贝（依赖最少）
+    const o1 = openContentStream(uri)
+    firstOpenStage = o1.stage
+    if (o1.input) {
       try {
-        if (input && input.close) input.close()
-        input = plus.android.runtimeMainActivity().getContentResolver().openInputStream(uri)
-        bytes = copyViaChannel(input, absPath)
-        stage = 'channel'
-      } catch (e2) {
-        stage = stage + '|channel-fail:' + ((e2 && e2.message) || e2)
+        bytes = copyViaStream(o1.input, absPath)
+        stage = 'stream'
+      } catch (e1) {
+        stage = 'stream-fail:' + errText(e1)
+      } finally {
+        closeQuiet(o1)
+      }
+    }
+
+    // 策略二：FileChannel（重新开一次流）
+    if (!(bytes > 0)) {
+      const o2 = openContentStream(uri)
+      if (o2.input) {
+        try {
+          bytes = copyViaChannel(o2.input, absPath)
+          stage = (stage ? stage + '|' : '') + 'channel'
+        } catch (e2) {
+          stage = (stage ? stage + '|' : '') + 'channel-fail:' + errText(e2)
+        } finally {
+          closeQuiet(o2)
+        }
       }
     }
 
     // 文本兜底：无论拷贝成没成，文本类文件都留一份 inlineText
     let text = null
     if (opts.wantsText) {
-      try {
-        if (input && input.close) input.close()
-        input = plus.android.runtimeMainActivity().getContentResolver().openInputStream(uri)
-        text = readUriAsText(input)
-        if (text !== null) stage = stage || 'text-only'
-      } catch (e) { /* 文本兜底失败不影响结论 */ }
+      const o3 = openContentStream(uri)
+      if (o3.input) {
+        try { text = readUriAsText(o3.input) } catch (e) { /* 文本兜底失败不影响结论 */ }
+        closeQuiet(o3)
+      }
     }
-    try { if (input && input.close) input.close() } catch (e) { /* ignore */ }
+
+    if (!stage) stage = 'open-failed:' + firstOpenStage
 
     verifySandboxFile(relPath).then((size) => {
       const ok = size > 0
-      resolve({ ok: ok, bytes: ok ? size : bytes, text: text, stage: stage, verified: size })
+      resolve({ ok: ok, bytes: ok ? size : bytes, text: text, stage: stage, verified: size, openStage: firstOpenStage })
     })
   })
 }
@@ -310,7 +392,9 @@ export function pickFileViaAndroid() {
         if (requestCode !== REQ_PICK_FILE) return
         try {
           if (resultCode !== -1) { done({ ok: false, reason: '' }); return }  // -1 = RESULT_OK
-          const uri = String(data.getData())
+          // 3.7.7：Uri 必须是 Java 对象 —— String() 出来的字符串喂回 openInputStream 必然失败
+          const uri = pickUriFrom(data)
+          if (!uri) { done({ ok: false, reason: '没拿到选中的文件' }); return }
           const meta = describeUri(uri)
           if (meta.size > MAX_FILE_BYTES) {
             done({ ok: false, reason: '文件超过 ' + Math.round(MAX_FILE_BYTES / 1024 / 1024) + 'MB，请先截取需要的部分' })
@@ -338,7 +422,13 @@ export function pickFileViaAndroid() {
                 return
               }
               logger.warn('[FilePick] 拷贝失败', cp.stage)
-              done({ ok: false, reason: '拷贝失败（' + cp.stage + '），换一种方式试试' })
+              const openFailed = String(cp.stage || '').indexOf('open-failed') === 0 || String(cp.stage || '').indexOf('open-all-failed') >= 0
+              done({
+                ok: false,
+                reason: openFailed
+                  ? '打不开这个文件（' + cp.stage + '）：云盘 / 在线文档类的文件先下载到手机再选，或换一个文件试试'
+                  : '拷贝失败（' + cp.stage + '），换一种方式试试'
+              })
             })
           })
         } catch (e) {
