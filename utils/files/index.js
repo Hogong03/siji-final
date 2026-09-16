@@ -14,6 +14,7 @@ export * from './file-types.js'
 export * from './file-text.js'
 export { readLocalText, readLocalBase64 } from './local-io.js'
 export { pickOneFile, toPick, APP_PICK_HINT } from './picker.js'
+export { isAndroidRuntime, pickFileViaAndroid, safeFileName, uploadRelPath, copyContentUriToSandbox, UPLOAD_DIR, REQ_PICK_FILE } from './android-picker.js'
 export { parseDocument, resolveDocConfig, docStatusText, isDocParseAvailable, setDocBackend, getDocBackendId, setOwnDocKey, hasOwnDocKey, listDocBackends, DOC_BACKENDS, DOC_KEYS } from './doc-parse.js'
 
 /** 不支持的格式给什么建议（统一文案，别在各页面各写一遍） */

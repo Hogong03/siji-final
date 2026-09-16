@@ -3,15 +3,29 @@
  *
  * 平台差异（按官方支持表落地，不猜）：
  *   H5        uni.chooseFile 可用
- *   App       uni.chooseFile 不支持（需原生插件），给能立刻做的两条路，不装死
+ *   Android   uni.chooseFile 不支持，但系统选择器可以自己调 —— 见 android-picker.js
+ *             （ACTION_GET_CONTENT + ContentResolver 拷进沙盒，零插件零权限）
+ *   iOS       UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动 → 提示装插件 / 截图 / 粘贴
  *   微信小程序  wx.chooseMessageFile 可用（从聊天记录里选文件）
  *
  * 统一返回 { ok, pick }，pick 直接喂给 readPickedFile()。
  */
 import { pickerExtensions, baseNameOf } from './file-types.js'
+import { pickFileViaAndroid, isAndroidRuntime, ANDROID_UNAVAILABLE_HINT } from './android-picker.js'
 
-/** App 端没有系统文件选择器，提示里给的是 App 端真能走通的两条路 */
-export const APP_PICK_HINT = 'App 端系统文件选择需原生插件：可截图发我识别，或把文字粘贴进来'
+/** 平台没有系统文件选择能力时给的提示（截图 / 粘贴两条路都立刻能做） */
+export const APP_PICK_HINT = ANDROID_UNAVAILABLE_HINT
+
+/**
+ * App 端选文件的去向（纯函数，可单测）
+ * Android 用系统选择器；iOS 与其它平台没有零插件路径，给提示
+ * 抽成纯函数的原因：条件编译在单测里不生效（H5 分支先返回），决策点只能这样测到
+ * @param {boolean} isAndroid
+ * @returns {'android'|'hint'}
+ */
+export function appPickRoute(isAndroid) {
+  return isAndroid ? 'android' : 'hint'
+}
 
 /** 能不能直接交给 FileReader（H5 的 chooseFile 返回的可能是原始 File） */
 function fileLikeOf(x) {
@@ -100,6 +114,8 @@ export function pickOneFile() {
   return pickMp()
   // #endif
   // #ifndef H5 || MP-WEIXIN
+  // App：Android 走系统选择器（零插件）；iOS 与其它平台给提示
+  if (appPickRoute(isAndroidRuntime()) === 'android') return pickFileViaAndroid()
   return Promise.resolve({ ok: false, reason: APP_PICK_HINT })
   // #endif
 }

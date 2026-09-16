@@ -6,6 +6,37 @@
 
 export const V37 = [
   {
+    version: '3.7.5',
+    date: '2026-09-17',
+    title: '3.7.5 Android 真机可以选文件了：系统选择器 + 拷进沙盒，零插件零权限',
+    summary: [
+      'Android 端点「文件」不再只弹一句提示：走 plus.android 调系统自带的文件选择器（ACTION_GET_CONTENT），零原生插件、零存储权限（SAF 只授权用户选中的那一个文件）',
+      '选完把 content:// 的内容拷进沙盒 _doc/upload/，之后的读取沿用既有代码 —— plus.io 读文本 / 读 base64 / 文档解析上传全部不用改；拷贝用 FileChannel.transferFrom 在 Java 侧整块搬，不把字节数组搬进 JS',
+      'iOS 仍无等价物：UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动 —— 提示改为更准确的说法（截图识别 / 粘贴文字 / 装原生插件），不再说「App 端需插件」让 Android 用户白等',
+      '边界写进 UI：单个文件仍限 5MB（超了在选择阶段就拦下，不拷贝）；文件名消毒（路径分隔符 / 非法字符 / 超长截断）+ 时间戳前缀防覆盖',
+      '验证状态：编排与分支有单测覆盖（假 plus 跑通「选 → 描述 → 拷贝 → 返回」、取消静默、超限拦下、iOS 提示），**真机行为必须实测** —— onActivityResult 回调与真实拷贝这两处只有真机能证明'
+    ],
+    categories: [
+      {
+        title: 'Android 选文件（3.7.5）',
+        items: [
+          'utils/files/android-picker.js（新增）：pickFileViaAndroid() 覆盖 onActivityResult + startActivityForResult(ACTION_GET_CONTENT + CATEGORY_OPENABLE)，describeUri 读 OpenableColumns 的 _display_name / _size 与 getType，ensureUploadDir 建 _doc/upload，copyContentUriToSandbox 用 FileChannel.transferFrom 整块拷贝（老实现没有 transferFrom 时回落 64KB 缓冲逐块读写）',
+          'utils/files/android-picker.js 的纯函数：safeFileName（去掉路径分隔符与控制字符、非法字符换下划线、超长保留后缀）、uploadRelPath（时间戳前缀 + _doc/upload/）、isAndroidRuntime（plus 不可用一律 false，H5 与单测安全）',
+          'utils/files/picker.js：App 分支接 Android 选择器（appPickRoute 决策抽成纯函数 —— 条件编译在单测里不生效，H5 分支先返回，决策点只能这样测）；APP_PICK_HINT 改用 android-picker 的文案',
+          'utils/files/doc-parse.js：上传时优先 fileRef.absPath —— Android 选来的文件 path 是 _doc 相对路径（给 plus.io 读），绝对路径给 uni.uploadFile 最稳',
+          'utils/files/index.js：转出 android-picker 的入口与纯函数，UI 仍只调 pickOneFile / readPickedFile，没有额外分支'
+        ]
+      },
+      {
+        title: '测试（3.7.5）',
+        items: [
+          'tests/file-pick-android.test.js（新增 12 例）：文件名消毒三例（路径穿越 / 非法字符 / 空名与超长）、落地路径时间戳两例、isAndroidRuntime 三态、路由决策（Android → 选择器，其余 → 提示且提示含截图与粘贴两条路）、假 plus 跑通选中流程（返回相对路径 + 绝对路径 + 消毒名 + size/mime，且真的调了 transferFrom）、取消静默、超 5MB 拦下且不拷贝、非 Android 直接返回、取不到输入流返回 false',
+          '全量：70 文件 / 997 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.4',
     date: '2026-09-17',
     title: '3.7.4 自检报告自带口径版本（跑的是哪套代码一眼能认）+ 修正语料条数笔误',

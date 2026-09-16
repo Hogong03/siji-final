@@ -376,6 +376,7 @@ npx vitest run
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
 | 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
+| 改 App 端选文件 | `utils/files/android-picker.js`（Android 系统选择器 + `safeFileName` / `uploadRelPath` 纯函数 + `copyContentUriToSandbox`）+ `utils/files/picker.js` 的 `appPickRoute` + `doc-parse.js` 的 `absPath` 优先 |
 | 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |
 | 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |
 | 改长期记忆 | `utils/memory.js`（门面）→ `utils/memory/xxx.js` 对应职责文件 |

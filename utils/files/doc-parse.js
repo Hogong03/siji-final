@@ -48,7 +48,8 @@ const moonshotBackend = {
     }
     return {
       url: MOONSHOT_UPLOAD,
-      filePath: (fileRef && fileRef.path) || '',
+      // Android 系统选择器选来的文件同时给了沙盒绝对路径：uni.uploadFile 认绝对路径最稳
+      filePath: (fileRef && (fileRef.absPath || fileRef.path)) || '',
       name: 'file',
       formData: { purpose: 'file-extract' },
       header: header,
