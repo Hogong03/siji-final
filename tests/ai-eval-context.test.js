@@ -98,7 +98,7 @@ describe('缺数据前置 → 判跳过而不是失败', () => {
     expect(formatFailureReport(rows)).toContain('跳过 1 条')
   })
 
-  it('有前置时 22 条语料里带 needs 的都拿得到值', () => {
+  it('有前置时全部语料里带 needs 的都拿得到值', () => {
     const ctx = buildEvalContext({ plans: PLANS, bills: BILLS })
     const needsList = EVAL_CASES.filter(c => c.needs)
     expect(needsList.length).toBeGreaterThan(0)

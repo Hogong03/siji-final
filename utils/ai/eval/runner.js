@@ -21,6 +21,22 @@
 import { extractFallbackAction } from '../fallback.js'
 import { OP_CLAIM_RE, OP_CLAIM_RE_FALLBACK } from '../constants.js'
 
+/**
+ * 自检口径版本（3.7.4）
+ *
+ * 度量语义每变一次就 +1：报告与页面都会带上它。
+ * 起因：3.7.2 与 3.7.3 隔了十分钟，用户复跑后贴回来的结果其实是 3.7.2 跑的 ——
+ * 三处修复都没生效却看不出来，白聊一轮。以后报告自带口径版本，一眼能认。
+ *
+ * v2：干跑只拦写操作与联网工具
+ * v3：工具序列合并 tool_calls 与 JSON action；新增兜底档；确认判定与 App 共用 confirm-gate
+ * v4：数据前置占位符（{plan} / {billAmount}）+ 动作类型白名单 + 缺前置判跳过
+ */
+export const EVAL_PROTOCOL_VERSION = 4
+
+/** 口径说明（写进报告，便于对照是哪套度量） */
+export const EVAL_PROTOCOL_LABEL = 'v4（数据前置 + 动作白名单 + 确认闸门共用判定）'
+
 /** 用例结果状态 */
 export const CASE_STATUS = {
   PASS: 'pass',
@@ -329,13 +345,22 @@ export function summarizeResults(rows) {
  * @param {Array} rows
  * @returns {string}
  */
-export function formatFailureReport(rows) {
+/**
+ * 失败明细文本（一键复制给开发者）
+ * @param {Array} rows
+ * @param {Object} [meta] { appVersion, model } 报告头部附上，便于确认是哪套代码跑的
+ * @returns {string}
+ */
+export function formatFailureReport(rows, meta = {}) {
   const list = Array.isArray(rows) ? rows : []
   const bad = list.filter((r) => r.status !== CASE_STATUS.PASS)
   const sum = summarizeResults(list)
   const lines = [
     '# 思迹 AI 效果自检',
     '',
+    `- 自检口径: ${EVAL_PROTOCOL_LABEL}`,
+    `- 应用版本: ${meta.appVersion || '（未知）'}`,
+    meta.model ? `- 模型: ${meta.model}` : '- 模型: （未知）',
     `- 通过：${sum.pass}/${sum.scored}（${sum.rate}%）${sum.skip > 0 ? `，跳过 ${sum.skip} 条（缺数据前置）` : ''}`,
     `- 未通过：${sum.fail}，靠前端兜底：${sum.fallback}，请求出错：${sum.error}`,
     ''

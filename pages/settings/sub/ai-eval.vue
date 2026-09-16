@@ -2,7 +2,7 @@
 /**
  * AI 效果自检（3.7.0）
  *
- * 干什么：把历史真实反馈固化成 22 条语料，逐条真实请求一遍模型，
+ * 干什么：把历史真实反馈固化成 23 条语料，逐条真实请求一遍模型，
  * 看它「选了什么工具、顺序对不对」，算出通过率 —— 改提示词第一次有数字可对照。
  *
  * 安全边界（3.7.1）：
@@ -16,7 +16,7 @@
  * 跑批前从你的真实数据取值；取不到就判跳过（不算失败）—— 3.7.1 首跑那 4 条失败就是语料
  * 引用了你库里并不存在的计划名。
  *
- * 代价：会真实调用你配置的模型，22 条约 22 次请求。
+ * 代价：会真实调用你配置的模型，23 条约 23 次请求。
  */
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -25,10 +25,11 @@ import { runAgentChat } from '@/utils/ai/agent-loop.js'
 import { EVAL_CASES } from '@/utils/ai/eval/cases.js'
 import {
   runCases, summarizeResults, formatFailureReport, mergeExecutedTools,
-  buildEvalContext, CASE_STATUS
+  buildEvalContext, EVAL_PROTOCOL_LABEL, CASE_STATUS
 } from '@/utils/ai/eval/runner.js'
 import { executeTool } from '@/utils/ai/tools.js'
 import { needUserConfirm } from '@/utils/ai/confirm-gate.js'
+import { getVersion } from '@/utils/version-check.js'
 
 const store = useAppStore()
 
@@ -60,6 +61,8 @@ function fetchEvalContext() {
   return buildEvalContext({ plans, bills })
 }
 
+const protocolLabel = EVAL_PROTOCOL_LABEL
+
 const ctxText = computed(() => {
   const c = evalCtx.value
   if (!c) return ''
@@ -71,7 +74,12 @@ const ctxText = computed(() => {
 const modelText = computed(() => `${store.currentProviderName || ''} · ${store.modelName || store.aiModel || ''}`)
 const summary = computed(() => summarizeResults(rows.value))
 const hasResult = computed(() => rows.value.length > 0)
-const failuresText = computed(() => formatFailureReport(rows.value))
+// 报告与页面都带上口径 + 应用版本：跑的是哪套代码，一眼能认（3.7.4）
+const reportMeta = computed(() => ({
+  appVersion: 'v' + getVersion(),
+  model: modelText.value
+}))
+const failuresText = computed(() => formatFailureReport(rows.value, reportMeta.value))
 
 /** id → 用例（列表展开时要展示期望） */
 const CASE_MAP = {}
@@ -193,6 +201,7 @@ onShow(() => { copied.value = false })
     <view class="intro">
       <text class="intro-text">把历史反馈里的真实语料跑一遍，看 AI 选了什么工具、顺序对不对。干跑：写操作不落库、不联网，查询类照常读你的真实数据。会真实调用你配置的模型（{{ progress.total }} 条约 {{ progress.total }} 次请求）。</text>
       <text class="intro-note">✓ 通过　~ 靠前端兜底（模型没调工具，结果仍会落库）　× 未通过　– 跳过（缺数据前置）　! 请求出错</text>
+      <text class="intro-note">自检口径 {{ protocolLabel }}　·　应用 {{ reportMeta.appVersion }}</text>
     </view>
 
     <view class="env-row">

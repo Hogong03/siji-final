@@ -1,7 +1,7 @@
 /**
  * 自检口径：兜底档与两条执行路径（3.7.1）
  *
- * 背景：3.7.0 首跑 22 条里 7 条失败，全部是自检本身的度量缺陷：
+ * 背景：3.7.0 首跑 23 条里 7 条失败，全部是自检本身的度量缺陷：
  *   1. 干跑把查询也换成占位结果 → 模型拿不到真实 client_id，只能瞎答（本文件第 2 组）
  *   2. 只认 tool_calls，漏掉老 JSON action 路径（mergeExecutedTools，见 tests/ai-eval.test.js）
  *   3. 模型既没调工具也没回 JSON、只口头说「记好了」时，前端 extractFallbackAction 还能兜出写入 ——
@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import './setup.js'
-import { runCase, CASE_STATUS, summarizeResults, formatFailureReport } from '../utils/ai/eval/runner.js'
+import { runCase, CASE_STATUS, summarizeResults, formatFailureReport, EVAL_PROTOCOL_LABEL } from '../utils/ai/eval/runner.js'
 import { dayStr } from '../utils/ai/eval/cases.js'
 
 describe('兜底档：模型口头声称 + 前端正则能救回来', () => {
@@ -72,5 +72,16 @@ describe('汇总把三档分开算', () => {
       { id: 'a', title: 'A', status: CASE_STATUS.FALLBACK, failures: ['x'], gotTools: [], ms: 1 }
     ])
     expect(text).toContain('靠前端兜底：1')
+  })
+
+  it('报告头部自带自检口径与应用版本（3.7.4：跑的是哪套代码一眼能认）', () => {
+    const text = formatFailureReport([], { appVersion: 'v3.7.4', model: 'DeepSeek · V4 Flash' })
+    expect(text).toContain('自检口径: ' + EVAL_PROTOCOL_LABEL)
+    expect(text).toContain('应用版本: v3.7.4')
+    expect(text).toContain('模型: DeepSeek · V4 Flash')
+    // 不传 meta 时也要有这一行（免得又出现「不知道哪套代码跑的」）
+    const bare = formatFailureReport([])
+    expect(bare).toContain('自检口径: ')
+    expect(bare).toContain('应用版本: （未知）')
   })
 })
