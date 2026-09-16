@@ -128,7 +128,9 @@ export const useDataStore = defineStore('data', () => {
    */
   function isKnownActionType(type) {
     if (!type || type === 'none') return false
-    if (type === 'undo_last' || type === 'multi') return true
+    // multi 是「复合意图」的容器标记，不是可执行动作 —— executeAction 对它的分支只是兜住误用
+    if (type === 'multi') return false
+    if (type === 'undo_last') return true
     return Object.prototype.hasOwnProperty.call(ACTION_MAP, type)
   }
 

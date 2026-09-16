@@ -50,8 +50,9 @@ export function buildEvalContext(data = {}) {
     plan: plan ? String(plan.title) : '',
     planId: plan ? String(plan.client_id || '') : '',
     bill: bill ? String(bill.category || bill.note || '账单') : '',
-    billAmount: bill ? Number(bill.amount) : 0,
-    billAmountPlus: bill ? Number(bill.amount) + 18 : 0
+    // 没有账单时用空串：占位符保持原样，别把「不是 0 是 0」这种废话塞进语料
+    billAmount: bill ? Number(bill.amount) : '',
+    billAmountPlus: bill ? Number(bill.amount) + 18 : ''
   }
 }
 

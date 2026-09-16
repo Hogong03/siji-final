@@ -13,7 +13,7 @@ import { retryStreamWithBackoff } from '@/utils/ai/streamRetry.js'
 import { autoExecuteAndDisplay } from '@/utils/ai/autoExecutor.js'
 import { mergeSuggestions } from '@/utils/ai/chat-suggestion.js'
 import { pickNextStep, shouldOfferNextStep, markNextStepShown } from '@/utils/next-step.js'
-import { needsConfirmation } from '@/utils/ai/tools.js'
+import { pendingConfirmations } from '@/utils/ai/confirm-gate.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
 import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
@@ -397,15 +397,10 @@ export function useChatEngine() {
       }
 
       let needConfirm = !!(result.action && result.action.needConfirm)
-      // 3.0 M3：JSON 兜底路径的写操作同样受「写操作默认需确认」约束（Agent 路径在 agent-loop 内已拦截）
-      let pendingActs = []
-      if (!result._agentMode) {
-        const actList = (result.actions && result.actions.length > 1)
-          ? result.actions
-          : (result.action ? [result.action] : [])
-        pendingActs = actList.filter(a => a && a.type && needsConfirmation(a.type, a.payload || {}))
-        if (pendingActs.length > 0) needConfirm = true
-      }
+      // 3.0 M3 / 3.7.3：JSON 兜底路径的写操作同样受「写操作默认需确认」约束
+      // 判定抽到 utils/ai/confirm-gate.js —— 自检页面用同一份，避免两处逻辑漂移
+      const pendingActs = pendingConfirmations(result)
+      if (pendingActs.length > 0) needConfirm = true
 
       if (needConfirm) {
         const aiMulti = result.action?.type === 'multi' && (result.actions || []).length > 1

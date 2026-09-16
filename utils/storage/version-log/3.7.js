@@ -6,6 +6,44 @@
 
 export const V37 = [
   {
+    version: '3.7.3',
+    date: '2026-09-17',
+    title: '3.7.3 修确认闸门被绕过（大额记账直接落库）+ 拍平模型嵌套的 multi',
+    summary: [
+      '真 Bug（自检发现）：模型不调工具、直接回 JSON action 时，runAgentChat 无条件把结果标成 _agentMode，而 useChatEngine 的 JSON 路径确认判定是「非 agent 模式才判」—— 于是确认闸门整个被跳过：记一笔房租 1500 会直接落库、delete_feedback 也能绕开确认。现在只有真的跑过工具才认 agent 模式，JSON 回退交给 JSON 路径（先确认、再执行）',
+      '确认判定抽成 utils/ai/confirm-gate.js 的 pendingConfirmations / needUserConfirm（纯函数）：聊天页与 AI 效果自检用同一份，避免两处逻辑各写一遍、越走越远 —— 这次的问题正是「自检测的和 App 跑的不是一套」',
+      '真 Bug：模型把 multi 当成动作返回（实测 actions: [{ type: multi, payload: [...] }]）—— 直接执行只会拿到「复合意图请用 executeActions」的拦截，用户看到「都记好了」而两个意图一个都没落库；parseAiResponse 现在拍平嵌套 multi（内层数组 / payload.actions / payload.items 三种形态），展不出东西就当没有动作、落回兜底与提示',
+      'store.isKnownActionType 不再认 multi：它是复合意图的容器标记，不是可执行动作（executeAction 对它的分支只是兜住误用）',
+      '自检细节：数据前置取不到账单时金额用空串（原来填 0，语料显示成「不是 0 是 0」）；自检入口改用 runAgentChat（聊天页走的就是它），并同时统计 agent 循环内的挂起与 JSON 路径的确认判定'
+    ],
+    categories: [
+      {
+        title: '确认闸门（3.7.3）',
+        items: [
+          'utils/ai/agent-loop.js：无工具调用分支新增 _jsonFallback（本次一轮工具都没调过）；runAgentChat 改为 result._agentMode = !result._jsonFallback —— 以前无条件 true，导致上层跳过 JSON 路径的确认与执行',
+          'utils/ai/confirm-gate.js（新增，纯函数）：pendingConfirmations(result)（agent 模式返回空；JSON 路径逐条过 needsConfirmation）+ needUserConfirm(result)（含模型自标的 needConfirm）',
+          'composables/useChatEngine.js：内联的确认判定换成 pendingConfirmations（行为不变，来源收敛到一处）',
+          'pages/settings/sub/ai-eval.vue：入口改用 runAgentChat、confirm 同时看 agent 挂起与 JSON 判定，测的就是真实链路'
+        ]
+      },
+      {
+        title: '嵌套 multi 与动作白名单（3.7.3）',
+        items: [
+          'utils/ai/response-parser.js：新增 normalizeActions 拍平嵌套 multi（payload 为数组 / payload.actions / payload.items 都展开），单动作就是 multi 时同样拍平，展不出真实动作则 action 为 null；actions 数组与单动作两条分支都过这个归一化',
+          'store/data.js：isKnownActionType 对 multi 返回 false（容器标记不是动作），undo_last 仍为 true；配合 3.7.2 的 autoExecutor 白名单，multi 混进执行队列时会被挡下并落回兜底'
+        ]
+      },
+      {
+        title: '测试（3.7.3）',
+        items: [
+          'tests/confirm-gate.test.js（新增 11 例）：确认判定五例（写操作默认确认 / 只读与撤销不确认 / agent 模式不重复判 / 复合动作只挂需要确认的 / 模型自标 needConfirm）、runAgentChat 两例（JSON 回退 → _agentMode 假且会弹确认卡；跑过工具 → 仍是 agent 模式且不重复确认）、parseAiResponse 嵌套 multi 四例（数组 / payload.actions / 空 multi / 单动作即 multi）',
+          'tests/ai-eval-context.test.js：无账单时金额断言由 0 改为空串',
+          '全量：69 文件 / 984 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.7.2',
     date: '2026-09-17',
     title: '3.7.2 自检去掉 4 条假失败（语料改绑真实数据）+ 拦住模型幻觉的动作类型',

@@ -36,7 +36,8 @@ describe('buildEvalContext：从真实数据取值', () => {
   it('已完成计划不算前置；没有数据时是空值', () => {
     const done = buildEvalContext({ plans: [{ title: '旧计划', status: 2 }], bills: [] })
     expect(done.plan).toBe('')
-    expect(done.billAmount).toBe(0)
+    // 没有账单时金额是空串（不是 0）：占位符保持原样，避免「不是 0 是 0」这种废话
+    expect(done.billAmount).toBe('')
     expect(buildEvalContext().plan).toBe('')
   })
 

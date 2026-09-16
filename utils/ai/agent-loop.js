@@ -122,6 +122,9 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         suggestions: result.suggestions,
         // 3.7.1：透传「声称操作但没有 action」标记，供 autoExecutor 的兜底闸门使用
         _opClaimWithoutAction: result._opClaimWithoutAction === true,
+        // 3.7.3：本次一轮工具都没调过 → 这条回复走的是老 JSON action 路径，
+        // 上层必须按 JSON 路径处理（确认闸门 + 执行），不能当成「工具已执行」
+        _jsonFallback: toolCalls.length === 0,
         toolCalls,
         execResults,
         conversation_id: response.id || conversationId
@@ -298,7 +301,11 @@ export async function runAgentChat(store, message, conversationId, cfg, history,
 
   // 已执行过写入工具 → 标记，避免上层 autoExecutor 二次执行
   const hasWrites = result.execResults.some(r => r.ok && !QUERY_TOOLS.has(r.name))
-  result._agentMode = true
+  // 3.7.3：原来这里无条件 _agentMode = true —— 模型一轮工具都没调、直接回 JSON action 时，
+  // useChatEngine 会因此跳过 JSON 路径的确认闸门（if (!result._agentMode)），
+  // 1500 元的大额记账与 delete_feedback 都能绕开确认直接落库（自检实测「没有走确认闸门」）。
+  // 现在只有真的跑过工具才认 agent 模式；JSON 回退交给上层按 JSON 路径处理（确认 + 执行）。
+  result._agentMode = !result._jsonFallback
   result._agentExecuted = hasWrites
 
   // runAgentLoop 内部已处理流式推送（最后一轮 SSE 或模拟逐字），此处不再重复

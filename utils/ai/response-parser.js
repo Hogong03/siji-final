@@ -10,6 +10,32 @@ import { mergeSuggestions } from './chat-suggestion.js'
 /**
  * 解析 AI 响应 — 容错处理，支持单意图/复合意图/撤销
  */
+/**
+ * 拍平嵌套的 multi（3.7.3）
+ *
+ * 模型返回过 actions: [{ type: 'multi', payload: { … } }] 这种嵌套结构。
+ * 直接把 multi 当动作执行，只会拿到 store 的显式拦截「复合意图请用 executeActions」——
+ * 用户看到「都记好了」，实际两个意图一个都没落库（实测 multi-intent 那条就是这样）。
+ * 这里把内层真实动作展开；展不出东西就丢掉，让它落回「声称操作但无 action」的兜底链路。
+ * @param {Array} list
+ * @returns {Array<{type: string, payload: Object, needConfirm: boolean}>}
+ */
+function normalizeActions(list) {
+  const out = []
+  const pushItem = (a) => {
+    if (!a || !a.type || a.type === 'none') return
+    if (a.type === 'multi') {
+      if (Array.isArray(a.payload)) a.payload.forEach(pushItem)
+      else if (a.payload && Array.isArray(a.payload.actions)) a.payload.actions.forEach(pushItem)
+      else if (a.payload && Array.isArray(a.payload.items)) a.payload.items.forEach(pushItem)
+      return
+    }
+    out.push({ type: a.type, payload: a.payload || {}, needConfirm: a.needConfirm === true })
+  }
+  if (Array.isArray(list)) list.forEach(pushItem)
+  return out
+}
+
 export function parseAiResponse(raw, conversationId) {
   // 空内容兜底
   if (!raw || !raw.trim()) {
@@ -80,13 +106,7 @@ export function parseAiResponse(raw, conversationId) {
 
   // 复合意图 — actions 数组
   if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
-    actions = parsed.actions
-      .filter(a => a && a.type && a.type !== 'none')
-      .map(a => ({
-        type: a.type,
-        payload: a.payload || {},
-        needConfirm: a.needConfirm === true
-      }))
+    actions = normalizeActions(parsed.actions)
     if (actions.length > 0) {
       action = {
         type: 'multi',
@@ -95,12 +115,22 @@ export function parseAiResponse(raw, conversationId) {
       }
     }
   } else if (parsed.action && parsed.action.type && parsed.action.type !== 'none') {
-    action = {
-      type: parsed.action.type,
-      payload: parsed.action.payload || {},
-      needConfirm: parsed.action.needConfirm === true
+    if (parsed.action.type === 'multi') {
+      // 3.7.3：模型把 multi 当动作返回（实测 actions: [{ type: 'multi', payload: … }]）——
+      // 拍平内层；拍不出任何真实动作就当没有动作，交给兜底与提示，别让它走进执行器
+      const flat = normalizeActions([parsed.action])
+      if (flat.length > 0) {
+        actions = flat
+        action = { type: 'multi', payload: {}, needConfirm: flat.some(a => a.needConfirm) }
+      }
+    } else {
+      action = {
+        type: parsed.action.type,
+        payload: parsed.action.payload || {},
+        needConfirm: parsed.action.needConfirm === true
+      }
+      actions = [action]
     }
-    actions = [action]
   }
 
   // P2-2: 操作词兜底已由 autoExecutor.extractFallbackAction 统一处理（更全面）

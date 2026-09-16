@@ -21,13 +21,14 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
-import { runAgentLoop } from '@/utils/ai/agent-loop.js'
+import { runAgentChat } from '@/utils/ai/agent-loop.js'
 import { EVAL_CASES } from '@/utils/ai/eval/cases.js'
 import {
   runCases, summarizeResults, formatFailureReport, mergeExecutedTools,
   buildEvalContext, CASE_STATUS
 } from '@/utils/ai/eval/runner.js'
 import { executeTool } from '@/utils/ai/tools.js'
+import { needUserConfirm } from '@/utils/ai/confirm-gate.js'
 
 const store = useAppStore()
 
@@ -106,13 +107,15 @@ function makeRunner() {
       temperature: 0,
       dryRun: true
     }
-    // store 传真的：查询类在干跑下照常执行（只读），写操作在 agent-loop 里被替换成占位
-    const result = await runAgentLoop(store, message, 'eval', cfg, [])
+    // store 传真的：查询类在干跑下照常执行（只读），写操作在 agent-loop 里被替换成占位。
+    // 入口用 runAgentChat（聊天页走的就是它），这样自检测的是真实链路，含 _agentMode 判定
+    const result = await runAgentChat(store, message, 'eval', cfg, [])
     return {
-      // 幻觉出来的动作类型（实测出现过 batch）不算数，与 autoExecutor 的闸门一致
+      // 幻觉出来的动作类型（实测出现过 batch / multi）不算数，与 autoExecutor 的闸门一致
       toolCalls: mergeExecutedTools(result, { isKnownType: (t) => store.isKnownActionType(t) }),
       reply: result.reply || '',
-      confirm: (result.execResults || []).some(r => r && r.confirm)
+      // agent 循环内的挂起 + JSON 路径的确认判定，两处都算「走了确认闸门」
+      confirm: (result.execResults || []).some(r => r && r.confirm) || needUserConfirm(result)
     }
   }
 }
