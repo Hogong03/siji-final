@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>思迹 · 记录方案对比（2026-09-17）</title>
+<style>
+:root{
+  --ink:#000; --ink-2:#18181B; --ink-3:#3F3F46; --mute:#71717A; --faint:#A1A1AA;
+  --line:#E4E4E7; --line-2:#F4F4F5; --bg:#FFF; --bg-2:#FAFAFA;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --ink:#FAFAFA; --ink-2:#E4E4E7; --ink-3:#D4D4D8; --mute:#A1A1AA; --faint:#71717A;
+    --line:#27272A; --line-2:#18181B; --bg:#000; --bg-2:#09090B; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 24px 96px}
+h1{font-size:30px;line-height:1.35;margin:0 0 8px;letter-spacing:.5px}
+h2{font-size:20px;margin:56px 0 6px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:28px 0 8px}
+p{margin:8px 0}
+.sub{color:var(--mute);font-size:13px;margin-bottom:32px}
+.lead{border-left:3px solid var(--ink);padding:4px 0 4px 16px;margin:20px 0 8px;font-size:16px}
+table{width:100%;border-collapse:collapse;margin:16px 0 8px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line-2)}
+th{color:var(--mute);font-weight:600;font-size:12.5px;letter-spacing:.4px;border-bottom:1px solid var(--line)}
+tbody tr:hover{background:var(--bg-2)}
+td.k{color:var(--ink-2);font-weight:600;white-space:nowrap}
+.tag{display:inline-block;font-size:11.5px;line-height:1.5;padding:1px 8px;border-radius:20px;border:1px solid var(--line);color:var(--mute);margin-left:6px;vertical-align:1px}
+/* 对比条 */
+.vs{display:grid;grid-template-columns:1fr;gap:14px;margin:18px 0}
+.vs-row{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.vs-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.vs-name{font-weight:700;font-size:15px}
+.vs-num{font-variant-numeric:tabular-nums;color:var(--mute);font-size:13px}
+.bars{display:grid;grid-template-columns:52px 1fr 44px;gap:8px;align-items:center;margin-top:10px;font-size:13px}
+.bar{height:10px;border-radius:6px;background:var(--line-2);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--faint)}
+.bar.now span{background:var(--ink-3)}
+.bar.after span{background:var(--ink)}
+.bars .lab{color:var(--mute);font-size:12.5px}
+.bars .val{text-align:right;font-variant-numeric:tabular-nums}
+.good{color:var(--ink);font-weight:600}
+ul{margin:8px 0 8px 18px;padding:0}
+li{margin:5px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+.card h3{margin:0 0 6px}
+.mut{color:var(--mute)}
+.small{font-size:13px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+footer{margin-top:64px;padding-top:16px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px}
+@media (min-width:760px){
+  .vs-row{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:center}
+  .bars{margin-top:0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>思迹 · 记录方案对比与优化提案</h1>
+<div class="sub">2026-09-17 · 市面主流记录法横向对比 → 思迹记录模块的「简洁 + 分类高效」方案</div>
+
+<div class="lead">结论：市面上活得久的记录法，都在做同一件事 —— <strong>入口尽量少、分类只留一个维度、把力气花在「回顾」而不是「归档」</strong>。思迹现在是「5 种类型 × 分类 × 标签」三套并列，属于典型的「分类过剩」。</div>
+
+<h2>一、市面主流方案横向对比</h2>
+<table>
+<thead>
+<tr><th>方案</th><th>核心单位</th><th>分类方式</th><th>回顾机制</th><th>上手成本</th><th>一句话结论</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td class="k">flomo 卡片笔记</td>
+  <td>一句话 memo</td>
+  <td><strong>多级标签</strong>（唯一维度）</td>
+  <td><strong>每日回顾</strong>（推送旧卡片）</td>
+  <td>极低</td>
+  <td>官方定位就是「像聊天一样无压力记录，用多级标签整理、每日回顾唤醒」</td>
+</tr>
+<tr>
+  <td class="k">子弹笔记<br><span class="small mut">Bullet Journal</span></td>
+  <td>一行一条<br>（• 任务 ○ 事件 – 笔记）</td>
+  <td><strong>符号 + 月/日日志</strong></td>
+  <td><strong>迁移</strong>（没做完的抄到下个月）</td>
+  <td>低（纸笔）</td>
+  <td>靠「符号」把分类成本压到几乎为零；价值在迁移带来的复看</td>
+</tr>
+<tr>
+  <td class="k">PARA</td>
+  <td>项目 / 领域 / 资源 / 归档</td>
+  <td><strong>按可执行性</strong>，不按主题</td>
+  <td>项目结束时归入 Archive</td>
+  <td>中</td>
+  <td>少数派总结：明确分类方式让人「不再纠结信息该放哪个类目」，且可流动</td>
+</tr>
+<tr>
+  <td class="k">卡片盒笔记<br><span class="small mut">Zettelkasten</span></td>
+  <td>原子笔记</td>
+  <td><strong>链接</strong>为主，分类为辅</td>
+  <td>反查链接 / 索引页</td>
+  <td>高</td>
+  <td>重度知识生产者的工具；对「生活记录」过重</td>
+</tr>
+<tr>
+  <td class="k">时间线日记<br><span class="small mut">Day One 类</span></td>
+  <td>一条含时间/地点/照片</td>
+  <td><strong>时间</strong>为默认主轴，标签可选</td>
+  <td>往年今日 / 时间线回看</td>
+  <td>极低</td>
+  <td>不分类也能用 —— 时间本身就是最自然的索引</td>
+</tr>
+<tr>
+  <td class="k">Notion 数据库</td>
+  <td>一行 = 一条记录</td>
+  <td>属性/视图自由配置</td>
+  <td>视图筛选</td>
+  <td>高</td>
+  <td>能力上限最高，但「建结构」这件事本身会消耗记录意愿</td>
+</tr>
+</tbody>
+</table>
+
+<h3>三条共性（这是可以直接抄的部分）</h3>
+<ul>
+<li><strong>记录零摩擦</strong>：输入框只有一个，其余交给自动处理（flomo 不用排版、子弹笔记靠符号、时间线日记只写内容）。</li>
+<li><strong>分类只给一个维度</strong>：要么标签（flomo）、要么时间（日记）、要么可执行性（PARA）。<strong>没有一个是「多套维度并存」的</strong>。</li>
+<li><strong>回顾比分类更值钱</strong>：flomo 的「回顾」是它的核心卖点；子弹笔记的迁移、日记的「往年今日」都是同一件事。记录写下去却再也不看，等于没记。</li>
+</ul>
+
+<h2>二、思迹现状 vs 优化后</h2>
+<div class="vs">
+  <div class="vs-row">
+    <div class="vs-head">
+      <div class="vs-name">记录类型</div>
+      <div class="vs-num">5 → 3</div>
+    </div>
+    <div class="bars">
+      <div class="lab">现状</div><div class="bar now"><span style="width:100%"></span></div><div class="val">5 种</div>
+    </div>
+    <div class="bars">
+      <div class="lab">优化后</div><div class="bar after"><span style="width:60%"></span></div><div class="val">3 种</div>
+    </div>
+  </div>
+
+  <div class="vs-row">
+    <div class="vs-head">
+      <div class="vs-name">分类维度（类型 / 分类 / 标签）</div>
+      <div class="vs-num">3 → 1</div>
+    </div>
+    <div class="bars">
+      <div class="lab">现状</div><div class="bar now"><span style="width:100%"></span></div><div class="val">3 套</div>
+    </div>
+    <div class="bars">
+      <div class="lab">优化后</div><div class="bar after"><span style="width:33%"></span></div><div class="val">1 套</div>
+    </div>
+  </div>
+
+  <div class="vs-row">
+    <div class="vs-head">
+      <div class="vs-name">列表页筛选入口</div>
+      <div class="vs-num">4 → 2</div>
+    </div>
+    <div class="bars">
+      <div class="lab">现状</div><div class="bar now"><span style="width:100%"></span></div><div class="val">时间·分类·标签·搜索</div>
+    </div>
+    <div class="bars">
+      <div class="lab">优化后</div><div class="bar after"><span style="width:50%"></span></div><div class="val">时间·标签（+搜索兜底）</div>
+    </div>
+  </div>
+
+  <div class="vs-row">
+    <div class="vs-head">
+      <div class="vs-name">回顾机制</div>
+      <div class="vs-num">0 → 1</div>
+    </div>
+    <div class="bars">
+      <div class="lab">现状</div><div class="bar now"><span style="width:2%"></span></div><div class="val">无</div>
+    </div>
+    <div class="bars">
+      <div class="lab">优化后</div><div class="bar after"><span style="width:100%"></span></div><div class="val">每日 3 条</div>
+    </div>
+  </div>
+</div>
+
+<h2>三、优化方案（五步，全部可在现有架构内完成）</h2>
+
+<div class="card">
+<h3>第 1 步 · 类型从 5 砍到 3 <span class="tag">输入少一次决策</span></h3>
+<p>保留 <span class="mono">记录 note</span> / <span class="mono">日记 diary</span> / <span class="mono">待办 todo</span>；把「灵感 idea」「闪念 flash」并入「记录」—— 它们与随手记的行为差异为零，只有情绪色彩不同，<strong>AI 自动打标签就能区分</strong>（#灵感 / #闪念）。</p>
+<p class="small mut">迁移：存量 idea/flash 的 <span class="mono">record_type</span> 改写为 note，原标签保留并追加 #灵感/#闪念，不丢信息。</p>
+</div>
+
+<div class="card">
+<h3>第 2 步 · 分类维度压到一套：只留标签 <span class="tag">不再纠结放哪</span></h3>
+<p>「分类 category」与「标签 tags」语义重叠，是当前分类效率低的根因。把 category 的取值转成<strong>带前缀的标签</strong>（如 <span class="mono">工作/项目A</span>），字段下线；类型不算分类（它只决定编辑器形态）。</p>
+<p>标签继续用已有的 6 个种类（生活 / 工作 / 心情 / 学习 / 社交 / 其他）做<strong>分组展示</strong>：选标签时只有一个面板，按种类分段，不增加新的选择维度。</p>
+</div>
+
+<div class="card">
+<h3>第 3 步 · 筛选区压到两个入口 <span class="tag">找得快</span></h3>
+<ul>
+<li>一排「时间范围」：全部 / 本月 / 上月（现在是 12 个月 + 全部，选择成本高）。</li>
+<li>一排「标签 chips」横向滚动：按使用频次排序，点一下即筛（默认展示最常用的 8 个）。</li>
+<li>搜索框保留在顶部，支持「标签 + 关键词」联合；不再单独给分类筛选。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>第 4 步 · 加「回顾」 <span class="tag">flomo 的核心，思迹已有通道</span></h3>
+<p>进应用时（复用现有「进入总结」通道）在记录页顶出<strong>一张回顾卡</strong>：从 7 天前 / 30 天前 / 去年今日里各挑 1 条，最多 3 条；点开即进阅读页。</p>
+<p class="small mut">不需要新机制：复用 <span class="mono">enter-dialogue</span> 的消息通道 + 阅读页锚点；每天最多一次，可关。</p>
+</div>
+
+<div class="card">
+<h3>第 5 步 · AI 补位（只做三件事）</h3>
+<ul>
+<li>记完<strong>自动打 1-3 个标签</strong>（从现有标签库里选，选不出才新建，避免标签爆炸）。</li>
+<li>列表页支持<strong>一句话筛选</strong>：「上周的工作记录」直接出结果（复用 <span class="mono">query_diary</span>，不加新 UI）。</li>
+<li>长记录生成<strong>一句话摘要</strong>做列表行的副标题（现在列表副标题是正文截断，读起来没信息量）。</li>
+</ul>
+</div>
+
+<h2>四、明确不做</h2>
+<ul>
+<li><strong>不做文件夹树</strong>：与标签并存就是第二次「分类过剩」。</li>
+<li><strong>不做双向链接 / 图谱</strong>：Zettelkasten 是知识生产者的工具，生活记录用不上（关系图谱是另一回事，属于人脉模块）。</li>
+<li><strong>不做多级标签</strong>：用「种类 + 标签」两级已够；再深一层，选标签就从 3 秒变成 10 秒。</li>
+<li><strong>不做记录模板库</strong>：想不出写什么时会去用模板，但用两次就腻 —— 记录的价值在「随手」，模板是反方向的。</li>
+</ul>
+
+<h2>五、影响面（给实现留的接口）</h2>
+<table>
+<thead><tr><th>改动</th><th>文件</th><th>风险</th></tr></thead>
+<tbody>
+<tr><td class="k">类型合并 + 存量迁移</td><td class="mono">pages/diary/detail.vue 的 RECORD_TYPES<br>utils/storage/diary.js（迁移函数）</td><td>低（软删/改写字段，可回滚）</td></tr>
+<tr><td class="k">分类并入标签</td><td class="mono">utils/storage/tags.js<br>composables/useTagPicker.js</td><td>中（存量 category 值要一次性转标签）</td></tr>
+<tr><td class="k">筛选区重构</td><td class="mono">pages/diary/list.vue<br>composables/useDiaryList.js</td><td>中（列表页逻辑集中在这里，需回归测试）</td></tr>
+<tr><td class="k">回顾卡</td><td class="mono">composables/useEnterSummary.js<br>utils/enter-dialogue.js</td><td>低（复用现有通道）</td></tr>
+<tr><td class="k">AI 自动标签 / 摘要</td><td class="mono">utils/ai/tools/diary.js<br>utils/memory/auto-extract.js</td><td>中（提示词与工具注册两处要同步）</td></tr>
+</tbody>
+</table>
+
+<footer>
+思迹 · 记录方案对比 · 生成于 2026-09-17 · 对比条目依据：flomo 官方帮助（多级标签 + 每日回顾）、flomo 官网（Capture faster, review better）、少数派《我对 PARA 的理解与实践》、子弹笔记的符号与迁移机制、Day One 类时间线日记。
+</footer>
+
+</div>
+</body>
+</html>
