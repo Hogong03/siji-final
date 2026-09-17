@@ -188,7 +188,13 @@ export function createPlanExecutors(ctx) {
     const list = getPlanList()
     const idx = list.findIndex(item => item.client_id === clientId)
     if (idx < 0) {
-      return { success: false, message: '计划不存在', detail: null }
+      // 3.10.2：给可执行的下一步 —— 用户说「计划下午三点去办业务」时模型常直接 update_plan，
+      // 计划不存在就卡住（反馈里用户只好补一句「重新制定」）。这里明确提示改用 create_plan
+      return {
+        success: false,
+        message: '没找到要修改的计划（id / 标题都不匹配）。如果这是新计划，请改用 create_plan 创建',
+        detail: null
+      }
     }
     const old = list[idx]
     const updates = {}

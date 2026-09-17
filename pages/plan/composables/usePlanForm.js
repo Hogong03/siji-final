@@ -83,14 +83,20 @@ export function usePlanForm({ saveChildren } = {}) {
     )
   })
 
+  /** 收起行的时间摘要：带时刻（3.10.2）—— 原来只到「日」，15:00 的计划看着像没时间 */
   const timeSummary = computed(() => {
-    const dates = []
-    const start = (form.value.start_time || form.value.estimated_time || '').trim().slice(0, 10)
-    const end = (form.value.end_time || form.value.due_date || '').trim().slice(0, 10)
-    if (start) dates.push(start)
-    if (end && end !== start) dates.push(end)
-    if (dates.length === 0) return '未设置时间'
-    return dates.join(' ~ ')
+    const brief = (s) => {
+      const t = String(s || '').trim()
+      if (!t) return ''
+      const day = t.length >= 10 ? t.slice(5, 10) : t
+      const hm = t.length >= 16 ? ' ' + t.slice(11, 16) : ''
+      return day + hm
+    }
+    const start = brief(form.value.start_time || form.value.estimated_time)
+    const end = brief(form.value.end_time || form.value.due_date)
+    if (!start && !end) return '未设置时间'
+    if (start && end && start !== end) return start + ' ~ ' + end
+    return start || end
   })
 
   /** 循环任务提示文案 */
@@ -147,8 +153,11 @@ export function usePlanForm({ saveChildren } = {}) {
   function applyStoredItem(item) {
     if (!item) return
     originalCreatedAt.value = item.created_at || null
-    const dueParts = parseDateTime(item.due_date || item.deadline || '')
-    const estParts = parseDateTime(item.estimated_time || '')
+    // 3.10.2：回填要把 start_time / end_time 也算上 —— AI 建的计划经常只给 start_time
+    // （反馈 2026-09-17：「去联通营业厅办理业务」start_time=2026-09-17 15:00，
+    //  deadline/due_date/estimated_time/end_time 全空，界面两个时间框都空着）
+    const dueParts = parseDateTime(item.due_date || item.deadline || item.end_time || '')
+    const estParts = parseDateTime(item.estimated_time || item.start_time || '')
     form.value = {
       title: item.title || '',
       description: item.description || '',

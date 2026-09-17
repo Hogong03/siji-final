@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 74 文件 / 1073 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.10.1（计划没时间的真因：模型不知道中秋/国庆是哪天 —— 新增 `utils/holidays.js` 节假日表并注入 prompt + `execCreatePlan/execUpdatePlan` 确定性兜底补节日区间） |
+| 测试 | 75 文件 / 1081 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v3.10.2（计划有时间却不显示：`applyStoredItem` 回填补上 `start_time` / `end_time` 回落，收起行摘要带时刻；`update_plan` 找不到计划时提示改用 `create_plan`） |
 
 ---
 
@@ -266,7 +266,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` 压缩 / `execCardText` 卡片文案）+ `utils/ai/autoExecutor.js`（agent 路径 `compact` 落盘点）+ `components/chat/ExecResultCard.vue`（`toolCardText` 分支）+ `composables/useChatNavigation.js` 的 `canOpenType`（有没有页面可跳） |
 | 改开场对话 / 卡片按钮 | `utils/enter-dialogue.js`（`buildWelcomeMessage` / `hasOpenerActions` / `buildEnterButtons(null)` 给通用按钮）+ `pages/chat/index.vue` 的 `.enter-actions` 渲染条件 + `components/chat/MessageBubble.vue` 的 `emitWelcomeChip`（按钮事件必须走 `uni.$emit`，与页面的 `uni.$on` 同一条通道）+ `store/chat/persist.js` 的 `_enterButtons` 白名单 |
-| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
+| 改计划时间显示 / 回填 | 计划时间有四个字段在流转：`start_time` / `end_time` / `estimated_time` / `due_date`（+ `deadline` 冗余）。**回填要依次回落**（`utils/ai` 之外看 `pages/plan/composables/usePlanForm.js` 的 `applyStoredItem`：开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上看着像没有时间 |\n| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
 | 改计划时间 / 提醒 | `pages/plan/composables/usePlanForm.js`（`persistForm` 编辑值优先）+ `components/plan/PlanTimeSection.vue`（picker 里用 view，别用 disabled input）+ `utils/reminder/scheduler.js` 的 `computeDefaultFire` + `utils/reminder/notifier.js` 的 `ensureNotifyPermission` |
 | 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
@@ -327,7 +327,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 74 文件 / 1073 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 75 文件 / 1081 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

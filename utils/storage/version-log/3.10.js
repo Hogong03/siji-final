@@ -6,6 +6,35 @@
 
 export const V310 = [
   {
+    version: '3.10.2',
+    date: '2026-09-17',
+    title: '3.10.2 计划有时间但不显示：回填漏了 start_time / end_time',
+    summary: [
+      '真因：计划「去联通营业厅办理业务」只有 start_time=2026-09-17 15:00（提醒认它，所以到点会提醒），但详情页回填只读 estimated_time / due_date —— AI 建的计划这两个字段常为空，于是编辑器两个时间框都空着、收起行摘要也只看 estimated/due，看着就像「没有时间」',
+      '修法一（回填）：applyStoredItem 的开始时间改成「estimated_time 优先，回落到 start_time」，截止时间「due_date → deadline → end_time」依次回落 —— 只有 start_time 的老计划也能在编辑器里看到并修改',
+      '修法二（显示）：收起行摘要带上时刻（原来是 09-17，现在是 09-17 15:00；两端都有则显示 09-17 15:00 ~ 09-17 16:00），不再只到「日」',
+      '顺手：update_plan 找不到计划时的提示改成可执行的下一步（「如果这是新计划，请改用 create_plan」）—— 反馈里模型直接 update 一个不存在的计划，用户只好补一句「重新制定」'
+    ],
+    categories: [
+      {
+        title: '计划时间显示（3.10.2）',
+        items: [
+          'pages/plan/composables/usePlanForm.js：applyStoredItem 的 dueParts / estParts 增加 end_time / start_time 回落；timeSummary 改为带时刻的紧凑格式（MM-DD HH:MM，同一天两端不同则显示区间，无时刻时不凭空补 00:00，完全没有时间仍是「未设置时间」）',
+          'store/executors/plan.js：execUpdatePlan 找不到计划时返回「没找到要修改的计划（id / 标题都不匹配）。如果这是新计划，请改用 create_plan 创建」',
+          'utils/datetime.js 未改：combineDateTime 仍返回 YYYY-MM-DD HH:MM，与老数据的 HH:MM:SS 并存 —— 解析层（parseDateTimeToTs / parseDateTime）两种精度都吃，不为对齐格式去动跨模块共享函数'
+        ]
+      },
+      {
+        title: '测试（3.10.2）',
+        items: [
+          'tests/plan-time-display.test.js（新增 8 例）：只有 start_time 的计划两个时间框都能回填、只有 end_time 同样、estimated/due 优先于 start/end（老数据不被覆盖）、摘要带时刻、两端不同显示区间、无时刻不补 00:00、完全没有时间显示「未设置时间」、回填后不改动直接保存时间保持原样、update 找不到计划时的提示含 create_plan',
+          'tests/chat-opener-plan-time.test.js：时间断言改为前缀匹配（HH:MM 与 HH:MM:SS 两种精度都通过）',
+          '全量：75 文件 / 1081 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.10.1',
     date: '2026-09-17',
     title: '3.10.1 计划为什么没时间：模型不知道中秋国庆是哪天（补节假日表 + 执行器兜底）',

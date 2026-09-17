@@ -131,8 +131,8 @@ describe('计划时间：编辑值优先于旧值', () => {
       created_at: Date.now()
     })
     const rec = api.persistForm()
-    expect(rec.start_time).toBe('2026-09-05 09:00:00')
-    expect(rec.end_time).toBe('2026-09-30 23:59:00')
+    expect(rec.start_time.startsWith('2026-09-05 09:00')).toBe(true)
+    expect(rec.end_time.startsWith('2026-09-30 23:59')).toBe(true)
   })
 })
 
