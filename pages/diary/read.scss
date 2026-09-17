@@ -6,7 +6,18 @@
   height: 100vh;
   background: #FFFFFF;
   box-sizing: border-box;
+  overflow: hidden;
 }
+
+/* #ifdef H5 */
+/* 4.1.2：H5 浏览器会给滚动容器画系统滚动条，和左边的目录尺叠在一起很吵 —— 藏掉，滚动手感不变 */
+.read-scroll::-webkit-scrollbar,
+.read-scroll ::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+/* #endif */
 
 /* ─── 封面头部 ─── */
 .read-head {
@@ -157,13 +168,14 @@
   color: #A1A1AA;
 }
 
-/* ─── 目录尺 ─── */
+/* ─── 目录尺（4.1.2 重画：脊柱 + 粗刻度 + 柔和视口带）─── */
+/* 触控区做宽一点（64rpx），但视觉只占中间一条 */
 .read-ruler {
   position: absolute;
-  left: 12rpx;
+  left: 0;
   top: 32rpx;
   bottom: 32rpx;
-  width: 52rpx;
+  width: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,16 +188,26 @@
   height: 100%;
 }
 
-/* 视口指示：当前可见范围 */
-.ruler-viewport {
+/* 脊柱：极浅的竖线，刻度挂在它右侧 —— 一眼是尺子，不像滚动条 */
+.ruler-spine {
   position: absolute;
-  left: 28rpx;
-  width: 3rpx;
-  background: #E4E4E7;
-  border-radius: 3rpx;
+  left: 30rpx;
+  top: 0;
+  bottom: 0;
+  width: 2rpx;
+  background: #F4F4F5;
 }
 
-/* 刻度：未选中细灰，选中加长变黑 */
+/* 视口带：当前可见范围，柔和地铺在脊柱上（比细线更像进度，不像滚动条） */
+.ruler-viewport {
+  position: absolute;
+  left: 26rpx;
+  width: 10rpx;
+  background: #F4F4F5;
+  border-radius: 6rpx;
+}
+
+/* 刻度：默认 20rpx 深灰，选中 34rpx 纯黑加粗 */
 .ruler-tick {
   position: absolute;
   left: 0;
@@ -195,27 +217,27 @@
 
 .ruler-bar {
   position: absolute;
-  left: 24rpx;
-  top: -1rpx;
-  width: 10rpx;
-  height: 2rpx;
-  background: #D4D4D8;
+  left: 30rpx;
+  top: -2rpx;
+  width: 20rpx;
+  height: 4rpx;
+  background: #A1A1AA;
   border-radius: 2rpx;
-  transition: width 0.12s ease;
+  transition: width 0.12s ease, background 0.12s ease;
 }
 
 .ruler-tick.tick-active .ruler-bar {
-  left: 18rpx;
-  width: 22rpx;
-  height: 4rpx;
-  top: -2rpx;
+  left: 30rpx;
+  width: 34rpx;
+  height: 6rpx;
+  top: -3rpx;
   background: #000000;
 }
 
 /* 拖动预览：小节名 */
 .ruler-preview {
   position: absolute;
-  left: 48rpx;
+  left: 66rpx;
   transform: translateY(-50%);
   background: #000000;
   border-radius: 8rpx;
@@ -280,8 +302,9 @@
   .chapter-title { color: #FAFAFA; }
   .read-section :deep(.md-renderer) { color: #D4D4D8; }
   .read-end-text { color: #3F3F46; }
-  .ruler-viewport { background: #27272A; }
-  .ruler-bar { background: #3F3F46; }
+  .ruler-spine { background: #18181B; }
+  .ruler-viewport { background: #18181B; }
+  .ruler-bar { background: #52525B; }
   .ruler-tick.tick-active .ruler-bar { background: #FAFAFA; }
   .ruler-preview { background: #FAFAFA; }
   .ruler-preview-text { color: #000000; }

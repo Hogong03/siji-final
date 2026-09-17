@@ -6,6 +6,27 @@
 
 export const V40 = [
   {
+    version: '4.1.2',
+    date: '2026-09-17',
+    title: '4.1.2 目录尺重画（脊柱 + 粗刻度）并藏掉页面滚动条',
+    summary: [
+      '刻度太轻：原来 10×2rpx 的浅灰短横（#D4D4D8）几乎没有存在感 —— 现在默认 20×4rpx 深灰（#A1A1AA），当前章节 34×6rpx 纯黑',
+      '左边那条「明显的滑动条」是尺子的视口指示：3rpx 细灰线 + 独立轨道，看着就是滚动条 —— 改成 10rpx 圆角柔和块贴在脊柱上，观感是「读到哪了」而不是「滚动位置」',
+      '新增一条极浅的脊柱线（2rpx / #F4F4F5），刻度挂在它右侧 —— 一眼读成「尺子」；触控区也从 52rpx 加宽到 64rpx，更好按',
+      '系统滚动条：阅读页加 :show-scrollbar="false"（App / 小程序），H5 用 ::-webkit-scrollbar 藏掉（条件编译只对 H5 生效），页面本身 overflow: hidden 不出现第二条滚动'
+    ],
+    categories: [
+      {
+        title: '阅读页刻度尺（4.1.2）',
+        items: [
+          'pages/diary/read.scss：.read-ruler 宽度 52 → 64rpx、left 12 → 0；新增 .ruler-spine；.ruler-viewport 改成 10rpx 圆角块（left 26rpx，与脊柱同心）；.ruler-bar 20×4rpx / #A1A1AA，激活态 34×6rpx / #000000；.ruler-preview 起点 48 → 66rpx；深色模式同步（脊柱 #18181B、视口带 #18181B、刻度 #52525B、激活纯白）',
+          'pages/diary/read.vue：scroll-view 增加 :show-scrollbar="false"；尺子轨道内新增 <view class="ruler-spine" />',
+          'pages/diary/read.scss：.read-page 加 overflow: hidden；H5 专段（/* #ifdef H5 */）藏 ::-webkit-scrollbar'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.1.1',
     date: '2026-09-17',
     title: '4.1.1 修目录尺：所有刻度都堆在顶部（splitSections 没返回 percent）',

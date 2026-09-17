@@ -134,6 +134,7 @@ onShow(() => {
 				id="read-scroll"
 				class="read-scroll"
 				scroll-y
+				:show-scrollbar="false"
 				:scroll-into-view="scrollIntoView"
 				:scroll-with-animation="scrollWithAnim"
 				@scroll="handleScroll"
@@ -177,6 +178,8 @@ onShow(() => {
 				@tap="handleTap"
 			>
 				<view id="read-ruler-track" class="ruler-track">
+					<!-- 脊柱：一条极浅的竖线，刻度挂在它右侧，读起来是「尺子」而不是滚动条 -->
+					<view class="ruler-spine" />
 					<view class="ruler-viewport" :style="rulerViewportStyle" />
 					<view
 						v-for="t in rulerTicks"
