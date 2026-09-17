@@ -85,15 +85,24 @@ describe('记录 executor', () => {
   })
 
 
-  it('创建/更新：record_type 保存与修改', () => {
+  it('创建/更新：record_type 保存与修改（4.2.0 起只认 note/diary/todo）', () => {
     const c = store.executeAction({ type: 'create_diary', payload: { content: '一篇日记', record_type: 'diary' } })
     expect(c.detail.record_type).toBe('diary')
-    const u = store.executeAction({ type: 'update_diary', payload: { client_id: c.detail.id, record_type: 'idea', title: '新标题' } })
+    const u = store.executeAction({ type: 'update_diary', payload: { client_id: c.detail.id, record_type: 'todo', title: '新标题' } })
     expect(u.success).toBe(true)
     expect(u.detail.updatedFields).toEqual(expect.arrayContaining(['record_type', 'title']))
     const q = store.executeAction({ type: 'query_diary', payload: {} })
-    expect(q.detail.items[0].record_type).toBe('idea')
+    expect(q.detail.items[0].record_type).toBe('todo')
     expect(q.detail.items[0].title).toBe('新标题')
+  })
+
+  it('旧类型值（idea / flash）不再写进存储：落到 note', () => {
+    const c = store.executeAction({ type: 'create_diary', payload: { content: '有个想法', record_type: 'idea' } })
+    expect(c.detail.record_type).toBe('note')
+    const u = store.executeAction({ type: 'update_diary', payload: { client_id: c.detail.id, record_type: 'flash' } })
+    expect(u.success).toBe(true)
+    const q = store.executeAction({ type: 'query_diary', payload: {} })
+    expect(q.detail.items[0].record_type).toBe('note')
   })
 
   it('软删除：删除后查询不可见', () => {

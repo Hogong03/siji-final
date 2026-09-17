@@ -23,6 +23,8 @@
 		rebuildIndex,
 		ensureDefaultTemplates,
 		ensureCet6Tips,
+		migrateRecordTypes,
+		migrateDiaryCategories,
 		getPlanList
 	} from '@/utils/storage.js'
 	import {
@@ -72,6 +74,17 @@
 				ensureDefaultTemplates()
 				// 六级技巧记录（3.8.0）：按 client_id 增量补发，用户删掉的不再补
 				ensureCet6Tips()
+				// 记录模块收敛（4.2.0）：类型 5→3（灵感/闪念并入记录）+ 分类并入标签
+				// 幂等：迁移过的记录不会二次改写；失败不影响启动
+				try {
+					const t = migrateRecordTypes()
+					const c = migrateDiaryCategories()
+					if (t.changed > 0 || c.changed > 0) {
+						logger.log('[思迹] 记录迁移完成：类型 ' + t.changed + ' 条，分类转标签 ' + c.changed + ' 条')
+					}
+				} catch (e) {
+					console.warn('[思迹] 记录迁移失败：', e.message)
+				}
 				rebuildIndex()
 				initReminder(getPlanList)
 				startReminderChecker()

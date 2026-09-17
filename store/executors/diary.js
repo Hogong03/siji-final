@@ -1,4 +1,5 @@
-import { saveDiary, updateIndex, getDiaryList, searchByIndex } from '@/utils/storage.js'
+import { saveDiary, updateIndex, getDiaryList, searchByIndex, RECORD_TYPE_KEYS, getUsedTags } from '@/utils/storage.js'
+import { suggestTags } from '@/utils/diary-tags.js'
 import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { expandKeywords, matchesAnyKeywords } from '@/utils/search-synonyms.js'
@@ -41,6 +42,15 @@ export function createDiaryExecutors(ctx) {
     return deriveShortTitle(t) || t.substring(0, 20)
   }
 
+  /** 已有标签名（自动打标签优先复用它们，避免标签爆炸） */
+  function knownTagNames() {
+    try {
+      return getUsedTags('diary').map(t => t && t.name).filter(Boolean)
+    } catch (e) {
+      return []
+    }
+  }
+
   function execCreateDiary(p) {
     const now = Date.now()
     // 兼容 AI 把正文误放 title 的情况：正文为空时用 title 兜底
@@ -68,12 +78,13 @@ export function createDiaryExecutors(ctx) {
     const content = fallbackFromTitle
       ? text
       : (lineBreak > 0 ? text.substring(lineBreak + 1).trim() : text)
-    // 模型未传记录类型时按正文关键词推断（日记/心情→diary，想法→idea，待办→todo，闪念→flash）
+    // 模型未传记录类型时按正文关键词推断（4.2.0：类型收敛到 3 种 —— 日记/心情→diary，待办→todo，其他→note；
+    // 「想法/灵感」「闪念」并入 note，靠自动标签保语义）
     const inferredType = /日记|心情|随笔/.test(text) ? 'diary'
-      : /想法|灵感|点子/.test(text) ? 'idea'
+      : /想法|灵感|点子/.test(text) ? 'note'
       : /待办|要做|备忘/.test(text) ? 'todo'
-      : /闪念|碎片/.test(text) ? 'flash' : ''
-    const recordType = ['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type)
+      : /闪念|碎片/.test(text) ? 'note' : ''
+    const recordType = RECORD_TYPE_KEYS.includes(p.record_type)
       ? p.record_type
       : (inferredType || 'note')
 
@@ -82,7 +93,10 @@ export function createDiaryExecutors(ctx) {
       title: title || '无标题',
       content: content,
       record_type: recordType,
-      tags: Array.isArray(p.tags) ? p.tags : [],
+      // 4.2.0：用户/AI 没给标签时，自动打 1-3 个（先复用已有标签库，再落到内置关键词表）
+      tags: Array.isArray(p.tags) && p.tags.length > 0
+        ? p.tags
+        : suggestTags((p.title || '') + ' ' + (p.content || ''), knownTagNames()),
       created_at: now,
       updated_at: now,
       is_deleted: 0
@@ -150,7 +164,8 @@ export function createDiaryExecutors(ctx) {
         if (derived) updates.title = derived
       }
     }
-    if (['note', 'diary', 'idea', 'todo', 'flash'].includes(p.record_type)) updates.record_type = p.record_type
+    if (RECORD_TYPE_KEYS.includes(p.record_type)) updates.record_type = p.record_type
+    // 旧类型值（idea / flash）改成 note，不再写进存储
     if (Array.isArray(p.tags)) updates.tags = p.tags
     updates.updated_at = Date.now()
 

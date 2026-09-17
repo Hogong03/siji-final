@@ -1,19 +1,26 @@
 /**
- * 记录列表页 — 搜索、统计、标签、分类、日历、时间线
- * 搜索+时间+分类+标签统一筛选，不再区分本地/全局搜索
+ * 记录列表页 — 搜索、统计、标签、日历、时间线
+ *
+ * 4.2.0：分类并入标签（分类维度从 3 套压到 1 套）
+ *   - 筛选只留两个入口：时间范围（全部 / 本月 / 上月）+ 标签
+ *   - 搜索框支持一句话筛选（「上周的工作记录」→ 自动落时间范围 + 关键词）
+ *   - 顶部回顾卡：每天一次，从 7 天前 / 30 天前 / 去年今日各挑一条旧记录
+ * 不再区分本地/全局搜索
  */
 import { ref, computed, watch } from 'vue'
-import { getDiaryList, getUsedTags, getCategories } from '@/utils/storage.js'
+import { getDiaryList, getUsedTags, getDiariesBetween } from '@/utils/storage.js'
+import { parseDiaryQuery } from '@/utils/diary-query.js'
+import { pickReviewRecords } from '@/utils/record-review.js'
 
 export function useDiaryList() {
   const diaries = ref([])
   const currentMonth = ref('')
   const loading = ref(false)
   const filterTag = ref('')
-  const filterCategory = ref('')
   const filterTags = ref([])
-  const categories = ref([])
   const searchKeyword = ref('')
+  // 回顾卡（每天一次）
+  const reviewRecords = ref([])
   const viewMode = ref('list') // list | timeline | calendar
 
   // 统计（基于当前时间范围内全部记录，不受搜索/筛选影响）
@@ -41,9 +48,12 @@ export function useDiaryList() {
     return { map, total }
   })
 
-  // 高频标签（前 5）
+  // 高频标签：筛选面板用前 5，快捷条用前 8（按使用频次排，点一下就筛）
   const topTags = computed(() => {
     return [...filterTags.value].sort((a, b) => b.count - a.count).slice(0, 5)
+  })
+  const quickTags = computed(() => {
+    return [...filterTags.value].sort((a, b) => b.count - a.count).slice(0, 8)
   })
 
   // 置顶排序
@@ -55,12 +65,9 @@ export function useDiaryList() {
     })
   })
 
-  // 统一筛选：搜索 + 分类 + 标签 同时生效
+  // 统一筛选：搜索 + 标签（4.2.0 起不再有分类维度）
   const filteredDiaries = computed(() => {
     let result = sortedDiaries.value
-    if (filterCategory.value) {
-      result = result.filter(d => d.category === filterCategory.value)
-    }
     if (filterTag.value) {
       result = result.filter(item => getItemTags(item).includes(filterTag.value))
     }
@@ -114,17 +121,20 @@ export function useDiaryList() {
     return Object.entries(groups).map(([date, items]) => ({ date, items }))
   })
 
-  // 可选月份列表（含"全部时间"）
+  /** 月份 key（YYYY-MM） */
+  function monthKeyOf(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  // 时间范围（4.2.0：从 13 个 chip 收敛到 3 个 —— 找更早的记录用搜索或「全部」）
   const months = computed(() => {
-    const list = [{ key: 'all', label: '全部时间' }]
     const now = new Date()
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
-      list.push({ key, label })
-    }
-    return list
+    const last = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return [
+      { key: 'all', label: '全部' },
+      { key: monthKeyOf(now), label: '本月' },
+      { key: monthKeyOf(last), label: '上月' }
+    ]
   })
 
   function loadDiaries() {
@@ -147,13 +157,70 @@ export function useDiaryList() {
   }
 
   function loadTags() { filterTags.value = getUsedTags('diary') }
-  function loadCategories() { categories.value = getCategories() }
 
-  // 切换时间范围 — 只重载数据，不清搜索/分类/标签
+  // 切换时间范围 — 只重载数据，不清搜索/标签
   function switchMonth(key) {
     currentMonth.value = key
     loadDiaries()
     loadTags()
+  }
+
+  /**
+   * 一句话筛选（4.2.0）：「上周的工作记录」→ 自动落时间范围 + 关键词
+   * 规则在 utils/diary-query.js（纯函数），这里只负责把结果落到状态上
+   * @param {string} text
+   */
+  function applyQuery(text) {
+    const parsed = parseDiaryQuery(text)
+    if (parsed.keyword) searchKeyword.value = parsed.keyword
+    const now = new Date()
+    if (parsed.range === 'lastMonth') {
+      switchMonth(monthKeyOf(new Date(now.getFullYear(), now.getMonth() - 1, 1)))
+    } else if (parsed.range) {
+      switchMonth(monthKeyOf(now))
+    }
+  }
+
+  // ==================== 回顾卡（4.2.0，每天最多一次） ====================
+  const REVIEW_KEY = 'siji_diary_review_day'
+
+  /** 今天的日期串（YYYY-MM-DD），用于「今天回顾过没有」 */
+  function todayKey() {
+    const d = new Date()
+    return monthKeyOf(d) + '-' + String(d.getDate()).padStart(2, '0')
+  }
+
+  /** 今天是否还没回顾过 */
+  function reviewDue() {
+    try {
+      return uni.getStorageSync(REVIEW_KEY) !== todayKey()
+    } catch (e) {
+      return true
+    }
+  }
+
+  function markReviewed() {
+    try {
+      uni.setStorageSync(REVIEW_KEY, todayKey())
+    } catch (e) { /* 存不下就下次再问 */ }
+  }
+
+  /** 加载回顾卡（近两年记录里挑 3 条） */
+  function loadReview() {
+    if (!reviewDue()) { reviewRecords.value = []; return }
+    try {
+      const now = Date.now()
+      const pool = getDiariesBetween(now - 730 * 24 * 60 * 60 * 1000, now)
+      reviewRecords.value = pickReviewRecords(pool, now, { limit: 3 })
+    } catch (e) {
+      reviewRecords.value = []
+    }
+  }
+
+  /** 关掉回顾卡（今天不再出现） */
+  function dismissReview() {
+    reviewRecords.value = []
+    markReviewed()
   }
 
   // ==================== 分页（可选，用户自由开关，设置持久化） ====================
@@ -211,24 +278,19 @@ export function useDiaryList() {
   function nextPage() { if (page.value < pageCount.value) page.value++ }
   function goPage(p) { if (p >= 1 && p <= pageCount.value) page.value = p }
 
-  // 是否有激活的筛选条件
+  // 是否有激活的筛选条件（4.2.0：只有标签与搜索两个维度）
   const hasActiveFilter = computed(() => {
-    return !!(filterCategory.value || filterTag.value || searchKeyword.value.trim())
+    return !!(filterTag.value || searchKeyword.value.trim())
   })
 
   // 重置筛选（不清时间范围）
   function resetFilters() {
-    filterCategory.value = ''
     filterTag.value = ''
     searchKeyword.value = ''
   }
 
   function toggleTag(tagName) {
     filterTag.value = filterTag.value === tagName ? '' : tagName
-  }
-
-  function toggleCategory(catName) {
-    filterCategory.value = filterCategory.value === catName ? '' : catName
   }
 
   function getItemTags(item) {
@@ -254,13 +316,13 @@ export function useDiaryList() {
   }
 
   return {
-    diaries, currentMonth, loading, filterTag, filterCategory, filterTags, categories,
-    searchKeyword, viewMode,
-    monthCount, totalWords, streakDays, topTags, emotionStats,
+    diaries, currentMonth, loading, filterTag, filterTags,
+    searchKeyword, viewMode, reviewRecords,
+    monthCount, totalWords, streakDays, topTags, quickTags, emotionStats,
     filteredDiaries, calendarDays, timelineGroups, months,
     paginationEnabled, pageSize, page, pageCount, pagedDiaries,
     setPagination, setPageSize, prevPage, nextPage, goPage,
-    loadDiaries, loadTags, loadCategories, switchMonth, toggleTag, toggleCategory,
+    loadDiaries, loadTags, switchMonth, toggleTag, applyQuery, loadReview, dismissReview,
     getItemTags, tagColor, formatDate,
     hasActiveFilter, resetFilters
   }

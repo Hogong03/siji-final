@@ -44,11 +44,15 @@ describe('记录创建：单行内容不丢失', () => {
     expect(r.detail.content).toBe('昨天打球很开心')
   })
 
-  it('模型未传 record_type 时按正文关键词推断', () => {
+  it('模型未传 record_type 时按正文关键词推断（4.2.0：只推断 diary / todo，其余归 note）', () => {
     const d = store.executeAction({ type: 'create_diary', payload: { content: '记个日记，昨天打球很开心' } })
     expect(d.detail.record_type).toBe('diary')
+    // 想法/灵感以前是 idea，现在归 note —— 语义由自动标签保住
     const i = store.executeAction({ type: 'create_diary', payload: { content: '有个想法，把房间改造一下' } })
-    expect(i.detail.record_type).toBe('idea')
+    expect(i.detail.record_type).toBe('note')
+    expect(i.detail.tags).toContain('灵感')
+    const t = store.executeAction({ type: 'create_diary', payload: { content: '要做：明天交报告' } })
+    expect(t.detail.record_type).toBe('todo')
     const n = store.executeAction({ type: 'create_diary', payload: { content: '随便记一笔' } })
     expect(n.detail.record_type).toBe('note')
   })

@@ -11,7 +11,7 @@
  * 跑 tests/action-schema-consistency.test.js 校验一致性。
  */
 export const CORE_ACTIONS = `记录:
-- create_diary: {content,tags?,record_type?}  // 自由文本，首行自动作为标题；正文必须放 content，禁止传 title；record_type 按用户原话判断：日记/心情→diary、想法/灵感→idea、待办/要做→todo、闪念→flash、其他→note，禁止省略
+- create_diary: {content,tags?,record_type?}  // 自由文本，首行自动作为标题；正文必须放 content，禁止传 title；record_type 三选一：日记/心情→diary、待办/要做→todo、其他（含想法/灵感/闪念）→note，禁止省略；标签不用传（系统按内容自动打）
 - update_diary: {client_id,title?,content?,record_type?,tags?}  // 改内容/标题/类型只传对应字段
 - delete_diary: {client_id} needConfirm=true
 - query_diary: {keyword?,month?}

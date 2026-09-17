@@ -24,7 +24,11 @@ export {
   saveDiary,
   deleteDiary,
   togglePinDiary,
-  getDiaryById
+  getDiaryById,
+  getDiariesBetween,
+  migrateRecordTypes,
+  migrateDiaryCategories,
+  RECORD_TYPE_KEYS
 } from './storage/diary.js'
 
 // 分类

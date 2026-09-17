@@ -5,17 +5,18 @@
  */
 import { onMounted, ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { firstSentence } from '@/utils/diary-query.js'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useDiaryList } from '@/composables/useDiaryList.js'
 
 const {
-  diaries, currentMonth, loading, filterTag, filterCategory, filterTags, categories,
-  searchKeyword, viewMode,
-  monthCount, totalWords, streakDays, topTags, emotionStats,
+  diaries, currentMonth, loading, filterTag, filterTags,
+  searchKeyword, viewMode, reviewRecords,
+  monthCount, totalWords, streakDays, topTags, quickTags, emotionStats,
   filteredDiaries, calendarDays, timelineGroups, months,
   paginationEnabled, pageSize, page, pageCount, pagedDiaries,
   setPagination, setPageSize, prevPage, nextPage, goPage,
-  loadDiaries, loadTags, loadCategories, switchMonth, toggleTag, toggleCategory,
+  loadDiaries, loadTags, switchMonth, toggleTag, applyQuery, loadReview, dismissReview,
   getItemTags, tagColor, formatDate,
   hasActiveFilter, resetFilters
 } = useDiaryList()
@@ -25,10 +26,11 @@ const showStats = ref(false)
 const showTimePicker = ref(false)
 
 onMounted(() => {
-  currentMonth.value = months.value[1]?.key || ''
-  loadDiaries(); loadTags(); loadCategories()
+  // 默认落在「本月」（months[1]），找不到就退回全部
+  currentMonth.value = months.value[1]?.key || 'all'
+  loadDiaries(); loadTags(); loadReview()
 })
-onShow(() => { loadDiaries(); loadTags(); loadCategories() })
+onShow(() => { loadDiaries(); loadTags() })
 
 function goDetail(clientId, m) {
   const useMonth = m || currentMonth.value
@@ -41,6 +43,19 @@ function toggleFilter() { showFilter.value = !showFilter.value }
 function closeFilter() { showFilter.value = false }
 function toggleTimePicker() { showTimePicker.value = !showTimePicker.value }
 function clearSearch() { searchKeyword.value = '' }
+
+/** 点回顾卡：进阅读页（章节版式 + 目录尺） */
+function openReview(r) {
+  if (!r || !r.id) return
+  const month = formatMonthOf(r.createdAt)
+  uni.navigateTo({ url: `/pages/diary/read?clientId=${r.id}&month=${month}` })
+}
+
+/** 时间戳 → YYYY-MM（阅读页按月分片取记录） */
+function formatMonthOf(ts) {
+  const d = new Date(Number(ts) || Date.now())
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
 
 const currentMonthLabel = computed(() => {
   const m = months.value.find(m => m.key === currentMonth.value)
@@ -72,7 +87,13 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     <view class="toolbar">
       <view class="search-input-wrap">
         <text class="search-icon">🔍</text>
-        <input v-model="searchKeyword" class="search-input" placeholder="搜索记录..." confirm-type="search" />
+        <input
+          v-model="searchKeyword"
+          class="search-input"
+          placeholder="搜索记录，或说「上周的工作记录」"
+          confirm-type="search"
+          @confirm="applyQuery(searchKeyword)"
+        />
         <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
       </view>
       <view class="tool-btns">
@@ -82,9 +103,35 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         </view>
         <view class="tool-btn tool-filter" @tap="toggleFilter">
           <text>⚙</text>
-          <view class="filter-dot" v-if="hasActiveFilter || filterCategory || filterTag"></view>
+          <view class="filter-dot" v-if="hasActiveFilter"></view>
         </view>
         <view class="tool-btn" @tap="goTrash"><text>🗑</text></view>
+      </view>
+    </view>
+
+    <!-- 快捷标签：按使用频次排前 8 个，点一下就筛（4.2.0） -->
+    <scroll-view v-if="quickTags.length > 0" class="quick-tags" scroll-x>
+      <view class="quick-tag" :class="{ active: !filterTag }" @tap="filterTag = ''"><text>全部</text></view>
+      <view
+        v-for="t in quickTags" :key="'q'+t.name"
+        class="quick-tag" :class="{ active: filterTag === t.name }"
+        @tap="toggleTag(t.name)"
+      ><text>#{{ t.name }}</text></view>
+    </scroll-view>
+
+    <!-- 回顾卡：每天一次，把旧记录推回眼前（4.2.0） ← flomo 的每日回顾 -->
+    <view v-if="reviewRecords.length > 0" class="review-card">
+      <view class="review-head">
+        <text class="review-label">翻一翻</text>
+        <view class="review-close" @tap="dismissReview"><text>×</text></view>
+      </view>
+      <view
+        v-for="r in reviewRecords" :key="r.id"
+        class="review-item"
+        @tap="openReview(r)"
+      >
+        <text class="review-why">{{ r.why }}</text>
+        <text class="review-title">{{ r.title || r.preview || '无标题' }}</text>
       </view>
     </view>
 
@@ -99,8 +146,8 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
     <!-- 激活的筛选条件 -->
     <view class="active-filters" v-if="hasActiveFilter">
-      <text class="filter-tag" v-if="filterCategory" @tap="filterCategory = ''">{{ filterCategory }} ✕</text>
       <text class="filter-tag" v-if="filterTag" @tap="filterTag = ''">#{{ filterTag }} ✕</text>
+      <text class="filter-tag" v-if="searchKeyword" @tap="clearSearch">“{{ searchKeyword }}” ✕</text>
       <text class="filter-clear-all" @tap="resetFilters">清除</text>
     </view>
 
@@ -112,15 +159,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <text class="fp-close" @tap="closeFilter">✕</text>
       </view>
 
-      <!-- 分类 -->
-      <view class="fp-section" v-if="categories.length > 0">
-        <text class="fp-section-label">分类</text>
-        <scroll-view class="fp-chips" scroll-x>
-          <view class="fp-chip" :class="{ active: !filterCategory }" @tap="filterCategory = ''"><text>全部</text></view>
-          <view v-for="c in categories" :key="'c'+c.name" class="fp-chip" :class="{ active: filterCategory === c.name }" @tap="toggleCategory(c.name)"><text>{{ c.name }}</text></view>
-        </scroll-view>
-      </view>
-
+      <!-- 分类已并入标签（4.2.0）：这里只剩标签一套维度 -->
       <!-- 标签 -->
       <view class="fp-section" v-if="topTags.length > 0">
         <text class="fp-section-label">标签</text>
@@ -209,7 +248,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <text class="cal-day-label">{{ cell.day }}日 · {{ cell.count }}篇 · {{ cell.words }}字</text>
         <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r.client_id)">
           <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
-          <text class="card-preview" v-if="r.content">{{ r.content.replace(/\s+/g, ' ').substring(0, 80) }}</text>
+          <text class="card-preview" v-if="r.content">{{ firstSentence(r.content) }}</text>
           <view v-if="getItemTags(r).length > 0" class="tag-row">
             <text v-for="t in getItemTags(r)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
           </view>
@@ -229,7 +268,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
           <text v-if="item.category" class="cat-badge">{{ item.category }}</text>
         </view>
         <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
-        <text class="card-preview" v-if="item.content">{{ item.content.replace(/\s+/g, ' ').substring(0, 120) }}</text>
+        <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
         <view class="card-images" v-if="item.images && item.images.length > 0">
           <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
           <text class="img-more" v-if="item.images.length > 3">+{{ item.images.length - 3 }}</text>
@@ -261,7 +300,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <view class="timeline-date">{{ group.date }}</view>
         <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
           <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
-          <text class="card-preview" v-if="item.content">{{ item.content.replace(/\s+/g, ' ').substring(0, 100) }}</text>
+          <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
           <view class="card-images" v-if="item.images && item.images.length > 0">
             <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
           </view>

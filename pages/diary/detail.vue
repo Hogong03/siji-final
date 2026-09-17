@@ -2,12 +2,12 @@
 /**
  * 记录详情 / 新建页
  * 新建时可选 5 种记录类型，每种不同 placeholder/视觉/行为
- * 编辑区 → 标签&分类 → 图片 → AI菜单 → 摘要 → 关联
+ * 编辑区 → 标签 → 图片 → AI菜单 → 摘要 → 关联（4.2.0：分类并入标签）
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed } from 'vue'
 import { onLoad, onBackPress } from '@dcloudio/uni-app'
-import { getDiaryById, saveDiary, deleteDiary, togglePinDiary, getCategories } from '@/utils/storage.js'
+import { getDiaryById, saveDiary, deleteDiary, togglePinDiary } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { useTagPicker } from '@/composables/useTagPicker.js'
 import { useRelatedRecords, useRelatedBills } from '@/composables/useDiaryRelations.js'
@@ -19,24 +19,26 @@ const diaryId = ref('')
 const month = ref('')
 const originalCreatedAt = ref(null)
 const isPinned = ref(false)
-const categories = ref([])
+// 4.2.0：分类并入标签，「分类」这套候选值不再使用（存量值已由 migrateDiaryCategories 转成标签）
 const showAIMenu = ref(false)
 const showRelated = ref(false)
-const recordType = ref('note')  // note|diary|idea|todo|flash
+const recordType = ref('note')  // note|diary|todo（3.9 之前的 idea/flash 已并入 note）
 const showTypePicker = ref(false)
 
+/** 记录类型（4.2.0：5 种收敛到 3 种）
+ *  想法/灵感/闪念归入「记录」—— 行为上都是随手写一段文本，没必要记的时候先做一次分类；
+ *  系统会按内容自动打标签（#灵感 / #闪念 / #工作…），想找照样找得到。
+ */
 const RECORD_TYPES = [
-  { key: 'note',  icon: '✏️', label: '随手记', placeholder: '随手记点什么…',  color: '#18181B', desc: '快速记录' },
-  { key: 'diary', icon: '📖', label: '日记',   placeholder: '今天发生了什么…',  color: '#0EA5E9', desc: '心情 + 摘要' },
-  { key: 'idea',  icon: '💡', label: '灵感',   placeholder: '突然想到…',       color: '#F59E0B', desc: '自动标签' },
-  { key: 'todo',  icon: '☑️', label: '待办',   placeholder: '要做什么？每行一个…', color: '#059669', desc: '可勾选' },
-  { key: 'flash', icon: '⚡', label: '闪念',   placeholder: '一闪而过的念头…',   color: '#71717A', desc: '极简模式' },
+  { key: 'note',  icon: '✏️', label: '记录', placeholder: '随手记点什么…',  color: '#18181B', desc: '想到什么写什么' },
+  { key: 'diary', icon: '📖', label: '日记', placeholder: '今天发生了什么…',  color: '#0EA5E9', desc: '心情 + 摘要' },
+  { key: 'todo',  icon: '☑️', label: '待办', placeholder: '要做什么？每行一个…', color: '#059669', desc: '可勾选' },
 ]
 
 const currentType = computed(() => RECORD_TYPES.find(t => t.key === recordType.value) || RECORD_TYPES[0])
 
-// 闪念模式：隐藏标签/分类/图片/AI，只留 textarea + 保存
-const isFlashMode = computed(() => recordType.value === 'flash' && isNew.value)
+// 4.2.0：闪念模式已随类型收敛删除
+// 4.2.0：闪念模式随类型收敛一并删除（它就是「note + 少几个控件」，不值得单独一种类型）
 const showMetaPanel = ref(false) // 类型条+标签区域可收起
 
 const form = ref({ title: '', content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
@@ -62,7 +64,7 @@ const isDirty = computed(() => {
 })
 
 onLoad((query) => {
-  categories.value = getCategories()
+  // 分类已并入标签：这里不再加载分类候选
   if (query?.clientId) {
     isNew.value = false
     diaryId.value = query.clientId
@@ -86,9 +88,7 @@ onLoad((query) => {
 })
 
 function applyTypeDefaults() {
-  if (recordType.value === 'idea') {
-    if (!form.value.tags.includes('灵感')) form.value.tags.unshift('灵感')
-  } else if (recordType.value === 'diary') {
+  if (recordType.value === 'diary') {
     const now = new Date()
     const pad = (n) => String(n).padStart(2, '0')
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
@@ -258,7 +258,7 @@ const emotionLabel = computed(() => {
         </view>
       </view>
 
-      <!-- 筛选条件（收展按钮控制，分类与标签独立分行） -->
+      <!-- 筛选条件（收展按钮控制） -->
       <view class="meta-panel" v-if="showMetaPanel">
         <!-- 类型选择 -->
         <view class="meta-section">
@@ -267,16 +267,8 @@ const emotionLabel = computed(() => {
             <view v-for="t in RECORD_TYPES" :key="t.key" class="meta-chip cat-chip" :class="{ active: recordType === t.key }" @tap="selectType(t.key)"><text>{{ t.icon }}{{ t.label }}</text></view>
           </view>
         </view>
-        <!-- 分类选择 -->
-        <view class="meta-section" v-if="!isFlashMode">
-          <text class="meta-section-title">分类</text>
-          <view class="meta-chips">
-            <view class="meta-chip cat-chip" :class="{ active: !form.category }" @tap="form.category = ''"><text>无</text></view>
-            <view v-for="c in categories" :key="c.name" class="meta-chip cat-chip" :class="{ active: form.category === c.name }" @tap="form.category = c.name"><text>{{ c.name }}</text></view>
-          </view>
-        </view>
         <!-- 标签 -->
-        <view class="meta-section" v-if="!isFlashMode">
+        <view class="meta-section" >
           <text class="meta-section-title">标签</text>
           <view class="meta-chips">
             <view v-for="t in form.tags" :key="t" class="meta-chip tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @tap="removeTag(t)"><text>{{ t }}</text><text class="tag-remove">✕</text></view>
@@ -286,7 +278,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 标题（独立输入，紧贴正文编辑区） -->
-      <view v-if="!isFlashMode" class="title-section">
+      <view  class="title-section">
         <input
           v-model="form.title"
           class="title-input"
@@ -297,7 +289,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 编辑区 -->
-      <view class="textarea-section" :class="{ 'flash-mode': isFlashMode }">
+      <view class="textarea-section">
         <textarea
           v-model="form.content"
           class="textarea-field"
@@ -306,7 +298,7 @@ const emotionLabel = computed(() => {
           :auto-height="true"
           :focus="isNew && !showTypePicker"
         />
-        <view class="textarea-actions" v-if="!isFlashMode">
+        <view class="textarea-actions" >
           <!-- #ifdef APP-PLUS -->
           <text class="ta-btn" :class="{ recording: isRecording }" @tap="startVoice">{{ isRecording ? '⏹' : '🎤' }}</text>
           <!-- #endif -->
@@ -316,7 +308,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- AI 菜单 -->
-      <view class="ai-menu" v-if="showAIMenu && form.content.trim() && !isFlashMode">
+      <view class="ai-menu" v-if="showAIMenu && form.content.trim()">
         <view class="ai-menu-item" @tap="doAI('summary')"><text>{{ generating ? '⏳ 生成中…' : '📋 生成摘要' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('rewrite')"><text>{{ Rewriting ? '⏳ 润色中…' : '✏️ 润色文本' }}</text></view>
         <view class="ai-menu-item" @tap="doAI('todos')"><text>{{ extractingTodos ? '⏳ 提取中…' : '☑️ 提取待办' }}</text></view>
@@ -324,7 +316,7 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 图片（闪念模式隐藏） -->
-      <view class="image-section" v-if="!isFlashMode && form.images && form.images.length > 0">
+      <view class="image-section" v-if="form.images && form.images.length > 0">
         <view class="image-grid">
           <view v-for="(img, i) in form.images" :key="i" class="image-item" @tap="previewImage(i)">
             <image :src="img" mode="aspectFill" class="img-thumb" />
@@ -334,10 +326,10 @@ const emotionLabel = computed(() => {
       </view>
 
       <!-- 情绪标签 -->
-      <view class="emotion-badge" v-if="emotionLabel && !isFlashMode"><text>{{ emotionLabel }}</text></view>
+      <view class="emotion-badge" v-if="emotionLabel"><text>{{ emotionLabel }}</text></view>
 
       <!-- AI 摘要 -->
-      <view v-if="!isFlashMode && form.ai_summary" class="ai-section">
+      <view v-if="form.ai_summary" class="ai-section">
         <view class="ai-section-header">
           <text class="ai-section-title">摘要</text>
           <text class="ai-refresh" @tap="generateAISummary">{{ generating ? '⏳' : '↻' }}</text>
@@ -345,13 +337,13 @@ const emotionLabel = computed(() => {
         <text class="ai-text">{{ form.ai_summary }}</text>
       </view>
 
-      <view v-if="!isFlashMode && form.ai_advice" class="ai-section">
+      <view v-if="form.ai_advice" class="ai-section">
         <text class="ai-section-title">建议</text>
         <text class="ai-text">{{ form.ai_advice }}</text>
       </view>
 
       <!-- 关联区域 -->
-      <view class="related-section" v-if="!isNew && !isFlashMode && hasRelated">
+      <view class="related-section" v-if="!isNew && hasRelated">
         <view class="related-header" @tap="showRelated = !showRelated">
           <text class="related-title-text">关联内容</text>
           <text class="related-arrow">{{ showRelated ? '▲' : '▼' }}</text>
