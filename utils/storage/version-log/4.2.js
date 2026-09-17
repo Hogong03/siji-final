@@ -6,6 +6,25 @@
 
 export const V42 = [
   {
+    version: '4.2.1',
+    date: '2026-09-17',
+    title: '4.2.1 记录筛选面板改成底部弹出（原来被导航栏盖住）',
+    summary: [
+      '问题：点筛选按钮后，面板从页面顶部滑出（position: fixed; top: 0），H5 与自定义导航栏下被导航栏压住，面板标题行点不到',
+      '修法：改成底部弹出（bottom: 0 + translateY(100%) → 显形 translateY(0)），顶部圆角与安全区留白一并调整；手机上一只手也够得到',
+      '层级同步抬高：遮罩 200 → 999、面板 201 → 1000，压在工具栏（101）与右下角新建按钮（100）之上',
+      '同类问题扫过全项目：只有这一处是「顶部滑出」的面板（chat.scss 里那处 translateY(-100%) 是横幅入场动画，不受影响）'
+    ],
+    categories: [
+      {
+        title: '筛选面板（4.2.1）',
+        items: [
+          'pages/diary/list.scss：.filter-panel 的 top: 0 → left/right/bottom: 0；圆角 0 0 24rpx → 24rpx 24rpx 0；transform: translateY(-100%) → translateY(100%)；padding-bottom 加 24rpx 基础值 + 安全区；z-index 201 → 1000，.filter-overlay 200 → 999'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.2.0',
     date: '2026-09-17',
     title: '4.2.0 记录模块收敛：类型 5→3、分类并入标签、筛选 4→2、加「翻一翻」回顾',

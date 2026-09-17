@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 76 文件 / 1111 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.2.0（记录模块收敛：类型 5→3、分类并入标签、筛选 4→2、加「翻一翻」回顾卡与自动打标签；方案见 `docs/记录方案对比.html`） |
+| 版本 | v4.2.1（记录筛选面板改底部弹出 —— 原来从顶部滑出会被导航栏盖住） |
 
 ---
 
@@ -290,7 +290,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
-| 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
+| 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |\n| 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
 
 ---
 
