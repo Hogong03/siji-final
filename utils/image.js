@@ -119,6 +119,16 @@ function compressWithCanvas(path) {
 }
 
 /**
+ * 压缩一个已有路径的图片（3.10.0）：文件通道选到图片时复用图片识别那一套
+ * @param {string} path App/小程序：沙盒或临时路径；H5：blob / file 路径
+ * @returns {Promise<{base64, width, height, size}|null>}
+ */
+export function compressImagePath(path) {
+  if (!path) return Promise.resolve(null)
+  return compressImage(path).catch(() => null)
+}
+
+/**
  * App/小程序 uni.compressImage → 转 base64
  */
 function compressWithUni(path) {

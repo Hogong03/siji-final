@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 72 文件 / 1043 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.9.0（记录长文阅读页 `pages/diary/read.vue` + 目录尺 `useOutlineRuler` + `utils/text-outline.js`；六级技巧改 4 章长文，旧 12 条软删；`ensureCet6Tips` 支持 seed_v 刷新） |
+| 测试 | 74 文件 / 1061 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.10.0（开场对话整合与按钮可点、计划时间可改 + 到点默认提醒、文件类型放宽） |
 
 ---
 

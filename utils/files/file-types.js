@@ -9,12 +9,15 @@
 
 /** 直接当文本读的扩展名（补了导出/日志/配置/代码这些常见场景） */
 export const TEXT_EXTS = [
-  'txt', 'md', 'markdown', 'csv', 'tsv', 'json', 'jsonl', 'xml', 'html', 'htm',
-  'log', 'ini', 'conf', 'cfg', 'yml', 'yaml', 'toml', 'env', 'properties',
-  'srt', 'vtt', 'ass', 'tex', 'rtf',
-  'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'vue', 'css', 'scss', 'less',
-  'py', 'java', 'kt', 'c', 'h', 'cpp', 'hpp', 'cs', 'go', 'rs', 'rb', 'php',
-  'swift', 'sh', 'bash', 'ps1', 'bat', 'sql', 'lua', 'r', 'dart', 'gradle'
+  'txt', 'md', 'markdown', 'mdx', 'rst', 'adoc', 'org', 'csv', 'tsv', 'json', 'jsonl', 'ndjson',
+  'xml', 'html', 'htm', 'xhtml', 'svg',
+  'log', 'ini', 'conf', 'cfg', 'yml', 'yaml', 'toml', 'env', 'properties', 'plist',
+  'srt', 'vtt', 'ass', 'ssa', 'tex', 'rtf',
+  // 代码 / 配置 / 脚本（用户经常丢代码片段或配置文件进来问）
+  'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'vue', 'css', 'scss', 'less', 'sass',
+  'py', 'java', 'kt', 'kts', 'c', 'h', 'cpp', 'cc', 'hpp', 'cs', 'go', 'rs', 'rb', 'php',
+  'swift', 'sh', 'bash', 'zsh', 'ps1', 'bat', 'cmd', 'sql', 'lua', 'r', 'dart', 'gradle',
+  'patch', 'diff', 'http', 'graphql', 'proto', 'gql'
 ]
 
 /** 需要解析后端的二进制文档 */
@@ -49,6 +52,8 @@ export function baseNameOf(path) {
  */
 export function classifyFile(name, mime) {
   const m = String(mime || '').toLowerCase()
+  // SVG 是文本（mime 是 image/svg+xml，但内容是 XML，能直接读，别丢给视觉模型）
+  if (extOf(name) === 'svg') return 'text'
   if (m.indexOf('image/') === 0) return 'image'
   if (m.indexOf('text/') === 0) return 'text'
   if (m.indexOf('json') >= 0 || m.indexOf('xml') >= 0 || m.indexOf('csv') >= 0) return 'text'

@@ -73,10 +73,14 @@ function onEstTimeChange(e) {
     <view class="time-row">
       <text class="time-label">开始</text>
       <picker mode="date" :value="estimatedDate" @change="onEstDateChange">
-        <input :value="estimatedDate" class="input-field" placeholder="日期" disabled />
+        <view class="picker-value">
+          <text :class="estimatedDate ? 'pv-text' : 'pv-placeholder'">{{ estimatedDate || '日期' }}</text>
+        </view>
       </picker>
       <picker mode="time" :value="estimatedTime" :end="'23:59:59'" @change="onEstTimeChange">
-        <input :value="estimatedTime" class="input-field time-picker" placeholder="时间" disabled />
+        <view class="picker-value time-picker">
+          <text :class="estimatedTime ? 'pv-text' : 'pv-placeholder'">{{ estimatedTime || '时间' }}</text>
+        </view>
       </picker>
     </view>
     <view class="quick-dates">
@@ -87,10 +91,14 @@ function onEstTimeChange(e) {
     <view class="time-row due-row">
       <text class="time-label">截止</text>
       <picker mode="date" :value="dueDate" @change="onDueDateChange">
-        <input :value="dueDate" class="input-field" placeholder="日期" disabled />
+        <view class="picker-value">
+          <text :class="dueDate ? 'pv-text' : 'pv-placeholder'">{{ dueDate || '日期' }}</text>
+        </view>
       </picker>
       <picker mode="time" :value="dueTime" :end="'23:59:59'" @change="onDueTimeChange">
-        <input :value="dueTime" class="input-field time-picker" placeholder="时间" disabled />
+        <view class="picker-value time-picker">
+          <text :class="dueTime ? 'pv-text' : 'pv-placeholder'">{{ dueTime || '时间' }}</text>
+        </view>
       </picker>
     </view>
     <view class="quick-dates">
@@ -102,6 +110,29 @@ function onEstTimeChange(e) {
 </template>
 
 <style lang="scss" scoped>
+/* 3.10.0：picker 里改用 view 显示值（原来 disabled 的 input 会把点击吞掉，选择器弹不出来） */
+.picker-value {
+  flex: 1;
+  min-width: 0;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 10rpx;
+  background: #FFFFFF;
+  box-sizing: border-box;
+}
+
+.pv-text {
+  font-size: 26rpx;
+  color: #18181B;
+}
+
+.pv-placeholder {
+  font-size: 26rpx;
+  color: #A1A1AA;
+}
+
 .time-row {
   display: flex;
   align-items: center;

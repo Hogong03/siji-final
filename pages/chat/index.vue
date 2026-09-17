@@ -25,6 +25,7 @@ import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
 import { useEnterSummary } from '@/composables/useEnterSummary.js'
 import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-session.js'
+import { buildWelcomeMessage, hasOpenerActions } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { useChatRuler } from '@/composables/useChatRuler.js'
@@ -433,7 +434,7 @@ onMounted(() => {
   if (store.messages.length === 0 && !simulationMode.value && !_pendingSimParams) {
     // 有进入总结就发总结（伪对话开场），没有才发欢迎语
     if (!injectEnterSummary(enterSummary.value)) {
-      store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+      store.addMessage(buildWelcomeMessage(getWelcomeMessage()))
     }
   }
   const sysInfo = uni.getSystemInfoSync()
@@ -556,8 +557,8 @@ function handleWelcomeChip(text) {
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
           />
-            <!-- 进入总结消息的操作行：预置按钮（3.5.21，按钮由 utils/enter-dialogue.js 按摘要内容生成）+ 返回旧对话 -->
-            <view v-if="msg._isEnterSummary && !simulationMode" class="enter-actions">
+            <!-- 开场消息的操作行：进入总结与欢迎语共用（3.10.0，按钮由 utils/enter-dialogue.js 生成）+ 返回旧对话 -->
+            <view v-if="hasOpenerActions(msg) && !simulationMode" class="enter-actions">
               <view
                 v-for="btn in (msg._enterButtons || [])"
                 :key="btn.key"

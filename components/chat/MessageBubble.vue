@@ -91,6 +91,16 @@ const contentStyle = computed(() => {
 })
 
 /** 是否为欢迎消息 */
+/**
+ * 欢迎语快捷按钮 → 填进输入框
+ * 3.10.0 修死按钮：原来用 $root.$emit（Vue 组件事件），而聊天页用 uni.$on（uni 事件总线）听，
+ * 两者不在一条通道上，点了没有任何反应。统一走 uni.$emit。
+ */
+function emitWelcomeChip(text) {
+  if (!text) return
+  uni.$emit('welcome-chip-tap', text)
+}
+
 const isWelcome = computed(() => !!props.message._isWelcome)
 
 /** 是否为连续 AI 消息（上一条也是 AI）—— 去重标签 */
@@ -226,13 +236,13 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 
           <!-- 欢迎消息快捷示例 -->
           <view v-if="isWelcome" class="welcome-chips">
-            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '记一笔午餐 ¥25')">
+            <view class="welcome-chip" @tap.stop="emitWelcomeChip('记一笔午餐 ¥25')">
               <text>记一笔午餐 ¥25</text>
             </view>
-            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '写个记录：今天很开心')">
+            <view class="welcome-chip" @tap.stop="emitWelcomeChip('写个记录：今天很开心')">
               <text>写个记录：今天很开心</text>
             </view>
-            <view class="welcome-chip" @tap.stop="$root.$emit('welcome-chip-tap', '帮我规划下周工作')">
+            <view class="welcome-chip" @tap.stop="emitWelcomeChip('帮我规划下周工作')">
               <text>帮我规划下周工作</text>
             </view>
           </view>

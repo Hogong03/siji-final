@@ -19,7 +19,7 @@ import {
   shouldOfferResume,
   formatConversationAge
 } from '@/utils/chat-session.js'
-import { buildEnterSummaryMessage } from '@/utils/enter-dialogue.js'
+import { buildEnterSummaryMessage, buildWelcomeMessage } from '@/utils/enter-dialogue.js'
 
 export function useChatSession(store, getWelcomeMessage) {
   const dismissed = ref(false)
@@ -98,7 +98,7 @@ export function useChatSession(store, getWelcomeMessage) {
     const conv = store.activeConversation
     if (conv && isEmptyConversation(conv)) {
       if (!appendEnterSummary(enterSummary)) {
-        store.addMessage({ role: 'assistant', content: getWelcomeMessage(), _isWelcome: true })
+        store.addMessage(buildWelcomeMessage(getWelcomeMessage()))
       }
     }
     return true

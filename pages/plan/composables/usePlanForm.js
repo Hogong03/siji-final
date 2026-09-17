@@ -191,8 +191,10 @@ export function usePlanForm({ saveChildren } = {}) {
       due_date: combineDateTime(form.value.due_date, form.value.due_time),
       deadline: combineDateTime(form.value.due_date, form.value.due_time),
       estimated_time: combineDateTime(form.value.estimated_time, form.value.estimated_time_value),
-      start_time: form.value.start_time || combineDateTime(form.value.estimated_time, form.value.estimated_time_value),
-      end_time: form.value.end_time || combineDateTime(form.value.due_date, form.value.due_time),
+      // 3.10.0 修「时间改不动」：原来旧值优先（form.start_time || 新值），
+      // 计划一旦有过 start_time，用户在界面上改开始时间就永远不生效 —— 改成编辑值优先、旧值兜底
+      start_time: combineDateTime(form.value.estimated_time, form.value.estimated_time_value) || form.value.start_time,
+      end_time: combineDateTime(form.value.due_date, form.value.due_time) || form.value.end_time,
       parent_id: form.value.parent_id || '',
       recur_type: form.value.recur_type || '',
       recur_count: form.value.recur_type === 'weekly' ? (Number(form.value.recur_count) || 1) : 1,

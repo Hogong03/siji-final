@@ -220,8 +220,10 @@ describe('buildEnterButtons：对话里预置的按钮', () => {
   it('没有重复按钮，空输入返回空数组', () => {
     const keys = buildEnterButtons(summary()).map(b => b.key)
     expect(new Set(keys).size).toBe(keys.length)
-    expect(buildEnterButtons(null)).toEqual([])
-    expect(buildEnterButtons(undefined)).toEqual([])
+    // 3.10.0：没有摘要（欢迎语开场）时通用三个按钮照给 —— 开场消息与进入总结共用一套操作行
+    const generic = ['note', 'diary-new', 'plan-new']
+    expect(buildEnterButtons(null).map(b => b.key)).toEqual(generic)
+    expect(buildEnterButtons(undefined).map(b => b.key)).toEqual(generic)
   })
 
   it('按钮是纯数据，能跟着消息一起落盘', () => {

@@ -14,6 +14,7 @@ import { logger } from './logger.js'
 import { getReminderSettings, saveReminderSettings, setPlanReminder, getPlanReminder, removePlanReminder } from './reminder/settings.js'
 import { cleanupTriggered } from './reminder/scheduler.js'
 import { initReminder, checkAllReminders } from './reminder/scheduler.js'
+import { ensureNotifyPermission } from './reminder/notifier.js'
 
 const CHECK_INTERVAL_MS = 60 * 1000
 
@@ -27,6 +28,8 @@ let checkTimer = null
  */
 export function startReminderChecker() {
   if (checkTimer) return
+  // 安卓 13+ 先要通知权限，否则到点提醒弹不出来（3.10.0）
+  ensureNotifyPermission()
   setTimeout(() => {
     cleanupTriggered()
     checkAllReminders()

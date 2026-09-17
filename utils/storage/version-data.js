@@ -2,10 +2,11 @@
  * 版本历史默认数据（聚合入口）
  *
  * 数据按大版本分段存放于 utils/storage/version-log/，每段是纯数组（新版本在前）。
- * 新增版本记录：写对应段文件顶部（最新段为 version-log/3.9.js），本文件只需在 getDefaultHistory 顶部加一段。
+ * 新增版本记录：写对应段文件顶部（最新段为 version-log/3.10.js），本文件只需在 getDefaultHistory 顶部加一段。
  * 分段原因：原单文件 2065 行，超出项目 300 行红线。
  */
 
+import { V310 } from './version-log/3.10.js'
 import { V39 } from './version-log/3.9.js'
 import { V38 } from './version-log/3.8.js'
 import { V37 } from './version-log/3.7.js'
@@ -23,6 +24,7 @@ import { V1X } from './version-log/1.x.js'
 
 export function getDefaultHistory() {
   return [
+    ...V310,
     ...V39,
     ...V38,
     ...V37,

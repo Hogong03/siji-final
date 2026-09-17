@@ -408,3 +408,22 @@ describe('聊天历史里的文件', () => {
     ])
   })
 })
+
+/* ==================== 3.10.0：放宽可读类型 + 图片走识别通道 ==================== */
+
+describe('文件类型放宽（3.10.0）', () => {
+  it('新增的文本类后缀都能当文本读', () => {
+    const added = ['note.mdx', 'doc.rst', 'x.adoc', 'a.org', 'b.ndjson', 'c.xhtml', 'page.svg', 'd.plist', 'sub.ssa', 'e.kts', 'f.cc', 'g.zsh', 'h.cmd', 'i.patch', 'j.diff', 'k.graphql', 'l.proto']
+    added.forEach(name => expect(classifyFile(name, '')).toBe('text'))
+  })
+
+  it('SVG 按文本读（mime 是 image/svg+xml，但内容是 XML）', () => {
+    expect(classifyFile('logo.svg', 'image/svg+xml')).toBe('text')
+  })
+
+  it('常见图片仍然走识别通道', () => {
+    expect(classifyFile('shot.png', '')).toBe('image')
+    expect(classifyFile('photo.HEIC', '')).toBe('image')
+    expect(classifyFile('x.jpg', 'image/jpeg')).toBe('image')
+  })
+})

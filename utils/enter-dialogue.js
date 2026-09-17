@@ -16,6 +16,12 @@ import { formatSummaryTime, formatAwaySpan } from './enter-summary.js'
 /** 摘要消息标记：chat-session 判空会话、页面渲染操作行都认这个字段 */
 export const ENTER_SUMMARY_FLAG = '_isEnterSummary'
 
+/** 开场白标记：与进入总结一样算「壳」（判空会话、冷启动清理都认它） */
+export const WELCOME_FLAG = '_isWelcome'
+
+/** 开场消息标记（3.10.0）：欢迎语与进入总结都算「开场」，页面按它渲染操作行 */
+export const OPENER_FLAG = '_isOpener'
+
 /** 摘要消息最多念几条计划事件（其余归入「还有 N 项」） */
 export const ENTER_LINE_LIMIT = 3
 
@@ -74,24 +80,65 @@ export function buildEnterLines(summary) {
  */
 export function buildEnterButtons(summary) {
   const out = []
-  if (!summary) return out
   const add = (key, label, action, value) => {
     if (out.some(b => b.key === key)) return
     out.push({ key: key, label: label, action: action, value: value })
   }
 
-  if ((summary.eventsTotal || 0) > 0) {
-    add('detail', '查看详情', 'navigate', enterSummaryRoute(summary))
-    add('plan', '看计划', 'navigate', '/pages/plan/index')
+  // 摘要相关按钮：没有摘要（欢迎语开场）时跳过，但通用三个照给（3.10.0）
+  if (summary) {
+    if ((summary.eventsTotal || 0) > 0) {
+      add('detail', '查看详情', 'navigate', enterSummaryRoute(summary))
+      add('plan', '看计划', 'navigate', '/pages/plan/index')
+    }
+    if ((summary.diaryCount || 0) > 0) add('diary', '看新记录', 'navigate', '/pages/diary/list')
+    if (summary.weekBill && summary.weekBill.text) add('bill', '看账单', 'navigate', '/pages/bill/index')
+    if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
   }
-  if ((summary.diaryCount || 0) > 0) add('diary', '看新记录', 'navigate', '/pages/diary/list')
-  if (summary.weekBill && summary.weekBill.text) add('bill', '看账单', 'navigate', '/pages/bill/index')
-  if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
 
   add('note', '记一笔', 'prefill', '记一笔 ')
   add('diary-new', '写个记录', 'prefill', '写个记录：')
   add('plan-new', '定个计划', 'prefill', '帮我定个计划')
   return out
+}
+
+/**
+ * 开场消息的预置按钮：没有进展可播报时用哪几个
+ * 与进入总结共用 buildEnterButtons，保证「对话里所有按钮都点得动」的口径一致
+ * @returns {Array<{key: string, label: string, action: string, value: string}>}
+ */
+export function buildWelcomeButtons() {
+  return buildEnterButtons(null)
+}
+
+/**
+ * 把开场白写成一条可入对话的 AI 消息（3.10.0）
+ * 与进入总结消息的区别只有内容：没有进展可播报时用它，操作行按钮完全一样
+ * @param {string} text 开场白正文
+ * @returns {Object|null} { role, content, _isWelcome, _isOpener, _enterButtons }，空内容返回 null
+ */
+export function buildWelcomeMessage(text) {
+  const content = String(text == null ? '' : text).trim()
+  if (!content) return null
+  const message = {
+    role: 'assistant',
+    content: content,
+    _isOpener: true,
+    _enterButtons: buildWelcomeButtons()
+  }
+  message[WELCOME_FLAG] = true
+  return message
+}
+
+/**
+ * 这条消息要不要渲染操作行（进入总结与开场白都渲染 —— 按钮都点得动是硬要求）
+ * @param {Object} message
+ * @returns {boolean}
+ */
+export function hasOpenerActions(message) {
+  if (!message) return false
+  const buttons = Array.isArray(message._enterButtons) ? message._enterButtons : []
+  return (message[ENTER_SUMMARY_FLAG] === true || message[OPENER_FLAG] === true) && buttons.length > 0
 }
 
 /**

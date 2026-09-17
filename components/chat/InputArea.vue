@@ -7,8 +7,8 @@
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed } from 'vue'
-import { chooseAndCompress, compressFileObject } from '@/utils/image.js'
-import { pickOneFile, readPickedFile, fileCardText } from '@/utils/files/index.js'
+import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
+import { pickOneFile, readPickedFile, fileCardText, classifyFile } from '@/utils/files/index.js'
 
 const props = defineProps({
 	modelValue: { type: String, default: '' },
@@ -66,6 +66,17 @@ async function pickFile() {
 	try {
 		const picked = await pickOneFile()
 		if (!picked.ok) { hint(picked.reason); return }
+		// 3.10.0：选到图片就当图片发（复用识别通道），不再要求用户再点一次图片按钮
+		if (classifyFile(picked.pick.name, picked.pick.mime) === 'image') {
+			const compressed = await compressImagePath(picked.pick.path)
+			if (compressed) {
+				selectedImage.value = compressed
+				emit('image-selected', compressed)
+				return
+			}
+			hint('这张图片读不了，换一张试试')
+			return
+		}
 		const r = await readPickedFile(picked.pick)
 		if (!r.ok) { hint(r.reason); return }
 		selectedFile.value = r

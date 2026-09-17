@@ -96,12 +96,14 @@ export function persistConversations(conversations, activeConversationId) {
       // 只有总结」的空壳会被当成有内容的会话：列表里堆壳、coldStart 清不掉、
       // 「回去接着聊」跳到一个和大厅长得一模一样的壳上（看着像没跳）
       if (m._isWelcome) item._isWelcome = true
+      if (m._isOpener) item._isOpener = true
       if (m._isEnterSummary) {
         item._isEnterSummary = true
         if (m._enterSummaryKind) item._enterSummaryKind = m._enterSummaryKind
-        if (Array.isArray(m._enterButtons)) item._enterButtons = m._enterButtons
         if (m._enterSummaryDigest) item._enterSummaryDigest = m._enterSummaryDigest
       }
+      // 按钮与「进入总结 / 开场白」解耦：任何消息带按钮都要存下来（3.10.0）
+      if (Array.isArray(m._enterButtons)) item._enterButtons = m._enterButtons
       if (m.execResult) item.execResult = m.execResult
       if (m.execResults) item.execResults = m.execResults
       if (m.actionCard) item.actionCard = m.actionCard

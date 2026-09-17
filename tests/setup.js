@@ -47,6 +47,9 @@ global.uni = {
   navigateTo() {},
   switchTab() {},
   showToast() {},
+  // 提醒通知会调 vibrate（App 端）；mock 缺了会抛错并中断整轮提醒检查
+  vibrate() {},
+  showModal() {},
   showLoading() {},
   hideLoading() {}
 }

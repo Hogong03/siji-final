@@ -81,6 +81,40 @@ export function computeReminderFire(plan, cfg, now = Date.now()) {
   return null
 }
 
+/** 计划里的时间是否带具体时刻（HH:MM） */
+function hasClockTime(s) {
+  return /(\d{1,2}):(\d{2})/.test(String(s || ''))
+}
+
+/**
+ * 3.10.0：没手动设过提醒的计划，默认怎么提醒
+ *
+ * 原来是「没设过提醒就不提醒」（checkAllReminders 里 `if (!reminderCfg || !reminderCfg.enabled) continue`），
+ * 于是 AI 建的计划、随手建的计划全都不会有任何提示 —— 用户要的是「到了时间就提醒」。
+ * 规则：
+ *   - 有具体时刻（deadline/due_date/start_time/estimated_time 带 HH:MM）→ 该时刻前 defaultAdvanceMin 分钟
+ *   - 只有日期 → 当天 09:00 提醒一次
+ *   - 用户自己关过的计划（配置存在但 enabled=false）仍然不提醒
+ * @returns {{ ts: number, dateKey: string } | null}
+ */
+export function computeDefaultFire(plan, settings, now = Date.now()) {
+  const raw = plan && (plan.deadline || plan.due_date || plan.start_time || plan.estimated_time)
+  if (!raw) return null
+  const baseTs = parseDateTimeToTs(raw)
+  if (baseTs == null) return null
+  const advanceMin = Number(settings && settings.defaultAdvanceMin)
+  const advance = Number.isFinite(advanceMin) && advanceMin >= 0 ? advanceMin : 30
+  let fireTs = 0
+  if (hasClockTime(raw)) {
+    fireTs = baseTs - advance * 60 * 1000
+  } else {
+    const d = new Date(baseTs)
+    d.setHours(9, 0, 0, 0)
+    fireTs = d.getTime()
+  }
+  return { ts: fireTs, dateKey: ymdOf(fireTs) }
+}
+
 /**
  * 初始化提醒模块，注入获取计划列表的函数
  * @param {function} getPlanListFn - 返回计划数组的函数
@@ -106,14 +140,20 @@ export function checkAllReminders() {
     const now = Date.now()
 
     for (const plan of plans) {
+      // 3.10.0：单条计划出问题（缺字段 / 通知 API 抛错）不能拖垮后面所有计划
+      try {
       if (plan.is_deleted === 1) continue
       if (plan.status === 2) continue
       if (plan.frozen_at || plan.someday_at) continue
 
       const reminderCfg = planMap[plan.client_id]
-      if (!reminderCfg || !reminderCfg.enabled) continue
+      if (reminderCfg && !reminderCfg.enabled) continue   // 用户明确关掉的，不提醒
 
-      const fire = computeReminderFire(plan, reminderCfg, now)
+      // 没手动设过提醒 → 用默认规则（有截止/开始时间就自动提醒，3.10.0）
+      const effectiveCfg = reminderCfg || { enabled: true, advanceMin: Number(settings.defaultAdvanceMin) || 30 }
+      const fire = reminderCfg
+        ? computeReminderFire(plan, reminderCfg, now)
+        : computeDefaultFire(plan, settings, now)
       if (!fire || now < fire.ts) continue
 
       const fireKey = fire.dateKey ? plan.client_id + '|' + fire.dateKey : plan.client_id
@@ -124,8 +164,11 @@ export function checkAllReminders() {
         logger.log(`[reminder] ${plan.title} in quiet hours, skip`)
         continue
       }
-      triggerReminder(plan, reminderCfg, isOverdue)
+      triggerReminder(plan, effectiveCfg, isOverdue)
       markTriggered(fireKey)
+      } catch (planErr) {
+        logger.warn('[reminder] plan failed:', plan && plan.title, planErr && planErr.message)
+      }
     }
   } catch (e) {
     logger.warn('[reminder] checkAllReminders error:', e)
