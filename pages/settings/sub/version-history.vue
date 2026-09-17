@@ -5,11 +5,15 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { getVersionHistory } from '@/utils/storage/version-history.js'
+import { getVersion, isRunningOlderThan } from '@/utils/version-check.js'
 
 const PREVIEW_COUNT = 5
 
 const history = ref([])
 const latestVersion = ref('')
+// 4.0.1：这一行原来叫「当前版本」却显示日志最新条 —— 反馈里用户据此以为自己的版本低
+const runningVersion = ref(getVersion())
+const runningOutdated = computed(() => isRunningOlderThan(latestVersion.value))
 // 展开状态：记录已展开的主版本号，最新组默认展开
 const openMajors = ref([])
 // 组内全量展开状态：记录已展开全部的主版本号
@@ -82,13 +86,19 @@ function goDetail(version) {
 
 <template>
   <view class="version-page">
-    <!-- 当前版本标识 -->
+    <!-- 当前运行版本 -->
     <view class="current-banner">
       <view class="current-left">
-        <text class="current-label">当前版本</text>
-        <text class="current-version">v{{ latestVersion }}</text>
+        <text class="current-label">当前运行</text>
+        <text class="current-version">v{{ runningVersion }}</text>
       </view>
-      <text class="current-badge">最新</text>
+      <text v-if="!runningOutdated" class="current-badge">最新</text>
+      <text v-else class="current-badge current-badge-old">日志已到 v{{ latestVersion }}</text>
+    </view>
+
+    <!-- 跑的是旧构建时直说，并给出下一步 -->
+    <view v-if="runningOutdated" class="outdated-hint">
+      <text class="outdated-hint-text">你正在运行旧构建（v{{ runningVersion }}）。在 HBuilder X 里删掉 unpackage/dist 重新编译，并覆盖安装到手机后再看这里 → 显示 v{{ latestVersion }} 才算更新成功。</text>
     </view>
 
     <!-- 版本分组列表 -->
@@ -189,6 +199,25 @@ function goDetail(version) {
   padding: 4rpx 16rpx;
   border-radius: 20rpx;
   font-weight: 600;
+}
+
+/* 4.0.1：运行版本落后于日志时的徽标与提示条 */
+.current-badge-old {
+  background: #E4E4E7;
+  color: #18181B;
+}
+
+.outdated-hint {
+  margin: 16rpx 0 4rpx;
+  padding: 20rpx 24rpx;
+  background: #F4F4F5;
+  border-radius: 12rpx;
+}
+
+.outdated-hint-text {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #3F3F46;
 }
 
 /* 版本分组 */
@@ -379,6 +408,9 @@ function goDetail(version) {
   .current-label { color: #71717A; }
   .current-version { color: #18181B; }
   .current-badge { background: #18181B; color: #FAFAFA; }
+  .current-badge-old { background: #27272A; color: #FAFAFA; }
+  .outdated-hint { background: #18181B; }
+  .outdated-hint-text { color: #A1A1AA; }
   .group-head { background: #18181B; border-color: #27272A; }
   .g-caret { color: #71717A; }
   .g-name { color: #FAFAFA; }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import './setup.js'
-import { compareVersion, getVersion, getVersionStatus } from '@/utils/version-check.js'
+import { compareVersion, getVersion, getVersionStatus, isRunningOlderThan } from '@/utils/version-check.js'
 import manifest from '../manifest.json'
 
 describe('version-check.js', () => {
@@ -31,6 +31,14 @@ describe('version-check.js', () => {
   it('getVersion 等于 manifest.versionName（版本号不许再回落成 1.0.0）', () => {
     expect(getVersion()).toBe(manifest.versionName)
     expect(getVersion()).not.toBe('1.0.0')
+  })
+
+  it('isRunningOlderThan：运行版本落后于日志最新时为真（版本历史页据此提示旧构建）', () => {
+    // 运行版本 = manifest（4.x 起 getVersion 读编译进包的 versionName）
+    expect(isRunningOlderThan('1.0.0')).toBe(false)   // 日志比运行版本旧 → 不是旧构建
+    expect(isRunningOlderThan(getVersion())).toBe(false)
+    expect(isRunningOlderThan('99.0.0')).toBe(true)    // 日志已经更高 → 说明在跑旧构建
+    expect(isRunningOlderThan('')).toBe(false)         // 拿不到日志版本时不误报
   })
 
   it('getVersion 应返回版本字符串', () => {

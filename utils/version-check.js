@@ -216,6 +216,19 @@ export function getVersion() {
 /**
  * 获取版本检查状态摘要
  */
+/**
+ * 正在运行的版本是否落后于版本日志里最新的一条
+ * 用途：版本历史页自证「你跑的是不是旧构建」——反馈里长期分不清「日志最新」与「运行版本」
+ * @param {string} latest 版本日志最新条目的版本号
+ * @returns {boolean} 无法判断时返回 false（不误报）
+ */
+export function isRunningOlderThan(latest) {
+  if (!latest) return false
+  const running = getVersion()
+  if (!running) return false
+  return compareVersion(running, String(latest)) < 0
+}
+
 export function getVersionStatus() {
   const current = getCurrentVersion()
   const lastKnown = uni.getStorageSync(LAST_VERSION_KEY) || current
