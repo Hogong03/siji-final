@@ -136,6 +136,42 @@ export function buildOutlineTicks(outline) {
     }))
 }
 
+/**
+ * 阅读进度（0-100）：读到哪了 —— 底部进度条用
+ * 取「视口底部 ÷ 总高度」，比 scrollTop 更贴近「读完多少」的直觉
+ * @param {number} scrollTop
+ * @param {number} scrollHeight
+ * @param {number} clientHeight
+ * @returns {number} 0-100 的整数
+ */
+export function readingProgress(scrollTop, scrollHeight, clientHeight) {
+  const total = Number(scrollHeight) || 0
+  const view = Number(clientHeight) || 0
+  const top = Number(scrollTop) || 0
+  if (total <= 0 || view <= 0) return 0
+  if (view >= total) return 100
+  const pct = ((top + view) / total) * 100
+  return Math.max(0, Math.min(100, Math.round(pct)))
+}
+
+/**
+ * 当前读到哪一节（按进度落在哪个小节的区间里）
+ * @param {Array} outline extractOutline 的结果
+ * @param {number} progress 0-100
+ * @returns {{ index: number, title: string, total: number }|null}
+ */
+export function sectionAtProgress(outline, progress) {
+  const list = (Array.isArray(outline) ? outline : []).filter(s => s && s.title)
+  if (list.length === 0) return null
+  const p = Math.max(0, Math.min(100, Number(progress) || 0))
+  let hit = list[0]
+  for (const s of list) {
+    if (s.percent <= p + 0.001) hit = s
+    else break
+  }
+  return { index: list.indexOf(hit) + 1, title: hit.title, total: list.length }
+}
+
 /** 只保留有标题的章节（目录尺与预览用） */
 export function titledSections(sections) {
   return (Array.isArray(sections) ? sections : []).filter(s => s && s.title)

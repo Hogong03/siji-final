@@ -21,7 +21,7 @@ import {
   viewportRange, pickTickByPercent, pickTickByScroll, percentFromY,
   RULER_JUMP_INTERVAL, RULER_MIN_VIEWPORT
 } from '@/utils/chat-ruler.js'
-import { buildOutlineTicks, shouldShowOutline } from '@/utils/text-outline.js'
+import { buildOutlineTicks, shouldShowOutline, readingProgress, sectionAtProgress } from '@/utils/text-outline.js'
 
 const TOUCH_MOVE_SLOP = 8      // 位移超过该值才算拖动（否则算轻点）
 const MEASURE_DELAY = 150      // 尺寸测量防抖
@@ -42,6 +42,9 @@ export function useOutlineRuler(ctx) {
   const rulerHeight = ref(100)
   const rulerPreview = ref(null)
   const rulerDragging = ref(false)
+  // 4.1.0：阅读进度条 + 顶部「当前章节 3/8」
+  const readProgress = ref(0)
+  const activeSection = ref(null)
 
   const rulerViewportStyle = computed(() => ({
     top: rulerTop.value.toFixed(2) + '%',
@@ -100,6 +103,8 @@ export function useOutlineRuler(ctx) {
     const range = viewportRange(scrollTop, scrollHeight, clientHeight)
     rulerTop.value = range.top
     rulerHeight.value = Math.max(range.height, RULER_MIN_VIEWPORT)
+    readProgress.value = readingProgress(scrollTop, scrollHeight, clientHeight)
+    activeSection.value = sectionAtProgress(ctx.outline ? ctx.outline.value : [], readProgress.value)
     if (!_trackRect) measureSoon()
     if (rulerDragging.value) return
     const tick = pickTickByScroll(rulerTicks.value, scrollTop, scrollHeight, clientHeight)
@@ -197,6 +202,7 @@ export function useOutlineRuler(ctx) {
   }
 
   return {
+    readProgress, activeSection,
     rulerVisible, rulerTicks, rulerActiveKey,
     rulerTop, rulerHeight, rulerPreview, rulerDragging,
     rulerViewportStyle, rulerPreviewStyle,

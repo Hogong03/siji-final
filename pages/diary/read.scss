@@ -1,4 +1,4 @@
-/* 记录阅读页（3.9.0）— 纯黑白灰阶，零阴影零渐变；CSS 变量禁用，全部硬编码 */
+/* 记录阅读页版式（4.1.0）—— 纯黑白灰阶、零阴影零渐变；长文阅读优先：留白、行高、层级克制 */
 
 .read-page {
   display: flex;
@@ -8,53 +8,60 @@
   box-sizing: border-box;
 }
 
-/* ─── 头部 ─── */
+/* ─── 封面头部 ─── */
 .read-head {
-  padding: 24rpx 28rpx 16rpx;
-  border-bottom: 1rpx solid #F4F4F5;
   flex-shrink: 0;
+  padding: 28rpx 40rpx 24rpx;
 }
 
-.read-title {
-  display: block;
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #09090B;
-  line-height: 1.35;
-}
-
-.read-meta {
+.head-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12rpx;
-  margin-top: 14rpx;
 }
 
-.read-meta-text {
+.meta-text {
   font-size: 22rpx;
   color: #A1A1AA;
 }
 
-.read-tag {
+.meta-tag {
   font-size: 22rpx;
   color: #71717A;
-  background: #F4F4F5;
-  border-radius: 8rpx;
-  padding: 4rpx 12rpx;
 }
 
-.read-edit {
+/* 当前章节：贴在右侧，滚动时跟着变（阅读时的方位感） */
+.meta-section {
   margin-left: auto;
+  font-size: 22rpx;
+  color: #71717A;
+  max-width: 320rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.head-edit {
   font-size: 24rpx;
   color: #18181B;
   border: 1rpx solid #E4E4E7;
   border-radius: 10rpx;
-  padding: 6rpx 20rpx;
+  padding: 4rpx 18rpx;
 }
 
-.read-edit:active {
+.head-edit:active {
   opacity: 0.6;
+}
+
+.head-title {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #000000;
+  letter-spacing: 0.5rpx;
 }
 
 /* ─── 正文区 ─── */
@@ -62,6 +69,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
+  border-top: 1rpx solid #F4F4F5;
 }
 
 .read-scroll {
@@ -69,36 +77,77 @@
 }
 
 .read-content {
-  padding: 20rpx 28rpx 0;
+  padding: 32rpx 40rpx 0;
 }
 
-/* 有尺子时右边留出尺子宽度，正文不贴边 */
+/* 有尺子时左侧让出尺宽 + 留白 */
 .read-body.has-ruler .read-content {
-  padding-left: 68rpx;
+  padding-left: 76rpx;
 }
 
 .read-section {
+  margin-bottom: 24rpx;
+}
+
+/* 章节：编号 + 标题，上下留白撑开层级；正文紧随其后 */
+.read-section.is-chapter {
+  margin-top: 40rpx;
   margin-bottom: 28rpx;
 }
 
-.read-section-title {
-  display: block;
-  font-size: 30rpx;
+.read-section.is-chapter:first-child {
+  margin-top: 0;
+}
+
+.chapter-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.chapter-no {
+  font-size: 22rpx;
   font-weight: 700;
+  color: #A1A1AA;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1rpx;
+}
+
+.chapter-title {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 1.45;
   color: #09090B;
-  line-height: 1.4;
-  margin-bottom: 10rpx;
-  /* 小节标题左侧一道黑竖线：章节感 */
-  border-left: 6rpx solid #000000;
-  padding-left: 16rpx;
+}
+
+/* 正文段落节奏由 MarkdownRenderer 负责，这里只兜住间距 */
+.read-section :deep(.md-renderer) {
+  font-size: 28rpx;
+  line-height: 1.85;
+  color: #18181B;
 }
 
 .read-bottom-space {
   height: 120rpx;
 }
 
+/* 读完收尾 */
+.read-end {
+  display: flex;
+  justify-content: center;
+  padding: 48rpx 0 8rpx;
+}
+
+.read-end-text {
+  font-size: 22rpx;
+  color: #D4D4D8;
+  letter-spacing: 2rpx;
+}
+
 .read-empty {
-  padding: 80rpx 0;
+  padding: 120rpx 0;
   display: flex;
   justify-content: center;
 }
@@ -111,9 +160,9 @@
 /* ─── 目录尺 ─── */
 .read-ruler {
   position: absolute;
-  left: 8rpx;
-  top: 24rpx;
-  bottom: 24rpx;
+  left: 12rpx;
+  top: 32rpx;
+  bottom: 32rpx;
   width: 52rpx;
   display: flex;
   align-items: center;
@@ -130,13 +179,13 @@
 /* 视口指示：当前可见范围 */
 .ruler-viewport {
   position: absolute;
-  left: 26rpx;
-  width: 4rpx;
-  background: #D4D4D8;
-  border-radius: 4rpx;
+  left: 28rpx;
+  width: 3rpx;
+  background: #E4E4E7;
+  border-radius: 3rpx;
 }
 
-/* 刻度：每小节一个，文字标题在预览里显示 */
+/* 刻度：未选中细灰，选中加长变黑 */
 .ruler-tick {
   position: absolute;
   left: 0;
@@ -146,25 +195,27 @@
 
 .ruler-bar {
   position: absolute;
-  left: 20rpx;
-  top: -2rpx;
-  width: 16rpx;
-  height: 4rpx;
-  background: #A1A1AA;
-  border-radius: 4rpx;
+  left: 24rpx;
+  top: -1rpx;
+  width: 10rpx;
+  height: 2rpx;
+  background: #D4D4D8;
+  border-radius: 2rpx;
+  transition: width 0.12s ease;
 }
 
 .ruler-tick.tick-active .ruler-bar {
+  left: 18rpx;
+  width: 22rpx;
+  height: 4rpx;
+  top: -2rpx;
   background: #000000;
-  width: 26rpx;
-  top: -3rpx;
-  height: 6rpx;
 }
 
 /* 拖动预览：小节名 */
 .ruler-preview {
   position: absolute;
-  left: 46rpx;
+  left: 48rpx;
   transform: translateY(-50%);
   background: #000000;
   border-radius: 8rpx;
@@ -178,18 +229,64 @@
   white-space: nowrap;
 }
 
+/* ─── 回到顶部 ─── */
+.to-top {
+  position: fixed;
+  right: 32rpx;
+  bottom: 120rpx;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  border: 1rpx solid #E4E4E7;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+}
+
+.to-top-text {
+  font-size: 30rpx;
+  color: #18181B;
+  line-height: 1;
+}
+
+.to-top:active {
+  opacity: 0.6;
+}
+
+/* ─── 底部阅读进度 ─── */
+.read-progress {
+  flex-shrink: 0;
+  height: 3rpx;
+  background: #F4F4F5;
+}
+
+.read-progress-fill {
+  height: 100%;
+  background: #000000;
+  transition: width 0.12s linear;
+}
+
 /* ─── 深色模式 ─── */
 @media (prefers-color-scheme: dark) {
   .read-page { background: #000000; }
-  .read-head { border-color: #27272A; }
-  .read-title { color: #FAFAFA; }
-  .read-tag { background: #18181B; color: #A1A1AA; }
-  .read-edit { color: #FAFAFA; border-color: #3F3F46; }
-  .read-section-title { color: #FAFAFA; border-left-color: #FAFAFA; }
-  .read-empty-text { color: #52525B; }
-  .ruler-viewport { background: #3F3F46; }
-  .ruler-bar { background: #52525B; }
+  .read-body { border-top-color: #18181B; }
+  .meta-text, .read-empty-text { color: #52525B; }
+  .meta-tag, .meta-section { color: #A1A1AA; }
+  .head-edit { color: #FAFAFA; border-color: #3F3F46; }
+  .head-title { color: #FAFAFA; }
+  .chapter-no { color: #52525B; }
+  .chapter-title { color: #FAFAFA; }
+  .read-section :deep(.md-renderer) { color: #D4D4D8; }
+  .read-end-text { color: #3F3F46; }
+  .ruler-viewport { background: #27272A; }
+  .ruler-bar { background: #3F3F46; }
   .ruler-tick.tick-active .ruler-bar { background: #FAFAFA; }
   .ruler-preview { background: #FAFAFA; }
   .ruler-preview-text { color: #000000; }
+  .to-top { background: #18181B; border-color: #27272A; }
+  .to-top-text { color: #FAFAFA; }
+  .read-progress { background: #18181B; }
+  .read-progress-fill { background: #FAFAFA; }
 }

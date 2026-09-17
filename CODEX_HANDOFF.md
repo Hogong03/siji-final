@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 75 文件 / 1083 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v4.0.1（版本历史页区分「当前运行 / 日志最新」+ `isRunningOlderThan`；含 4.0.0 的版本号来源修复） |
+| 测试 | 75 文件 / 1088 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v4.1.0（六级复习资料 6 篇 + 阅读页版式重做；含 4.0.x 的版本号自证） |
 
 ---
 

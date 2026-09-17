@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 75 文件 / 1083 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.0.1（版本历史页区分「当前运行 / 日志最新」，旧构建一眼可辨 + 直接给重编译步骤） |
+| 测试 | 75 文件 / 1088 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.1.0（六级复习资料 6 篇入库（标签「复习资料」）+ 记录阅读页版式重做：封面头部 / 章节编号 / 底部进度条 / 当前章节 / 回到顶部 / 目录尺细化） |
 
 ---
 
@@ -268,6 +268,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改开场对话 / 卡片按钮 | `utils/enter-dialogue.js`（`buildWelcomeMessage` / `hasOpenerActions` / `buildEnterButtons(null)` 给通用按钮）+ `pages/chat/index.vue` 的 `.enter-actions` 渲染条件 + `components/chat/MessageBubble.vue` 的 `emitWelcomeChip`（按钮事件必须走 `uni.$emit`，与页面的 `uni.$on` 同一条通道）+ `store/chat/persist.js` 的 `_enterButtons` 白名单 |
 | 改计划时间显示 / 回填 | 计划时间有四个字段在流转：`start_time` / `end_time` / `estimated_time` / `due_date`（+ `deadline` 冗余）。**回填要依次回落**（`utils/ai` 之外看 `pages/plan/composables/usePlanForm.js` 的 `applyStoredItem`：开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上看着像没有时间 |\n| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
 | 改计划时间 / 提醒 | `pages/plan/composables/usePlanForm.js`（`persistForm` 编辑值优先）+ `components/plan/PlanTimeSection.vue`（picker 里用 view，别用 disabled input）+ `utils/reminder/scheduler.js` 的 `computeDefaultFire` + `utils/reminder/notifier.js` 的 `ensureNotifyPermission` |
+| 改记录阅读页版式 | `pages/diary/read.vue` + `read.scss`（**版式基线**：封面头部 → 章节编号 01 + 加粗标题 → 正文 28rpx/1.85；底部进度条 + 顶部当前章节 + 回到顶部）+ `utils/text-outline.js` 的 `readingProgress` / `sectionAtProgress` + `composables/useOutlineRuler.js` 的 `readProgress` / `activeSection` |
 | 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
@@ -280,6 +281,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL`（度量语义变了就 +1，报告与页面都会显示）+ `formatFailureReport(rows, meta)` |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（23 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置，缺前置判跳过）+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
+| 加六级内容（方法 / 资料） | 方法篇 `utils/storage/cet6-tips.js`（4 章，标签「技巧」）+ 资料篇 `utils/storage/cet6-material.js`（6 篇，标签「复习资料」）；都在 `App.vue` 的 appReady 调 `ensureCet6Tips()` 补发，改内容要 +`CET6_SEED_VERSION` |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/cet6-tips.js` 的 `ensureCet6Tips`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates` |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
@@ -329,7 +331,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 75 文件 / 1083 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 75 文件 / 1088 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

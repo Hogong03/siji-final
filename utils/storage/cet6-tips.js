@@ -1,6 +1,9 @@
 /**
  * cet6-tips.js — 内置的六级技巧（3.8.0 首版 12 条短技巧；3.9.0 改为 4 章长文）
  *
+ * 4.1.0：方法 4 章之外，加入 6 篇复习资料（高频词 / 写作模板库 / 翻译词组 / 听力场景词 /
+ *        阅读同义替换表 / 考场流程），标签「复习资料」；两套内容在记录页分别筛。
+ *
  * 3.9.0 改版原因：12 条短技巧适合「查」，不适合「复习」。
  * 现在按章节组织成 4 篇长文（写作 / 听力 / 阅读 / 翻译），每篇内部用 Markdown 标题分小节，
  * 在记录阅读页（pages/diary/read.vue）里配左侧目录尺，按小节跳转。
@@ -17,18 +20,22 @@
  * 复习入口：记录 → 时间范围「全部时间」→ 标签「技巧」→ 点开 → 右上「阅读」。
  */
 import { getRawList, getMonthFromDate } from './helpers.js'
+import { CET6_MATERIALS } from './cet6-material.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
 import { addCustomTag } from './tags.js'
 
-/** 统一的标签名：在记录页按这个标签筛 */
+/** 方法篇的标签：在记录页按这个标签筛 */
 export const CET6_TIP_TAG = '技巧'
+
+/** 复习资料篇的标签（4.1.0）：与「技巧」分开筛 —— 技巧是方法，资料是查得到的料 */
+export const CET6_MATERIAL_TAG = '复习资料'
 
 /** 技巧归属的标签种类（学习） */
 export const CET6_TIP_CATEGORY = 'study'
 
 /** 种子标记与版本（改内容就 +1，ensureCet6Tips 据此刷新） */
 export const CET6_SEED_MARK = 'cet6'
-export const CET6_SEED_VERSION = 2
+export const CET6_SEED_VERSION = 3
 
 /** 3.8.0 那批短技巧的 client_id：改了章节版之后要把它们撤掉 */
 export const CET6_TIP_IDS_V1 = [
@@ -176,14 +183,21 @@ const TRANSLATION = [
 ].join('\n')
 
 /**
- * 4 篇章节长文（顺序即记录列表里的先后）
+ * 全部内置篇目：4 章方法（技巧） + 6 篇资料（复习资料），顺序即记录列表里的先后
  * content 用 Markdown：## 小节标题 → 阅读页会切成小节，左侧目录尺按小节跳转
  */
 export const CET6_TIPS = [
-  { client_id: 'tip_cet6_ch_writing', title: '六级·写作章：三段式骨架 + 只背三个句型', chapter: '写作', content: WRITING },
-  { client_id: 'tip_cet6_ch_listening', title: '六级·听力章：视听一致（听到什么选什么）', chapter: '听力', content: LISTENING },
-  { client_id: 'tip_cet6_ch_reading', title: '六级·阅读章：放弃选词填空，时间给仔细阅读', chapter: '阅读', content: READING },
-  { client_id: 'tip_cet6_ch_translation', title: '六级·翻译章：简单句 + 绝不空着', chapter: '翻译', content: TRANSLATION }
+  { client_id: 'tip_cet6_ch_writing', title: '六级·写作章：三段式骨架 + 只背三个句型', chapter: '写作', tag: CET6_TIP_TAG, content: WRITING },
+  { client_id: 'tip_cet6_ch_listening', title: '六级·听力章：视听一致（听到什么选什么）', chapter: '听力', tag: CET6_TIP_TAG, content: LISTENING },
+  { client_id: 'tip_cet6_ch_reading', title: '六级·阅读章：放弃选词填空，时间给仔细阅读', chapter: '阅读', tag: CET6_TIP_TAG, content: READING },
+  { client_id: 'tip_cet6_ch_translation', title: '六级·翻译章：简单句 + 绝不空着', chapter: '翻译', tag: CET6_TIP_TAG, content: TRANSLATION },
+  ...CET6_MATERIALS.map(m => ({
+    client_id: m.client_id,
+    title: m.title,
+    chapter: m.chapter,
+    tag: CET6_MATERIAL_TAG,
+    content: m.content
+  }))
 ]
 
 /** 全部技巧的 client_id（测试与排查用） */
@@ -264,7 +278,7 @@ export function ensureCet6Tips(now) {
     if (!target) return
     target.title = t.title
     target.content = t.content
-    target.tags = [CET6_TIP_TAG]
+    target.tags = [t.tag || CET6_TIP_TAG]
     target.record_type = 'note'
     target.seed = CET6_SEED_MARK
     target.seed_v = CET6_SEED_VERSION
@@ -283,7 +297,7 @@ export function ensureCet6Tips(now) {
         content: t.content,
         record_type: 'note',
         type: 'diary',
-        tags: [CET6_TIP_TAG],
+        tags: [t.tag || CET6_TIP_TAG],
         category: '',
         images: [],
         pinned: 0,
@@ -300,9 +314,10 @@ export function ensureCet6Tips(now) {
     asyncSetStorageJSON(key, raw.concat(records))
   }
 
-  // 标签注册表补齐「技巧」（归到「学习」种类）
+  // 标签注册表补齐「技巧」与「复习资料」（都归到「学习」种类）
   try {
     addCustomTag('diary', CET6_TIP_TAG, null, null, CET6_TIP_CATEGORY)
+    addCustomTag('diary', CET6_MATERIAL_TAG, null, null, CET6_TIP_CATEGORY)
   } catch (e) { /* 标签表写失败不影响记录本身 */ }
 
   return {

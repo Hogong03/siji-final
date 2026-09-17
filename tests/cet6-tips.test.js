@@ -10,7 +10,7 @@ import { resetStorage } from './setup.js'
 import './setup.js'
 import {
   ensureCet6Tips, CET6_TIPS, CET6_TIP_IDS, CET6_TIP_IDS_V1, CET6_TIP_TAG,
-  CET6_SEED_MARK, CET6_SEED_VERSION
+  CET6_MATERIAL_TAG, CET6_SEED_MARK, CET6_SEED_VERSION
 } from '../utils/storage/cet6-tips.js'
 import { getRawList, getMonthFromDate } from '../utils/storage/helpers.js'
 import { getTags } from '../utils/storage/tags.js'
@@ -25,14 +25,15 @@ const alive = (key = KEY) => getRawList(key).filter(r => r.is_deleted !== 1)
 describe('ensureCet6Tips：首次补齐 4 章长文', () => {
   beforeEach(() => resetStorage())
 
-  it('4 章全部写进当月分片，带「技巧」标签与种子标记', () => {
+  it('全部篇目写进当月分片：4 章方法（技巧）+ 6 篇资料（复习资料）', () => {
     const r = ensureCet6Tips(NOW)
     expect(r.added).toBe(CET6_TIPS.length)
-    expect(r.added).toBe(4)
+    expect(r.added).toBe(10)
     const rows = alive()
-    expect(rows).toHaveLength(4)
+    expect(rows).toHaveLength(10)
     rows.forEach(row => {
-      expect(row.tags).toEqual([CET6_TIP_TAG])
+      expect(row.tags.length).toBe(1)
+      expect([CET6_TIP_TAG, CET6_MATERIAL_TAG]).toContain(row.tags[0])
       expect(row.record_type).toBe('note')
       expect(row.seed).toBe(CET6_SEED_MARK)
       expect(row.seed_v).toBe(CET6_SEED_VERSION)
@@ -51,15 +52,27 @@ describe('ensureCet6Tips：首次补齐 4 章长文', () => {
     })
   })
 
-  it('「技巧」标签进标签注册表并归到学习种类', () => {
+  it('「技巧」与「复习资料」都进标签注册表并归到学习种类', () => {
     ensureCet6Tips(NOW)
-    const tag = getTags('diary').find(t => t.name === CET6_TIP_TAG)
-    expect(tag).toBeTruthy()
-    expect(tag.categoryId).toBe('study')
+    ;[CET6_TIP_TAG, CET6_MATERIAL_TAG].forEach(name => {
+      const tag = getTags('diary').find(t => t.name === name)
+      expect(tag).toBeTruthy()
+      expect(tag.categoryId).toBe('study')
+    })
   })
 
-  it('四章标题覆盖写作 / 听力 / 阅读 / 翻译，且带章号', () => {
-    expect(CET6_TIPS.map(t => t.chapter)).toEqual(['写作', '听力', '阅读', '翻译'])
+  it('资料篇目标签是「复习资料」，方法篇目是「技巧」（两套分开筛）', () => {
+    const tips = CET6_TIPS.filter(t => (t.tag || CET6_TIP_TAG) === CET6_TIP_TAG)
+    const mats = CET6_TIPS.filter(t => t.tag === CET6_MATERIAL_TAG)
+    expect(tips).toHaveLength(4)
+    expect(mats).toHaveLength(6)
+    expect(mats.map(t => t.chapter)).toEqual(['词汇', '写作', '翻译', '听力', '阅读', '考场'])
+    mats.forEach(m => expect(m.content.length).toBeGreaterThan(400))
+  })
+
+  it('四章方法篇覆盖写作 / 听力 / 阅读 / 翻译，且标题带章号', () => {
+    const tips = CET6_TIPS.filter(t => (t.tag || CET6_TIP_TAG) === CET6_TIP_TAG)
+    expect(tips.map(t => t.chapter)).toEqual(['写作', '听力', '阅读', '翻译'])
     CET6_TIPS.forEach(t => expect(t.title.indexOf('六级·')).toBe(0))
   })
 
@@ -72,10 +85,10 @@ describe('ensureCet6Tips：首次补齐 4 章长文', () => {
     expect(all).toContain('96')
   })
 
-  it('client_id 唯一且前缀正确', () => {
+  it('client_id 唯一且前缀正确（方法篇 tip_cet6_ / 资料篇 mat_cet6_）', () => {
     const ids = CET6_TIPS.map(t => t.client_id)
     expect(new Set(ids).size).toBe(ids.length)
-    ids.forEach(id => expect(id.startsWith('tip_cet6_')).toBe(true))
+    ids.forEach(id => expect(/^(tip|mat)_cet6_/.test(id)).toBe(true))
     expect(CET6_TIP_IDS).toEqual(ids)
   })
 })
@@ -87,7 +100,7 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     ensureCet6Tips(NOW)
     const again = ensureCet6Tips(NOW)
     expect(again.added).toBe(0)
-    expect(alive()).toHaveLength(4)
+    expect(alive()).toHaveLength(10)
   })
 
   it('3.8.0 的 12 条短技巧会被撤掉（软删），不留两套', () => {
@@ -97,14 +110,14 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     }))))
     const r = ensureCet6Tips(NOW)
     expect(r.superseded).toBe(12)
-    expect(r.added).toBe(4)
+    expect(r.added).toBe(10)
     // 旧的没了、新的在
     const rows = getRawList(KEY)
     CET6_TIP_IDS_V1.forEach(id => {
       const hit = rows.find(x => x.client_id === id)
       expect(hit.is_deleted).toBe(1)
     })
-    expect(alive()).toHaveLength(4)
+    expect(alive()).toHaveLength(10)
   })
 
   it('已经删掉过的旧短技巧不再动（用户主动删的不复活）', () => {
@@ -113,7 +126,7 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     }))))
     const r = ensureCet6Tips(NOW)
     expect(r.superseded).toBe(0)
-    expect(r.added).toBe(4)
+    expect(r.added).toBe(10)
   })
 
   it('用户删掉的章节技巧不复活、也不刷新', () => {
@@ -138,7 +151,7 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     uni.setStorageSync(KEY, JSON.stringify(rows))
 
     const r = ensureCet6Tips(NOW)
-    expect(r.updated).toBe(4)
+    expect(r.updated).toBe(10)
     getRawList(KEY).forEach(row => {
       expect(row.seed_v).toBe(CET6_SEED_VERSION)
       expect(row.content).not.toBe('旧内容')
@@ -152,7 +165,7 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     const r = ensureCet6Tips(next)
     expect(r.added).toBe(0)
     expect(getRawList('diary_' + getMonthFromDate(next))).toHaveLength(0)
-    expect(alive()).toHaveLength(4)
+    expect(alive()).toHaveLength(10)
   })
 
   it('已有用户记录时是追加，不覆盖', () => {
@@ -160,6 +173,6 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     ensureCet6Tips(NOW)
     const rows = getRawList(KEY)
     expect(rows.some(r => r.client_id === 'diary_user_1')).toBe(true)
-    expect(alive()).toHaveLength(5)
+    expect(alive()).toHaveLength(11)
   })
 })

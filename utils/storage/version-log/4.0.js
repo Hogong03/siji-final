@@ -6,6 +6,43 @@
 
 export const V40 = [
   {
+    version: '4.1.0',
+    date: '2026-09-17',
+    title: '4.1.0 六级复习资料入库（6 篇）+ 记录阅读页版式重做（进度条 / 当前章节 / 目录尺细化）',
+    summary: [
+      '新增 6 篇六级复习资料，标签「复习资料」（与 4 章方法的「技巧」分开筛）：高频词速记（6 大话题按搭配记）/ 写作模板库（骨架 + 万能句 10 条 + 过渡词 + 替换词）/ 翻译高频词组（文化教育经济社会 + 万能句型 6 条）/ 听力场景词（校园职场交通医疗购物 + 讲座框架词）/ 阅读同义替换表（动词名词连接词 40 组 + 三个选项陷阱）/ 考场时间分配与流程（整卷顺序、取舍、考前一周与当天）',
+      '内容对准实测短板：听力 140（场景词 + 视听一致）、阅读 131（同义替换 + 选词填空限时 5 分钟）、写作翻译 96（模板句 + 简单句优先）；每篇按 ## 分小节，阅读页目录尺可直接跳',
+      '阅读页版式重做（本项目阅读模式的设计基线）：一屏只有三层信息 —— 封面头部（元信息 + 大标题 + 编辑）/ 章节（两位编号 01 + 加粗标题，去掉上一版的粗黑竖线）/ 正文（28rpx、行高 1.85、左 40rpx 留白，有尺时 76rpx）',
+      '阅读辅助三件：顶部右侧常驻「当前章节 3/8」（滚动跟着变）、底部 3rpx 阅读进度条（按视口底部 ÷ 总高度算）、滚过一屏出现「回到顶部」；目录尺刻度细化（未选中 10rpx 浅灰 / 选中 22rpx 纯黑），拖动时浮出小节名',
+      '最后加一句「— 读完 —」收尾，读完有结束感；深浅色两套色值都给全'
+    ],
+    categories: [
+      {
+        title: '六级复习资料（4.1.0）',
+        items: [
+          'utils/storage/cet6-material.js（新增，约 500 行纯数据）：VOCAB / WRITING_LIB / TRANSLATION_LIB / LISTENING_LIB / READING_LIB / EXAM_FLOW 六篇 + CET6_MATERIALS 清单',
+          'utils/storage/cet6-tips.js：CET6_TIPS 改为「4 章方法 + 6 篇资料」（展开 CET6_MATERIALS）；每篇带自己的 tag；新增导出 CET6_MATERIAL_TAG（复习资料）；落库与刷新时按各自 tag 打标签；两个标签都注册进「学习」种类；CET6_SEED_VERSION 2 → 3（老用户自动补发这 6 篇）',
+        ]
+      },
+      {
+        title: '阅读页版式（4.1.0）',
+        items: [
+          'pages/diary/read.vue + read.scss：封面头部（字数 / 小节数 / 标签 / 当前章节 / 编辑）、章节编号（sectionNumbers 只给有标题的节编号）、正文交给 MarkdownRenderer（:deep 兜字号行高）、读完收尾、回到顶部按钮、底部进度条',
+          'utils/text-outline.js：新增 readingProgress（视口底部 ÷ 总高度，夹在 0-100）与 sectionAtProgress（进度落在哪一节）',
+          'composables/useOutlineRuler.js：syncScroll 顺带算 readProgress 与 activeSection；对外多返回这两个 ref'
+        ]
+      },
+      {
+        title: '测试（4.1.0）',
+        items: [
+          'tests/cet6-tips.test.js：篇目数 4 → 10、两套标签分开筛（方法 4 / 资料 6）、两个标签都进注册表、client_id 前缀 tip_ / mat_ 都合法',
+          'tests/text-outline.test.js（+5 例）：readingProgress 的四种取值与脏数据、sectionAtProgress 按进度落节与空输入',
+          '全量：75 文件 / 1088 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.0.1',
     date: '2026-09-17',
     title: '4.0.1 版本历史页不再把「日志最新」写成「当前版本」（旧构建一眼可辨）',

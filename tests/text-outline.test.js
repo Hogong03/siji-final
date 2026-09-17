@@ -148,3 +148,43 @@ describe('shouldShowOutline / buildOutlineTicks / titledSections', () => {
     expect(titledSections(undefined)).toEqual([])
   })
 })
+
+/* ==================== 4.1.0：阅读进度与当前章节 ==================== */
+
+import { readingProgress, sectionAtProgress } from '../utils/text-outline.js'
+
+describe('readingProgress：读到多少（底部进度条）', () => {
+  it('视口底部 ÷ 总高度，夹在 0-100', () => {
+    expect(readingProgress(0, 2000, 1000)).toBe(50)
+    expect(readingProgress(1000, 2000, 1000)).toBe(100)
+    expect(readingProgress(0, 1000, 1000)).toBe(100)   // 内容不足一屏 → 直接算读完
+    expect(readingProgress(0, 20000, 1000)).toBe(5)
+  })
+
+  it('脏数据不炸：高度为 0 / 负数 / 非数字', () => {
+    expect(readingProgress(0, 0, 100)).toBe(0)
+    expect(readingProgress(0, -5, 100)).toBe(0)
+    expect(readingProgress(NaN, NaN, NaN)).toBe(0)
+    expect(readingProgress(99999, 2000, 1000)).toBe(100)
+  })
+})
+
+describe('sectionAtProgress：当前读到哪一节', () => {
+  const outline = [
+    { key: 'sec-0', index: 0, title: '一、总述', percent: 0 },
+    { key: 'sec-1', index: 1, title: '二、方法', percent: 40 },
+    { key: 'sec-2', index: 2, title: '三、练习', percent: 80 }
+  ]
+
+  it('按进度落到对应小节，并给出序号与总数', () => {
+    expect(sectionAtProgress(outline, 0)).toEqual({ index: 1, title: '一、总述', total: 3 })
+    expect(sectionAtProgress(outline, 55).title).toBe('二、方法')
+    expect(sectionAtProgress(outline, 100)).toEqual({ index: 3, title: '三、练习', total: 3 })
+  })
+
+  it('没有小节 / 空输入返回 null', () => {
+    expect(sectionAtProgress([], 50)).toBe(null)
+    expect(sectionAtProgress(null, 50)).toBe(null)
+    expect(sectionAtProgress([{ key: 'sec-0', title: '' }], 50)).toBe(null)
+  })
+})
