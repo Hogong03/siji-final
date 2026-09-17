@@ -6,6 +6,35 @@
 
 export const V310 = [
   {
+    version: '3.10.1',
+    date: '2026-09-17',
+    title: '3.10.1 计划为什么没时间：模型不知道中秋国庆是哪天（补节假日表 + 执行器兜底）',
+    summary: [
+      '真因：反馈里的「本地深度游三日（中秋国庆）」计划，deadline / due_date / start_time / end_time 全是空串 —— 用户说了「中秋国庆、玩三天」，但模型不知道 2026 年中秋国庆是哪几天，只能留空；计划没时间，到点提醒也就无从谈起',
+      '提示词层：新增 utils/holidays.js（公历节日按年推算 + 农历节日查表，表里没有的年份不注入，宁可不给也不编错）；prompt-builder 动态段注入「接下来的节假日（含日期与距今天数）」；CORE_ACTIONS 与 BEHAVIOR_RULES 补铁律 —— 用户提到节日/假期/周次必须换算成具体日期',
+      '执行器层（确定性兜底）：create_plan / update_plan 在「模型没给任何时间、而标题或描述里提到节日」时，自动补上节日区间（中秋国庆 → 2026-09-25 至 2026-10-07）；模型给了时间就完全不动',
+      '你上一轮反馈的「时间可以直接编辑了」是 3.10.0 的修复（picker 里 disabled input 换成 view）在生效 —— 但这条计划本身没有时间可编辑，所以看着还是空的'
+    ],
+    categories: [
+      {
+        title: '节假日与计划时间（3.10.1）',
+        items: [
+          'utils/holidays.js（新增，纯函数）：LUNAR_HOLIDAY_TABLE（2026 / 2027 的春节、端午、中秋公历日期）、solarHolidays（元旦 / 劳动节 / 国庆按年推算）、upcomingHolidays（默认 120 天窗口，带 daysUntil 与天数）、holidayPromptLine（喂给模型的一行）、inferHolidayFromText（从标题/描述认节日，支持「十一 / 五一 / 过年」简称；同名节日只取最近一次，避免跨年时把今年与明年拼在一起）',
+          'utils/ai/prompt-builder.js：动态段新增 holidayLine 并拼进 system prompt（日期行之后）',
+          'utils/ai/prompt-actions.js：create_plan 的时间说明补「中秋/国庆/春节/假期」并注明按节假日表换算；BEHAVIOR_RULES 新增一条「提到节日/假期/周次必须换算成具体日期，表里没有的节日按原话推断、禁止编日期」',
+          'store/executors/plan.js：execCreatePlan / execUpdatePlan 增加 inferDatesFromText 兜底（只在完全没有时间时生效）'
+        ]
+      },
+      {
+        title: '测试（3.10.1）',
+        items: [
+          'tests/holidays.test.js（新增 13 例）：2026-09-17 视角下中秋在前国庆在后、公历节日按年推算、窗口过滤、表里没有的年份不编农历节日、提示行含日期与「8 天后」、从文本认节日（中秋国庆连说→9/25 至 10/7、简称十一/五一/过年、没提节日返回 null）、执行器兜底三例（没给时间→补节日区间、给了时间→不覆盖、没提节日→不补）',
+          '全量：74 文件 / 1073 用例全绿（npx vitest run --maxWorkers=2，exit 0）'
+        ]
+      }
+    ]
+  },
+  {
     version: '3.10.0',
     date: '2026-09-17',
     title: '3.10.0 开场对话整合 + 按钮全部可点 + 计划时间可改且到点提醒 + 文件类型放宽',

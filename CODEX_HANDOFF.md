@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 74 文件 / 1061 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.10.0（开场对话整合与按钮可点、计划时间可改 + 到点默认提醒、文件类型放宽） |
+| 测试 | 74 文件 / 1073 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.10.1（节假日表 `utils/holidays.js` + prompt 注入 + 计划执行器日期兜底） |
 
 ---
 

@@ -1,6 +1,7 @@
 import { savePlan, getPlanList, getChildPlans, deletePlan, updateIndex, savePlanTemplate, buildChildrenSpecsFromLegacy, convertSubtasksToChildPlans, logPlanCheckIn, getPlanCheckInStats } from '@/utils/storage.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { removePlanReminder } from '@/utils/reminder.js'
+import { inferHolidayFromText } from '@/utils/holidays.js'
 
 /**
  * Plan 相关 executor 工厂函数
@@ -85,8 +86,18 @@ export function createPlanExecutors(ctx) {
 
   // ==================== 创建操作 ====================
 
+  /**
+   * 模型没给时间时按标题/描述里的节日补日期（3.10.1 确定性兜底）
+   * 反馈里「本地深度游三日（中秋国庆）」的时间字段全是空的 —— 提示词加固之外，这里再保一层
+   * @returns {{ start: string, end: string, name: string } | null}
+   */
+  function inferDatesFromText(title, description) {
+    return inferHolidayFromText([title, description].filter(Boolean).join(' '))
+  }
+
   function execCreatePlan(p) {
     const now = Date.now()
+    const holiday = inferDatesFromText(p.title, p.description)
     const plan = {
       client_id: ctx.generateEntityId('plan'),
       title: p.title || '新计划',
@@ -99,11 +110,11 @@ export function createPlanExecutors(ctx) {
       // 父计划ID — 支持计划嵌套
       parent_id: p.parent_id || '',
       // 精确到秒的时间（YYYY-MM-DD HH:mm:ss 格式）
-      deadline: cleanDateField(p.deadline),           // 截止时间（精确到秒）
-      due_date: cleanDateField(p.due_date || p.deadline),  // 兼容字段
-      estimated_time: cleanDateField(p.estimated_time || p.plan_date),  // 预计开始时间（精确到秒）
-      start_time: cleanDateField(p.start_time || p.estimated_time),  // 开始时间（精确到秒）
-      end_time: cleanDateField(p.end_time || p.deadline),            // 结束时间（精确到秒）
+      deadline: cleanDateField(p.deadline) || (holiday ? holiday.end : ''),           // 截止时间（精确到秒）
+      due_date: cleanDateField(p.due_date || p.deadline) || (holiday ? holiday.end : ''),  // 兼容字段
+      estimated_time: cleanDateField(p.estimated_time || p.plan_date) || (holiday ? holiday.start : ''),  // 预计开始时间（精确到秒）
+      start_time: cleanDateField(p.start_time || p.estimated_time) || (holiday ? holiday.start : ''),  // 开始时间（精确到秒）
+      end_time: cleanDateField(p.end_time || p.deadline) || (holiday ? holiday.end : ''),            // 结束时间（精确到秒）
       recur_type: cleanRecurType(p.recur_type),
       recur_count: cleanRecurCount(p.recur_count, cleanRecurType(p.recur_type)),
       plan_count: 1,
@@ -155,6 +166,21 @@ export function createPlanExecutors(ctx) {
   }
 
   function execUpdatePlan(p) {
+    // 3.10.1：改计划时若仍没有任何时间、而标题/描述里提到节日，按节日补日期区间
+    if (!p.deadline && !p.due_date && !p.start_time && !p.end_time && !p.estimated_time) {
+      const found = getPlanList().find(x => x && x.client_id === (p.client_id || p.id))
+      const title = p.title || (found && found.title) || ''
+      const desc = p.description || (found && found.description) || ''
+      const holiday = inferHolidayFromText(title + ' ' + desc)
+      if (holiday) {
+        p = Object.assign({}, p, {
+          start_time: holiday.start,
+          end_time: holiday.end,
+          deadline: holiday.end,
+          due_date: holiday.end
+        })
+      }
+    }
     if (!p.client_id && !p.id) {
       return { success: false, message: '缺少计划ID', detail: null }
     }

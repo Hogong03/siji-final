@@ -14,6 +14,7 @@
  *   总 token 降 ~35%（实测 buildSystemPrompt().length 对比）
  */
 import { buildProfileContext } from '../profile.js'
+import { holidayPromptLine } from '../holidays.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES, isLiteChatMode } from './prompt-actions.js'
 
 // 重新导出（保持向后兼容）
@@ -233,6 +234,9 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
   const hour = now.getHours()
   const greeting = hour < 6 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : hour < 22 ? '晚上好' : '夜深了'
+  // 3.10.1：把接下来的节假日（含具体日期）喂给模型 —— 否则「中秋国庆」这类说法换算不出日期，
+  // 建出来的计划时间字段全空（2026-09-17 反馈：「本地深度游三日（中秋国庆）」没有任何时间）
+  const holidayLine = holidayPromptLine(now)
 
   // 扩展 action（按数据存在性注入，P0-2 配合 checkExtensionData 缓存）
   const { hasRelations, hasDecisions, hasSimulations } = checkExtensionData()
@@ -277,12 +281,13 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   // --- 拼装：agentMode 决定是否注入身份行 + 问候 ---
   // 注意：profileCtx 由 buildChatMessages 统一拼接，此处不再重复注入（修复双写问题）
   const dateLine = `当前时间:${todayStr} 星期${weekDay} ${timeStr}(昨天 ${yesterdayStr})`
+  const holidaySection = holidayLine ? '\n' + holidayLine : ''
   const extSection = extParts.length ? '\n\n' + extParts.join('\n') : ''
 
   // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
   const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
   const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
-  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${extSection}`
+  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${holidaySection}${extSection}`
 
   if (!lite && !agentMode) {
     _cache.systemPrompt = result

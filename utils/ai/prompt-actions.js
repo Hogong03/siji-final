@@ -26,7 +26,7 @@ export const CORE_ACTIONS = `记录:
 - query_stat: {month?}
 
 计划:
-- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,start_time?,end_time?,estimated_time?,parent_id?}  // subtasks>=1条自动转为子计划，必须>=1条否则不建；每条子计划必须带 description 与 est_minutes（description 写做什么/怎么做/完成标准，禁止只给标题；普通一步收敛到 5-15 分钟可执行，超过 15 分钟拆下一级）；用户给了计划整体起止/截止时，按序把子计划排进区间并带 start_time/end_time（YYYY-MM-DD）；用户提到"后天/下周/月底"等时间时 deadline/start_time/end_time 必填（从原话计算），用户没说的天数/日期禁止编造，子计划日期只能来自整体区间或用户原话；用户说"每天/每周固定动作"（如每天背50词、每周3次模考）→ 该条子计划带 recur_type:"daily"/"weekly"+recur_count（weekly 的每周次数），循环任务 est_minutes 可为 20-120 无需再拆，禁止逐日拆成几十个重复子计划
+- create_plan: {title,description,priority:0-2,subtasks:[],tags:[],deadline?,start_time?,end_time?,estimated_time?,parent_id?}  // subtasks>=1条自动转为子计划，必须>=1条否则不建；每条子计划必须带 description 与 est_minutes（description 写做什么/怎么做/完成标准，禁止只给标题；普通一步收敛到 5-15 分钟可执行，超过 15 分钟拆下一级）；用户给了计划整体起止/截止时，按序把子计划排进区间并带 start_time/end_time（YYYY-MM-DD）；用户提到"后天/下周/月底/中秋/国庆/春节/假期"等时间线索时 deadline/start_time/end_time 必填（从原话计算，节假日的日期按上方节假日表换算），用户没说的天数/日期禁止编造；「中秋国庆」这类含节日的说法必须换成具体日期区间，子计划日期只能来自整体区间或用户原话；用户说"每天/每周固定动作"（如每天背50词、每周3次模考）→ 该条子计划带 recur_type:"daily"/"weekly"+recur_count（weekly 的每周次数），循环任务 est_minutes 可为 20-120 无需再拆，禁止逐日拆成几十个重复子计划
 - create_plan_phases: {title,description?,deadline,phases?:[{title,description,start_date?,end_date?,children?:[{title,description,est_minutes,recur_type?,recur_count?}]}],phase_count?:2-6}  // 大目标（跨周/跨月/多阶段）优先用本工具而非 create_plan；phases 每条必须带 description（阶段目标+做法/完成标准），禁止只给 phase_count 生成空壳阶段；用户给了阶段起止时 start_date/end_date 必填，阶段内"每天/每周固定动作"放 children 并用 recur_type/recur_count 标记（禁止逐日拆碎）
 - update_plan: {client_id,title?,description?,priority?,status?,frozen?,deadline?,estimated_time?,subtasks?,parent_id?,recur_type?,recur_count?}  // 用户对已有计划提变更时调用；不知道ID先 query_plan，禁止新建同名计划；frozen=true 冷藏（先放一放，不删除不改状态不催），false 恢复；subtasks 每条必须带 description 与 est_minutes，补子计划同理；"每天/每周固定动作"的补子计划同样带 recur_type/recur_count，禁止逐日拆碎
 - update_plan_phase: {client_id,phase_id,title?,description?,subtasks?,milestones?,start_date?,end_date?}  // phase_id=子计划client_id
@@ -115,6 +115,7 @@ export const BEHAVIOR_RULES = [
   '用户补充/修改已有计划（加子计划、改时间、改内容）→ query_plan 找到原计划后 update_plan，禁止 create_plan 新建同名计划',
   '一句话含多个意图（如"花了25元吃饭+我的爱好是篮球"）→ 拆解为多个 action 一次执行，禁止只处理第一个意图',
   '用户说"我的…(是/为/式)…帮我记录/记一下" → 拆解事实+指令并落库（update_profile/smart_update_profile）；错别字不影响语义（如"式"按"是"理解），禁止只口头确认不执行',
+  '用户提到节日/假期/周次（中秋、国庆、春节、五一、下周、月底）→ 必须换算成具体日期：计划类动作填 start_time/end_time/deadline，记录类动作写进内容；节假日的日期见系统提示里的「接下来的节假日」，表里没有的节日就按用户原话推断，禁止编日期',
   '拆计划/子计划 → 每条收敛到 5-15 分钟可执行的一步（必须带 description 与 est_minutes）；单步超过 15 分钟必须继续拆出下一级子计划；用户给了计划整体起止/截止时，把子计划按顺序排进区间并带 start_time/end_time（YYYY-MM-DD）；没给时间则禁止编造日期；"每天/每周固定动作"（每天背50词/每周3次模考）→ 用循环任务字段 recur_type + recur_count（weekly 次数），循环任务时长可为 20-120 分钟，禁止逐日拆成几十个子计划',
   '用户说"开始做/执行/做第一步/标记完成/完成这一步" → 先 query_plan 定位，再 update 状态为进行中或已完成；禁止重新规划、禁止新建计划',
   '用户说"今天做了/今日打卡/今天完成了一次"且目标为重复性/习惯型计划（每天/每周持续做）→ log_plan_checkin 轻记录（note 写这次做了什么；同一天同一计划只记一次、可补写；不改状态不催促）；一次性步骤说"做完了/搞定"仍走 update 状态完成',
