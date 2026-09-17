@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import './setup.js'
 import { compareVersion, getVersion, getVersionStatus } from '@/utils/version-check.js'
+import manifest from '../manifest.json'
 
 describe('version-check.js', () => {
   it('compareVersion 应正确比较语义化版本', () => {
@@ -25,6 +26,11 @@ describe('version-check.js', () => {
 
   it('compareVersion 应处理非数字部分', () => {
     expect(compareVersion('1.0.0', '1.0.b')).toBe(0) // 'b' → NaN → 0
+  })
+
+  it('getVersion 等于 manifest.versionName（版本号不许再回落成 1.0.0）', () => {
+    expect(getVersion()).toBe(manifest.versionName)
+    expect(getVersion()).not.toBe('1.0.0')
   })
 
   it('getVersion 应返回版本字符串', () => {

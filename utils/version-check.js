@@ -9,6 +9,10 @@
  */
 
 import { logger } from './logger.js'
+// 版本号唯一事实来源：编译进包的 manifest.json（构建期内联成常量，运行时零依赖）
+// 反馈导出长期显示 v1.0.0 的根因就是这里 —— 基座里 plus.runtime.version 是宿主的版本，
+// H5 的 __uniConfig.versionName 也不保证存在，两条路都回落到了默认值
+import manifest from '@/manifest.json'
 
 const LAST_CHECK_KEY = 'siji_last_version_check'
 const LAST_VERSION_KEY = 'siji_last_known_version'
@@ -41,26 +45,29 @@ export function primeAppVersion() {
 
 /**
  * 获取当前应用版本号
+ *
+ * 顺序：编译进包的 manifest.versionName（永远等于正在跑的这份代码）→
+ *       App 资源包版本（primeAppVersion 异步读到，装的是 wgt 时更准）→
+ *       平台自带版本 → 兜底 1.0.0
  */
 function getCurrentVersion() {
   try {
     // #ifdef MP-WEIXIN
-    return uni.getAccountInfoSync().miniProgram.version || '1.0.0'
+    const mpVersion = uni.getAccountInfoSync().miniProgram.version || ''
+    return mpVersion || manifest.versionName || '1.0.0'
     // #endif
     // #ifdef APP-PLUS
+    // 资源包版本（getProperty 读到）优先于 manifest：OTA 更新过 wgt 时以它为准；
+    // 基座里它可能与 manifest 相同，无所谓
     if (_appVersion) return _appVersion
-    try { return plus.runtime.version || '1.0.0' } catch (e) { return '1.0.0' }
+    return manifest.versionName || '1.0.0'
     // #endif
     // #ifdef H5
-    // H5 端从 manifest 注入的版本号读取
-    // uni-app 在 H5 编译时会将 manifest.json 的 versionName 注入到 __uniConfig
-    if (typeof __uniConfig !== 'undefined' && __uniConfig.versionName) {
-      return __uniConfig.versionName
-    }
-    return '1.0.0'
+    if (typeof __uniConfig !== 'undefined' && __uniConfig.versionName) return __uniConfig.versionName
+    return manifest.versionName || '1.0.0'
     // #endif
   } catch (e) {
-    return '1.0.0'
+    try { return manifest.versionName || '1.0.0' } catch (e2) { return '1.0.0' }
   }
 }
 

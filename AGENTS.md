@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 75 文件 / 1081 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v3.10.2（计划有时间却不显示：`applyStoredItem` 回填补上 `start_time` / `end_time` 回落，收起行摘要带时刻；`update_plan` 找不到计划时提示改用 `create_plan`） |
+| 测试 | 75 文件 / 1082 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.0.0（版本号统一到 4.x：`getCurrentVersion` 改为读编译进包的 `manifest.versionName` —— 修「关于页与反馈导出一直显示 v1.0.0」） |
 
 ---
 
@@ -142,7 +142,7 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 3.9.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.0.js）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
@@ -272,6 +272,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
+| 改版本号来源 | `utils/version-check.js` 的 `getCurrentVersion`：**以编译进包的 `manifest.versionName` 为准**（基座里 `plus.runtime.version` 是宿主版本、H5 的 `__uniConfig.versionName` 不保证存在，都会回落成 1.0.0）；App 端 OTA 过 wgt 时用 `primeAppVersion` 读到的资源包版本覆盖 |
 | 改版本号读取 / 反馈导出 | `utils/version-check.js`（`primeAppVersion` 读资源包版本 + `getVersion`；基座里 `plus.runtime.version` 是宿主版本）+ `pages/settings/sub/dev-feedback.vue`（导出头部 meta）+ `utils/dev-feedback.js`（纯函数） |
 | 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`，聊天页与自检共用一份）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` 的 `_agentMode` 判定 + `utils/ai/response-parser.js` 的 `normalizeActions`（嵌套 multi 拍平） |
 | 改动作类型白名单 | `store/data.js` 的 `isKnownActionType`（ACTION_MAP 是唯一事实来源）+ `store/index.js` 透传 + `utils/ai/autoExecutor.js` 的 `keepKnownActions`（幻觉类型按无 action 处理）+ `utils/ai/tools/executor.js` 的 `TOOL_NAMES`（不存在的工具名明确回传） |
@@ -327,7 +328,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 75 文件 / 1081 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 75 文件 / 1082 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

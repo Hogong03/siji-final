@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 75 文件 / 1081 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.10.2（计划时间回填 `estimated_time → start_time` / `due_date → deadline → end_time` 回落 + 摘要带时刻；含 3.10.1 的节假日表与 3.10.0 的开场/提醒修复） |
+| 测试 | 75 文件 / 1082 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v4.0.0（版本号来源改为编译进包的 `manifest.versionName`；含 3.10.x 的计划时间与提醒修复） |
 
 ---
 
