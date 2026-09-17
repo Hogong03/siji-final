@@ -89,29 +89,36 @@ export function splitSections(text) {
   const lines = String(text == null ? '' : text).split('\n')
   const headings = extractOutline(text)
   const out = []
-  const push = (title, level, bodyLines, index) => {
+  // percent 必须带上（4.1.1）：目录尺的刻度位置取自它，
+  // 之前这里不返回 percent，buildOutlineTicks 只好全给 0 —— 所有刻度堆在最顶端，看着像「只有一章」
+  const push = (title, level, bodyLines, index, percent) => {
     const body = bodyLines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
-    out.push({ key: 'sec-' + index, index: index, title: title, level: level, body: body })
+    out.push({
+      key: 'sec-' + index,
+      index: index,
+      title: title,
+      level: level,
+      body: body,
+      percent: Number(percent) || 0
+    })
   }
 
   if (headings.length === 0) {
-    push('', 2, lines, 0)
+    push('', 2, lines, 0, 0)
     return out
   }
 
-  // 第一个标题之前的内容（前言）
+  // 第一个标题之前的内容（前言）：位置按第一个标题算，免得所有刻度挤在顶部
   if (headings[0].line > 0) {
     const pre = lines.slice(0, headings[0].line)
-    if (pre.join('').trim()) push('', 2, pre, 0)
+    if (pre.join('').trim()) push('', 2, pre, 0, 0)
   }
 
-  let cursor = 0
   headings.forEach((h, i) => {
     const start = h.line + 1
     const end = i + 1 < headings.length ? headings[i + 1].line : lines.length
     const index = out.length
-    push(h.title, h.level, lines.slice(start, end), index)
-    cursor = end
+    push(h.title, h.level, lines.slice(start, end), index, h.percent)
   })
   return out
 }

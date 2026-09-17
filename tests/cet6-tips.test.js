@@ -176,3 +176,21 @@ describe('ensureCet6Tips：幂等 / 迁移 / 不复活', () => {
     expect(alive()).toHaveLength(11)
   })
 })
+
+/* ==================== 4.1.1：真题级内容上的刻度分布 ==================== */
+
+import { splitSections as splitDoc, buildOutlineTicks as buildTicks, extractOutline as outlineOf } from '../utils/text-outline.js'
+
+describe('每篇资料在阅读页都能铺满目录尺（回归：刻度全堆顶部）', () => {
+  it('10 篇的刻度都单调递增、且末条落在 70% 之后', () => {
+    CET6_TIPS.forEach(doc => {
+      const ticks = buildTicks(splitDoc(doc.content))
+      expect(ticks.length).toBeGreaterThanOrEqual(3)
+      for (let i = 1; i < ticks.length; i++) {
+        expect(ticks[i].percent).toBeGreaterThan(ticks[i - 1].percent)
+      }
+      expect(ticks[ticks.length - 1].percent).toBeGreaterThan(70)
+      expect(ticks.length).toBe(outlineOf(doc.content).length)
+    })
+  })
+})

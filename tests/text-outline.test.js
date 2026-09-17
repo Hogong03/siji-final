@@ -188,3 +188,45 @@ describe('sectionAtProgress：当前读到哪一节', () => {
     expect(sectionAtProgress([{ key: 'sec-0', title: '' }], 50)).toBe(null)
   })
 })
+
+/* ==================== 4.1.1：刻度位置（目录尺只有一个刻度的回归） ==================== */
+
+describe('splitSections 必须带上 percent（否则目录尺刻度全堆在顶部）', () => {
+  const DOC = [
+    '# 六级·听力章',
+    '总述一句。',
+    '## 一、视听一致',
+    '听到什么选什么。',
+    '## 二、答案常在三处',
+    '开头、转折后、结尾。',
+    '## 三、今天怎么练',
+    '只做打勾。'
+  ].join('\n')
+
+  it('每个有标题的节都带 percent，且与 extractOutline 对齐', () => {
+    const secs = splitSections(DOC)
+    const outline = extractOutline(DOC)
+    const titled = secs.filter(x => x.title)
+    expect(titled.length).toBe(outline.length)
+    titled.forEach((sec, i) => expect(sec.percent).toBe(outline[i].percent))
+  })
+
+  it('刻度位置单调递增 —— 回归：曾经全是 0，看着像只有一章', () => {
+    const ticks = buildOutlineTicks(splitSections(DOC))
+    expect(ticks.length).toBeGreaterThanOrEqual(3)
+    for (let i = 1; i < ticks.length; i++) {
+      expect(ticks[i].percent).toBeGreaterThan(ticks[i - 1].percent)
+    }
+    // 最后一个刻度接近底部（长文里应落在 80% 之后）
+    expect(ticks[ticks.length - 1].percent).toBeGreaterThan(70)
+  })
+
+  it('有前言的文档：前言 percent 为 0，第一节仍从标题位置起算', () => {
+    const secs = splitSections(['写在最前。', '## 一、A', 'x', '## 二、B', 'y'].join('\n'))
+    expect(secs[0].title).toBe('')
+    expect(secs[0].percent).toBe(0)
+    const ticks = buildOutlineTicks(secs)
+    expect(ticks[0].label).toBe('一、A')
+    expect(ticks[1].percent).toBeGreaterThan(ticks[0].percent)
+  })
+})

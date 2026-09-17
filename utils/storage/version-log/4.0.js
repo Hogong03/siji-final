@@ -6,6 +6,27 @@
 
 export const V40 = [
   {
+    version: '4.1.1',
+    date: '2026-09-17',
+    title: '4.1.1 修目录尺：所有刻度都堆在顶部（splitSections 没返回 percent）',
+    summary: [
+      '真因：目录尺的刻度位置取自 percent，而 splitSections 只返回 key/index/title/level/body —— 没有 percent，buildOutlineTicks 的 `Number(s.percent) || 0` 把每一条都算成 0%，于是所有刻度叠在最顶端，看着像「只有一章」',
+      '修法：splitSections 带上 percent（直接取 extractOutline 同一套行位置算法，节与刻度一一对应），前言那节的 percent 记 0',
+      '回归测试钉死：文本层断言刻度单调递增且末条 > 70%（修之前全是 0，必然红）；内容层拿 10 篇真题级资料逐篇断言刻度数等于小节数、位置铺满',
+      '影响：记录阅读页左侧目录尺（pages/diary/read.vue）—— 刻度现在沿整条尺子分布，点/拖任意刻度都能跳到对应小节'
+    ],
+    categories: [
+      {
+        title: '目录尺刻度（4.1.1）',
+        items: [
+          'utils/text-outline.js：splitSections 的 push 增加 percent 参数；有标题的节取该标题在 extractOutline 里的 percent，前言节为 0',
+          'tests/text-outline.test.js（+3 例）：节与 outline 的 percent 一一对齐、刻度单调递增且末条 > 70%、带前言的文档前言为 0 且后续递增',
+          'tests/cet6-tips.test.js（+1 例）：10 篇资料逐篇断言刻度数与末条位置（用真实内容的长度做兜底，避免只有短样例才过）'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.1.0',
     date: '2026-09-17',
     title: '4.1.0 六级复习资料入库（6 篇）+ 记录阅读页版式重做（进度条 / 当前章节 / 目录尺细化）',
