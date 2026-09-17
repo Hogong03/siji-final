@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 74 文件 / 1073 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v3.10.1（节假日表 `utils/holidays.js` + prompt 注入 + 计划执行器日期兜底） |
+| 测试 | 75 文件 / 1081 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v3.10.2（计划时间回填 `estimated_time → start_time` / `due_date → deadline → end_time` 回落 + 摘要带时刻；含 3.10.1 的节假日表与 3.10.0 的开场/提醒修复） |
 
 ---
 
@@ -362,6 +362,7 @@ npx vitest run
 | 改全局样式 | `uni.scss` + `App.vue` |
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
+| 改计划时间字段（四个字段的流转） | 计划时间有 `start_time` / `end_time` / `estimated_time` / `due_date`（+ 冗余 `deadline`）。`pages/plan/composables/usePlanForm.js` 的 `applyStoredItem` 回填必须回落（开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上像没有时间；`timeSummary` 带时刻 |
 | 加测试 | `tests/xxx.test.js` |
 | 改每周账单播报 | `utils/bill-weekly.js` + `composables/useEnterSummary.js` + `pages/chat/index.vue` |
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息 `_isWelcome` / `_isEnterSummary` / `_enterSummaryKind` / `_enterButtons` / `_enterSummaryDigest`、会话 `agentId` / `agentName`）+ `utils/chat-session.js`（`isEmptyConversation` 的「没用户消息也没 AI 产出 = 壳」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔）+ `tests/chat-persist.test.js` |
