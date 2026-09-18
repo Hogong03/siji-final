@@ -103,6 +103,31 @@ export const AI_PROVIDERS = {
   }
 }
 
+/**
+ * 各家单次输出的 token 上限（4.3.0）
+ *
+ * 为什么要显式给：请求体以前不带 max_tokens，能写多长完全看厂商默认值 ——
+ * 同一句「写一篇长文」在不同厂商下长度不一，短的会写到一半停住。
+ * 这里取的是**保守的安全值**（不低于各家公开的默认上限），
+ * 真正能出多少字要在真机上用「AI 效果自检」里的长文语料实测确认。
+ */
+export const PROVIDER_MAX_TOKENS = {
+  deepseek: 8192,
+  zhipu: 4096,
+  qwen: 8192,
+  moonshot: 8192
+}
+
+/**
+ * 取某厂商的输出上限（未声明回落 4096）
+ * @param {string} providerId
+ * @returns {number}
+ */
+export function getMaxTokens(providerId) {
+  const v = PROVIDER_MAX_TOKENS[providerId]
+  return Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : 4096
+}
+
 export function getConfiguredProviderIds() {
   try {
     const raw = uni.getStorageSync('siji_provider_keys')
@@ -158,7 +183,7 @@ export function getDefaultConfig() {
 
 export function buildProviderRequest(providerId, model, messages, apiKey, temperature) {
   const provider = getProvider(providerId)
-  const data = { model, messages, temperature: temperature ?? 0.7 }
+  const data = { model, messages, temperature: temperature ?? 0.7, max_tokens: getMaxTokens(providerId) }
   // D3: 结构化输出按模型能力路由（模型级 structured 字段 > 厂商级 supportsStructuredOutput）
   if (supportsStructuredOutput(providerId, model)) {
     data.response_format = { type: 'json_object' }

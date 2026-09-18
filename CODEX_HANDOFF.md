@@ -17,8 +17,8 @@
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
-| 测试 | 76 文件 / 1111 用例，Vitest 框架（全绿，exit 0） |
-| 版本 | v4.2.1（筛选面板改底部弹出；含 4.2.0 的记录模块收敛） |
+| 测试 | 77 文件 / 1119 用例，Vitest 框架（全绿，exit 0） |
+| 版本 | v4.3.0（长文能力：四家厂商声明输出上限 + 长文例外一次写全篇 + 长回复给「按章节阅读」；含 4.2.x 的筛选面板与记录模块收敛） |
 
 ---
 
@@ -373,7 +373,7 @@ npx vitest run
 | 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` + `composables/useChatEngine.js` 的确认分支 + `utils/ai/response-parser.js` 的 `normalizeActions` |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（通过 / 兜底 / 跳过三档读法 + 每次跑完登记一行 + 扩语料的五条规矩） |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL` + `pages/settings/sub/ai-eval.vue` 的 reportMeta —— 改度量语义时必须 bump，否则又是一份「不知道哪套代码跑的」报告 |
-| 改 AI 效果自检 | `utils/ai/eval/cases.js`（23 条语料，纯数据，日期现算）+ `runner.js` 的 `buildEvalContext` / `resolveCase`（数据前置与占位符）+ 缺前置判 SKIP |+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
+| 改 AI 效果自检 | `utils/ai/eval/cases.js`（24 条语料，纯数据，日期现算）+ `runner.js` 的 `buildEvalContext` / `resolveCase`（数据前置与占位符）+ 缺前置判 SKIP |+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
 | 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
 | 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
 | 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |

@@ -246,6 +246,19 @@ export const EVAL_CASES = [
     }
   },
   {
+    id: 'long-form-article',
+    title: '长文：要一篇 1000 字的文章并存成记录（顺带测各家输出上限）',
+    message: '帮我写一篇文章，主题是「低落的时候怎么让自己动起来」，1000 字左右，写完存成记录',
+    expect: {
+      // 必须落库，且落库那篇的正文不能是「一段摘要」
+      // 阈值取 600 字（要 1000 字左右时，600 以下说明被输出上限截断或偷懒）
+      tools: ['create_diary'],
+      args: {
+        create_diary: (args) => String(args.content || '').replace(/\s+/g, '').length >= 600
+      }
+    }
+  },
+  {
     id: 'casual-no-tools',
     title: '闲聊 → 一个写操作都不许调',
     message: '你好呀，今天天气还行，就是想随便聊两句',

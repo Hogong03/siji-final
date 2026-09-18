@@ -37,7 +37,7 @@ watch(imageSrc, () => { imageFailed.value = false })
 
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
-  'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase'
+  'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase', 'read-long'
 ])
 
 /** 文件卡文案：名称 · 大小 · 行数（3.6.0 读文件） */
@@ -131,6 +131,18 @@ function editOwn() {
 }
 
 /** AI 气泡操作：重新生成 / 换一种说法（P4，事件交由页面触发重发） */
+/** 长文阈值（4.3.0）：超过这个字数就给「按章节阅读」入口 */
+const LONG_TEXT_MIN = 800
+
+/** 这条 AI 回复算不算长文（正文长度） */
+const isLongText = computed(() => {
+  if (props.message.role !== 'assistant') return false
+  const text = props.message.aiReply || props.message.content || ''
+  return typeof text === 'string' && text.replace(/\s+/g, '').length >= LONG_TEXT_MIN
+})
+
+function onReadLong() { emit('read-long', props.message) }
+
 function onRegenerate() { emit('regenerate') }
 function onRephrase() { emit('rephrase') }
 
@@ -257,6 +269,8 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
         <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRegenerate">重新生成</text>
         <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRephrase">换一种说法</text>
         <text v-if="message.role === 'assistant' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
+        <!-- 长文：给一个按章节读的入口（会先存成记录，再进阅读页的目录尺版式） -->
+        <text v-if="isLongText" class="bubble-action-btn bubble-action-strong" @tap.stop="onReadLong">按章节阅读</text>
       </view>
 
       <!-- 待确认卡片 -->

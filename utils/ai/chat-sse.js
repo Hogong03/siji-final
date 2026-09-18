@@ -4,7 +4,7 @@
  * fetch + ReadableStream 解析 OpenAI 兼容 SSE；支持 stopSignal 中断、首字超时判定；
  * 失败自动降级 simulatedStream。
  */
-import { getProvider, supportsStreamStructuredOutput, getReasoningConfig } from './providers.js'
+import { getProvider, supportsStreamStructuredOutput, getReasoningConfig, getMaxTokens } from './providers.js'
 import { parseAiResponse } from './response-parser.js'
 import { buildChatMessages, getRecentHistory } from './chat-helpers.js'
 import { chatRequest as chatRequestNonStream } from './chat-request.js'
@@ -23,7 +23,8 @@ export async function chatRequestRealStream(message, conversationId, cfg, onChun
   const messages = buildChatMessages(message, chatHistory, cfg)
   const stopSignal = cfg.stopSignal || null  // { stopped: false } 引用，外部可设置为 true 终止输出
 
-  const body = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true }
+  // 4.3.0：带上输出上限，长文才不会写到一半被厂商默认值截断
+  const body = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true, max_tokens: getMaxTokens(cfg.provider) }
   // D3: 结构化输出按模型能力路由（模型级 structured 字段 > 厂商级 supportsStructuredOutput）
   // 流式额外校验：DeepSeek V4 流式 + json_object 会返回空内容（实测硬约束），流式路径禁用
   if (supportsStreamStructuredOutput(cfg.provider, cfg.model)) {

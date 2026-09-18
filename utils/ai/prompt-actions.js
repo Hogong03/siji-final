@@ -11,7 +11,7 @@
  * 跑 tests/action-schema-consistency.test.js 校验一致性。
  */
 export const CORE_ACTIONS = `记录:
-- create_diary: {content,tags?,record_type?}  // 自由文本，首行自动作为标题；正文必须放 content，禁止传 title；record_type 三选一：日记/心情→diary、待办/要做→todo、其他（含想法/灵感/闪念）→note，禁止省略；标签不用传（系统按内容自动打）
+- create_diary: {content,tags?,record_type?}  // 自由文本，首行自动作为标题；正文必须放 content，禁止传 title；record_type 三选一：日记/心情→diary、待办/要做→todo、其他（含想法/灵感/闪念）→note，禁止省略；标签不用传（系统按内容自动打）；**长文（攻略/方案/文章/长总结）也走这个工具**：整篇放 content，首行当标题
 - update_diary: {client_id,title?,content?,record_type?,tags?}  // 改内容/标题/类型只传对应字段
 - delete_diary: {client_id} needConfirm=true
 - query_diary: {keyword?,month?}
@@ -120,6 +120,7 @@ export const BEHAVIOR_RULES = [
   '用户说"开始做/执行/做第一步/标记完成/完成这一步" → 先 query_plan 定位，再 update 状态为进行中或已完成；禁止重新规划、禁止新建计划',
   '用户说"今天做了/今日打卡/今天完成了一次"且目标为重复性/习惯型计划（每天/每周持续做）→ log_plan_checkin 轻记录（note 写这次做了什么；同一天同一计划只记一次、可补写；不改状态不催促）；一次性步骤说"做完了/搞定"仍走 update 状态完成',
   '用户主动分享今天一件「还行的小事」（散步/晒太阳/按时吃饭/早睡/完成一件小事等，语气不低落）→ 用 create_glimmer 收进微光本，只记录不评价不追问；用户说不用记则除外',
+  '用户要求写长文（"写篇文章/写个攻略/写份方案/写总结/长一点"）→ 不受"闲聊 1-3 句"约束：一次写完整篇，用 markdown 二级标题（## ）分小节，正文 800-3000 字；写完必须调用 create_diary 把整篇存成记录（content 放全文，首行当标题），并回一句「已存成记录，点下面的『查看 →』能按章节读」；禁止只回复一段摘要就说写完了',
   '用户说"先放一放/冷藏/先不管这个计划" → update_plan 带 frozen:true（冷藏标记：不删除、不改状态、不催）；说"恢复/解冻" → frozen:false',
   'JSON 回复中可选的 suggestions 只放 1-2 条用户接下来最可能直接发出的短句（如「排进我的计划」「再记一笔」），禁止"你觉得呢/要不要试试/感觉怎么样"类评价式、催促式或问心情的伪建议；没有把握就不给 suggestions'
 ]

@@ -5,7 +5,7 @@
  *       tools 列表构建、用户停止信号 → 请求中止。
  * 不负责：循环控制、工具执行、结果解析（留在 agent-loop.js）。
  */
-import { getReasoningConfig } from './providers.js'
+import { getReasoningConfig, getMaxTokens } from './providers.js'
 import { TOOL_DEFINITIONS } from './tools.js'
 import { isWebSearchAvailable } from './search-config.js'
 import { isReadUrlAvailable } from './read-config.js'
@@ -31,6 +31,8 @@ export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, 
     model: cfg.model,
     messages,
     temperature: cfg.temperature ?? 0.7,
+    // 4.3.0：工具轮也要给足输出上限 —— 长文常由 create_diary 一次性写进 content
+    max_tokens: getMaxTokens(provider.id),
     tools: buildToolList(provider, cfg.model),
     tool_choice: 'auto'
   }
@@ -172,7 +174,8 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
     model: cfg.model,
     messages,
     temperature: cfg.temperature ?? 0.7,
-    stream: true
+    stream: true,
+    max_tokens: getMaxTokens(provider.id)
     // 最后一轮不传 tools，让 AI 直接回复
   }
   // D4 推理分级：最终回复按日常档（glm-5.3/kimi-k3 强制思考时用 low）

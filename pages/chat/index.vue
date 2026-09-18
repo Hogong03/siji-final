@@ -150,6 +150,35 @@ function handleResumeBack() {
   _queuedEnterSummary = null
   resetScrollState()
 }
+/**
+ * 长文「按章节阅读」（4.3.0）
+ * AI 按提示词应已存成记录 → 直接进阅读页；没存过（或旧消息）→ 这里兜底落一条再读
+ * 依赖注入 store.executeAction 走的是同一套 create_diary 执行器（自动标题 + 自动标签）
+ */
+function handleReadLong(msg) {
+  if (!msg) return
+  const detail = msg.execResult && msg.execResult.detail
+  if (detail && detail.type === 'diary' && detail.id) {
+    uni.navigateTo({ url: `/pages/diary/read?clientId=${detail.id}&month=${monthOfTs(detail.created_at)}` })
+    return
+  }
+  const text = String(msg.aiReply || msg.content || '').trim()
+  if (!text) return
+  const r = store.executeAction({ type: 'create_diary', payload: { content: text, record_type: 'note', tags: [] } })
+  if (r && r.success && r.detail && r.detail.id) {
+    uni.showToast({ title: '已存成记录', icon: 'none' })
+    uni.navigateTo({ url: `/pages/diary/read?clientId=${r.detail.id}&month=${monthOfTs(r.detail.created_at)}` })
+  } else {
+    uni.showToast({ title: '存成记录失败，可先复制内容', icon: 'none' })
+  }
+}
+
+/** 时间戳 → YYYY-MM（阅读页按月分片取记录） */
+function monthOfTs(ts) {
+  const d = new Date(Number(ts) || Date.now())
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 function handleResumePick() {
   toggleConvList()
 }
@@ -556,6 +585,7 @@ function handleWelcomeChip(text) {
             @edit-own="handleEditOwn"
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
+            @read-long="handleReadLong"
           />
             <!-- 开场消息的操作行：进入总结与欢迎语共用（3.10.0，按钮由 utils/enter-dialogue.js 生成）+ 返回旧对话 -->
             <view v-if="hasOpenerActions(msg) && !simulationMode" class="enter-actions">

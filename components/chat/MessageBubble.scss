@@ -187,6 +187,20 @@
   }
 }
 
+/* 长文「按章节阅读」— 比其余文字按钮重一档（4.3.0） */
+.bubble-action-strong {
+  color: #000000;
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border: 2rpx solid #000000;
+  border-radius: 999rpx;
+
+  &:active {
+    color: #FFFFFF;
+    background: #000000;
+  }
+}
+
 /* ─── AI 气泡内容类型变体 ─── */
 
 /* 纯文本/短文本 — 标准灰底，无边框 */
@@ -408,6 +422,15 @@
   .bubble-action-btn {
     color: #52525B;
     &:active { color: #FAFAFA; }
+  }
+  .bubble-action-strong {
+    color: #FAFAFA;
+    border-color: #FAFAFA;
+
+    &:active {
+      color: #000000;
+      background: #FAFAFA;
+    }
   }
 }
 

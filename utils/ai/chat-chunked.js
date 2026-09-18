@@ -5,7 +5,7 @@
  * success 回调随数据分块多次触发，解析 SSE 行后逐段回调 onChunk。
  * 任何异常返回 _error 标记，由调用方透出真实错误或降级。
  */
-import { getProvider , supportsStreamStructuredOutput, getReasoningConfig } from './providers.js'
+import { getProvider , supportsStreamStructuredOutput, getReasoningConfig, getMaxTokens } from './providers.js'
 import { parseAiResponse } from './response-parser.js'
 import { buildChatMessages } from './chat-helpers.js'
 import { logger } from '../logger.js'
@@ -80,7 +80,8 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
     // D4: 推理分级 — 日常对话 low
     const reasoning = getReasoningConfig(cfg.provider, cfg.model, 'chat')
     const buildBody = (withFormat) => {
-      const b = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true }
+      // 4.3.0：带上输出上限（长文要写满，别被厂商默认值截断）
+      const b = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true, max_tokens: getMaxTokens(cfg.provider) }
       if (withFormat && useFormat) b.response_format = { type: 'json_object' }
       if (reasoning) Object.assign(b, reasoning)
       return b
