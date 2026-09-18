@@ -389,8 +389,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: 3.7.0 AI 效果自检（commit 见 git log，版本记录 `utils/storage/version-log/3.7.js`）
-- 远端：`origin/main`，2026-09-15 推送成功（`b802a0b..0dc583b`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `a2da053` (4.3.0 长文能力，版本记录 `utils/storage/version-log/4.3.js`)
+- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---

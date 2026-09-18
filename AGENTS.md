@@ -323,9 +323,9 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: 3.7.0 AI 效果自检（见 `utils/storage/version-log/3.7.js`）
-- 远端：`origin/main`，2026-09-15 推送成功（`46ab2b4..b5b07d4`）
-- 上一次 push 曾遇到 HTTP 502（GitHub 网关侧），重试即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过
+- 当前 HEAD: `a2da053` (feat: 4.3.0 长文能力（四家厂商声明输出上限 + 长文例外写全篇 + 长回复给「按章节阅读」）)
+- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）
+- 上一次 push 曾遇到 schannel TLS 握手失败（网络侧，连续重试 + 连通性检查均失败），网络恢复后重推即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过，也不要为绕证书问题改 `sslVerify`
 - `http.sslVerify` 保持 true（2026-08-20 恢复）
 
 ---
