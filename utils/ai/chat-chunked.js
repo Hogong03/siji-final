@@ -6,7 +6,7 @@
  * 任何异常返回 _error 标记，由调用方透出真实错误或降级。
  */
 import { getProvider , supportsStreamStructuredOutput, getReasoningConfig, getMaxTokens } from './providers.js'
-import { parseAiResponse } from './response-parser.js'
+import { parseAiResponse, markReplyTruncated } from './response-parser.js'
 import { buildChatMessages } from './chat-helpers.js'
 import { logger } from '../logger.js'
 
@@ -92,6 +92,7 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
     let buffer = ''
     let processed = ''
     let fullContent = ''
+    let finishReason = ''
     let conversationIdResult = ''
     let firstChunkReceived = false
     let finished = false
@@ -127,6 +128,9 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
         if (data === '[DONE]') continue
         try {
           const json = JSON.parse(data)
+          // 4.3.1：记录输出终止原因 —— 'length' 就是撞上输出上限被截断
+          const fr = json.choices?.[0]?.finish_reason
+          if (fr) finishReason = fr
           const delta = json.choices?.[0]?.delta?.content || ''
           if (delta) {
             fullContent += delta
@@ -156,9 +160,11 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
         return { reply: '', ...base }
       }
       if (opts.raw) {
-        return { content: fullContent, conversation_id: conversationIdResult || conversationId, ...extra }
+        // 4.3.1：Agent 路径靠这个字段判断「被输出上限截断」（原始 content 模式没有 parseAiResponse）
+        return { content: fullContent, conversation_id: conversationIdResult || conversationId, truncated: finishReason === 'length', ...extra }
       }
       const result = parseAiResponse(fullContent, conversationId)
+      markReplyTruncated(result, finishReason)
       if (conversationIdResult) result.conversation_id = conversationIdResult
       if (stopSignal?.stopped) result.stopped = true
       if ((result._isFallback || !result.reply || !result.reply.trim()) && !stopSignal?.stopped) result._emptyReply = true
@@ -229,6 +235,8 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
           if (!fullContent && buffer.trim().startsWith('{')) {
             try {
               const parsed = JSON.parse(buffer.trim())
+              const fr = parsed.choices?.[0]?.finish_reason
+              if (fr) finishReason = fr
               const content = parsed.choices?.[0]?.message?.content || ''
               if (content) {
                 fullContent = content

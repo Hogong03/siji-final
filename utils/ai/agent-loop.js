@@ -120,6 +120,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
         action: result.action,
         actions: result.actions,
         suggestions: result.suggestions,
+        // 4.3.1：撞上输出上限（finish_reason === 'length'）→ 上层气泡给「继续写完」
+        truncated: response.truncated === true,
         // 3.7.1：透传「声称操作但没有 action」标记，供 autoExecutor 的兜底闸门使用
         _opClaimWithoutAction: result._opClaimWithoutAction === true,
         // 3.7.3：本次一轮工具都没调过 → 这条回复走的是老 JSON action 路径，
@@ -281,6 +283,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
     actions: result.actions,
     toolCalls,
     execResults,
+    truncated: response.truncated === true,
     conversation_id: response.id || conversationId
   }
 }

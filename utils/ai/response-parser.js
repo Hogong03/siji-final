@@ -156,6 +156,22 @@ export function parseAiResponse(raw, conversationId) {
 }
 
 /**
+ * 标记「回复被输出上限截断」（4.3.1）
+ *
+ * 判据只有一条事实来源：厂商返回的 finish_reason === 'length'。
+ * 不猜长度、不看结尾符号 —— 猜出来的截断标记会把正常长文误报成半截。
+ * 四条请求路径（H5 SSE / App 分块流 / 非流式 / Agent 最终轮）拿到结果后都调它，
+ * 上层据此在气泡上给「继续写完」（静默的半截回复是最坏的情况）。
+ * @param {Object} result parseAiResponse 的产物，或 { message, id } 形式的中转结果
+ * @param {string} finishReason 厂商返回的 choices[0].finish_reason
+ * @returns {Object} 同一个 result（便于链式调用）
+ */
+export function markReplyTruncated(result, finishReason) {
+  if (result && finishReason === 'length') result.truncated = true
+  return result
+}
+
+/**
  * 清洗 reply 中的 markdown 代码块
  * AI 有时会违反禁令在 reply 中用 ```wrap 内容```
  * 策略：去掉代码块包裹（```lang ... ```），保留内部纯文本

@@ -6,6 +6,7 @@
  * 不负责：循环控制、工具执行、结果解析（留在 agent-loop.js）。
  */
 import { getReasoningConfig, getMaxTokens } from './providers.js'
+import { markReplyTruncated } from './response-parser.js'
 import { TOOL_DEFINITIONS } from './tools.js'
 import { isWebSearchAvailable } from './search-config.js'
 import { isReadUrlAvailable } from './read-config.js'
@@ -68,7 +69,8 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
       success(res) {
         if (res.statusCode === 200 && res.data?.choices?.[0]) {
           const choice = res.data.choices[0]
-          resolve({ message: choice.message, id: res.data.id })
+          // 4.3.1：工具轮 / 最终轮都可能撞上输出上限，把终止原因带给上层
+          resolve(markReplyTruncated({ message: choice.message, id: res.data.id }, choice.finish_reason))
         } else {
           const errMsg = res.data?.error?.message || res.data?.message || `HTTP ${res.statusCode}`
           logger.error('[AgentLoop] API error:', res.statusCode, errMsg)
@@ -158,7 +160,7 @@ function callWithToolsStream(provider, cfg, messages, apiKey, onChunk) {
   return chatRequestChunkedStream('', '', cfg, onChunk, [], { messages, raw: true })
     .then(res => {
       if (res._error && !res.content) return fallbackToNonStream()
-      return { message: { content: res.content || '' }, id: res.conversation_id || '' }
+      return { message: { content: res.content || '' }, id: res.conversation_id || '', truncated: res.truncated === true }
     })
     .catch(() => fallbackToNonStream())
   // #endif
@@ -184,9 +186,10 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
 
   return new Promise((resolve) => {
     let fullContent = ''
+    let finishReason = ''
     let resolved = false
     const timer = setTimeout(() => {
-      if (!resolved) { resolved = true; resolve({ message: { content: fullContent }, id: '' }) }
+      if (!resolved) { resolved = true; resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason)) }
     }, 90000)
 
     fetch(provider.endpoint, {
@@ -202,7 +205,7 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
         const data = await resp.json()
         clearTimeout(timer)
         resolved = true
-        resolve({ message: data.choices?.[0]?.message || { content: '' }, id: data.id || '' })
+        resolve(markReplyTruncated({ message: data.choices?.[0]?.message || { content: '' }, id: data.id || '' }, data.choices?.[0]?.finish_reason))
         return
       }
       const decoder = new TextDecoder()
@@ -222,6 +225,9 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
           if (jsonStr === '[DONE]') continue
           try {
             const chunk = JSON.parse(jsonStr)
+            // 4.3.1：'length' = 撞上输出上限被截断
+            const fr = chunk.choices?.[0]?.finish_reason
+            if (fr) finishReason = fr
             const delta = chunk.choices?.[0]?.delta?.content || ''
             if (delta) {
               fullContent += delta
@@ -233,7 +239,7 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
       clearTimeout(timer)
       if (!resolved) {
         resolved = true
-        resolve({ message: { content: fullContent }, id: '' })
+        resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason))
       }
     }).catch((err) => {
       clearTimeout(timer)

@@ -5,7 +5,7 @@
  * 失败自动降级 simulatedStream。
  */
 import { getProvider, supportsStreamStructuredOutput, getReasoningConfig, getMaxTokens } from './providers.js'
-import { parseAiResponse } from './response-parser.js'
+import { parseAiResponse, markReplyTruncated } from './response-parser.js'
 import { buildChatMessages, getRecentHistory } from './chat-helpers.js'
 import { chatRequest as chatRequestNonStream } from './chat-request.js'
 import { simulatedStream } from './chat-simulated.js'
@@ -75,6 +75,7 @@ export async function chatRequestRealStream(message, conversationId, cfg, onChun
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
     let fullContent = ''
+    let finishReason = ''
     let conversationIdResult = ''
     let chunkCount = 0
 
@@ -107,6 +108,9 @@ export async function chatRequestRealStream(message, conversationId, cfg, onChun
 
         try {
           const json = JSON.parse(data)
+          // 4.3.1：记录输出终止原因 —— 'length' 就是撞上输出上限被截断（长文写到一半停住）
+          const fr = json.choices?.[0]?.finish_reason
+          if (fr) finishReason = fr
           const delta = json.choices?.[0]?.delta?.content || ''
           if (delta) {
             fullContent += delta
@@ -150,6 +154,7 @@ export async function chatRequestRealStream(message, conversationId, cfg, onChun
       logger.warn(`[Stream] 0 chunks received, status=${resp.status}, chunkCount=${chunkCount}, buffer bytes=${buffer.length}`)
     }
     const result = parseAiResponse(fullContent, conversationId)
+    markReplyTruncated(result, finishReason)
     if (conversationIdResult) result.conversation_id = conversationIdResult
     if (stopSignal?.stopped) result.stopped = true
 

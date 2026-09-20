@@ -104,6 +104,8 @@ export function persistConversations(conversations, activeConversationId) {
       }
       // 按钮与「进入总结 / 开场白」解耦：任何消息带按钮都要存下来（3.10.0）
       if (Array.isArray(m._enterButtons)) item._enterButtons = m._enterButtons
+      // 4.3.1：输出上限截断标记要落盘 —— 重启后还得看得见「继续写完」
+      if (m._truncated) item._truncated = true
       if (m.execResult) item.execResult = m.execResult
       if (m.execResults) item.execResults = m.execResults
       if (m.actionCard) item.actionCard = m.actionCard

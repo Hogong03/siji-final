@@ -173,6 +173,16 @@ function handleReadLong(msg) {
   }
 }
 
+/**
+ * 4.3.1：回复被输出上限截断 → 接着写。
+ * 上下文里本来就有那条半截回复（buildChatHistory 保留窗口内全文），所以只发一句「接着写」；
+ * 关键是明确「不要重复已写内容」，否则续写会把前半篇再抄一遍。
+ */
+function handleContinueWrite(msg) {
+  if (!msg || isSending.value) return
+  handleSend('继续写完上面那条回复：从被截断的地方接着写，不要重复已经写过的内容。')
+}
+
 /** 时间戳 → YYYY-MM（阅读页按月分片取记录） */
 function monthOfTs(ts) {
   const d = new Date(Number(ts) || Date.now())
@@ -586,6 +596,7 @@ function handleWelcomeChip(text) {
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
             @read-long="handleReadLong"
+            @continue-write="handleContinueWrite"
           />
             <!-- 开场消息的操作行：进入总结与欢迎语共用（3.10.0，按钮由 utils/enter-dialogue.js 生成）+ 返回旧对话 -->
             <view v-if="hasOpenerActions(msg) && !simulationMode" class="enter-actions">

@@ -6,7 +6,7 @@
  */
 
 import { getDefaultConfig, getProvider, getProviderDefaultModel, buildProviderRequest } from './providers.js'
-import { parseAiResponse } from './response-parser.js'
+import { parseAiResponse, markReplyTruncated } from './response-parser.js'
 import { buildChatMessages, getRecentHistory, cacheAiResponse, getOfflineCacheReply, ApiError } from './chat-helpers.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
 import { logger } from '../logger.js'
@@ -82,8 +82,10 @@ function chatRequestWithRetry(message, conversationId, cfg, retryCount, history)
       ...reqOpts,
       success(res) {
         if (res.statusCode === 200 && res.data?.choices) {
-          const raw = res.data.choices[0]?.message?.content || ''
-          const parsed = parseAiResponse(raw, conversationId)
+          const choice = res.data.choices[0]
+          const raw = choice?.message?.content || ''
+          // 4.3.1：撞上输出上限（finish_reason === 'length'）要在界面上说清楚，不能静默给半截
+          const parsed = markReplyTruncated(parseAiResponse(raw, conversationId), choice?.finish_reason)
 
           // 空回复自动重试 — 模型偶发返回空内容
           if (!parsed.reply || !parsed.reply.trim() || parsed._isFallback) {
@@ -202,8 +204,9 @@ function chatRequestWithRetryNoFormat(message, conversationId, cfg, history) {
       timeout: 45000,
       success(res) {
         if (res.statusCode === 200 && res.data?.choices) {
-          const raw = res.data.choices[0]?.message?.content || ''
-          resolve(parseAiResponse(raw, conversationId))
+          const choice = res.data.choices[0]
+          const raw = choice?.message?.content || ''
+          resolve(markReplyTruncated(parseAiResponse(raw, conversationId), choice?.finish_reason))
         } else {
           resolve(fallbackResponse(message, `请求失败: HTTP ${res.statusCode}`))
         }

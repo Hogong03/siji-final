@@ -6,6 +6,39 @@
 
 export const V43 = [
   {
+    version: '4.3.1',
+    date: '2026-09-18',
+    title: '4.3.1 输出截断不再静默：finish_reason 四条路径全采 + 气泡给「继续写完」',
+    summary: [
+      '截断可见：请求体虽然给了 max_tokens，但以前没人读厂商回的 finish_reason —— 模型撞上输出上限、写到一半停住时，界面跟一条正常短回复长得一模一样。现在四条请求路径（H5 SSE / App 分块流 / 非流式两处 / Agent 工具轮与最终轮）都采集 finish_reason，等于 length 就在消息上打 _truncated 标记',
+      '一键续写：AI 气泡下方出现「已达输出上限，回复被截断」+ 描边胶囊「继续写完」；点了发一句「从被截断的地方接着写、不要重复已写内容」——那半篇本来就在上下文窗口里，不用自己复制粘贴',
+      '标记随会话落盘：_truncated 进落盘白名单，重启后那条回复仍然带续写入口，线索不会因为重进对话就丢',
+      '判据只有一条事实来源：finish_reason 等于 length。没有按字数猜的启发式 —— 猜出来会把正常长文误报成半截',
+      '新增 tests/reply-truncated.test.js：判据纯函数 + 四条路径采集点 + 气泡入口 + 落盘白名单，逐条回归'
+    ],
+    categories: [
+      {
+        title: '截断采集（4.3.1）',
+        items: [
+          'utils/ai/response-parser.js：新增 markReplyTruncated(result, finishReason) —— 只认 length，返回原对象便于链式调用',
+          'utils/ai/chat-sse.js（H5 SSE）、utils/ai/chat-chunked.js（App 分块流，含 Agent 的 raw content 模式）解析 chunk 时记录 finish_reason 并打到结果上',
+          'utils/ai/chat-request.js 两处（正常路径 + 400 降级重试路径）、utils/ai/agent-transport.js 四处（工具轮 / 最终流式两处 / 非流式兜底 / App 分支）同样采集',
+          'utils/ai/agent-loop.js 两处返回值透传 truncated（正常最终回复 + 轮次耗尽兜底），工具轮截断也能一路带到界面'
+        ]
+      },
+      {
+        title: '续写入口（4.3.1）',
+        items: [
+          'composables/useChatEngine.js：拿到结果后把 _truncated 写到最后一条消息上（静默给半截是最坏的情况）',
+          'components/chat/MessageBubble.vue：新增 isTruncated（只认 assistant + _truncated 为 true）与 continue-write 事件，气泡下方一行提示 + 「继续写完」按钮',
+          'components/chat/MessageBubble.scss：.bubble-truncated 样式（黑描边胶囊 + 深色模式反相），与「按章节阅读」同一档',
+          'pages/chat/index.vue：handleContinueWrite 接住事件，发「继续写完上面那条回复：从被截断的地方接着写，不要重复已经写过的内容」',
+          'store/chat/persist.js：_truncated 进落盘白名单（重启后入口还在）'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.3.0',
     date: '2026-09-18',
     title: '4.3.0 长文能力：四家厂商声明输出上限 + 长文例外一次写全篇 + 长回复给「按章节阅读」',

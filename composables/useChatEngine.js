@@ -395,6 +395,8 @@ export function useChatEngine() {
       if (!result.reply && !streamedText) {
         logger.warn('AI 返回空 reply', JSON.stringify(result))
       }
+      // 4.3.1：回复被输出上限截断 → 气泡上给「继续写完」。静默给半截是最坏的情况
+      safeUpdate({ _truncated: result.truncated === true })
 
       let needConfirm = !!(result.action && result.action.needConfirm)
       // 3.0 M3 / 3.7.3：JSON 兜底路径的写操作同样受「写操作默认需确认」约束

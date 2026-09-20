@@ -201,6 +201,35 @@
   }
 }
 
+/* 输出上限截断提示条（4.3.1）—— 一行说清原因，右跟「继续写完」描边胶囊 */
+.bubble-truncated {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 8rpx;
+  padding: 0 4rpx;
+  flex-wrap: wrap;
+
+  .bubble-truncated-hint {
+    font-size: $font-xs;
+    color: #A1A1AA;
+  }
+
+  .bubble-truncated-btn {
+    font-size: $font-xs;
+    color: #000000;
+    font-weight: 600;
+    padding: 4rpx 16rpx;
+    border: 2rpx solid #000000;
+    border-radius: 999rpx;
+
+    &:active {
+      color: #FFFFFF;
+      background: #000000;
+    }
+  }
+}
+
 /* ─── AI 气泡内容类型变体 ─── */
 
 /* 纯文本/短文本 — 标准灰底，无边框 */
@@ -430,6 +459,18 @@
     &:active {
       color: #000000;
       background: #FAFAFA;
+    }
+  }
+  .bubble-truncated {
+    .bubble-truncated-hint { color: #71717A; }
+    .bubble-truncated-btn {
+      color: #FAFAFA;
+      border-color: #FAFAFA;
+
+      &:active {
+        color: #000000;
+        background: #FAFAFA;
+      }
     }
   }
 }

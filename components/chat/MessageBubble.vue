@@ -37,7 +37,8 @@ watch(imageSrc, () => { imageFailed.value = false })
 
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
-  'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase', 'read-long'
+  'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase', 'read-long',
+  'continue-write'
 ])
 
 /** 文件卡文案：名称 · 大小 · 行数（3.6.0 读文件） */
@@ -142,6 +143,11 @@ const isLongText = computed(() => {
 })
 
 function onReadLong() { emit('read-long', props.message) }
+
+/** 被输出上限截断（4.3.1）：标记来自 finish_reason === 'length'，不是按字数猜的 */
+const isTruncated = computed(() => props.message.role === 'assistant' && props.message._truncated === true)
+
+function onContinueWrite() { emit('continue-write', props.message) }
 
 function onRegenerate() { emit('regenerate') }
 function onRephrase() { emit('rephrase') }
@@ -259,6 +265,12 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
             </view>
           </view>
         </view>
+      </view>
+
+      <!-- 输出上限截断：说清原因 + 给续写入口（4.3.1） -->
+      <view v-if="isTruncated" class="bubble-truncated">
+        <text class="bubble-truncated-hint">已达输出上限，回复被截断</text>
+        <text class="bubble-truncated-btn" @tap.stop="onContinueWrite">继续写完</text>
       </view>
 
       <!-- 时间戳 + 操作按钮（AI: 复制；用户: 复制+编辑） -->
