@@ -157,6 +157,86 @@ export function getUsedTags(type) {
   return result
 }
 
+// ==================== 标签自定义顺序（4.4.0）====================
+/**
+ * 用户在记录页把标签拖到了自己习惯的位置，这份顺序必须落盘 ——
+ * 否则每次重算「按使用频次排」都会把辛苦调好的顺序冲掉。
+ * 存成 { diary: [名, 名], plan: [...] }，按类型分片，和标签本身同一套分片习惯。
+ */
+export const TAG_ORDER_KEY = 'siji_tag_order'
+
+/** 读取某类型的自定义标签顺序（没有则空数组） */
+export function getTagOrder(type) {
+  try {
+    const raw = uni.getStorageSync(TAG_ORDER_KEY)
+    const obj = raw ? JSON.parse(raw) : {}
+    const arr = obj && Array.isArray(obj[type]) ? obj[type] : []
+    return arr.filter(n => typeof n === 'string' && n)
+  } catch (e) {
+    return []
+  }
+}
+
+/** 保存某类型的自定义标签顺序 */
+export function setTagOrder(type, names) {
+  try {
+    const raw = uni.getStorageSync(TAG_ORDER_KEY)
+    const obj = raw ? JSON.parse(raw) : {}
+    obj[type] = (Array.isArray(names) ? names : []).filter(n => typeof n === 'string' && n)
+    uni.setStorageSync(TAG_ORDER_KEY, JSON.stringify(obj))
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+/**
+ * 把自定义顺序套到标签列表上（纯函数）
+ *
+ * 在 order 里的标签按 order 的顺序排；不在 order 里的（新出现的标签）保持原有相对顺序，
+ * 统一排在已排序的后面 —— 新增标签不会打乱用户已经调好的那一批。
+ * @param {Array<{name: string}>} list
+ * @param {string[]} order
+ */
+export function applyTagOrder(list, order) {
+  const arr = Array.isArray(list) ? list : []
+  const seq = Array.isArray(order) ? order : []
+  if (seq.length === 0) return arr
+  const rank = {}
+  seq.forEach((n, i) => {
+    if (!Object.prototype.hasOwnProperty.call(rank, n)) rank[n] = i
+  })
+  const known = []
+  const rest = []
+  arr.forEach(item => {
+    const n = item && item.name
+    if (n && Object.prototype.hasOwnProperty.call(rank, n)) known.push(item)
+    else rest.push(item)
+  })
+  known.sort((a, b) => rank[a.name] - rank[b.name])
+  return [...known, ...rest]
+}
+
+/**
+ * 把某个标签往左/往右挪一位（纯函数）
+ * @param {string[]} order
+ * @param {string} name
+ * @param {number} delta -1 左移 / +1 右移
+ * @returns {string[]} 新数组；越界时原样返回
+ */
+export function moveTagInList(order, name, delta) {
+  const arr = Array.isArray(order) ? [...order] : []
+  const step = Number(delta) < 0 ? -1 : 1
+  const i = arr.indexOf(name)
+  if (i < 0) return arr
+  const j = i + step
+  if (j < 0 || j >= arr.length) return arr
+  const tmp = arr[i]
+  arr[i] = arr[j]
+  arr[j] = tmp
+  return arr
+}
+
 /**
  * 按种类分组获取标签
  * @param {'diary'|'plan'} type

@@ -6,6 +6,8 @@
  * 切分不丢内容、刻度换算、以及「几节才显示尺子」的门槛。
  */
 import { describe, it, expect } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
 import './setup.js'
 import {
   parseHeading, extractOutline, splitSections, shouldShowOutline, buildOutlineTicks,
@@ -228,5 +230,23 @@ describe('splitSections 必须带上 percent（否则目录尺刻度全堆在顶
     const ticks = buildOutlineTicks(secs)
     expect(ticks[0].label).toBe('一、A')
     expect(ticks[1].percent).toBeGreaterThan(ticks[0].percent)
+  })
+})
+
+describe('目录尺版式：垂直居中（4.4.0）', () => {
+  const scss = fs.readFileSync(path.join(process.cwd(), 'pages/diary/read.scss'), 'utf8')
+  const block = (sel) => {
+    const m = scss.match(new RegExp(sel.replace('.', '\\.') + '\\s*\\{[\\s\\S]*?\\n\\}'))
+    return m ? m[0] : ''
+  }
+
+  it('尺子容器垂直居中（align-items: center）', () => {
+    expect(block('.read-ruler')).toContain('align-items: center')
+  })
+
+  it('刻度轨道不再占满高度 —— 上下各留余量，刻度不贴屏幕边缘', () => {
+    const track = block('.ruler-track')
+    expect(track).toContain('height: 88%')
+    expect(track).not.toContain('height: 100%')
   })
 })

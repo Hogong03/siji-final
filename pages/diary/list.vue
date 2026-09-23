@@ -13,6 +13,7 @@ const {
   diaries, currentMonth, loading, filterTag, filterTags,
   searchKeyword, viewMode, reviewRecords,
   monthCount, totalWords, streakDays, topTags, quickTags, emotionStats,
+  showAllTags, sortMode, canMove, tapAll, toggleSortMode, moveTag,
   filteredDiaries, calendarDays, timelineGroups, months,
   paginationEnabled, pageSize, page, pageCount, pagedDiaries,
   setPagination, setPageSize, prevPage, nextPage, goPage,
@@ -109,14 +110,26 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       </view>
     </view>
 
-    <!-- 快捷标签：按使用频次排前 8 个，点一下就筛（4.2.0） -->
+    <!-- 标签条（4.4.0）：默认只露一个「全部」，点开铺开所有标签；点「排序」可调位置 -->
     <scroll-view v-if="quickTags.length > 0" class="quick-tags" scroll-x>
-      <view class="quick-tag" :class="{ active: !filterTag }" @tap="filterTag = ''"><text>全部</text></view>
-      <view
-        v-for="t in quickTags" :key="'q'+t.name"
-        class="quick-tag" :class="{ active: filterTag === t.name }"
-        @tap="toggleTag(t.name)"
-      ><text>#{{ t.name }}</text></view>
+      <view class="quick-tag" :class="{ active: !filterTag && !showAllTags }" @tap="tapAll">
+        <text>{{ showAllTags ? '收起' : '全部' }}</text>
+      </view>
+      <template v-if="showAllTags">
+        <view
+          v-for="t in quickTags" :key="'q'+t.name"
+          class="quick-tag"
+          :class="{ active: filterTag === t.name && !sortMode, sorting: sortMode }"
+        >
+          <view v-if="sortMode" class="tag-move" :class="{ disabled: !canMove(t.name, -1) }" @tap.stop="moveTag(t.name, -1)"><text>‹</text></view>
+          <text v-if="!sortMode" @tap="toggleTag(t.name)">#{{ t.name }}</text>
+          <text v-else class="tag-name-static">#{{ t.name }}</text>
+          <view v-if="sortMode" class="tag-move" :class="{ disabled: !canMove(t.name, 1) }" @tap.stop="moveTag(t.name, 1)"><text>›</text></view>
+        </view>
+        <view class="quick-tag sort-toggle" @tap="toggleSortMode">
+          <text>{{ sortMode ? '完成' : '排序' }}</text>
+        </view>
+      </template>
     </scroll-view>
 
     <!-- 回顾卡：每天一次，把旧记录推回眼前（4.2.0） ← flomo 的每日回顾 -->

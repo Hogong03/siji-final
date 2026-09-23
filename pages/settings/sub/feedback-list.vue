@@ -6,13 +6,18 @@
  *  ① 展示所有已提交的反馈（按时间倒序）
  *  ② 统计概览（总数、平均评分、分类分布）
  *  ③ 点击进入编辑（跳转 feedback-new.vue?id=xxx）
- *  ④ 长按删除（确认弹窗）
+ *  ④ 长按删除（确认弹窗）；长按判定走 usePressHold —— 滑动时不触发（4.4.0 修）
  *  ⑤ FAB 新建反馈
  */
 
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getFeedbackList, deleteFeedback, getFeedbackStats } from '@/utils/storage.js'
+import { usePressHold } from '@/composables/usePressHold.js'
+
+// 长按删除：按住 550ms 且手指没滑动才算（原生 @longpress 在滑动时会误触，见反馈列表「滑动弹出删除」）
+const press = usePressHold()
+const pressDelete = (e, item) => press.onTouchStart(e, () => handleDelete(item))
 
 const list = ref([])
 const stats = ref({ total: 0, avgRating: '0.0', categoryMap: {} })
@@ -45,6 +50,8 @@ function preview(text, maxLen = 50) {
 }
 
 function goEdit(item) {
+  // 刚触发过长按（弹了删除确认）就不再进编辑页，避免一次手势两个结果
+  if (press.justFired()) return
   uni.navigateTo({ url: `/pages/settings/sub/feedback-new?id=${encodeURIComponent(item.client_id)}` })
 }
 
@@ -102,7 +109,10 @@ function handleDelete(item) {
         :key="item.client_id"
         class="feedback-card"
         @tap="goEdit(item)"
-        @longpress="handleDelete(item)"
+        @touchstart="pressDelete($event, item)"
+        @touchmove="press.onTouchMove($event)"
+        @touchend="press.onTouchEnd"
+        @touchcancel="press.onTouchEnd"
       >
         <view class="card-header">
           <view class="card-category" :style="{ color: (categoryConfig[item.category] || {}).color || '#18181B' }">

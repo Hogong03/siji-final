@@ -8,7 +8,10 @@
  * 不再区分本地/全局搜索
  */
 import { ref, computed, watch } from 'vue'
-import { getDiaryList, getUsedTags, getDiariesBetween } from '@/utils/storage.js'
+import {
+  getDiaryList, getUsedTags, getDiariesBetween,
+  getTagOrder, setTagOrder, applyTagOrder, moveTagInList
+} from '@/utils/storage.js'
 import { parseDiaryQuery } from '@/utils/diary-query.js'
 import { pickReviewRecords } from '@/utils/record-review.js'
 
@@ -48,13 +51,25 @@ export function useDiaryList() {
     return { map, total }
   })
 
-  // 高频标签：筛选面板用前 5，快捷条用前 8（按使用频次排，点一下就筛）
+  // 标签条状态（4.4.0）：自定义顺序 / 是否铺开 / 是否在排序模式
+  const tagOrder = ref([])
+  const showAllTags = ref(false)
+  const sortMode = ref(false)
+
+  // 高频标签：筛选面板用前 5（按频次）；快捷条用全部标签（顺序：用户调过的优先）
   const topTags = computed(() => {
     return [...filterTags.value].sort((a, b) => b.count - a.count).slice(0, 5)
   })
   const quickTags = computed(() => {
-    return [...filterTags.value].sort((a, b) => b.count - a.count).slice(0, 8)
+    const byCount = [...filterTags.value].sort((a, b) => b.count - a.count)
+    return applyTagOrder(byCount, tagOrder.value)
   })
+  const canMove = (name, delta) => {
+    const names = quickTags.value.map(t => t.name)
+    const i = names.indexOf(name)
+    const j = i + (Number(delta) < 0 ? -1 : 1)
+    return i >= 0 && j >= 0 && j < names.length
+  }
 
   // 置顶排序
   const sortedDiaries = computed(() => {
@@ -156,7 +171,10 @@ export function useDiaryList() {
     } finally { loading.value = false }
   }
 
-  function loadTags() { filterTags.value = getUsedTags('diary') }
+  function loadTags() {
+    filterTags.value = getUsedTags('diary')
+    tagOrder.value = getTagOrder('diary')
+  }
 
   // 切换时间范围 — 只重载数据，不清搜索/标签
   function switchMonth(key) {
@@ -293,6 +311,30 @@ export function useDiaryList() {
     filterTag.value = filterTag.value === tagName ? '' : tagName
   }
 
+  /**
+   * 「全部」按钮（4.4.0）：清空标签筛选 + 铺开/收起所有标签
+   * 收起时一并退出排序模式，避免下次点开还是排序态
+   */
+  function tapAll() {
+    filterTag.value = ''
+    showAllTags.value = !showAllTags.value
+    if (!showAllTags.value) sortMode.value = false
+  }
+
+  /** 进入 / 退出排序模式（排序时点标签不筛选，防止误触） */
+  function toggleSortMode() {
+    sortMode.value = !sortMode.value
+  }
+
+  /** 把某个标签往左/右挪一位，顺序落盘 */
+  function moveTag(name, delta) {
+    const names = quickTags.value.map(t => t.name)
+    const next = moveTagInList(names, name, delta)
+    if (next.join('\u0000') === names.join('\u0000')) return
+    tagOrder.value = next
+    setTagOrder('diary', next)
+  }
+
   function getItemTags(item) {
     if (Array.isArray(item.tags)) return item.tags
     if (typeof item.tags === 'string') {
@@ -319,6 +361,7 @@ export function useDiaryList() {
     diaries, currentMonth, loading, filterTag, filterTags,
     searchKeyword, viewMode, reviewRecords,
     monthCount, totalWords, streakDays, topTags, quickTags, emotionStats,
+    showAllTags, sortMode, canMove, tapAll, toggleSortMode, moveTag,
     filteredDiaries, calendarDays, timelineGroups, months,
     paginationEnabled, pageSize, page, pageCount, pagedDiaries,
     setPagination, setPageSize, prevPage, nextPage, goPage,

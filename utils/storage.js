@@ -120,6 +120,11 @@ export {
 export {
   getTags,
   getUsedTags,
+  TAG_ORDER_KEY,
+  getTagOrder,
+  setTagOrder,
+  applyTagOrder,
+  moveTagInList,
   addCustomTag,
   removeCustomTag,
   getTagsByCategory,

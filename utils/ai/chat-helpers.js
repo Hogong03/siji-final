@@ -144,6 +144,56 @@ export function buildChatMessages(userMessage, history, cfg) {
 
 // ==================== 对话历史 ====================
 
+/**
+ * 历史预算（4.4.0）
+ *
+ * 为什么要有预算：历史窗口一直按「条数」取最近 20 条，4.3.0 上线长文能力之后，
+ * 一条 AI 回复可能两三千字 —— 聊过一篇文章以后，**后面每一条消息都要把这篇文章
+ * 原文重发一遍**，而且工具循环每轮都重发，固定开销随对话越长越离谱。
+ * 这是「AI 响应变慢」最直接的结构性来源。
+ *
+ * 规则：单条截断 → 从最近往前累加到预算 → 至少保底最近几条。
+ */
+export const HISTORY_MAX_CHARS = 6000
+export const HISTORY_MAX_PER_MESSAGE = 1200
+export const HISTORY_MIN_KEEP = 6
+
+/** 截断标记：让模型知道这段被截过，不要当作完整上下文 */
+export const HISTORY_TRUNCATED_MARK = '…（内容过长已截断）'
+
+/**
+ * 按字符预算裁剪历史（纯函数）
+ * @param {Array<{role: string, content: string}>} history
+ * @param {{maxChars?: number, maxPerMessage?: number, minKeep?: number}} options
+ * @returns {Array<{role: string, content: string}>}
+ */
+export function trimHistory(history, options = {}) {
+  const maxChars = Number(options.maxChars) > 0 ? Number(options.maxChars) : HISTORY_MAX_CHARS
+  const maxPerMessage = Number(options.maxPerMessage) > 0 ? Number(options.maxPerMessage) : HISTORY_MAX_PER_MESSAGE
+  const minKeep = Number(options.minKeep) >= 0 ? Number(options.minKeep) : HISTORY_MIN_KEEP
+  const arr = Array.isArray(history) ? history : []
+
+  const normalized = arr.map(m => {
+    const content = m && typeof m.content === 'string' ? m.content : ''
+    const clipped = content.length > maxPerMessage
+      ? content.slice(0, maxPerMessage) + HISTORY_TRUNCATED_MARK
+      : content
+    return { role: m && m.role, content: clipped }
+  })
+
+  const out = []
+  let used = 0
+  for (let i = normalized.length - 1; i >= 0; i--) {
+    const item = normalized[i]
+    const len = (item.content || '').length
+    // 保底条数之内不按预算砍（避免「刚说的那件事」突然从上下文里消失）
+    if (out.length >= minKeep && used + len > maxChars) break
+    out.unshift(item)
+    used += len
+  }
+  return out
+}
+
 export function getRecentHistory() {
   try {
     const convRaw = uni.getStorageSync('siji_conversations')
@@ -160,19 +210,20 @@ export function getRecentHistory() {
               return false
             })
             .slice(-20)
-          return recent.map(m => ({
+          // 返回前统一过预算（4.4.0）：长文回复不再被整段重发
+          return trimHistory(recent.map(m => ({
             role: m.role,
             content: m.aiReply || m.content
-          }))
+          })))
         }
       }
     }
     const raw = uni.getStorageSync('siji_chat_history') || '[]'
     const all = JSON.parse(raw)
-    return all.slice(-15).map(m => ({
+    return trimHistory(all.slice(-15).map(m => ({
       role: m.role,
       content: typeof m.content === 'string' ? (m.aiReply || m.content) : JSON.stringify(m.content)
-    }))
+    })))
   } catch {
     return []
   }

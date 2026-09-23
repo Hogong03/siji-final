@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 77 文件 / 1119 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.3.0（长文能力：四家厂商声明输出上限 + 长文例外一次写全篇 + 长回复给「按章节阅读」） |
+| 测试 | 81 文件 / 1170 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.4.0（修列表滑动误触删除 + 聊天历史按预算裁剪 + 目录尺垂直居中 + 标签条可折叠可排序） |
 
 ---
 
@@ -142,11 +142,11 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.3.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.4.js）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 77 文件 1119 用例
+├── tests/              # 81 文件 1170 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -286,6 +286,9 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 加六级内容（方法 / 资料） | 方法篇 `utils/storage/cet6-tips.js`（4 章，标签「技巧」）+ 资料篇 `utils/storage/cet6-material.js`（6 篇，标签「复习资料」）；都在 `App.vue` 的 appReady 调 `ensureCet6Tips()` 补发，改内容要 +`CET6_SEED_VERSION` |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/cet6-tips.js` 的 `ensureCet6Tips`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates` |
 | 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |
+| 改长按类手势（长按删除等） | `composables/usePressHold.js`（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别再用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」） |
+| 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
+| 改聊天历史窗口 | `utils/ai/chat-helpers.js` 的 `trimHistory()`（单条 1200 字 / 总量 6000 字 / 保底 6 条）+ `getRecentHistory()`。**长文能力上线后历史必须按预算裁**，否则一篇两三千字的回复会被每条消息重发一遍 |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
@@ -334,7 +337,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 77 文件 / 1119 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 81 文件 / 1170 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

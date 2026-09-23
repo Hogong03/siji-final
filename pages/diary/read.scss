@@ -185,7 +185,10 @@
 .ruler-track {
   position: relative;
   width: 100%;
-  height: 100%;
+  /* 4.4.0：刻度尺整体垂直居中 —— 上下各留 6% 余量，刻度不再顶到屏幕上下边缘
+     （.read-ruler 是 align-items:center 的 flex 容器，改高度即居中）
+     触摸换算用的是同一个 #read-ruler-track 的 DOM rect，所以咬合关系不变 */
+  height: 88%;
 }
 
 /* 脊柱：极浅的竖线，刻度挂在它右侧 —— 一眼是尺子，不像滚动条 */
