@@ -389,8 +389,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `a2da053` (4.3.0 长文能力，版本记录 `utils/storage/version-log/4.3.js`)
-- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `0ed075f` (4.4.0 四个问题修复，版本记录 `utils/storage/version-log/4.4.js`)
+- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）；**2026-09-23 推送 4.4.0 连续 4 次 schannel TLS 握手失败**（网络侧，本地领先 1 个 commit，网络恢复后重推）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
