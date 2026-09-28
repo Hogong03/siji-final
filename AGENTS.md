@@ -328,10 +328,10 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `0ed075f` (feat: 4.4.0 修列表滑动误触删除 + 聊天历史按预算裁剪 + 目录尺垂直居中 + 标签条可折叠可排序)
-- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）；**2026-09-23 推送 4.4.0 连续 4 次 schannel TLS 握手失败**（网络侧，本地领先 1 个 commit，网络恢复后重推）
-- 上一次 push 曾遇到 schannel TLS 握手失败（网络侧，连续重试 + 连通性检查均失败），网络恢复后重推即通过 —— 按「发布规矩」第 4 条，失败必须当场重试并报告，不要静默跳过，也不要为绕证书问题改 `sslVerify`
-- `http.sslVerify` 保持 true（2026-08-20 恢复）
+- 当前 HEAD: `b9e20f1`（feat: 4.5.0 上班打卡提醒（可推迟/弹窗直达打卡）+ 进入对话收敛成一条单消息；随后 chore 补 .gitignore）
+- 远端：`origin/main`，2026-09-28 推送成功（`4a4327f..b9e20f1`，连带把 4.4.0 的两个未推送 commit 一起带上去）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
+- Mimosa 提交钩子会拦「高危」：本轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
+- `http.sslVerify` 保持 true
 
 ---
 

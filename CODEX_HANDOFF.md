@@ -389,8 +389,8 @@ npx vitest run
 
 ## 10. Git 状态
 
-- 当前 HEAD: `0ed075f` (4.4.0 四个问题修复，版本记录 `utils/storage/version-log/4.4.js`)
-- 远端：`origin/main`，2026-09-18 推送成功（`cec9d57..a2da053`）；**2026-09-23 推送 4.4.0 连续 4 次 schannel TLS 握手失败**（网络侧，本地领先 1 个 commit，网络恢复后重推）；GitHub push 已恢复（2026-08-20 成功推送 27 个 commit）
+- 当前 HEAD: `b9e20f1`（feat: 4.5.0 上班打卡 + 进入单消息，版本记录 `utils/storage/version-log/4.5.js`；chore 补 .gitignore）
+- 远端：`origin/main`，2026-09-28 推送成功（`4a4327f..b9e20f1`，含 4.4.0 的两个补推 commit）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`（旧地址重定向可用）
 - `http.sslVerify` 已恢复为 true（2026-08-20）
 
 ---
