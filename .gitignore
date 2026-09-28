@@ -7,6 +7,10 @@ unpackage/release/
 .hbuilderx/
 .claude/
 
+# 本地工具产物
+.mimosa/
+.zcode/
+
 # 依赖
 node_modules/
 
