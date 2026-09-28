@@ -25,7 +25,7 @@ import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
 import { useEnterSummary } from '@/composables/useEnterSummary.js'
 import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-session.js'
-import { buildWelcomeMessage, hasOpenerActions } from '@/utils/enter-dialogue.js'
+import { hasOpenerActions } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { useChatRuler } from '@/composables/useChatRuler.js'
@@ -37,7 +37,6 @@ const inputAreaRef = ref(null)
 // ===== 聊天核心逻辑 =====
 const {
   isSending, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
-  nextStep, clearNextStep,
   simulationMode,
   getWelcomeMessage, handleSend: engineSend, handleStop: engineStop, handleRetry: engineRetry,
   handleConfirmAction, handleCancelAction, initSimulation
@@ -117,8 +116,9 @@ const summaryReturnVisible = computed(
 )
 
 /**
- * 总结消息里预置按钮的分发（3.5.21）
+ * 总结消息里预置按钮的分发（3.5.21；4.5.0 增加直达打卡）
  * navigate：先推进确认基线（看过就不再报）再跳页；prefill：把预置话术填进输入框，用户自己改
+ * checkin：直达打卡（打上班卡/下班卡），走 executeAction 同一套执行器（同日幂等、可撤销）
  * @param {Object} btn { key, label, action, value }，由 utils/enter-dialogue.js 的 buildEnterButtons 生成
  */
 function handleEnterButton(btn) {
@@ -128,8 +128,28 @@ function handleEnterButton(btn) {
     handleWelcomeChip(btn.value || '')
     return
   }
+  if (btn.action === 'checkin') {
+    doDirectCheckin(btn.value)
+    return
+  }
   uni.navigateTo({ url: btn.value || '/pages/diary/list' })
 }
+
+/** 消息里的直达打卡（4.5.0）：执行器返回的 message 直接当 toast 文案 */
+function doDirectCheckin(planId) {
+  if (!planId) return
+  let result = null
+  try {
+    result = store.executeAction({ type: 'log_plan_checkin', payload: { client_id: planId } })
+  } catch (e) {
+    result = null
+  }
+  uni.showToast({ title: (result && result.message) || '已打卡', icon: 'none' })
+}
+
+// ===== 冷启动新对话 + 新对话空态入口（3.5.16；4.5.0 开场恒产出单条消息）=====
+const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, appendEnterSummary, buildOpenerMessage, maybeStartFreshSession } =
+  useChatSession(store)
 
 // ===== 会话管理 =====
 const {
@@ -138,11 +158,7 @@ const {
   toggleConvList, setFilter, selectTag, refreshTags,
   handleNewConversation: _handleNewConversation, handleSwitchConversation: _handleSwitchConversation, handleDeleteConversation: _handleDeleteConversation,
   handleRenameConversation, handleAddTag
-} = useConversationManager(store, getWelcomeMessage, resetScrollState)
-
-// ===== 冷启动新对话 + 新对话空态入口（3.5.16）=====
-const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resumeBack, appendEnterSummary, maybeStartFreshSession } =
-  useChatSession(store, getWelcomeMessage)
+} = useConversationManager(store, getWelcomeMessage, resetScrollState, buildOpenerMessage)
 
 function handleResumeBack() {
   if (!resumeBack()) return
@@ -342,14 +358,6 @@ function handleSuggestion(text) {
   handleSend(text)
 }
 
-// 3.5.13：最小行动单卡 —— 点进计划详情，或直接关掉
-function handleNextStep() {
-  const item = nextStep.value
-  clearNextStep()
-  if (!item) return
-  uni.navigateTo({ url: '/pages/plan/detail?clientId=' + item.client_id })
-}
-
 function handleEditOwn(content) {
   if (!content) return
   inputAreaRef.value?.setText(content)
@@ -471,9 +479,9 @@ onMounted(() => {
     store.createConversation()
   }
   if (store.messages.length === 0 && !simulationMode.value && !_pendingSimParams) {
-    // 有进入总结就发总结（伪对话开场），没有才发欢迎语
+    // 4.5.0：开场恒产出 —— pending 进入总结优先，没有窗口进展就用当下快照（问候+状态+下一步）
     if (!injectEnterSummary(enterSummary.value)) {
-      store.addMessage(buildWelcomeMessage(getWelcomeMessage()))
+      appendEnterSummary(null)
     }
   }
   const sysInfo = uni.getSystemInfoSync()
@@ -670,18 +678,6 @@ function handleWelcomeChip(text) {
     <!-- 回到底部按钮 -->
     <view v-if="showBackToBottom" class="back-to-bottom" @tap="backToBottom">
       <SijiIcon name="arrow-down" size="sm" color="#71717A" />
-    </view>
-
-    <!-- 对话后的最小行动单卡（3.5.13：每天最多一次，可关，不追问） -->
-    <view v-if="nextStep && !isSending" class="next-step-card">
-      <view class="next-step-main" @tap="handleNextStep">
-        <text class="next-step-label">今天可以从这件开始</text>
-        <text class="next-step-title">{{ nextStep.title }}</text>
-        <text v-if="nextStep.minutes > 0" class="next-step-meta">约 {{ nextStep.minutes }} 分钟</text>
-      </view>
-      <view class="next-step-close" @tap="clearNextStep">
-        <text class="next-step-close-icon">×</text>
-      </view>
     </view>
 
     <!-- 快捷建议按钮 -->

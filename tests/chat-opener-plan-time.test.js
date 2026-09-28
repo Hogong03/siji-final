@@ -79,11 +79,14 @@ describe('开场消息：欢迎语与进入总结共用一套按钮', () => {
 
 describe('静态回归：不再有 $root.$emit（死按钮的根因）', () => {
   it('components / pages 里没有 $root.$emit 调用', () => {
-    const ROOT = process.cwd()
+    const ROOT = path.resolve(process.cwd())
     const hits = []
     const walk = (dir) => {
-      fs.readdirSync(dir, { withFileTypes: true }).forEach(entry => {
-        const full = path.join(dir, entry.name)
+      // 越界守卫：只扫仓库内的路径（root + path.sep 边界），越界目录直接跳过
+      const resolved = path.resolve(dir)
+      if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) return
+      fs.readdirSync(resolved, { withFileTypes: true }).forEach(entry => {
+        const full = path.join(resolved, entry.name)
         if (entry.isDirectory()) walk(full)
         else if (entry.name.endsWith('.vue') || entry.name.endsWith('.js')) {
           const text = fs.readFileSync(full, 'utf8')
@@ -173,10 +176,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     const plan = { client_id: 'p4', title: '早就该交的报告', status: 0, deadline: '2026-01-01' }
     initReminder(() => [plan])
     let triggered = 0
-    const origModal = uni.showModal
-    uni.showModal = () => { triggered++ }
+    const origModal = uni.showActionSheet
+    uni.showActionSheet = () => { triggered++ }
     checkAllReminders()
-    uni.showModal = origModal
+    uni.showActionSheet = origModal
     expect(triggered).toBeGreaterThan(0)
     expect(past.getTime()).toBeLessThan(Date.now())
   })
@@ -186,10 +189,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     setPlanReminder('p5', { enabled: false, advanceMin: 30 })
     initReminder(() => [plan])
     let triggered = 0
-    const origModal = uni.showModal
-    uni.showModal = () => { triggered++ }
+    const origModal = uni.showActionSheet
+    uni.showActionSheet = () => { triggered++ }
     checkAllReminders()
-    uni.showModal = origModal
+    uni.showActionSheet = origModal
     expect(triggered).toBe(0)
     expect(getReminderSettings().plans.p5.enabled).toBe(false)
   })
@@ -202,10 +205,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     ]
     initReminder(() => plans)
     let triggered = 0
-    const origModal = uni.showModal
-    uni.showModal = () => { triggered++ }
+    const origModal = uni.showActionSheet
+    uni.showActionSheet = () => { triggered++ }
     checkAllReminders()
-    uni.showModal = origModal
+    uni.showActionSheet = origModal
     expect(triggered).toBe(0)
   })
 })

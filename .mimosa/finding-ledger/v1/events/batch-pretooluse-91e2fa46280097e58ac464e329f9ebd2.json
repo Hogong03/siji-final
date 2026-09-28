@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "pretooluse-91e2fa46280097e58ac464e329f9ebd2",
+  "runId": null,
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "PreToolUse"
+  },
+  "revision": null,
+  "diffHash": null,
+  "rulesVersion": null,
+  "sessionHash": "fa43c656482a9b44a29b6358d11b8f48998f2447cad01e3470bc2dc70d70f7de",
+  "reportRef": null,
+  "events": [
+    {
+      "eventId": "hook-d566096645b0fd98aa2cde8679b9c4f3",
+      "findingId": "mimosa-b02c316ec00c2a083892db57",
+      "type": "finding_blocked",
+      "at": "2026-09-28T06:26:20.323Z",
+      "identity": {
+        "projectRelativeFile": "tests/chat-opener-plan-time.test.js",
+        "ruleId": "security",
+        "codeEvidenceHash": "6f36538709263dcaa08b6ff9f1f66f1d2824de6870c4d0ef4a654dc2d9bf23a4",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 8,
+      "endLine": 8,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "6f36538709263dcaa08b6ff9f1f66f1d2824de6870c4d0ef4a654dc2d9bf23a4"
+      },
+      "sequence": 0
+    }
+  ],
+  "observedFindingIds": [],
+  "verifiedFiles": [],
+  "recordedAt": "2026-09-28T06:26:20.731Z"
+}

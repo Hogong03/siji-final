@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-09-28T06:26:45.244Z",
+  "sessionId": "sess_af4cd7e8-3989-489c-9f83-b986c98a87f1",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "tests/chat-opener-plan-time.test.js",
+  "outcome": "static_verified",
+  "coverage": "complete",
+  "findingCount": 1,
+  "durationMs": 939,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

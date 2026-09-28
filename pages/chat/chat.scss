@@ -550,61 +550,6 @@
   }
 }
 
-/* ─── 对话后的最小行动单卡（3.5.13：每天最多一次，可关） ─── */
-.next-step-card {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin: 12rpx $spacing-md 4rpx;
-  padding: 16rpx 20rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #E4E4E7;
-  border-radius: 14rpx;
-  flex-shrink: 0;
-}
-
-.next-step-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.next-step-label {
-  font-size: 20rpx;
-  color: #A1A1AA;
-}
-
-.next-step-title {
-  font-size: $font-sm;
-  font-weight: 600;
-  color: #18181B;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.next-step-meta {
-  font-size: 20rpx;
-  color: #71717A;
-}
-
-.next-step-close {
-  flex-shrink: 0;
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.next-step-close-icon {
-  font-size: 32rpx;
-  line-height: 1;
-  color: #A1A1AA;
-}
-
 /* ─── 新对话空态：回去接着聊 / 选择历史对话（3.5.16） ─── */
 .resume-card {
   margin: 12rpx $spacing-md;
@@ -901,22 +846,6 @@
     background: #27272A;
     color: #FAFAFA;
     border: 1rpx solid #27272A;
-  }
-  .next-step-card {
-    background: #18181B;
-    border-color: #27272A;
-  }
-  .next-step-label {
-    color: #71717A;
-  }
-  .next-step-title {
-    color: #FAFAFA;
-  }
-  .next-step-meta {
-    color: #A1A1AA;
-  }
-  .next-step-close-icon {
-    color: #71717A;
   }
   .retry-bar {
     background: #18181B;

@@ -2,7 +2,11 @@
 /**
  * 提醒设置组件
  * 支持基于截止时间的提前提醒 + 自定义提醒时间
+ * 4.5.0：新增「弹出后默认推迟」档位（全局设置，不走表单 proxy —— 它不属于单个计划）
  */
+import { ref } from 'vue'
+import { getSnoozeMin, setSnoozeMin, SNOOZE_OPTIONS } from '@/utils/reminder.js'
+
 defineProps({
   enabled: { type: Boolean, default: false },
   advanceMin: { type: Number, default: 30 },
@@ -29,6 +33,12 @@ const emit = defineEmits([
   'update:customDate',
   'update:customTimeValue'
 ])
+
+const snoozeMin = ref(getSnoozeMin())
+
+function selectSnooze(min) {
+  snoozeMin.value = setSnoozeMin(min)
+}
 
 function onSwitchChange(e) {
   emit('update:enabled', e.detail.value)
@@ -100,6 +110,19 @@ function cancelCustom() {
           </view>
         </view>
         <text v-if="!dueDate && !customDate" class="reminder-hint">请先设置截止时间或自定义提醒时间</text>
+        <view class="reminder-snooze">
+          <text class="reminder-custom-label">弹出后默认推迟（全局生效）</text>
+          <view class="reminder-chips">
+            <view
+              v-for="min in SNOOZE_OPTIONS" :key="min"
+              class="reminder-chip"
+              :class="{ active: snoozeMin === min }"
+              @tap="selectSnooze(min)"
+            >
+              推迟 {{ min }} 分钟
+            </view>
+          </view>
+        </view>
       </view>
     </template>
   </view>
@@ -146,6 +169,12 @@ function cancelCustom() {
 }
 
 .reminder-custom {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1rpx solid #E4E4E7;
+}
+
+.reminder-snooze {
   margin-top: $spacing-md;
   padding-top: $spacing-md;
   border-top: 1rpx solid #E4E4E7;

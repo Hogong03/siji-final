@@ -1,0 +1,14 @@
+{
+  "name": "siji",
+  "version": "2.2.0",
+  "description": "思迹 - AI 个人生活助手 (test-only deps)",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "sass": "^1.71.1",
+    "vite": "^5.1.4",
+    "vitest": "^4.1.11"
+  }
+}

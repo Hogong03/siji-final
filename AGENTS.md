@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 81 文件 / 1170 用例，Vitest，`npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.4.0（修列表滑动误触删除 + 聊天历史按预算裁剪 + 目录尺垂直居中 + 标签条可折叠可排序） |
+| 测试 | 84 文件 / 1203 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.5.0（上班打卡提醒可推迟/弹窗直达打卡 + 进入对话收敛成一条单消息 + 修 repeatType 不落盘） |
 
 ---
 
@@ -142,11 +142,11 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.4.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.5.js）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 81 文件 1170 用例
+├── tests/              # 84 文件 1203 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -290,6 +290,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
 | 改聊天历史窗口 | `utils/ai/chat-helpers.js` 的 `trimHistory()`（单条 1200 字 / 总量 6000 字 / 保底 6 条）+ `getRecentHistory()`。**长文能力上线后历史必须按预算裁**，否则一篇两三千字的回复会被每条消息重发一遍 |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
+| 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `notifier.js` 的 `showReminderActions`（ActionSheet：直达打卡/三档推迟/查看，关掉=默认档推迟）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI |
+| 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：问候+进展+状态+上班卡+下一步；`buildPlanAlertLines`/`buildWorkLine`/`buildNextStepLine`）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
@@ -303,7 +305,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `3.6.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.5.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）
@@ -337,7 +339,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 81 文件 / 1170 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 84 文件 / 1203 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

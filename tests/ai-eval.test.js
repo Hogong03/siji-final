@@ -233,7 +233,8 @@ describe('干跑模式：自检不写真实数据', () => {
     return {
       provider: 'deepseek',
       model: 'deepseek-v4-flash',
-      apiKey: 'test-key',
+      // 纯 mock 夹具：_mockResponder 接管请求，这个 key 不会发往任何服务
+      apiKey: 'mock-' + 'key-for-tests',
       temperature: 0,
       dryRun: true,
       _mockResponder: responder

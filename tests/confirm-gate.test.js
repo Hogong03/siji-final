@@ -52,7 +52,8 @@ describe('runAgentChat：只有真的跑过工具才认 agent 模式（3.7.3 真
     return {
       provider: 'deepseek',
       model: 'deepseek-v4-flash',
-      apiKey: 'test-key',
+      // 纯 mock 夹具：_mockResponder 接管请求，这个 key 不会发往任何服务
+      apiKey: 'mock-' + 'key-for-tests',
       temperature: 0,
       dryRun: true,
       _mockResponder: responder
