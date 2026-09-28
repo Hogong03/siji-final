@@ -21,7 +21,7 @@ const editForm = ref({
   id: '',
   name: '',
   avatar: '🤖',
-  icon: '/static/icons/agent-custom-v2.png',
+  icon: '/static/icons/agent-custom-v3.png',
   description: '',
   systemPrompt: '',
   starts: []
@@ -79,7 +79,7 @@ function saveAgent() {
   const data = {
     name: editForm.value.name.trim(),
     avatar: editForm.value.avatar,
-    icon: editForm.value.icon || '/static/icons/agent-custom-v2.png',
+    icon: editForm.value.icon || '/static/icons/agent-custom-v3.png',
     description: editForm.value.description.trim(),
     systemPrompt: editForm.value.systemPrompt.trim(),
     starts: editForm.value.starts.slice(0, 3)
@@ -113,10 +113,10 @@ function saveAgent() {
             <view
               v-for="opt in ICON_OPTIONS" :key="opt.id"
               class="avatar-option"
-              :class="{ active: editForm.icon === `/static/icons/${opt.id}-v2.png` }"
-              @tap="editForm.icon = `/static/icons/${opt.id}-v2.png`"
+              :class="{ active: editForm.icon === `/static/icons/${opt.id}-v3.png` }"
+              @tap="editForm.icon = `/static/icons/${opt.id}-v3.png`"
             >
-              <image :src="`/static/icons/${opt.id}-v2.png`" mode="aspectFill" class="avatar-option-img" />
+              <image :src="`/static/icons/${opt.id}-v3.png`" mode="aspectFill" class="avatar-option-img" />
               <text class="avatar-option-label">{{ opt.label }}</text>
             </view>
           </view>

@@ -6,10 +6,10 @@
 
 /** AI 可选的图标（新场景默认自定义图标） */
 export const AGENT_ICON_OPTIONS = [
-  '/static/icons/agent-custom-v2.png',
-  '/static/icons/agent-relationship-v2.png',
-  '/static/icons/agent-psychologist-v2.png',
-  '/static/icons/agent-siji-v2.png'
+  '/static/icons/agent-custom-v3.png',
+  '/static/icons/agent-relationship-v3.png',
+  '/static/icons/agent-psychologist-v3.png',
+  '/static/icons/agent-siji-v3.png'
 ]
 
 /** 人设最大字符数，超出拒绝并要求精简 */
@@ -49,7 +49,7 @@ export function buildAgentPayload(raw = {}) {
   if (systemPrompt.length > AGENT_PROMPT_MAX) {
     return { ok: false, text: '人设过长（' + systemPrompt.length + ' 字符），请精简到 ' + AGENT_PROMPT_MAX + ' 字符以内' }
   }
-  const icon = AGENT_ICON_OPTIONS.includes(raw.icon) ? raw.icon : '/static/icons/agent-custom-v2.png'
+  const icon = AGENT_ICON_OPTIONS.includes(raw.icon) ? raw.icon : '/static/icons/agent-custom-v3.png'
   // 3.1：存量请求可能仍带 skills 字段，静默忽略（不清洗、不报错）
   const starts = Array.isArray(raw.starts)
     ? raw.starts.map(s => String(s || '').trim()).filter(Boolean).slice(0, 3)

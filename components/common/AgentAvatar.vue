@@ -72,6 +72,12 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
   background: #F4F4F5;
   border: none;
 }
+/* 深色模式：黑圆底头像加细边框，避免与深色页面背景融合 */
+@media (prefers-color-scheme: dark) {
+  .agent-avatar--icon {
+    border: 2rpx solid #3F3F46;
+  }
+}
 .avatar-icon-img {
   width: 100%;
   height: 100%;

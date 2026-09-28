@@ -6,6 +6,32 @@
 
 export const V45 = [
   {
+    version: '4.5.1',
+    date: '2026-09-28',
+    title: '4.5.1 美化全部 Agent 头像：黑圆底 + 白色 Lucide 线框图标，统一品牌视觉',
+    summary: [
+      '10 个 Agent 头像全部重绘：黑色圆形底 + 白色精致线框图标（128×128 高清，原为 64×64 透明底黑线框），与思迹纯黑主色、用户气泡（黑底白字）统一，浅色页面上更突出、风格一致',
+      '图标语义贴合各 Agent 主题：思迹助手=机器人、职业=上升趋势、职场=公文包、财务=钱包、学习=毕业帽、健身=哑铃、心理咨询=大脑、情感=心形握手、极简=四芒星、自定义=扳手（基于 Lucide 开源图标）',
+      '存量数据自动归一：agent-templates 新增 AGENT_ICON_V3 映射，normalizeAgentIcon 链式归一（无版本 → v2 → v3），已持久化的旧头像路径渲染时自动升级，无需重建',
+      '修 AgentSwitcher 头像未归一化：切换弹窗原来直接用原始 icon 路径，现统一走 normalizeAgentIcon；AgentAvatar 与 AgentSwitcher 深色模式加细边框，黑圆头像在深色背景下保留轮廓',
+      '测试 84 文件 / 1203 用例全绿',
+    ],
+    categories: [
+      {
+        title: 'Agent 头像美化（4.5.1）',
+        items: [
+          'static/icons/：新增 agent-{siji,career,workplace,finance,study,fitness,psychologist,relationship,minimal,custom}-v3.png（10 个，128×128 RGBA，黑圆底 + 白色线框）；旧 v2 文件保留以兼容存量数据',
+          'utils/agent-templates.js：新增 AGENT_ICON_V3 映射（v2 → v3）；normalizeAgentIcon 改链式归一（先 AGENT_ICON_V2 再 AGENT_ICON_V3）；心理咨询师 / 情感顾问两个模板 icon 改 v3',
+          'store/agent.js：内置思迹助手 icon 改 v3',
+          'utils/ai/tools/agent.js：AGENT_ICON_OPTIONS 与 buildAgentPayload 默认 icon 改 v3',
+          'pages/settings/sub/agent_add.vue：头像选择动态拼接与默认 icon 改 v3',
+          'components/common/AgentAvatar.vue：深色模式黑圆头像加 #3F3F46 细边框',
+          'components/chat/AgentSwitcher.vue：头像 src 走 normalizeAgentIcon（原来直接用原始路径），深色模式加细边框',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.5.0',
     date: '2026-09-28',
     title: '4.5.0 上班打卡：到点提醒可推迟、弹窗直达打卡；进入对话收敛成一条单消息（问候+总结+计划点破+下一步）',

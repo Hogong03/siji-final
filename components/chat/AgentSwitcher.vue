@@ -4,6 +4,7 @@
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { useAppStore } from '@/store/index.js'
+import { normalizeAgentIcon } from '@/utils/agent-templates.js'
 
 const store = useAppStore()
 defineProps({ show: Boolean })
@@ -37,7 +38,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
             <view class="agent-avatar-wrap">
               <image
                 v-if="a.icon"
-                :src="a.icon"
+                :src="normalizeAgentIcon(a.icon)"
                 mode="aspectFill"
                 class="agent-avatar-img"
               />
@@ -160,7 +161,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
       border-color: #FAFAFA;
       background: #18181B;
     }
-    .agent-avatar-wrap { background: #27272A; }
+    .agent-avatar-wrap { background: #27272A; border: 2rpx solid #3F3F46; }
     .agent-avatar-fallback { background: #27272A; }
     .agent-avatar-text { color: #FAFAFA; }
     .switch-model-name { color: #FAFAFA; }

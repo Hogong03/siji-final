@@ -18,7 +18,7 @@ const BUILTIN_SIJI = {
   id: 'siji',
   name: '思迹助手',
   avatar: '🤖',
-  icon: '/static/icons/agent-siji-v2.png',
+  icon: '/static/icons/agent-siji-v3.png',
   description: '默认生活助手，帮你记录生活、管理财务、制定计划',
   systemPrompt: '',  // 空字符串表示使用 api.js 内置的 buildSystemPrompt()
   starts: ['记一笔最近的账单', '帮我写今天的记录', '把我想法拆成下一步'],

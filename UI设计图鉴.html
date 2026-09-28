@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>思迹 图标与 UI 设计图鉴</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#FAFAFA;color:#18181B;font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:30px 22px 80px}
+h1{font-size:23px;margin-bottom:4px}
+.sub{color:#52525B;font-size:13px;margin-bottom:8px}
+h2{font-size:16px;margin:34px 0 13px;padding-left:11px;border-left:3px solid #000}
+.note{color:#71717A;font-size:12px;margin:10px 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px}
+.card{background:#fff;border:1px solid #E4E4E7;border-radius:11px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.card img{width:48px;height:48px;object-fit:contain}
+.card img[src*="tab/"]{width:44px;height:44px}
+.card img[src*="provider-"]{width:60px;height:60px}
+.card img[src*="agent-"]{width:54px;height:54px}
+.cap{font-size:11px;color:#71717A;word-break:break-all;text-align:center}
+/* 色板 */
+.swatches{display:flex;flex-wrap:wrap;gap:7px}
+.sw{flex:1 1 80px;border:1px solid #E4E4E7;border-radius:9px;overflow:hidden;background:#fff}
+.sw-c{height:46px}.sw-l{font-size:10.5px;padding:5px 7px 2px;font-weight:600}.sw-v{font-size:10px;padding:0 7px 6px;color:#A1A1AA;font-family:Consolas,monospace}
+.fn{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.fc{flex:1 1 150px;border:1px solid #E4E4E7;border-radius:10px;overflow:hidden;background:#fff}
+.ft{padding:10px;font-size:12.5px;font-weight:700}.fb{padding:9px 11px;font-size:11px;color:#52525B}
+.ftype{font-size:10.5px;font-family:Consolas,monospace}
+/* 组件示例 */
+.demo{background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn-send{width:42px;height:42px;border-radius:50%;background:#000;color:#fff;border:none;font-size:18px}
+.btn-sec{height:42px;padding:0 18px;border-radius:21px;background:#F4F4F5;border:1px solid #E4E4E7;color:#3F3F46;font-size:13px}
+.chip{font-size:12.5px;padding:6px 15px;border-radius:999px;background:#F4F4F5;color:#3F3F46;border:1px solid transparent}
+.chip.on{background:#000;color:#fff}
+.input{background:#F4F4F5;border-radius:10px;padding:11px 14px;font-size:13.5px;color:#A1A1AA}
+.bub{max-width:80%;padding:10px 14px;font-size:13.5px;line-height:1.6}
+.bub-u{background:#000;color:#fff;border-radius:13px 13px 5px 13px;margin-left:auto}
+.bub-a{background:#F4F4F5;color:#18181B;border-radius:13px 13px 13px 5px}
+.tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:5px;background:#E4E4E7;color:#3F3F46}
+.loader{display:flex;gap:5px;align-items:center;height:24px}
+.loader i{width:22px;height:3px;border-radius:2px;background:#000;animation:bar 1.2s ease-in-out infinite}
+.loader i:nth-child(2){animation-delay:.15s}.loader i:nth-child(3){animation-delay:.3s}
+@keyframes bar{0%,100%{transform:scaleX(.4);opacity:.3}50%{transform:scaleX(1);opacity:1}}
+.dark{background:#09090B;border-radius:14px;padding:18px}
+.dark h3{color:#F4F4F5;font-size:14px;margin-bottom:12px}
+.dcard{background:#18181B;border:1px solid #27272A;border-radius:11px;padding:14px;margin-bottom:10px}
+.dbub-u{background:#fff;color:#000;border-radius:13px 13px 5px 13px;max-width:80%;margin-left:auto;padding:10px 14px;font-size:13.5px}
+.dbub-a{background:#27272A;color:#F4F4F5;border-radius:13px 13px 13px 5px;max-width:80%;padding:10px 14px;font-size:13.5px}
+.dchip{font-size:12.5px;padding:6px 15px;border-radius:999px;background:#27272A;color:#A1A1AA}
+.dchip.on{background:#fff;color:#000}
+table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid #E4E4E7;border-radius:10px;overflow:hidden}
+th,td{padding:8px 11px;text-align:left;border-bottom:1px solid #F4F4F5}
+th{background:#F4F4F5;font-weight:600}td:last-child{color:#71717A}
+</style>
+</head>
+<body>
+<h1>思迹 图标与 UI 设计图鉴</h1>
+<div class="sub">极简黑白 + Zinc 灰阶 · 零阴影 · 零渐变 · AI 内容是唯一视觉焦点</div>
+
+<h2>① TabBar 底部导航（6）</h2>
+<div class="grid">
+  <div class="card"><img src="static/tab/chat-v2.png"><div class="cap">chat</div></div>
+  <div class="card"><img src="static/tab/chat-active-v2.png"><div class="cap">chat-active</div></div>
+  <div class="card"><img src="static/tab/functions-v2.png"><div class="cap">functions</div></div>
+  <div class="card"><img src="static/tab/functions-active-v2.png"><div class="cap">functions-active</div></div>
+  <div class="card"><img src="static/tab/settings-v2.png"><div class="cap">settings</div></div>
+  <div class="card"><img src="static/tab/settings-active-v2.png"><div class="cap">settings-active</div></div>
+</div>
+<p class="note">普通态 #A1A1AA / 选中态 #000000。</p>
+
+<h2>② 通用 UI 图标（62） · Lucide 线框</h2>
+<div class="grid" id="ui"></div>
+
+<h2>③ Agent 头像（10）</h2>
+<div class="grid" id="agent"></div>
+
+<h2>④ AI 厂商 Logo（5）</h2>
+<div class="grid">
+  <div class="card"><img src="static/icons/provider-ds-v2.png"><div class="cap">ds · DeepSeek</div></div>
+  <div class="card"><img src="static/icons/provider-ms-v2.png"><div class="cap">ms · Moonshot</div></div>
+  <div class="card"><img src="static/icons/provider-oa-v2.png"><div class="cap">oa · OpenAI</div></div>
+  <div class="card"><img src="static/icons/provider-qw-v2.png"><div class="cap">qw · 通义</div></div>
+  <div class="card"><img src="static/icons/provider-zg-v2.png"><div class="cap">zg · 智谱</div></div>
+</div>
+
+<h2>⑤ 色彩 · Zinc 灰阶</h2>
+<div class="swatches">
+  <div class="sw"><div class="sw-c" style="background:#FAFAFA"></div><div class="sw-l">50</div><div class="sw-v">#FAFAFA</div></div>
+  <div class="sw"><div class="sw-c" style="background:#F4F4F5"></div><div class="sw-l">100</div><div class="sw-v">#F4F4F5</div></div>
+  <div class="sw"><div class="sw-c" style="background:#E4E4E7"></div><div class="sw-l">200</div><div class="sw-v">#E4E4E7</div></div>
+  <div class="sw"><div class="sw-c" style="background:#D4D4D8"></div><div class="sw-l">300</div><div class="sw-v">#D4D4D8</div></div>
+  <div class="sw"><div class="sw-c" style="background:#A1A1AA"></div><div class="sw-l">400</div><div class="sw-v">#A1A1AA</div></div>
+  <div class="sw"><div class="sw-c" style="background:#71717A"></div><div class="sw-l">500</div><div class="sw-v">#71717A</div></div>
+  <div class="sw"><div class="sw-c" style="background:#52525B"></div><div class="sw-l">600</div><div class="sw-v">#52525B</div></div>
+  <div class="sw"><div class="sw-c" style="background:#3F3F46"></div><div class="sw-l">700</div><div class="sw-v">#3F3F46</div></div>
+  <div class="sw"><div class="sw-c" style="background:#27272A"></div><div class="sw-l">800</div><div class="sw-v">#27272A</div></div>
+  <div class="sw"><div class="sw-c" style="background:#18181B"></div><div class="sw-l">900</div><div class="sw-v">#18181B</div></div>
+  <div class="sw"><div class="sw-c" style="background:#09090B"></div><div class="sw-l">950</div><div class="sw-v">#09090B</div></div>
+</div>
+<div class="fn">
+  <div class="fc"><div class="ft" style="background:rgba(16,185,129,.12);color:#065F46">计划</div><div class="fb"><span class="ftype">#10B981</span></div></div>
+  <div class="fc"><div class="ft" style="background:rgba(245,158,11,.12);color:#92400E">账单</div><div class="fb"><span class="ftype">#F59E0B</span></div></div>
+  <div class="fc"><div class="ft" style="background:rgba(252,211,77,.15);color:#92400E">日记</div><div class="fb"><span class="ftype">#FCD34D</span></div></div>
+  <div class="fc"><div class="ft" style="background:#FEE2E2;color:#991B1B">危险</div><div class="fb"><span class="ftype">#EF4444</span></div></div>
+  <div class="fc"><div class="ft" style="background:#DBEAFE;color:#1E40AF">信息</div><div class="fb"><span class="ftype">#0EA5E9</span></div></div>
+  <div class="fc"><div class="ft" style="background:#FCE7F3;color:#9D174D">超预算</div><div class="fb"><span class="ftype">#EC4899</span></div></div>
+</div>
+
+<h2>⑥ 排版规范</h2>
+<table>
+  <tr><th>Token</th><th>rpx</th><th>用途</th></tr>
+  <tr><td>xxl</td><td>44</td><td>空状态</td></tr>
+  <tr><td>xl</td><td>36</td><td>页面标题 / 大数字</td></tr>
+  <tr><td>lg</td><td>32</td><td>卡片标题</td></tr>
+  <tr><td>md</td><td>28</td><td>正文默认</td></tr>
+  <tr><td>sm</td><td>26</td><td>次要信息</td></tr>
+  <tr><td>xs</td><td>22</td><td>辅助 / 时间戳</td></tr>
+</table>
+<p class="note">金额用 tabular-nums 等宽数字；正文行高 1.65；大数字 font-weight 800。</p>
+
+<h2>⑦ 核心组件</h2>
+<div class="demo">
+  <div class="row">
+    <button class="btn-send">↑</button><button class="btn-sec">次要按钮</button>
+    <span class="chip on">全部</span><span class="chip">本周</span><span class="chip">本月</span>
+  </div>
+</div>
+<div class="demo"><div class="input">说点什么…</div></div>
+<div class="demo">
+  <div class="bub bub-u">今天午餐花了 25，帮我记一下</div>
+  <div style="height:9px"></div>
+  <div class="bub bub-a">记好了，午餐 ¥25。</div>
+</div>
+<div class="demo">
+  <div class="row" style="margin-bottom:12px">
+    <span class="tag">工作</span><span class="tag">生活</span><span class="tag">复盘</span>
+  </div>
+  <div class="loader"><i></i><i></i><i></i></div>
+</div>
+
+<h2>⑧ 深色模式</h2>
+<div class="dark">
+  <h3>深色下组件</h3>
+  <div class="dcard"><div class="dbub-u">今天午餐花了 25</div></div>
+  <div class="dcard"><div class="dbub-a">记好了，午餐 ¥25。</div></div>
+  <div class="dcard">
+    <div class="row"><span class="dchip on">全部</span><span class="dchip">本周</span><span class="dchip">本月</span></div>
+  </div>
+</div>
+
+<script>
+var ui=["ai","arrow-down","arrow-left","arrow-right","arrow-up","bell","bill","book","brain","briefcase","calendar","camera","chat-bubble","check","chevron-down","chevron-right","clock","close","copy","device","diary","download","dumbbell","edit","export","eye-off","eye","filter","fire","globe","heart","home","info","lock","mail","menu","mic","moon","more-h","music","palette","pin","plan","plus","refresh","save","search","settings","shield","smile","sparkle","star","stats","sun","tag","target","tip","trash","trend","unlock","user","x"];
+var agents=["agent-career-v3","agent-custom-v3","agent-finance-v3","agent-fitness-v3","agent-minimal-v3","agent-psychologist-v3","agent-relationship-v3","agent-siji-v3","agent-study-v3","agent-workplace-v3"];
+function fill(id,list,pre,cap){
+  document.getElementById(id).innerHTML=list.map(function(n){
+    var src=pre+n+".png"; var c=cap?n.replace(/-v2$/,""):n;
+    return '<div class="card"><img src="'+src+'"><div class="cap">'+c+'</div></div>';
+  }).join("");
+}
+fill("ui",ui,"static/icons/",true);
+fill("agent",agents,"static/icons/",true);
+</script>
+</body>
+</html>

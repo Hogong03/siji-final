@@ -24,17 +24,32 @@ const AGENT_ICON_V2 = {
   '/static/icons/agent-custom.png': '/static/icons/agent-custom-v2.png'
 }
 
-/** 归一化 Agent 头像路径：旧路径映射到当前版本，未知路径原样返回 */
+/** v2 路径 → v3（美化版：黑圆底 + 白色线框图标）路径 */
+const AGENT_ICON_V3 = {
+  '/static/icons/agent-siji-v2.png': '/static/icons/agent-siji-v3.png',
+  '/static/icons/agent-workplace-v2.png': '/static/icons/agent-workplace-v3.png',
+  '/static/icons/agent-relationship-v2.png': '/static/icons/agent-relationship-v3.png',
+  '/static/icons/agent-career-v2.png': '/static/icons/agent-career-v3.png',
+  '/static/icons/agent-psychologist-v2.png': '/static/icons/agent-psychologist-v3.png',
+  '/static/icons/agent-fitness-v2.png': '/static/icons/agent-fitness-v3.png',
+  '/static/icons/agent-finance-v2.png': '/static/icons/agent-finance-v3.png',
+  '/static/icons/agent-study-v2.png': '/static/icons/agent-study-v3.png',
+  '/static/icons/agent-minimal-v2.png': '/static/icons/agent-minimal-v3.png',
+  '/static/icons/agent-custom-v2.png': '/static/icons/agent-custom-v3.png'
+}
+
+/** 归一化 Agent 头像路径：旧路径（无版本 / v2）逐级映射到当前 v3，未知路径原样返回 */
 export function normalizeAgentIcon(icon) {
   if (!icon || typeof icon !== 'string') return icon
-  return AGENT_ICON_V2[icon] || icon
+  const toV2 = AGENT_ICON_V2[icon] || icon
+  return AGENT_ICON_V3[toV2] || toV2
 }
 
 export const PRESET_TEMPLATES = [
     {
     name: '心理咨询师',
     avatar: '🧘',
-    icon: '/static/icons/agent-psychologist-v2.png',
+    icon: '/static/icons/agent-psychologist-v3.png',
     description: '温暖共情，帮你梳理情绪、觉察内在模式',
     starts: ['最近总提不起劲，帮我理理', '我好像又在逃避一件事', '看看我这几周的情绪记录'],
     systemPrompt: `你是思迹的心理咨询师 Agent，融合人本主义倾听、认知行为疗法(CBT)和正念视角。
@@ -57,7 +72,7 @@ export const PRESET_TEMPLATES = [
   {
     name: '情感顾问',
     avatar: '💝',
-    icon: '/static/icons/agent-relationship-v2.png',
+    icon: '/static/icons/agent-relationship-v3.png',
     description: '帮你理清感情困惑、改善亲密关系、处理人际矛盾',
     starts: ['复盘一下我和XX最近的关系', '帮我起草一条回复消息', '这段关系我该设什么边界'],
     systemPrompt: `你是一位温暖的情感顾问，融合心理学（依恋理论、非暴力沟通）和东方人际智慧。你的风格：温柔但不敷衍、有洞察力、尊重用户自主权。
