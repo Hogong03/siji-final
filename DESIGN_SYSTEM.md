@@ -15,7 +15,7 @@
 | **色彩** | 纯黑白为主（#000000 / #FFFFFF），功能色仅用于状态标识，禁止渐变 |
 | **层次** | 用 Zinc 灰阶（50→900）区分层级，非色彩堆叠 |
 | **动效** | 极克制：仅入场动画 + 按钮反馈，禁止持续呼吸/脉动（功能性脉动除外） |
-| **图标** | 统一 SijiIcon 组件，H5 用 SVG / App 用 PNG，stroke 风格 2px |
+| **图标** | 统一 SijiIcon 组件，Lucide 线框 PNG（96×96 高清），三端一致，stroke 2px |
 | **信息** | AI 回复内容是唯一有"权重"的视觉焦点，UI 本身退让 |
 
 ---
@@ -38,7 +38,7 @@
 
 | 变量 | 浅色值 | 深色值 | 用途 |
 |------|--------|--------|------|
-| `--bg-page` | `#FAFAFA` (Zinc-50) | `#0A0A0B` | 页面背景 |
+| `--bg-page` | `#F4F4F5` (Zinc-100) | `#18181B` | 页面背景 |
 | `--bg-card` | `#FFFFFF` | `#18181B` (Zinc-900) | 卡片/输入区背景 |
 | `--bg-card-alt` | `#F8F8F8` | `#222226` | 卡片交替背景 |
 | `--bg-input` | `#F4F4F5` (Zinc-100) | `#27272A` (Zinc-800) | 输入框/Chip 背景 |
@@ -150,14 +150,15 @@ letter-spacing: -1rpx;               /* 大数字收窄 */
 
 ## 六、阴影系统
 
-| 变量 | 值 | 用途 |
-|------|----|------|
-| `$shadow-sm` | `0 2rpx 8rpx rgba(0,0,0,0.06)` | **默认卡片** |
-| `$shadow-md` | `0 4rpx 16rpx rgba(0,0,0,0.08)` | 弹出层、悬浮卡片 |
-| `$shadow-lg` | `0 8rpx 24rpx rgba(0,0,0,0.10)` | Modal、大弹层 |
-| `$shadow-ai` | `0 2rpx 12rpx rgba(0,0,0,0.08)` | AI 元素专属 |
+**零阴影**：全项目不使用 `box-shadow`（极简设计）。层级关系靠**底色对比 + 1rpx 边框**表达。
 
-深色模式阴影使用 `var(--shadow-color)`。
+| 层级 | 浅色 | 深色 |
+|------|------|------|
+| 页面 | `#F4F4F5` | `#18181B` |
+| 卡片 | `#FFFFFF` + `1rpx solid #E4E4E7` | `#27272A` + `1rpx solid #3F3F46` |
+| 输入/Chip | `#F4F4F5` | `#3F3F46` |
+
+历史 `$shadow-*` 变量已全部移除，禁止重新引入。
 
 ---
 
@@ -363,7 +364,8 @@ width: 85%;
 
 ### 9.1 组件
 
-统一使用 `SijiIcon.vue`，支持 61 个图标名。
+统一使用 `SijiIcon.vue`（v4），基于 Lucide 线框图标，共 40 个图标名。
+三端统一用 `<image>` 渲染 PNG（不再用 Unicode 字符或内联 SVG），杜绝跨平台字形不一致、个别字符变彩色 emoji 的问题。
 
 ### 9.2 尺寸
 
@@ -376,15 +378,19 @@ width: 85%;
 | `xl` | `44rpx` | 特大 |
 | `xxl` | `56rpx` | 空状态 |
 
-### 9.3 颜色
+### 9.3 颜色（语义色调）
 
-- 默认 `currentColor`（继承父元素）
-- 可传 CSS 变量：`color="var(--text-secondary)"`
+- `primary`（默认）：跟随主题（浅色黑图标 / 深色白图标）
+- `secondary`（`#71717A` / `#A1A1AA`）：次要图标，半透明
+- `white`（`#FFFFFF`）：深色/实心按钮上
+- `amber`（`#B45309`）：仅微光 sun 图标
 
-### 9.4 跨平台
+### 9.4 资源规格
 
-- **H5**: 内联 SVG，`stroke-width: 2`，`stroke-linecap: round`
-- **App/小程序**: `<image>` 引用 `/static/icons/{name}.png`（24×24 PNG）
+- 源文件：96×96 RGBA，视觉区 72×72，`stroke-width: 2`，linecap/linejoin round
+- 浅色：`/static/icons/{name}-v2.png`（深色图标 `#18181B`）
+- 深色：`/static/icons/{name}-v2-dark.png`（白色图标 `#FFFFFF`）
+- 更换图标内容必须同时改文件名（追加版本后缀），避免 App 端缓存
 
 ---
 

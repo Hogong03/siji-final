@@ -187,166 +187,33 @@
 <style lang="scss">
 	/* ==================== 全局样式 ==================== */
 
-	/* CSS 变量 — 动态主题切换 */
-	/* 注意：App 端 page 元素可能无法直接通过 [data-theme] 属性选择器命中 */
-	/* 因此同时使用 page、html、body 以及 [data-theme] 多重选择器确保覆盖 */
+	/* 基础排版：页面底色统一 #F4F4F5（对话/阅读/表单页在各自 scoped 中覆盖为白底） */
 	page,
 	html,
 	body {
-		/* 浅色模式（默认） */
-		--bg-page: $bg-page;
-		--bg-card: $bg-card;
-		--bg-card-alt: #E4E4E7;
-		--bg-input: $bg-input;
-		--bg-btn-secondary: $bg-btn-secondary;
-		--bg-subtle: #E4E4E7;
-		--bg-muted: #F4F4F5;
-		--text-primary: $text-primary;
-		--text-secondary: $text-secondary;
-		--text-tertiary: $text-hint;
-		--text-hint: $text-hint;
-		--text-strong: $ai-primary-light;
-		--text-mid: #52525B;
-		--text-on-ai: $bg-card;
-		--color-ai: $ai-primary;
-		--color-plan: $success;
-		--color-bill: $warning;
-		--color-diary: $color-diary;
-		--color-danger: $danger;
-		--color-info: $info;
-		--color-warning: #D97706;
-		--color-danger-light: #FEE2E2;
-		--color-danger-bg: #FEF2F2;
-		--color-plan-light: #D1FAE5;
-		--color-plan-bg: #ECFDF5;
-		--color-bill-light: #FEF3C7;
-		--color-bill-bg: #FFFBEB;
-		--color-warn-bg: #FEF3C7;
-		--color-amber: $warning;
-		--color-red: $danger;
-		--color-red-light: #FEE2E2;
-		--color-pink: #EC4899;
-		--color-info-light: #DBEAFE;
-		--color-info-text: #1E40AF;
-		--color-plan-text: #065F46;
-		--color-bill-text: #92400E;
-		--color-danger-text: #991B1B;
-		--color-review-bg: #FEFCE8;
-		--border-color: $glass-border-color;
-		--border-strong: $border-color;
-		--glass-bg: $bg-card;
-		--glass-border: 1rpx solid $glass-border-color;
-		--shadow-color: rgba(0, 0, 0, 0.06);
-
-		background-color: #FFFFFF;
+		background-color: #F4F4F5;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
 			'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
 		font-size: $font-md;
 		color: #18181B;
 		line-height: 1.6;
 		-webkit-font-smoothing: antialiased;
-		transition: background-color 0.3s ease, color 0.3s ease;
 	}
 
-	/* ─── 深色模式覆盖 ─── */
+	/* ─── 深色模式：页面底色统一 #18181B ─── */
 	@media (prefers-color-scheme: dark) {
-
 		page,
 		html,
 		body {
-			--bg-page: #09090B;
-			--bg-card: $text-primary;
-			--bg-card-alt: #27272A;
-			--bg-input: #27272A;
-			--bg-btn-secondary: #3F3F46;
-			--bg-subtle: #1F1F23;
-			--bg-muted: #2A2A2E;
-			--text-primary: $bg-page;
-			--text-secondary: $text-hint;
-			--text-tertiary: $text-secondary;
-			--text-hint: #52525B;
-			--text-strong: $bg-card;
-			--text-mid: $border-color;
-			--text-on-ai: $bg-card;
-			--color-ai: $ai-primary;
-			--color-plan: $success;
-			--color-bill: $warning;
-			--color-diary: $color-diary;
-			--color-danger: $danger;
-			--color-info: $info;
-			--color-warning: #D97706;
-			--color-pink: #EC4899;
-			--color-info-light: rgba(59, 130, 246, 0.15);
-			--color-info-text: #93C5FD;
-			--color-plan-text: #6EE7B7;
-			--color-bill-text: #FCD34D;
-			--color-danger-text: #FCA5A5;
-			--color-review-bg: rgba(254, 240, 138, 0.08);
-			--color-danger-light: rgba(239, 68, 68, 0.15);
-			--color-danger-bg: rgba(239, 68, 68, 0.08);
-			--color-plan-light: rgba(16, 185, 129, 0.15);
-			--color-plan-bg: rgba(16, 185, 129, 0.08);
-			--color-bill-light: rgba(245, 158, 11, 0.15);
-			--color-bill-bg: rgba(245, 158, 11, 0.08);
-			--color-warn-bg: rgba(245, 158, 11, 0.08);
-			--color-amber: $warning;
-			--color-red: $danger;
-			--color-red-light: rgba(239, 68, 68, 0.15);
-			--border-color: #27272A;
-			--border-strong: $ai-primary-light;
-			--glass-bg: $text-primary;
-			--glass-border: 1rpx solid #27272A;
-			--shadow-color: rgba(0, 0, 0, 0.3);
-		}
-
-		/* 硬编码覆盖 */
-		page,
-		html,
-		body {
+			background-color: #18181B;
 			color: #F4F4F5;
-		}
-
-		.glass-card {
-			background: #18181B;
-			border-color: #27272A;
-		}
-
-		.text-primary {
-			color: #F4F4F5;
-		}
-
-		.text-secondary {
-			color: #A1A1AA;
 		}
 	}
-
 
 	/* 滚动条隐藏 */
 	::-webkit-scrollbar {
 		width: 0;
 		height: 0;
-	}
-
-	/* ─── 全局点击反馈 ─── */
-	.tap-feedback {
-		transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
-	}
-
-	.tap-feedback:active {
-		opacity: 0.85;
-	}
-
-	/* ─── 子页面入场动画 ─── */
-	.sub-page,
-	.agent-page,
-	.agent-add-page,
-	.ai-page,
-	.help-page,
-	.memory-page,
-	.profile-page,
-	.feedback-page,
-	.feedback-form-page {
-		animation: fadeInUp 0.3s ease both;
 	}
 
 	/* 安全区适配 */
@@ -355,14 +222,7 @@
 		padding-bottom: env(safe-area-inset-bottom);
 	}
 
-	/* ─── 卡片（极简） ─── */
-	.glass-card {
-		background: #FFFFFF;
-		border: 1rpx solid #E4E4E7;
-		border-radius: $radius-md;
-	}
-
-	/* ─── 渐入动画 ─── */
+	/* ─── 子页面入场动画 ─── */
 	@keyframes fadeInUp {
 		from {
 			opacity: 0;
@@ -375,88 +235,15 @@
 		}
 	}
 
-	.fade-in-up {
-		animation: fadeInUp 0.4s ease both;
-	}
-
-	/* 通用工具类 */
-	.text-primary {
-		color: #18181B;
-	}
-
-	.text-secondary {
-		color: #71717A;
-	}
-
-	.text-hint {
-		color: #A1A1AA;
-	}
-
-	.text-success {
-		color: $success;
-	}
-
-	.text-warning {
-		color: $warning;
-	}
-
-	.text-danger {
-		color: $danger;
-	}
-
-	.text-ai {
-		color: #000000;
-	}
-
-	.text-center {
-		text-align: center;
-	}
-
-	.font-xs {
-		font-size: $font-xs;
-	}
-
-	.font-sm {
-		font-size: $font-sm;
-	}
-
-	.font-md {
-		font-size: $font-md;
-	}
-
-	.font-lg {
-		font-size: $font-lg;
-	}
-
-	.font-xl {
-		font-size: $font-xl;
-	}
-
-	.font-xxl {
-		font-size: $font-xxl;
-	}
-
-	.mt-xs {
-		margin-top: $spacing-xs;
-	}
-
-	.mt-sm {
-		margin-top: $spacing-sm;
-	}
-
-	.mt-md {
-		margin-top: $spacing-md;
-	}
-
-	.mt-lg {
-		margin-top: $spacing-lg;
-	}
-
-	.mb-sm {
-		margin-bottom: $spacing-sm;
-	}
-
-	.mb-md {
-		margin-bottom: $spacing-md;
+	.sub-page,
+	.agent-page,
+	.agent-add-page,
+	.ai-page,
+	.help-page,
+	.memory-page,
+	.profile-page,
+	.feedback-page,
+	.feedback-form-page {
+		animation: fadeInUp 0.3s ease both;
 	}
 </style>

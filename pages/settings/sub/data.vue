@@ -271,7 +271,7 @@ function clearAll() {
 <style lang="scss" scoped>
 .sub-page {
   min-height: 100vh;
-  background: #FAFAFA;
+  background: #F4F4F5;
   padding: $spacing-md;
   box-sizing: border-box;
 }

@@ -19,7 +19,7 @@
 }
 
 // 圆形按钮
-@mixin circular-btn($size: 56rpx) {
+@mixin circular-btn($size: 72rpx) {
   width: $size;
   height: $size;
   min-width: $size;

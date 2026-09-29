@@ -97,7 +97,7 @@ function submit() {
 <style lang="scss" scoped>
 .sub-page {
   min-height: 100vh;
-  background: #E4E4E7;
+  background: #F4F4F5;
   padding: $spacing-md;
 }
 

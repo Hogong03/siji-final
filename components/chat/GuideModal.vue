@@ -115,7 +115,8 @@ function goToFullHelp() { emit('close'); uni.navigateTo({ url: '/pages/settings/
     min-width: 0;
   }
   .modal-close {
-    padding: 0 8rpx;
+    padding: 20rpx;
+    margin: -20rpx -12rpx;
     flex-shrink: 0;
   }
 }

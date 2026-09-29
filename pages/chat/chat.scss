@@ -204,8 +204,8 @@
   position: absolute;
   right: 24rpx;
   bottom: 240rpx;
-  width: 56rpx;
-  height: 56rpx;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 100%;
   background: #FFFFFF;
   border: 2rpx solid #E4E4E7;
@@ -573,6 +573,8 @@
 .resume-close {
   width: 44rpx;
   height: 44rpx;
+  padding: 14rpx;
+  margin: -14rpx;
   display: flex;
   align-items: center;
   justify-content: center;

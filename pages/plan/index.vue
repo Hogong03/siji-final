@@ -278,8 +278,8 @@
 	}
 
 	.tool-btn {
-		width: 56rpx;
-		height: 56rpx;
+		width: 72rpx;
+		height: 72rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;

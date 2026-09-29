@@ -1,9 +1,10 @@
 <script setup>
 /**
- * 输入区组件 v12 —— 图片识别 + 文件读取（3.6.0）
+ * 输入区组件 v13 —— 图片识别 + 文件读取（3.6.0）
  *
  * 一行输入：图片 / 文件 -> 文本 -> 发送/停止
  * 语音功能已移除；文本类文件本地直读，pdf/office 走解析后端
+ * v13：所有按钮触控热区扩到 ≥44px（88rpx），视觉圆点保持原尺寸
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed } from 'vue'
@@ -165,23 +166,27 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 		<view v-if="selectedImage" class="img-preview">
 			<image :src="selectedImage.base64" mode="aspectFill" class="img-preview-thumb" />
 			<text class="img-preview-label">图片待发送</text>
-			<view class="img-preview-del" @tap="clearImage"><text>×</text></view>
+			<view class="img-preview-del" @tap="clearImage"><view class="del-dot"><text>×</text></view></view>
 		</view>
 
 		<!-- 文件预览 -->
 		<view v-if="selectedFile" class="img-preview">
 			<text class="file-badge">文件</text>
 			<text class="img-preview-label">{{ fileLabel }}</text>
-			<view class="img-preview-del" @tap="clearFile"><text>×</text></view>
+			<view class="img-preview-del" @tap="clearFile"><view class="del-dot"><text>×</text></view></view>
 		</view>
 
 		<!-- 输入行 -->
 		<view class="input-row">
 			<view class="side-btn" @tap="pickImage">
-				<SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
+				<view class="side-dot">
+					<SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
+				</view>
 			</view>
 			<view class="side-btn" @tap="pickFile">
-				<SijiIcon name="file" size="sm" color="#71717A" :style="{ opacity: fileLoading ? 0.4 : 1 }" />
+				<view class="side-dot">
+					<SijiIcon name="file" size="sm" color="#71717A" :style="{ opacity: fileLoading ? 0.4 : 1 }" />
+				</view>
 			</view>
 
 			<view class="input-wrap">
@@ -203,10 +208,10 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 			</view>
 
 			<view v-if="!isSending" class="send-btn" :class="{ active: canSend }" @tap="handleSend">
-				<text class="send-icon">↑</text>
+				<view class="send-dot"><text class="send-icon">↑</text></view>
 			</view>
 			<view v-else class="stop-btn" @tap="$emit('stop')">
-				<text class="stop-icon">■</text>
+				<view class="stop-dot"><text class="stop-icon">■</text></view>
 			</view>
 		</view>
 	</view>
@@ -233,21 +238,32 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 	font-size: 22rpx; color: #71717A; flex-shrink: 0;
 	border: 1rpx solid #E4E4E7; border-radius: 6rpx; padding: 2rpx 8rpx;
 }
+/* 删除键：热区 64rpx（32px），视觉圆点 40rpx */
 .img-preview-del {
-	width: 36rpx; height: 36rpx; border-radius: 50%; background: rgba(0,0,0,.1);
-	display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: #71717A;
+	width: 64rpx; height: 64rpx; flex-shrink: 0;
+	display: flex; align-items: center; justify-content: center;
+}
+.del-dot {
+	width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,.1);
+	display: flex; align-items: center; justify-content: center;
+	font-size: 26rpx; color: #71717A;
 }
 
 /* ──── 输入行 ──── */
 .input-row { display: flex; align-items: flex-end; gap: $spacing-sm; }
 
+/* 图片/文件键：热区 88rpx（44px），视觉圆点 48rpx */
 .side-btn {
+	width: 88rpx; height: 88rpx; flex-shrink: 0;
+	display: flex; align-items: center; justify-content: center;
+}
+.side-dot {
 	width: 48rpx; height: 48rpx; border-radius: 50%; background: #F4F4F5; border: 1rpx solid #E4E4E7;
-	display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+	display: flex; align-items: center; justify-content: center;
 	margin-bottom: 12rpx;
 	transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s;
-	&:active { transform: scale(0.9); background: #E4E4E7; }
 }
+.side-btn:active .side-dot { transform: scale(0.9); background: #E4E4E7; }
 
 .input-wrap {
 	flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
@@ -264,28 +280,35 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 	background: transparent; border: none; outline: none; padding: 0; min-height: 40rpx;
 }
 
+/* 发送/停止键：热区 88rpx（44px），视觉圆点 72rpx */
 .send-btn, .stop-btn {
-	width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0;
+	width: 88rpx; height: 88rpx; flex-shrink: 0;
+	display: flex; align-items: center; justify-content: center;
+}
+.send-dot, .stop-dot {
+	width: 72rpx; height: 72rpx; border-radius: 50%;
 	display: flex; align-items: center; justify-content: center; transition: all .2s;
 }
-.send-btn {
+.send-dot {
 	background: #A1A1AA; opacity: .5;
-	&.active {
-		background: #000000; opacity: 1;
-		&:active { transform: scale(1.05); }
-	}
 }
+.send-btn.active .send-dot {
+	background: #000000; opacity: 1;
+}
+.send-btn:active .send-dot { transform: scale(1.05); }
 .send-icon { color: #FFFFFF; font-size: 36rpx; font-weight: 700; }
-.stop-btn { background: #18181B; &:active { transform: scale(.9); } }
+.stop-dot { background: #18181B; }
+.stop-btn:active .stop-dot { transform: scale(.9); }
 .stop-icon { color: #FFFFFF; font-size: 28rpx; }
 
 /* ──── 深色模式 ──── */
 @media (prefers-color-scheme: dark) {
 	.input-area { background: #18181B; border-top-color: #27272A; }
-	.side-btn {
+	.side-dot {
 		background: #27272A; border-color: #3F3F46;
-		&:active { background: #3F3F46; }
 	}
+	.side-btn:active .side-dot { background: #3F3F46; }
+	.del-dot { background: rgba(255,255,255,.12); }
 	.img-preview { background: #27272A; border-color: #3F3F46; }
 	.img-preview-label { color: #A1A1AA; }
 	.file-badge { color: #A1A1AA; border-color: #3F3F46; }
@@ -296,13 +319,14 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 			background: #18181B;
 		}
 	}
-	.send-btn {
+	.send-dot {
 		background: #3F3F46; opacity: .6;
-		&.active {
-			background: #FAFAFA; opacity: 1;
-		}
+	}
+	.send-btn.active .send-dot {
+		background: #FAFAFA; opacity: 1;
 	}
 	.send-icon { color: #000000; }
+	.stop-dot { background: #27272A; }
 	.text-input { color: #F4F4F5; }
 }
 </style>
