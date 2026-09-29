@@ -6,6 +6,9 @@
  */
 import { ref } from 'vue'
 import { getSnoozeMin, setSnoozeMin, SNOOZE_OPTIONS } from '@/utils/reminder.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+const { isDark } = useTheme()
 
 defineProps({
   enabled: { type: Boolean, default: false },
@@ -68,7 +71,7 @@ function cancelCustom() {
   <view class="section">
     <view class="reminder-header">
       <text class="section-label">提醒</text>
-      <switch :checked="enabled" @change="onSwitchChange" color="#000000" />
+      <switch :checked="enabled" @change="onSwitchChange" :color="isDark ? '#FFFFFF' : '#000000'" />
     </view>
     <template v-if="enabled">
       <view class="reminder-options">
@@ -224,5 +227,21 @@ function cancelCustom() {
   width: 200rpx !important;
   text-align: center;
   font-size: $font-sm !important;
+}
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+    .reminder-desc { color: #A1A1AA; }
+    .reminder-chip {
+        background: #27272A;
+        border-color: #3F3F46;
+        color: #A1A1AA;
+        &.active { background: #FFFFFF; color: #18181B; border-color: #FFFFFF; }
+    }
+    .reminder-custom, .reminder-snooze { border-top-color: #3F3F46; }
+    .reminder-custom-label { color: #A1A1AA; }
+    .reminder-hint { color: #71717A; }
+    .quick-dates .qd-btn { color: #FAFAFA; background: #3F3F46; }
+    .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
 }
 </style>

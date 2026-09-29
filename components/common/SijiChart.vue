@@ -23,6 +23,7 @@ const props = defineProps({
   showAxis: { type: Boolean, default: true },
   barWidth: { type: Number, default: 0 },
   groupMode: { type: Boolean, default: false },
+  dark: { type: Boolean, default: false },
 })
 
 const canvasId = 'siji_chart_' + Math.random().toString(36).substr(2, 9)
@@ -52,6 +53,8 @@ onMounted(() => {
 watch(() => props.data, () => nextTick(() => setTimeout(() => draw(), 50)), { deep: true })
 watch(() => props.value, () => nextTick(() => setTimeout(() => draw(), 50)))
 watch(() => props.type, () => nextTick(() => setTimeout(() => draw(), 50)))
+watch(() => props.dark, () => nextTick(() => setTimeout(() => draw(), 50)))
+watch(() => props.colors, () => nextTick(() => setTimeout(() => draw(), 50)), { deep: true })
 </script>
 
 <template>

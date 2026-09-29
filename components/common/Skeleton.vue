@@ -97,7 +97,7 @@ const props = defineProps({
   align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
-  border-bottom: 1rpx solid #E4E4E7);
+  border-bottom: 1rpx solid #E4E4E7;
 }
 
 .sk-lines {
@@ -123,5 +123,17 @@ const props = defineProps({
 .sk-chart-bar {
   width: 60rpx;
   border-radius: $radius-sm $radius-sm 0 0;
+}
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .animated ::v-deep .sk-line,
+  .animated ::v-deep .sk-circle,
+  .animated ::v-deep .sk-card,
+  .animated ::v-deep .sk-chart-bar {
+    background: #3F3F46;
+  }
+  .sk-list-item { border-bottom-color: #3F3F46; }
+  .sk-card { background: #27272A; }
 }
 </style>

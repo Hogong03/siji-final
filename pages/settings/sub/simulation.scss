@@ -122,3 +122,44 @@
 .sim-report-text { font-size: 26rpx; color: #18181B; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
 .empty-hint { padding: 40rpx 0; text-align: center; }
 .empty-hint text { font-size: 26rpx; color: #A1A1AA; }
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+  .page { background: #18181B; }
+  .header-title { color: #FAFAFA; }
+  .header-desc { color: #A1A1AA; }
+  .mode-card { background: #27272A; }
+  .mode-card.active { border-color: #FAFAFA; }
+  .mode-title { color: #FAFAFA; }
+  .mode-desc { color: #A1A1AA; }
+  .agent-label { color: #71717A; }
+  .mode-count { color: #71717A; }
+  .mode-radio { border-color: #3F3F46; }
+  .mode-radio.on { border-color: #FAFAFA; background: #FAFAFA; }
+  .mode-radio.on::after { background: #18181B; }
+  .config-section { background: #27272A; }
+  .section-title { color: #FAFAFA; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #3F3F46; color: #FAFAFA; }
+  .form-textarea { background: #3F3F46; color: #FAFAFA; }
+  .relation-chip { background: #3F3F46; color: #A1A1AA; }
+  .relation-chip.on { background: #FAFAFA; color: #18181B; }
+  .btn-start { background: #FAFAFA; }
+  .btn-text { color: #18181B; }
+  .history-toggle { color: #71717A; }
+  .filter-tab { background: #3F3F46; color: #A1A1AA; }
+  .filter-tab.on { background: #FAFAFA; color: #18181B; }
+  .sim-card { background: #27272A; }
+  .sim-mode-tag { color: #71717A; }
+  .sim-name { color: #FAFAFA; }
+  .sim-status.completed { background: #3F3F46; color: #A1A1AA; }
+  .sim-status.active { background: #FAFAFA; color: #18181B; }
+  .sim-scene { color: #FAFAFA; }
+  .sim-goal { color: #A1A1AA; }
+  .sim-time { color: #71717A; }
+  .sim-report-btn { color: #FAFAFA; }
+  .sim-delete-btn { color: #F87171; }
+  .sim-report { background: #3F3F46; border-left-color: #FAFAFA; }
+  .sim-report-text { color: #FAFAFA; }
+  .empty-hint text { color: #71717A; }
+}

@@ -284,3 +284,28 @@ $spacing-lg: 32rpx;
 .my-header {
   margin-top: 28rpx;
 }
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+  .agent-page { background: #18181B; }
+  .section-label { color: #71717A; }
+  .section-add-btn { color: #FAFAFA; background: #3F3F46; }
+  .agent-card { background: #27272A; }
+  .agent-card.active { border-color: #FAFAFA; background: #3F3F46; }
+  .agent-avatar { background: #3F3F46; }
+  .agent-name { color: #FAFAFA; }
+  .agent-desc { color: #71717A; }
+  .agent-badge .badge-dot { color: #34D399; }
+  .agent-badge .badge-text { color: #34D399; }
+  .action-btn { background: #3F3F46; color: #FAFAFA; }
+  .action-btn.delete { color: #F87171; }
+  .agent-tag { background: #3F3F46; }
+  .agent-tag .tag-text { color: #71717A; }
+  .template-card { background: #27272A; }
+  .template-card:active { border-color: #FAFAFA; }
+  .template-name { color: #FAFAFA; }
+  .template-desc { color: #71717A; }
+  .tips-card { background: #27272A; border-color: #3F3F46; }
+  .tips-title { color: #FAFAFA; }
+  .tips-text { color: #71717A; }
+}

@@ -61,3 +61,28 @@
 }
 .group-name { font-size: 26rpx; font-weight: 700; color: #18181B; }
 .group-count { font-size: 22rpx; color: #A1A1AA; }
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+  .page { background: #18181B; }
+  .custom-nav { background: #27272A; }
+  .nav-back-icon { color: #FAFAFA; }
+  .nav-title { color: #FAFAFA; }
+  .nav-btn { background: #3F3F46; }
+  .nav-btn-text { color: #FAFAFA; }
+  .section-title { color: #FAFAFA; }
+  .graph-container { background: #27272A; }
+  .empty-text { color: #71717A; }
+  .rank-section { background: #27272A; }
+  .rank-title { color: #FAFAFA; }
+  .rank-toggle { color: #71717A; }
+  .rank-row { border-bottom-color: #3F3F46; }
+  .rank-avatar { background: #3F3F46; color: #FAFAFA; }
+  .rank-avatar.rank-self { background: #FAFAFA; color: #18181B; }
+  .rank-name { color: #FAFAFA; }
+  .rank-role { color: #71717A; }
+  .rank-score { color: #FAFAFA; }
+  .group-header { border-bottom-color: #FAFAFA; }
+  .group-name { color: #FAFAFA; }
+  .group-count { color: #71717A; }
+}

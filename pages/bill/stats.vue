@@ -16,6 +16,12 @@ import { ref, computed, onMounted } from 'vue'
 import { getBillList } from '@/utils/storage.js'
 import SijiChart from '@/components/common/SijiChart.vue'
 import { EXPENSE_CATEGORIES } from '@/utils/categories.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+const { isDark } = useTheme()
+// 图表系列色：深色下近黑柱体隐形，反白
+const trendColors = computed(() => isDark.value ? ['#FAFAFA', '#71717A'] : ['#18181B', '#A1A1AA'])
+const singleBarColor = computed(() => isDark.value ? ['#FAFAFA'] : ['#18181B'])
 
 const currentMonth = ref('')
 const bills = ref([])
@@ -99,6 +105,9 @@ const expenseChange = computed(() => {
 
 // ==================== 分类统计 ====================
 const pieColors = ['#18181B', '#3F3F46', '#71717A', '#A1A1AA', '#F4F4F5', '#E8A838', '#D35D5D', '#5B8BD4', '#8BC34A', '#FF9800', '#9C27B0', '#607D8B', '#795548', '#00BCD4', '#E91E63', '#AB47BC']
+// 深色下中性色块提亮，避免近黑扇区隐形
+const darkPieColors = ['#FAFAFA', '#D4D4D8', '#A1A1AA', '#71717A', '#52525B', '#FBBF24', '#F87171', '#60A5FA', '#86EFAC', '#FDBA74', '#C084FC', '#7DD3FC', '#A8A29E', '#22D3EE', '#F472B6', '#D8B4FE']
+const activePieColors = computed(() => isDark.value ? darkPieColors : pieColors)
 
 const expenseByCategory = computed(() => {
   const map = {}
@@ -108,7 +117,7 @@ const expenseByCategory = computed(() => {
   })
   const total = Object.values(map).reduce((a, b) => a + b, 0) || 1
   return Object.entries(map)
-    .map(([name, amount], i) => ({ name, amount, percent: Math.round(amount / total * 100), color: pieColors[i % pieColors.length] }))
+    .map(([name, amount], i) => ({ name, amount, percent: Math.round(amount / total * 100), color: activePieColors.value[i % activePieColors.value.length] }))
     .sort((a, b) => b.amount - a.amount)
 })
 
@@ -120,7 +129,7 @@ const incomeByCategory = computed(() => {
   })
   const total = Object.values(map).reduce((a, b) => a + b, 0) || 1
   return Object.entries(map)
-    .map(([name, amount], i) => ({ name, amount, percent: Math.round(amount / total * 100), color: pieColors[i % pieColors.length] }))
+    .map(([name, amount], i) => ({ name, amount, percent: Math.round(amount / total * 100), color: activePieColors.value[i % activePieColors.value.length] }))
     .sort((a, b) => b.amount - a.amount)
 })
 
@@ -284,10 +293,10 @@ function formatDate(ts) {
           </view>
         </view>
         <view class="trend-summary">
-          <view class="ts-item"><view class="ts-dot" style="background:#18181B" /><text class="ts-label">支出</text><text class="ts-value">¥{{ trendTotalExpense.toFixed(0) }}</text></view>
-          <view class="ts-item"><view class="ts-dot" style="background:#A1A1AA" /><text class="ts-label">收入</text><text class="ts-value">¥{{ trendTotalIncome.toFixed(0) }}</text></view>
+          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#FAFAFA' : '#18181B' }" /><text class="ts-label">支出</text><text class="ts-value">¥{{ trendTotalExpense.toFixed(0) }}</text></view>
+          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#71717A' : '#A1A1AA' }" /><text class="ts-label">收入</text><text class="ts-value">¥{{ trendTotalIncome.toFixed(0) }}</text></view>
         </view>
-        <SijiChart type="bar" :data="trendData.map(d => ({ label: d.label, values: [d.expense, d.income] }))" :group-mode="true" :colors="['#18181B', '#A1A1AA']" :height="180" />
+        <SijiChart type="bar" :dark="isDark" :data="trendData.map(d => ({ label: d.label, values: [d.expense, d.income] }))" :group-mode="true" :colors="trendColors" :height="180" />
       </view>
 
       <!-- ③ Top 5 -->
@@ -311,7 +320,7 @@ function formatDate(ts) {
         <view v-if="expenseByCategory.length === 0" class="no-data">暂无支出记录</view>
         <view v-else class="cat-chart-row">
           <view class="ring-section">
-            <SijiChart type="ring" :data="expenseByCategory.map(c => ({ value: c.amount, color: c.color }))" label="支出" :height="240" />
+            <SijiChart type="ring" :dark="isDark" :data="expenseByCategory.map(c => ({ value: c.amount, color: c.color }))" label="支出" :height="240" />
           </view>
           <view class="legend-list">
             <view v-for="cat in expenseByCategory" :key="cat.name" class="legend-row">
@@ -341,7 +350,7 @@ function formatDate(ts) {
         </scroll-view>
         <view v-if="selectedCatTrend && catTrendData.length > 0">
           <text class="cat-trend-title">{{ selectedCatTrend }} 月度趋势</text>
-          <SijiChart type="bar" :data="catTrendData.map(d => ({ label: d.label, values: [d.amount] }))" :colors="['#18181B']" :height="160" />
+          <SijiChart type="bar" :dark="isDark" :data="catTrendData.map(d => ({ label: d.label, values: [d.amount] }))" :colors="singleBarColor" :height="160" />
         </view>
         <view v-else class="no-data">选择分类查看月度趋势</view>
       </view>
@@ -351,7 +360,7 @@ function formatDate(ts) {
         <text class="chart-title">收入分类</text>
         <view class="cat-chart-row">
           <view class="ring-section">
-            <SijiChart type="ring" :data="incomeByCategory.map(c => ({ value: c.amount, color: c.color }))" label="收入" :height="240" />
+            <SijiChart type="ring" :dark="isDark" :data="incomeByCategory.map(c => ({ value: c.amount, color: c.color }))" label="收入" :height="240" />
           </view>
           <view class="legend-list">
             <view v-for="cat in incomeByCategory" :key="cat.name" class="legend-row">

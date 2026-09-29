@@ -68,6 +68,9 @@ import RelationGraphECharts from '@/components/RelationGraphECharts.vue'
 import { getAllRelations } from '@/utils/relations.js'
 import { getProfile } from '@/utils/profile.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+const { isDark } = useTheme()
 
 const statusBarHeight = ref(20)
 try {
@@ -111,20 +114,33 @@ const graphCategories = computed(() => {
   return cats
 })
 
-// 角色颜色映射（灰阶系）
+// 角色颜色映射（灰阶系）：浅色用深灰，深色反转为浅灰，保证节点在背景上可见
 const ROLE_COLORS = {
-  '家人': '#18181B',
-  '伴侣': '#27272A',
-  '朋友': '#52525B',
-  '同事': '#71717A',
-  '领导': '#71717A',
-  '客户': '#A1A1AA',
-  '老师': '#A1A1AA',
-  '其他': '#F4F4F5'
+  light: {
+    '家人': '#18181B',
+    '伴侣': '#27272A',
+    '朋友': '#52525B',
+    '同事': '#71717A',
+    '领导': '#71717A',
+    '客户': '#A1A1AA',
+    '老师': '#A1A1AA',
+    '其他': '#F4F4F5'
+  },
+  dark: {
+    '家人': '#FAFAFA',
+    '伴侣': '#D4D4D8',
+    '朋友': '#A1A1AA',
+    '同事': '#71717A',
+    '领导': '#71717A',
+    '客户': '#52525B',
+    '老师': '#52525B',
+    '其他': '#3F3F46'
+  }
 }
 
 function getRoleColor(role) {
-  return ROLE_COLORS[role] || '#A1A1AA'
+  const map = isDark.value ? ROLE_COLORS.dark : ROLE_COLORS.light
+  return map[role] || (isDark.value ? '#71717A' : '#A1A1AA')
 }
 
 function getRoleCategoryIndex(role) {
@@ -142,8 +158,10 @@ const graphNodes = computed(() => {
     symbolSize: 60,
     category: 0,
     value: 10,
-    itemStyle: { color: '#000000', borderColor: '#FFFFFF', borderWidth: 2 },
-    label: { show: true, position: 'bottom', fontSize: 14, color: '#18181B', fontWeight: 700 }
+    itemStyle: isDark.value
+      ? { color: '#FAFAFA', borderColor: '#18181B', borderWidth: 2 }
+      : { color: '#000000', borderColor: '#FFFFFF', borderWidth: 2 },
+    label: { show: true, position: 'bottom', fontSize: 14, color: isDark.value ? '#FAFAFA' : '#18181B', fontWeight: 700 }
   }]
   for (const r of relations.value) {
     const score = r.relationship_score || 5
@@ -156,10 +174,10 @@ const graphNodes = computed(() => {
       value: score,
       itemStyle: {
         color: getRoleColor(r.role || '其他'),
-        borderColor: '#FFFFFF',
+        borderColor: isDark.value ? '#18181B' : '#FFFFFF',
         borderWidth: 2
       },
-      label: { show: true, position: 'bottom', fontSize: 11, color: '#18181B', fontWeight: 400 }
+      label: { show: true, position: 'bottom', fontSize: 11, color: isDark.value ? '#FAFAFA' : '#18181B', fontWeight: 400 }
     })
   }
   return nodes
@@ -175,7 +193,9 @@ const graphLinks = computed(() => {
       value: score,
       lineStyle: {
         width: 0.5 + (score / 10) * 3,
-        color: score >= 8 ? '#18181B' : (score >= 5 ? '#A1A1AA' : '#E4E4E7'),
+        color: isDark.value
+          ? (score >= 8 ? '#FAFAFA' : (score >= 5 ? '#A1A1AA' : '#3F3F46'))
+          : (score >= 8 ? '#18181B' : (score >= 5 ? '#A1A1AA' : '#E4E4E7')),
         curveness: 0.1
       }
     }
@@ -203,7 +223,7 @@ const echartsOption = computed(() => ({
   },
   legend: {
     data: graphCategories.value.map(c => c.name),
-    textStyle: { color: '#71717A', fontSize: 11 },
+    textStyle: { color: isDark.value ? '#A1A1AA' : '#71717A', fontSize: 11 },
     bottom: 5
   },
   series: [{

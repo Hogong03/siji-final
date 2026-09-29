@@ -2,10 +2,12 @@
     "name" : "思迹",
     "appid" : "__UNI__128A9A5",
     "description" : "AI个人生活助手 — 对话式记录/记账/计划",
-    "versionName" : "4.6.0",
-    "versionCode" : "460",
+    "versionName" : "4.7.0",
+    "versionCode" : "470",
     "transformPx" : false,
     "app-plus" : {
+        "darkmode" : true,
+        "themeLocation" : "theme.json",
         "usingComponents" : true,
         "nvueStyleCompiler" : "uni-app",
         "compilerVersion" : 3,
@@ -75,6 +77,7 @@
         "softinputMode" : "adjustResize"
     },
     "h5" : {
+        "darkmode" : true,
         "router" : {
             "mode" : "hash"
         },
@@ -88,6 +91,7 @@
         }
     },
     "mp-weixin" : {
+        "darkmode" : true,
         "appid" : "",
         "setting" : {
             "urlCheck" : false

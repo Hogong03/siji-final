@@ -18,6 +18,9 @@ import { getRelationsStats } from '@/utils/relations.js'
 import { getAdoptableMemories, suggestProfileAdoption, adoptMemoryToProfile } from '@/utils/memory.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { logger } from '@/utils/logger.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+const { isDark } = useTheme()
 
 /* ---- 响应式数据 ---- */
 const profile = ref(getProfile())
@@ -328,7 +331,7 @@ function goRelations() {
           {{ enabled ? `已填写 ${filledCount} 项，${totalCards} 个分组` : '开启后即可编辑，AI 将感知你的个人信息' }}
         </view>
       </view>
-      <switch :checked="enabled" @change="toggleEnabled" color="#000000" />
+      <switch :checked="enabled" @change="toggleEnabled" :color="isDark ? '#FFFFFF' : '#000000'" />
     </view>
 
     <!-- 关系图谱入口（仅开启时显示，位于开关下方） -->

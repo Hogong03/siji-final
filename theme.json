@@ -1,0 +1,34 @@
+{
+  "light": {
+    "navBgColor": "#FFFFFF",
+    "navTxtStyle": "black",
+    "bgColor": "#F4F4F5",
+    "bgTxtStyle": "dark",
+    "tabFontColor": "#A1A1AA",
+    "tabSelectedColor": "#000000",
+    "tabBgColor": "#F4F4F5",
+    "tabBorderStyle": "white",
+    "tabIconChat": "/static/tab/chat-v2.png",
+    "tabIconChatActive": "/static/tab/chat-active-v2.png",
+    "tabIconFunc": "/static/tab/functions-v2.png",
+    "tabIconFuncActive": "/static/tab/functions-active-v2.png",
+    "tabIconSet": "/static/tab/settings-v2.png",
+    "tabIconSetActive": "/static/tab/settings-active-v2.png"
+  },
+  "dark": {
+    "navBgColor": "#18181B",
+    "navTxtStyle": "white",
+    "bgColor": "#18181B",
+    "bgTxtStyle": "light",
+    "tabFontColor": "#A1A1AA",
+    "tabSelectedColor": "#FFFFFF",
+    "tabBgColor": "#18181B",
+    "tabBorderStyle": "black",
+    "tabIconChat": "/static/tab/chat-v2-dark.png",
+    "tabIconChatActive": "/static/tab/chat-active-v2-dark.png",
+    "tabIconFunc": "/static/tab/functions-v2-dark.png",
+    "tabIconFuncActive": "/static/tab/functions-active-v2-dark.png",
+    "tabIconSet": "/static/tab/settings-v2-dark.png",
+    "tabIconSetActive": "/static/tab/settings-active-v2-dark.png"
+  }
+}

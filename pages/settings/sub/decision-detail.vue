@@ -263,5 +263,45 @@ function handleDelete() {
 .btn-cancel { background: #F4F4F5; color: #71717A; }
 .btn-confirm { background: #000000; color: #FFFFFF; }
 
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .page { background: #18181B; }
+  .hero { background: #27272A; }
+  .hero-title { color: #FAFAFA; }
+  .meta-category { color: #A1A1AA; }
+  .status-thinking { background: rgba(245, 158, 11, 0.15); color: #FCD34D; }
+  .status-decided { background: rgba(14, 165, 233, 0.15); color: #7DD3FC; }
+  .status-acted { background: rgba(16, 185, 129, 0.15); color: #6EE7B7; }
+  .status-reviewed { background: #3F3F46; color: #A1A1AA; }
+  .status-abandoned { background: rgba(239, 68, 68, 0.15); color: #FCA5A5; }
+  .hero-deadline, .hero-emotion { color: #A1A1AA; }
+  .section { background: #27272A; }
+  .section-title { color: #FAFAFA; }
+  .option-item { border-bottom-color: #3F3F46; }
+  .option-name { color: #FAFAFA; }
+  .weight-bar { background: #3F3F46; }
+  .weight-fill { background: #FAFAFA; }
+  .weight-num { color: #A1A1AA; }
+  .pc-label { color: #A1A1AA; }
+  .pc-text { color: #D4D4D8; }
+  .tag { background: #3F3F46; color: #D4D4D8; }
+  .tag-alt { background: #52525B; color: #A1A1AA; }
+  .section-decision { background: #3F3F46; }
+  .decision-text { color: #FAFAFA; }
+  .decision-reasoning { color: #A1A1AA; }
+  .section-review { background: #3F3F46; }
+  .review-text { color: #D4D4D8; }
+  .btn-action { background: #FAFAFA; color: #18181B; }
+  .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+  .empty { color: #A1A1AA; }
+  .modal-content { background: #27272A; }
+  .modal-title { color: #FAFAFA; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #3F3F46; color: #FAFAFA; }
+  .form-textarea { background: #3F3F46; color: #FAFAFA; }
+  .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+  .btn-confirm { background: #FAFAFA; color: #18181B; }
+}
+
 </style>
 

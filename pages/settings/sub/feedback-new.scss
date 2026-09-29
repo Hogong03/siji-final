@@ -186,3 +186,25 @@
 .cancel-btn:active {
   background: #F4F4F5;
 }
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+  .feedback-form-page { background: #18181B; }
+  .edit-banner { background: #27272A; color: #FAFAFA; }
+  .section-title { color: #FAFAFA; }
+  .star-icon { color: #71717A; }
+  .star.active .star-icon { color: #FAFAFA; }
+  .rating-text { color: #A1A1AA; }
+  .category-chip { border-color: #3F3F46; background: #27272A; }
+  .category-chip.active { border-color: #FAFAFA; background: #FAFAFA; }
+  .category-chip.active .cat-icon,
+  .category-chip.active .cat-label { color: #18181B; }
+  .cat-label { color: #FAFAFA; }
+  .feedback-input { background: #27272A; color: #FAFAFA; }
+  .char-count { color: #71717A; }
+  .contact-input { background: #27272A; color: #FAFAFA; }
+  .submit-row { background: #18181B; border-top-color: #3F3F46; }
+  .submit-btn { background: #FAFAFA; color: #18181B; }
+  .cancel-btn { color: #FAFAFA; border-color: #3F3F46; }
+  .cancel-btn:active { background: #3F3F46; }
+}

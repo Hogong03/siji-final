@@ -237,4 +237,17 @@ function go(target) {
   &.ok { background: #059669; box-shadow: none; }
   &.warn { background: #F59E0B; box-shadow: none; }
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .page { background: #18181B; }
+  .sec-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+  .card { background: #27272A; border-color: #3F3F46; }
+  .row { border-bottom-color: #3F3F46; &:active { background: #3F3F46; } }
+  .card-ai-section { border-top-color: #FFFFFF; }
+  .row-label { color: #FAFAFA; }
+  .row-desc, .row-value, .row-arrow { color: #A1A1AA; }
+  .dot.ok { background: #10B981; }
+  .dot.warn { background: #F59E0B; }
+}
 </style>

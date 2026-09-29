@@ -254,4 +254,19 @@ watch(() => props.visible, (v) => {
   font-size: $font-md;
   font-weight: 700;
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+    .tag-picker { background: #27272A; }
+    .tp-title { color: #FAFAFA; }
+    .tp-current { border-bottom-color: #3F3F46; }
+    .tp-item.selected { background: #3F3F46; }
+    .tp-name { color: #FAFAFA; }
+    .tp-count { color: #71717A; }
+    .tp-empty { color: #71717A; }
+    .tp-input-row { border-top-color: #3F3F46; }
+    .tp-input { background: #3F3F46; color: #FAFAFA; }
+    .tp-add { color: #FAFAFA; }
+    .tp-done { background: #FFFFFF; color: #18181B; }
+}
 </style>

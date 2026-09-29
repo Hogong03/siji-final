@@ -347,4 +347,33 @@ function handleSave() {
   font-weight: 600;
 }
 
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .modal-content { background: #27272A; }
+  .modal-header { border-bottom-color: #3F3F46; }
+  .modal-title { color: #FAFAFA; }
+  .modal-close { color: #71717A; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #3F3F46; color: #FAFAFA; }
+  .icon-pick {
+    background: #3F3F46;
+    &.active { background: #52525B; }
+  }
+  .color-pick.active { border-color: #FAFAFA; }
+  .si-num {
+    background: #3F3F46;
+    color: #A1A1AA;
+  }
+  .si-input { background: #3F3F46; color: #FAFAFA; }
+  .si-del { color: #F87171; }
+  .add-subtask {
+    color: #FAFAFA;
+    border-color: #3F3F46;
+  }
+  .modal-footer { border-top-color: #3F3F46; }
+  .mf-btn.save {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+}
 </style>

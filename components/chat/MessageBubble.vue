@@ -342,4 +342,10 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
   font-size: 24rpx;
   color: #A1A1AA;
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .bubble-image-fallback { background: #3F3F46; }
+  .bubble-image-fallback-text { color: #71717A; }
+}
 </style>

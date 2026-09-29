@@ -187,4 +187,32 @@ function goToFullHelp() { emit('close'); uni.navigateTo({ url: '/pages/settings/
     font-weight: 600;
   }
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .modal-container { background: #27272A; }
+  .modal-header {
+    border-bottom-color: #3F3F46;
+    .modal-title { color: #FAFAFA; }
+  }
+  .guide-section .guide-section-title { color: #A1A1AA; }
+  .guide-item {
+    border-bottom-color: #3F3F46;
+    .gi-tag {
+      background: #3F3F46;
+      &.bill { color: #FBBF24; }
+      &.diary { color: #FCD34D; }
+      &.plan { color: #34D399; }
+      &.multi { color: #FAFAFA; }
+      &.query { color: #38BDF8; }
+      &.undo { color: #F87171; }
+    }
+    .gi-text { color: #A1A1AA; }
+  }
+  .guide-tip text { color: #A1A1AA; }
+  .guide-more {
+    background: #3F3F46;
+    text { color: #FAFAFA; }
+  }
+}
 </style>

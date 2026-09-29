@@ -140,3 +140,47 @@
 .tpl-icon { font-size: 28rpx; }
 .tpl-name { font-size: 24rpx; font-weight: 600; color: $text-primary; }
 .tpl-hint { font-size: 20rpx; color: $text-hint; }
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+  .page { background: #18181B; }
+  .custom-nav { background: #27272A; }
+  .nav-back-icon { color: #FAFAFA; }
+  .nav-title { color: #FAFAFA; }
+  .nav-btn { background: #3F3F46; }
+  .nav-btn-text { color: #FAFAFA; }
+  .stats-bar { background: #27272A; border-bottom-color: #3F3F46; }
+  .stat-num { color: #FAFAFA; }
+  .stat-label { color: #A1A1AA; }
+  .search-bar { background: #27272A; }
+  .search-input { background: #3F3F46; color: #FAFAFA; }
+  .empty-text { color: #A1A1AA; }
+  .empty-hint { color: #71717A; }
+  .relation-card { background: #27272A; }
+  .avatar { background: #FAFAFA; color: #18181B; }
+  .name { color: #FAFAFA; }
+  .role { color: #A1A1AA; }
+  .score-high { background: #FAFAFA; color: #18181B; }
+  .score-mid { background: #3F3F46; color: #FAFAFA; }
+  .score-low { background: #3F3F46; color: #71717A; }
+  .card-context { color: #A1A1AA; }
+  .tag { background: #3F3F46; color: #A1A1AA; }
+  .card-actions { border-top-color: #3F3F46; }
+  .action-btn { background: #3F3F46; }
+  .action-text { color: #A1A1AA; }
+  .fab { background: #FAFAFA; color: #18181B; }
+  .modal-content { background: #27272A; }
+  .modal-title { color: #FAFAFA; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #3F3F46; color: #FAFAFA; }
+  .form-textarea { background: #3F3F46; color: #FAFAFA; }
+  .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+  .btn-confirm { background: #FAFAFA; color: #18181B; }
+  .tpl-title { color: #A1A1AA; }
+  .tpl-card { background: #3F3F46; }
+  .tpl-card.active { border-color: #FAFAFA; background: #27272A; }
+  .tpl-icon-wrap { background: #27272A; }
+  .tpl-card.active .tpl-icon-wrap { background: #FAFAFA; }
+  .tpl-name { color: #FAFAFA; }
+  .tpl-hint { color: #71717A; }
+}

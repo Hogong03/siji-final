@@ -16,9 +16,29 @@
  *  ⑪ 活跃度热力图（新增）
  */
 
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import SijiChart from '@/components/common/SijiChart.vue'
 import { usePlanStats } from './composables/usePlanStats.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+const { isDark } = useTheme()
+// 图表系列色：深色下近黑柱体/弧段隐形，反白
+const trendColors = computed(() => isDark.value ? ['#FAFAFA', '#71717A'] : ['#18181B', '#A1A1AA'])
+const singleBarColor = computed(() => isDark.value ? ['#FAFAFA'] : ['#18181B'])
+
+// 环形图色板随主题映射（数据源 composable 给的是浅色硬编码，这里在页面层归一）
+const RING_COLOR_DARK = {
+  '#D35D5D': '#F87171',
+  '#E8A838': '#FBBF24',
+  '#999': '#71717A',
+  '#18181B': '#FAFAFA',
+  '#52525B': '#A1A1AA',
+  '#A1A1AA': '#71717A'
+}
+function darkRing(list) {
+  if (!isDark.value) return list
+  return list.map(d => ({ ...d, color: RING_COLOR_DARK[d.color] || d.color }))
+}
 
 const {
   timeRange, overview, priorityDist, statusDist, trendData,
@@ -36,6 +56,14 @@ const rangeOptions = [
 ]
 
 function heatmapColor(count) {
+  if (isDark.value) {
+    // 深色：0 次用暗灰，越活跃越亮
+    if (count === 0) return '#27272A'
+    if (count === 1) return '#3F3F46'
+    if (count <= 2) return '#52525B'
+    if (count <= 4) return '#A1A1AA'
+    return '#FAFAFA'
+  }
   if (count === 0) return '#E4E4E7'
   if (count === 1) return '#F4F4F5'
   if (count <= 2) return '#A1A1AA'
@@ -87,7 +115,7 @@ function heatmapColor(count) {
         <text class="card-title">优先级分布</text>
         <view class="chart-with-legend">
           <view class="ring-side">
-            <SijiChart type="ring" :data="priorityDist.map(p => ({ value: p.count, color: p.color }))" label="优先级" :height="200" />
+            <SijiChart type="ring" :dark="isDark" :data="darkRing(priorityDist).map(p => ({ value: p.count, color: p.color }))" label="优先级" :height="200" />
           </view>
           <view class="legend-side">
             <view v-for="p in priorityDist" :key="p.label" class="mini-legend">
@@ -104,7 +132,7 @@ function heatmapColor(count) {
         <text class="card-title">状态分布</text>
         <view class="chart-with-legend">
           <view class="ring-side">
-            <SijiChart type="ring" :data="statusDist.map(s => ({ value: s.count, color: s.color }))" label="状态" :height="200" />
+            <SijiChart type="ring" :dark="isDark" :data="darkRing(statusDist).map(s => ({ value: s.count, color: s.color }))" label="状态" :height="200" />
           </view>
           <view class="legend-side">
             <view v-for="s in statusDist" :key="s.label" class="mini-legend">
@@ -119,7 +147,7 @@ function heatmapColor(count) {
       <!-- ④ 30天趋势 -->
       <view class="card">
         <text class="card-title">近30天趋势</text>
-        <SijiChart type="bar" :data="trendData.map(d => ({ label: d.label, values: [d.created, d.done] }))" :group-mode="true" :colors="['#18181B', '#A1A1AA']" :height="160" />
+        <SijiChart type="bar" :dark="isDark" :data="trendData.map(d => ({ label: d.label, values: [d.created, d.done] }))" :group-mode="true" :colors="trendColors" :height="160" />
         <view class="trend-legend">
           <view class="legend-item"><view class="legend-dot created" /><text class="legend-text">新建</text></view>
           <view class="legend-item"><view class="legend-dot done" /><text class="legend-text">完成</text></view>
@@ -142,7 +170,7 @@ function heatmapColor(count) {
       <view class="card">
         <text class="card-title">子计划完成率</text>
         <view class="gauge-row">
-          <SijiChart type="gauge" :value="subtaskStats.rate" label="子计划" :colors="['#18181B']" :height="200" />
+          <SijiChart type="gauge" :dark="isDark" :value="subtaskStats.rate" label="子计划" :colors="singleBarColor" :height="200" />
           <view class="gauge-info"><text class="ri-text">已完成 {{ subtaskStats.done }} / {{ subtaskStats.total }} 个子计划</text></view>
         </view>
       </view>
@@ -195,16 +223,21 @@ function heatmapColor(count) {
         <text class="card-title">近30天活跃度</text>
         <view class="heatmap">
           <view v-for="d in heatmapData" :key="d.date" class="hm-cell" :style="{ background: heatmapColor(d.count) }">
-            <text class="hm-day" :style="{ color: d.count > 2 ? '#FAFAFA' : '#71717A' }">{{ d.day }}</text>
+            <text class="hm-day" :style="{ color: isDark ? (d.count > 2 ? '#18181B' : '#71717A') : (d.count > 2 ? '#FAFAFA' : '#71717A') }">{{ d.day }}</text>
           </view>
         </view>
         <view class="hm-legend">
           <text class="hm-label">少</text>
-          <view class="hm-scale" style="background:#E4E4E7" />
-          <view class="hm-scale" style="background:#F4F4F5" />
-          <view class="hm-scale" style="background:#A1A1AA" />
-          <view class="hm-scale" style="background:#52525B" />
-          <view class="hm-scale" style="background:#18181B" />
+          <view v-if="isDark" class="hm-scale" style="background:#27272A" />
+          <view v-if="isDark" class="hm-scale" style="background:#3F3F46" />
+          <view v-if="isDark" class="hm-scale" style="background:#52525B" />
+          <view v-if="isDark" class="hm-scale" style="background:#A1A1AA" />
+          <view v-if="isDark" class="hm-scale" style="background:#FAFAFA" />
+          <view v-if="!isDark" class="hm-scale" style="background:#E4E4E7" />
+          <view v-if="!isDark" class="hm-scale" style="background:#F4F4F5" />
+          <view v-if="!isDark" class="hm-scale" style="background:#A1A1AA" />
+          <view v-if="!isDark" class="hm-scale" style="background:#52525B" />
+          <view v-if="!isDark" class="hm-scale" style="background:#18181B" />
           <text class="hm-label">多</text>
         </view>
       </view>

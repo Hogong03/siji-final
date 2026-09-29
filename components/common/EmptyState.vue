@@ -96,4 +96,14 @@ const emit = defineEmits(['action'])
   from { opacity: 0; transform: translateY(8rpx); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── 深色模式 ─── */
+@media (prefers-color-scheme: dark) {
+  .empty-icon-wrap { background: #3F3F46; }
+  .empty-title { color: #A1A1AA; }
+  .empty-action {
+    background: #FAFAFA;
+    .empty-action-text { color: #000000; }
+  }
+}
 </style>
