@@ -14,8 +14,11 @@ import {
 } from '@/utils/storage.js'
 import { parseDiaryQuery } from '@/utils/diary-query.js'
 import { pickReviewRecords } from '@/utils/record-review.js'
+import { useTheme } from '@/composables/useTheme.js'
 
 export function useDiaryList() {
+  // 标签兜底色随主题（tagColor 返回值经 :style 注入，CSS 深色块覆盖不了）
+  const { isDark } = useTheme()
   const diaries = ref([])
   const currentMonth = ref('')
   const loading = ref(false)
@@ -345,7 +348,7 @@ export function useDiaryList() {
 
   function tagColor(name) {
     const t = filterTags.value.find(t => t.name === name)
-    return t?.color || '#000000'
+    return t?.color || (isDark.value ? '#FAFAFA' : '#000000')
   }
 
   function formatDate(ts) {

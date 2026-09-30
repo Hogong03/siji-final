@@ -8,6 +8,7 @@
  */
 import { computed } from 'vue'
 import { normalizeAgentIcon } from '@/utils/agent-templates.js'
+import { useTheme } from '@/composables/useTheme.js'
 
 const props = defineProps({
   name: { type: String, default: '' },
@@ -19,7 +20,12 @@ const TYPE_COLORS = {
   '思迹助手': '#F5F0E8', '情感顾问': '#F5E8F0', '心理咨询师': '#E8EEF5'
 }
 
-const bgColor = computed(() => TYPE_COLORS[props.name] || '#EBEBEB')
+// 深色模式：浅底改深灰底（背景色经 :style 注入，CSS 媒体查询覆盖不了）
+const { isDark } = useTheme()
+const bgColor = computed(() => {
+  if (isDark.value) return '#27272A'
+  return TYPE_COLORS[props.name] || '#EBEBEB'
+})
 const firstChar = computed(() => (props.name || '思').charAt(0))
 
 const sizeRpx = computed(() => {
@@ -76,6 +82,9 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
 @media (prefers-color-scheme: dark) {
   .agent-avatar--icon {
     border: 2rpx solid #3F3F46;
+  }
+  .avatar-text {
+    color: #FAFAFA;
   }
 }
 .avatar-icon-img {

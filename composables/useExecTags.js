@@ -145,8 +145,8 @@ export function useExecTags(props, emit) {
         return regItem.color
       }
     }
-    tagColorCache[name] = '#000000'
-    return '#000000'
+    tagColorCache[name] = isDark.value ? '#FAFAFA' : '#000000'
+    return isDark.value ? '#FAFAFA' : '#000000'
   }
 
   return {

@@ -21,6 +21,7 @@ import {
 } from '@/composables/useExecCardHelpers.js'
 import { canOpenType } from '@/composables/useChatNavigation.js'
 import { execCardText } from '@/utils/ai/exec-payload.js'
+import { useTheme } from '@/composables/useTheme.js'
 
 const props = defineProps({
   message: { type: Object, required: true }
@@ -29,6 +30,9 @@ const props = defineProps({
 const emit = defineEmits([
   'confirm-action', 'update-tags'
 ])
+
+// 未选中标签圆点的兜底色随主题（JS 注入色，CSS 深色块覆盖不了）
+const { isDark } = useTheme()
 
 // 可编辑类型（标题行内嵌跳转按钮）— 其余类型保留头部图标 + 跳转按钮
 const isInlineType = computed(() => {
@@ -394,7 +398,7 @@ const {
           :class="{ selected: isTagOn(t.name) }"
           @tap="toggleTag(t.name)"
         >
-          <text class="tp-dot" :style="{ background: isTagOn(t.name) ? t.color : '#E4E4E7' }">{{ isTagOn(t.name) ? '✓' : '' }}</text>
+          <text class="tp-dot" :style="{ background: isTagOn(t.name) ? t.color : (isDark ? '#3F3F46' : '#E4E4E7') }">{{ isTagOn(t.name) ? '✓' : '' }}</text>
           <text class="tp-name">{{ t.name }}</text>
           <text class="tp-count">{{ t.count }}</text>
         </view>

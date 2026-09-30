@@ -13,6 +13,10 @@ import { useTagPicker } from '@/composables/useTagPicker.js'
 import { useRelatedRecords, useRelatedBills } from '@/composables/useDiaryRelations.js'
 import { useDiaryImages } from '@/composables/useDiaryImages.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
+import { useTheme } from '@/composables/useTheme.js'
+
+// 深色模式检测（标签圆点兜底色等 JS 注入色需要）
+const { isDark } = useTheme()
 
 const isNew = ref(true)
 const diaryId = ref('')
@@ -370,7 +374,7 @@ const emotionLabel = computed(() => {
         </view>
         <view class="tp-list">
           <view v-for="t in filteredTagList" :key="t.name" class="tp-item" :class="{ selected: isTagSelected(t.name) }" @tap="toggleTag(t.name)">
-            <text class="tp-dot" :style="{ background: isTagSelected(t.name) ? t.color : '#E4E4E7' }">{{ isTagSelected(t.name) ? '✓' : '' }}</text>
+            <text class="tp-dot" :style="{ background: isTagSelected(t.name) ? t.color : (isDark ? '#3F3F46' : '#E4E4E7') }">{{ isTagSelected(t.name) ? '✓' : '' }}</text>
             <text class="tp-name">{{ t.name }}</text>
             <text class="tp-count">{{ t.count }}</text>
           </view>

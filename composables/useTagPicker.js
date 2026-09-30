@@ -4,6 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import { getUsedTags, addCustomTag, getTags, getCategories } from '@/utils/storage.js'
+import { useTheme } from '@/composables/useTheme.js'
 
 export function useTagPicker(formRef) {
   const showTagPicker = ref(false)
@@ -12,6 +13,8 @@ export function useTagPicker(formRef) {
   const allCategories = ref([])
   const selectedCategory = ref('')
   const tagColorCache = {}
+  // 未选中标签圆点兜底色随主题（JS 注入色，CSS 深色块覆盖不了）
+  const { isDark } = useTheme()
 
   function getTagsArr() { return formRef.value.tags }
 
@@ -66,8 +69,8 @@ export function useTagPicker(formRef) {
     const registry = getTags('diary')
     const regItem = registry.find(t => t.name === name)
     if (regItem?.color) { tagColorCache[name] = regItem.color; return regItem.color }
-    tagColorCache[name] = '#000000'
-    return '#000000'
+    tagColorCache[name] = isDark.value ? '#FAFAFA' : '#000000'
+    return isDark.value ? '#FAFAFA' : '#000000'
   }
 
   return {

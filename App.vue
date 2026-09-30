@@ -216,6 +216,23 @@
 		height: 0;
 	}
 
+	/* ─── 输入框占位符：统一 Zinc-400，深色提为 Zinc-500 ───
+	 * 约 70 个输入框未配置 placeholder-style，深色下走系统默认偏淡。
+	 * 本规则在 H5 / App-vue 生效（uni-app 编译产物含 .uni-input-placeholder 等 class）；
+	 * 小程序端原生 input 不吃全局 class，继续走系统默认（可见，不处理）。
+	 */
+	.uni-input-placeholder,
+	.uni-textarea-placeholder {
+		color: #A1A1AA !important;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.uni-input-placeholder,
+		.uni-textarea-placeholder {
+			color: #71717A !important;
+		}
+	}
+
 	/* 安全区适配 */
 	.safe-area-bottom {
 		padding-bottom: constant(safe-area-inset-bottom);

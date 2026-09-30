@@ -14,10 +14,14 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getFeedbackList, deleteFeedback, getFeedbackStats } from '@/utils/storage.js'
 import { usePressHold } from '@/composables/usePressHold.js'
+import { useTheme } from '@/composables/useTheme.js'
 
 // 长按删除：按住 550ms 且手指没滑动才算（原生 @longpress 在滑动时会误触，见反馈列表「滑动弹出删除」）
 const press = usePressHold()
 const pressDelete = (e, item) => press.onTouchStart(e, () => handleDelete(item))
+
+// 未知分类标题兜底色随主题（JS 注入色，CSS 深色块覆盖不了）
+const { isDark } = useTheme()
 
 const list = ref([])
 const stats = ref({ total: 0, avgRating: '0.0', categoryMap: {} })
@@ -115,7 +119,7 @@ function handleDelete(item) {
         @touchcancel="press.onTouchEnd"
       >
         <view class="card-header">
-          <view class="card-category" :style="{ color: (categoryConfig[item.category] || {}).color || '#18181B' }">
+          <view class="card-category" :style="{ color: (categoryConfig[item.category] || {}).color || (isDark ? '#FAFAFA' : '#18181B') }">
             <text>{{ (categoryConfig[item.category] || {}).icon || '📌' }}</text>
             <text>{{ item.category || '其他' }}</text>
           </view>

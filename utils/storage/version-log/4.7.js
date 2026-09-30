@@ -1,10 +1,45 @@
 /**
- * 版本日志数据段：4.7.0（新版本在前）
+ * 版本日志数据段：4.7.x（新版本在前）
  *
  * 纯数据，无逻辑；由 utils/storage/version-data.js 聚合后经 getDefaultHistory() 导出。
  */
 
 export const V47 = [
+  {
+    version: '4.7.1',
+    date: '2026-09-30',
+    title: '4.7.1 深色补漏：占位符/标签点/头像等 JS 注入色随主题',
+    summary: [
+      '深色覆盖审计：117 个 vue/scss 全扫，83 个有深色块；30 个页面样式在外部 scss 已盖；真缺口集中在 JS 注入色与占位符（CSS 媒体查询盖不到的层）',
+      '输入框占位符统一：App.vue 全局 .uni-input-placeholder/.uni-textarea-placeholder 浅色 #A1A1AA、深色 #71717A，约 70 个未配置 placeholder-style 的输入框在深色下不再用系统默认偏淡色（H5/App-vue 生效，小程序原生 input 走系统默认）',
+      '标签圆点兜底色随主题：未选中标签的圆点 #E4E4E7 在深色卡上看不见，改浅 #3F3F46/深 #E4E4E7（ExecResultCard 标签面板 + 记录详情标签选择器），tagColor 兜底 #000000 在深色提为 #FAFAFA（useTagPicker/useExecTags/useDiaryList）',
+      '反馈分类标题兜底色随主题：未知分类标题 #18181B 在深色卡上隐形，改浅 #FAFAFA/深 #18181B（feedback-list）',
+      'Agent 头像文字模式深色适配：浅底 #EBEBEB 改深 #27272A、文字深色改 #FAFAFA，CSS 深色块补文字色；顺带修既有笔误（.avatar-text 的 $ai-primary 写在非 SCSS 块，从未生效）',
+      '测试 84 文件 / 1203 用例全绿（NODE_OPTIONS=--max-old-space-size=4096 + maxWorkers=2）',
+    ],
+    categories: [
+      {
+        title: '深色覆盖审计（P1）',
+        items: [
+          '全量扫描 117 个 vue/scss：83 个文件含 prefers-color-scheme 深色块，34 个无深色块文件逐一核实为「样式在外部 scss 已盖」或「无颜色定义」（mixin/图表组件），误报清零',
+          '系统层核实：manifest 三端 darkmode:true + theme.json 双主题 + pages.json 92 处颜色全走 @变量 + 12 个 tab 深色图标文件齐全，无缺口',
+          '已知遗留维持规格决策：优先级色（琥珀/红）深色下可辨不动；分类/标签彩点为功能色不动',
+        ],
+      },
+      {
+        title: 'JS 注入色深色补漏（P1）',
+        items: [
+          'App.vue：全局占位符色规则 + 深色覆盖（H5/App-vue 的 uni-input/textarea-placeholder class，小程序原生 input 不吃全局 class 走系统默认）',
+          'components/chat/ExecResultCard.vue：标签面板未选中圆点浅 #3F3F46/深 #E4E4E7',
+          'pages/diary/detail.vue：标签选择器未选中圆点同口径',
+          'composables/useTagPicker.js + useExecTags.js：tagColor 兜底 #000000 深色提为 #FAFAFA',
+          'composables/useDiaryList.js：标签文字兜底 #000000 深色提为 #FAFAFA',
+          'pages/settings/sub/feedback-list.vue：未知分类标题兜底色随主题',
+          'components/common/AgentAvatar.vue：文字模式头像深色 #27272A 底 + #FAFAFA 字，CSS 深色块补 .avatar-text 色；修 $ai-primary 写在非 SCSS 块的既有笔误',
+        ],
+      },
+    ],
+  },
   {
     version: '4.7.0',
     date: '2026-09-29',
