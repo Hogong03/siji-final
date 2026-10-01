@@ -269,6 +269,73 @@ export const EVAL_CASES = [
         'create_relation', 'create_decision', 'undo_last', 'log_interaction'
       ]
     }
+  },
+  {
+    id: 'glimmer-create',
+    title: '还行的小事 → 收进微光本，不评价不追问',
+    message: '今天下班去江边走了走，风很舒服',
+    expect: {
+      tools: ['create_glimmer'],
+      forbid: ['delete_glimmer']
+    }
+  },
+  {
+    id: 'relation-create',
+    title: '介绍新人物 → 收录人脉（4.5.0 后的建链入口）',
+    message: '认识个新朋友叫阿伟，他是做产品经理的',
+    expect: {
+      tools: ['create_relation'],
+      args: {
+        create_relation: (args) => String(args.name || '').indexOf('阿伟') >= 0
+      },
+      forbid: ['delete_relation']
+    }
+  },
+  {
+    id: 'work-checkout-chain',
+    title: '不点名的打卡 → 先查计划拿到 id 再打（4.8.2 先查后改链路）',
+    needs: 'plan',
+    message: '下班啦，打个卡',
+    expect: {
+      tools: ['log_plan_checkin'],
+      order: [['query_plan', 'log_plan_checkin']]
+    }
+  },
+  {
+    id: 'todo-record',
+    title: '待办一句话 → 记录类型 todo，不许升级成计划',
+    message: '记个待办，明天上午交周报',
+    expect: {
+      tools: ['create_diary'],
+      args: {
+        create_diary: (args) => args.record_type === 'todo'
+      },
+      forbid: ['create_plan']
+    }
+  },
+  {
+    id: 'income-bill',
+    title: '收入语义 → income 账单，金额取对',
+    message: '收到稿费 800 块',
+    expect: {
+      tools: ['create_bill'],
+      args: {
+        create_bill: (args) => args.type === 'income' && Number(args.amount) === 800
+      }
+    }
+  },
+  {
+    id: 'plan-freeze',
+    title: '「先放一放」→ 冷藏（frozen），不许删除',
+    needs: 'plan',
+    message: '「{plan}」先放一放吧，最近没精力',
+    expect: {
+      tools: ['update_plan'],
+      args: {
+        update_plan: (args) => args.frozen === true
+      },
+      forbid: ['delete_plan']
+    }
   }
 ]
 

@@ -2,6 +2,7 @@ import { savePlan, getPlanList, getChildPlans, deletePlan, updateIndex, savePlan
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { removePlanReminder } from '@/utils/reminder.js'
 import { inferHolidayFromText } from '@/utils/holidays.js'
+import { rangeFromText } from '@/utils/date-parse.js'
 
 /**
  * Plan 相关 executor 工厂函数
@@ -87,12 +88,16 @@ export function createPlanExecutors(ctx) {
   // ==================== 创建操作 ====================
 
   /**
-   * 模型没给时间时按标题/描述里的节日补日期（3.10.1 确定性兜底）
+   * 模型没给时间时按标题/描述兜底补日期（3.10.1 确定性兜底）
    * 反馈里「本地深度游三日（中秋国庆）」的时间字段全是空的 —— 提示词加固之外，这里再保一层
+   * 4.9.0：节日查表之外，相对日期短语（下周三/月底/明天…）走 date-parse 二级兜底
    * @returns {{ start: string, end: string, name: string } | null}
    */
   function inferDatesFromText(title, description) {
-    return inferHolidayFromText([title, description].filter(Boolean).join(' '))
+    const text = [title, description].filter(Boolean).join(' ')
+    const holiday = inferHolidayFromText(text)
+    if (holiday) return holiday
+    return rangeFromText(text)
   }
 
   function execCreatePlan(p) {

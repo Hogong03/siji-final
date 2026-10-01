@@ -5,6 +5,7 @@
  */
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
+import { isLiteChatMode } from './prompt-actions.js'
 import { buildMemoryContext } from '@/utils/memory.js'
 import { buildRelationsContext, detectMentionedRelations } from '@/utils/relations.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
@@ -47,8 +48,12 @@ const CONTEXT_KEYWORDS = {
 
 // ==================== buildChatMessages ====================
 
-export function buildChatMessages(userMessage, history, cfg) {
-  let system = buildSystemPrompt()
+export function buildChatMessages(userMessage, history, cfg, opts = {}) {
+  // 4.9.0：lite 接线 —— 无指令性动词的短消息（闲聊）用精简 action schema，
+  // CORE_ACTIONS(约 3.5k 字符) 换 LITE_ACTIONS(约 0.4k)，闲聊消息 system 直降约 35%。
+  // agent 路径显式传 lite:false（工具能力来自 TOOL_DEFINITIONS，但 JSON 兜底需要完整 schema）。
+  const lite = opts.lite != null ? opts.lite : isLiteChatMode(userMessage)
+  let system = buildSystemPrompt(false, { lite })
   if (cfg && cfg.systemPrompt) {
     system = cfg.systemPrompt + '\n\n---\n\n' + system
   }

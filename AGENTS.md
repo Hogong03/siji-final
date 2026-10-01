@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 86 文件 / 1213 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.8.2（AI 链路审查修复 20 项：先查后改带 ID / 混合轮 / 兜底过确认闸门；含 4.6-4.8.1 的图标体系与深色模式） |
+| 测试 | 88 文件 / 1229 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.9.0（AI 强化：闲聊 lite 提示词 -35% / 语料 30 条 / date-parse 相对日期 / 记忆可点名；含 4.8.2 审查修复与 4.6-4.8.4 图标与深色体系） |
 
 ---
 
@@ -121,11 +121,14 @@
 ### AI 相关
 
 - **新增查询/创建类 action**：CORE_ACTIONS 和 TOOL_DEFINITIONS 两处都加
-- **新增更新/删除类 action**：只加 CORE_ACTIONS（不给 Agent 自动执行）
-- **改完 action 后必须**：`bumpDataVersion()` 失效缓存 + 跑 `tests/action-schema-consistency.test.js`
+- **新增更新/删除类 action**：只加 CORE_ACTIONS（不给 Agent 自动执行）；relation/decision/simulation 的 schema 由 prompt-builder 的 extSection 按数据存在性注入，不进 CORE_ACTIONS
+- **改完 action 后必须**：跑 `tests/action-schema-consistency.test.js`；写执行器内调 `invalidatePromptCache()` 失效缓存（bumpDataVersion 机制已于 4.8.2 删除）
+- **改 AI 必跑三件套**（动提示词 / 工具 schema / 模型配置 / 记忆注入任一项即触发）：`tests/action-schema-consistency.test.js` + `tests/module-exports.test.js` + `tests/ai-eval*.test.js`（干跑）；新能力落新语料
+- **语料随行制**：新 AI 功能落地必带 1-2 条语料进 `utils/ai/eval/cases.js`（日期现算、数据前置用 `{plan}`/`{billAmount}` 占位符、缺前置判 SKIP），语料总数写进版本日志 summary
 - 4 厂商均 `supportsToolCalling: true`
 - Agent 不做删除类破坏性操作：TOOL_DEFINITIONS 只注册 `delete_feedback`，且它必须登记在 `CONFIRM_TOOLS`（开了「AI 自动执行写操作」也要确认）；今后新增 delete_* 必须同步登记 CONFIRM_TOOLS
-- `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500
+- `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500（**兜底路径产出的记账同样过闸门**，4.8.2）
+- **年度维护**：`docs/AI维护清单.md`（节假日表 / 厂商模型复核 / 真实模型自检 / 提示词预算，每年 1 月执行）
 
 ---
 
@@ -339,7 +342,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 86 文件 / 1213 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 88 文件 / 1229 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

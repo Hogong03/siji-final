@@ -62,7 +62,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   const chatHistory = history || []
 
   // 构建基础消息（含 system/profile/记忆/关系等）
-  const baseMessages = buildChatMessages(message, chatHistory, cfg)
+  // 4.9.0：agent 路径显式关掉 lite —— 工具能力来自 TOOL_DEFINITIONS，但循环内 JSON 兜底需要完整 schema
+  const baseMessages = buildChatMessages(message, chatHistory, cfg, { lite: false })
 
   // system prompt 追加工具说明，让 AI 明确"要先查数据再回答"
   const toolInstruction = AGENT_TOOL_INSTRUCTION

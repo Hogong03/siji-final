@@ -6,6 +6,7 @@
  * 分段原因：原单文件 2065 行，超出项目 300 行红线。
  */
 
+import { V49 } from './version-log/4.9.js'
 import { V48 } from './version-log/4.8.js'
 import { V47 } from './version-log/4.7.js'
 import { V46 } from './version-log/4.6.js'
@@ -32,6 +33,7 @@ import { V1X } from './version-log/1.x.js'
 
 export function getDefaultHistory() {
   return [
+    ...V49,
     ...V48,
     ...V47,
     ...V46,

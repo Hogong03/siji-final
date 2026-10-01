@@ -67,8 +67,8 @@ export function buildMemoryContext(query) {
   const monthly = buildMonthlyMemoryContext()
   if (monthly) parts.push(monthly)
 
-  // E1 结构化记忆：实体/关系/事件（token 精简，始终注入）
-  const structured = buildStructuredMemoryContext()
+  // E1 结构化记忆：实体/关系/事件（token 精简，始终注入；4.9.0 传入 query 供实体命中排序）
+  const structured = buildStructuredMemoryContext(query)
   if (structured) parts.push(structured)
 
   return parts.length > 0 ? `\n\n---\n长期记忆：\n${parts.join('\n\n')}` : ''

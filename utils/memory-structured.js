@@ -209,15 +209,25 @@ export function extractStructuredMemory(userMessage, aiReply) {
 /**
  * 构建结构化记忆上下文文本（注入系统提示词）
  * 按相关度取最近数据，token 精简
+ * 4.9.0：query 点名实体时，命中的实体排最前（带全量属性）、提及它的事件前置 ——
+ * 记忆从「背景资料」变「可点名」：问「阿伟最近怎么样」直接带出阿伟的卡片
+ * @param {string} [query] 当前用户消息（用于实体命中排序）
  */
-export function buildStructuredMemoryContext() {
+export function buildStructuredMemoryContext(query) {
   const data = getStructuredMemory()
   if (data.entities.length === 0 && data.relations.length === 0 && data.events.length === 0) return ''
 
+  const q = String(query || '')
+  const hitNames = q ? data.entities.map(e => e.name).filter(n => n && q.indexOf(n) >= 0) : []
+  const inEvent = (e) => hitNames.some(n => (e.title || '').indexOf(n) >= 0)
+
   const parts = []
 
-  // 人物 + 组织 + 地点（最多 12 个，含喜好属性）
-  const keyEntities = data.entities.slice(0, 12)
+  // 人物 + 组织 + 地点（最多 12 个，含喜好属性；命中的实体排最前）
+  const orderedEntities = hitNames.length
+    ? [...data.entities.filter(e => hitNames.includes(e.name)), ...data.entities.filter(e => !hitNames.includes(e.name))]
+    : data.entities
+  const keyEntities = orderedEntities.slice(0, 12)
   const entityLines = keyEntities.map(e => {
     const typeLabel = { person: '人物', place: '地点', org: '组织', thing: '事物' }[e.type] || '实体'
     const attrs = e.attrs && Object.keys(e.attrs).length
@@ -227,12 +237,18 @@ export function buildStructuredMemoryContext() {
   })
   if (entityLines.length) parts.push(`【人物/地点/组织】\n${entityLines.join('\n')}`)
 
-  // 关系（最多 10 条）
-  const relLines = data.relations.slice(0, 10).map(r => `  - ${r.subject} 的${r.relation}：${r.object}`)
+  // 关系（最多 10 条；命中实体的关系排最前）
+  const orderedRelations = hitNames.length
+    ? [...data.relations.filter(r => hitNames.includes(r.subject) || hitNames.includes(r.object)), ...data.relations.filter(r => !hitNames.includes(r.subject) && !hitNames.includes(r.object))]
+    : data.relations
+  const relLines = orderedRelations.slice(0, 10).map(r => `  - ${r.subject} 的${r.relation}：${r.object}`)
   if (relLines.length) parts.push(`【关系】\n${relLines.join('\n')}`)
 
-  // 重要事件（最近 8 条）
-  const eventLines = data.events.slice(0, 8).map(e => `  - ${e.date ? e.date + ' ' : ''}${e.title}`)
+  // 重要事件（最近 8 条；提及命中实体的事件前置）
+  const orderedEvents = hitNames.length
+    ? [...data.events.filter(inEvent), ...data.events.filter(e => !inEvent(e))]
+    : data.events
+  const eventLines = orderedEvents.slice(0, 8).map(e => `  - ${e.date ? e.date + ' ' : ''}${e.title}`)
   if (eventLines.length) parts.push(`【重要事件】\n${eventLines.join('\n')}`)
 
   return `\n${parts.join('\n\n')}`
