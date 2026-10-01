@@ -6,6 +6,71 @@
 
 export const V48 = [
   {
+    version: '4.8.2',
+    date: '2026-10-02',
+    title: '4.8.2 AI 链路审查修复：先查后改带得回 ID、混合轮不再静默丢弃、兜底记账过确认闸门等 20 项',
+    summary: [
+      'query 结果带 client_id：修「先查后改」结构性断裂 —— AI 查到了账单/记录也拿不到 ID，update_bill/update_diary/update_feedback 实际不可达（全量 AI 功能审查发现的 P1）',
+      '混合轮不再静默丢弃：同一轮「查询 + 大额写入」时，查询与非确认写入照常执行、结果照常回传，只挂起确认卡（原来命中确认即 return，本轮查询一个都不回传）',
+      '兜底产出的记账同样过确认闸门：needConfirm 不再写死 false，5000 元不再绕过确认直接落库',
+      '稳定性三连：点停止真正中止工具轮请求（未定义变量 task 修复）；MAX_ROUNDS 兜底轮检查 API 错误，不再把失败装成「走神了」正常回复；新消息发出时清理上一轮确认挂起态（旧确认卡点错 action 的错位修复）',
+      '工程清理：删除从未接线的 bumpDataVersion 数据版本机制（缓存失效统一走 invalidatePromptCache）、打卡补缓存失效、免打扰时段支持显式关闭、自检选数排除冷藏计划、短 query（嗯/哦）不再扛全量记忆、未闭合 think 标签剥离、流式超时/收尾分片的截断标记补全、移除「提取待办」幽灵广告与三处死代码',
+      '测试 86 文件 / 1213 用例全绿（新增 ai-audit-fixes 回归 4 例）；plan-checkin 的周一日期用例改为周条件断言，不再每周一必挂',
+    ],
+    categories: [
+      {
+        title: '先查后改（P1 修复）',
+        items: [
+          'utils/ai/tools/executor.js：formatBills / formatDiaries / formatPlans / formatCombined 四个格式化函数在结果行尾附 [id:client_id] —— update 类工具 schema 强制 client_id，原来格式化层把 ID 剥掉了，AI「先 query 再 update」永远改不动（agent-loop 里「查询真跑才能拿 client_id」的设计意图被架空）',
+        ],
+      },
+      {
+        title: '确认闸门与混合轮',
+        items: [
+          'utils/ai/fallback.js：兜底提取的 create_bill 带 needConfirm:true，交给 confirm-gate 按金额判（原来 false 直接绕过，5000 元静默落库）',
+          'utils/ai/agent-loop.js：pendingCalls 收集后不再立即 return —— 查询类并行执行、非确认写入串行执行的结果先进 execResults，确认卡最后追加返回（pendingCallSet 按调用对象跳过挂起项）',
+          'composables/useChatEngine.js：handleSend 起点清空 pendingAction/pendingActions/pendingReply 并剥离旧消息上的确认标记 —— 引擎 refs 只有一份，旧确认卡可点且执行的是最新挂起 action',
+        ],
+      },
+      {
+        title: '稳定性',
+        items: [
+          'utils/ai/agent-transport.js：uni.request 返回的 RequestTask 接收为 task 再 abort（原来引用未定义变量抛 ReferenceError 被 catch 吞掉，点停止无效）；删除 supportsStream 恒真假条件；SSE 90s 超时的半截内容按截断标记（finishReason 空时回落 length）',
+          'utils/ai/agent-loop.js：MAX_ROUNDS 兜底轮 response.error 直接抛给上层（原来静默变「走神了」正常气泡）',
+          'utils/ai/chat-sse.js：收尾 buffer 分片补读 finish_reason（最后一片可能同时带 length 截断）',
+          'utils/ai/response-parser.js：未闭合的 <think>/<thinking>（流式截断常见）从开标签剥到结尾，思考内容不再当正文展示',
+        ],
+      },
+      {
+        title: '提示词与缓存',
+        items: [
+          'utils/ai/prompt-builder.js：删除 P1-B2 的 bumpDataVersion/_dataVersion 机制（生产零调用，死重），失效统一走 invalidatePromptCache；删除 isLiteChatMode 再导出',
+          'store/executors/plan.js：execLogPlanCheckIn 补 invalidatePromptCache（提醒弹窗直达打卡走这里，是唯一不失效缓存的写执行器）',
+          'utils/ai/prompt-actions.js + tools/index.js：移除 extract_todos 幽灵广告（CORE_ACTIONS 有广告、TOOL_LABELS 有名字，但无 schema 无 handler，JSON 模式下被静默滤掉）；relation/decision/simulation 的 action 由 extSection 按数据存在性注入的既有设计核实无误，不动',
+          'utils/ai/constants.js：op-claim 两集对齐（基础集补「记了一笔」、收窄集补「修改」），reply 修正不再漏剥',
+        ],
+      },
+      {
+        title: '记忆与自检',
+        items: [
+          'utils/memory-rank.js：非空短 query（<4 字，如「嗯」「哦」）BM25 零命中时不再回落注入最近 30 条全量记忆；空 query（无消息上下文）保留回落原行为',
+          'utils/ai/eval/runner.js：buildEvalContext 选数排除冷藏/顺延计划（plan-checkin 语料不再因 AI 正确拒绝打卡而假失败）',
+          'utils/ai/chat-helpers.js：getRecentHistory 补文件正文保留（窗口内最后一条带文件消息拼 [文件 名]+正文，更早的留卡片摘要，与 buildChatHistory 同口径）；very_low 能量档跳过动静摘要（与「不主动提任务」降载口径冲突）',
+          'utils/ai/providers.js：getAsrProvider 删 qwen 兜底 —— 它的 ASR 是 url 网关模式，客户端选中必败',
+        ],
+      },
+      {
+        title: '测试与工程',
+        items: [
+          '新增 tests/ai-audit-fixes.test.js（4 例）：query 带 id、混合轮执行+挂起、兜底记账需确认、短 query 不回落',
+          'tests/plan-checkin.test.js：backfillMap 用例改周条件断言（map 只标本周，周一昨天在上周，此前每周一必挂）',
+          'utils/reminder/settings.js：免打扰时段显式空串 = 关闭（isInQuietHours 对空串本就返回 false，读取层却强制回落默认值）',
+          '全量 NODE_OPTIONS=--max-old-space-size=4096 + vitest run --maxWorkers=2：86 文件 / 1213 用例全绿',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.8.1',
     date: '2026-10-01',
     title: '4.8.1 修 tabBar：not TabBar page 报错与图标不随主题',

@@ -23,8 +23,8 @@ const MAX_API_RETRIES = 2
 
 /** 带重试的非流式工具调用 */
 export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk = null) {
-  // 最后一轮且非工具调用 → 流式输出
-  if (isFinal && onChunk && provider.supportsStream !== false) {
+  // 最后一轮且非工具调用 → 流式输出（4.5.1：删掉 supportsStream 死条件，没有任何厂商定义它）
+  if (isFinal && onChunk) {
     return callWithToolsStream(provider, cfg, messages, apiKey, onChunk)
   }
 
@@ -57,7 +57,7 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
       resolve(cfg._mockResponder(body))
       return
     }
-    uni.request({
+    const task = uni.request({
       url: provider.endpoint,
       method: 'POST',
       header: {
@@ -117,6 +117,8 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
       stopCheckId = setInterval(() => {
         if (stopSignal.stopped) {
           if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
+          // 4.5.1：接收 uni.request 返回的 RequestTask 再 abort —— 原来引用未定义变量
+          // task 抛 ReferenceError 被 catch 吞掉，用户点停止根本中止不了工具轮请求
           try { if (task && task.abort) task.abort() } catch (e) { /* ignore */ }
         }
       }, 200)
@@ -189,7 +191,12 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
     let finishReason = ''
     let resolved = false
     const timer = setTimeout(() => {
-      if (!resolved) { resolved = true; resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason)) }
+      if (!resolved) {
+        resolved = true
+        // 4.5.1：90s 超时拿到的必然是半截内容 —— finishReason 为空时按截断标记，
+        // 让上层气泡出「继续写完」（原来空 finishReason 不标记，半截被当完整回复）
+        resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason || 'length'))
+      }
     }, 90000)
 
     fetch(provider.endpoint, {

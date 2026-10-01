@@ -148,8 +148,13 @@ describe('日历补记守卫', () => {
 
   it('可补记的日子会进 backfillMap（热力图据此显示小点）', () => {
     const api = mount(makePlan())
-    expect(api.calBackfillMap.value[daysAgo(1)]).toBe(true)
-    expect(api.calBackfillMap.value[TODAY]).toBe(undefined)
+    // 周一本周还没有「历史日」可补（map 只标本周，isBackfillable 拒绝今天），昨天在上周不算
+    if (new Date().getDay() === 1) {
+      expect(api.calBackfillMap.value[TODAY]).toBe(undefined)
+    } else {
+      expect(api.calBackfillMap.value[daysAgo(1)]).toBe(true)
+      expect(api.calBackfillMap.value[TODAY]).toBe(undefined)
+    }
   })
 })
 

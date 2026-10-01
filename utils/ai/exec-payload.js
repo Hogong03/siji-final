@@ -13,17 +13,8 @@
 /** 卡片上最多念几条搜索结果标题 */
 export const EXEC_TITLE_LIMIT = 3
 
-/** 需要压缩负载的工具（其余工具原样返回，卡片照旧渲染） */
+/** 需要压缩负载的工具（其余工具原样返回，卡片照旧渲染）；4.5.1 删除零引用的 isHeavyTool 导出 */
 const HEAVY_TOOLS = { web_search: true, read_url: true }
-
-/**
- * 这条工具结果的负载要不要压缩
- * @param {string} name 工具名
- * @returns {boolean}
- */
-export function isHeavyTool(name) {
-  return !!HEAVY_TOOLS[name]
-}
 
 /**
  * 压缩工具结果的 detail

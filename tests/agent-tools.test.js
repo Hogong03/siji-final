@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS, buildToolsInstruction } from '../utils/ai/tools.js'
+import { TOOL_DEFINITIONS, executeTool, QUERY_TOOLS } from '../utils/ai/tools.js'
 import { CORE_ACTIONS } from '../utils/ai/prompt-actions.js'
 import { buildAgentPayload } from '../utils/ai/tools/agent.js'
 
@@ -70,13 +70,6 @@ describe('Agent 工具注册表', () => {
     // 写入类工具不在只读集合
     expect(QUERY_TOOLS.has('create_bill')).toBe(false)
     expect(QUERY_TOOLS.has('create_diary')).toBe(false)
-  })
-
-  it('buildToolsInstruction 生成可读文本', () => {
-    const txt = buildToolsInstruction()
-    expect(txt).toContain('query_bill')
-    expect(txt).toContain('create_diary')
-    expect(txt).toContain('记录')
   })
 })
 

@@ -295,13 +295,14 @@ export function getAsrMode(providerId) {
 }
 
 /**
+/**
  * 选择当前可用的 ASR 厂商
- * 优先 multipart 直传（智谱 GLM-ASR-2512），无 key 时回退 qwen（url 模式需网关）
+ * 只选 multipart 直传（智谱 GLM-ASR-2512）；4.5.1 删掉 qwen 兜底 —— 它的 ASR 是
+ * url 网关模式（需服务端中转），客户端选中后 transcribe 必然 reject，能力位与可用性不一致
  * @returns {string} providerId 或 ''（无可用厂商）
  */
 export function getAsrProvider() {
   const keys = getProviderKeys()
   if (keys.zhipu && supportsAsr('zhipu') && getAsrMode('zhipu') === 'multipart') return 'zhipu'
-  if (keys.qwen && supportsAsr('qwen')) return 'qwen'
   return ''
 }

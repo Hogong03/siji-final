@@ -47,9 +47,10 @@ function workReminderPlan(clientId) {
   const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
   const pad = n => String(n).padStart(2, '0')
   const customTime = `${ymdOf(fiveMinAgo.getTime())} ${pad(fiveMinAgo.getHours())}:${pad(fiveMinAgo.getMinutes())}:00`
+  // 顺序有讲究：先写免打扰关闭（此刻 plans 表为空，读改写无竞争），再 setPlanReminder
+  // —— 它内部会重读设置再合并落盘，空串免打扰语义（settings.js 4.5.1）得以保留
+  saveReminderSettings(Object.assign({}, getReminderSettings(), { quietHoursStart: '', quietHoursEnd: '' }))
   setPlanReminder(clientId, { enabled: true, customTime, repeatType: 'daily' })
-  const settings = getReminderSettings()
-  saveReminderSettings(Object.assign({}, settings, { quietHoursStart: '', quietHoursEnd: '' }))
   return { plan, customTime }
 }
 

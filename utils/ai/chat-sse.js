@@ -145,6 +145,9 @@ export async function chatRequestRealStream(message, conversationId, cfg, onChun
             fullContent += delta
             if (onChunk) onChunk(delta)
           }
+          // 4.5.1：最后一片分片可能同时带 finish_reason（length 截断），只看主循环会漏
+          const fr = json.choices?.[0]?.finish_reason
+          if (fr && !finishReason) finishReason = fr
         } catch (e) { /* 忽略 */ }
       }
     }

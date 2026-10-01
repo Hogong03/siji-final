@@ -388,6 +388,8 @@ export function createPlanExecutors(ctx) {
     if (plan.status === 2) {
       return { success: false, message: '计划已完成，无需打卡', detail: null }
     }
+    // 4.5.1：打卡也是写操作，统一失效提示词/画像缓存（提醒弹窗直达打卡走这里）
+    invalidatePromptCache()
     const noteText = typeof p.note === 'string' ? p.note.trim() : ''
     const before = getPlanCheckInStats(plan)
     if (before.todayDone) {

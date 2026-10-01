@@ -4,13 +4,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   buildSystemPrompt,
-  bumpDataVersion,
   invalidatePromptCache,
   checkExtensionData,
   getUserProfile,
-  getTopCategory,
-  isLiteChatMode
+  getTopCategory
 } from '../utils/ai/prompt-builder.js'
+// 4.5.1：isLiteChatMode 的再导出已删，判定函数从定义处导入
+import { isLiteChatMode } from '../utils/ai/prompt-actions.js'
 import { resetStorage } from './setup.js'
 
 beforeEach(() => {
@@ -66,8 +66,8 @@ describe('buildSystemPrompt', () => {
   })
 })
 
-describe('画像与数据版本', () => {
-  it('bumpDataVersion 后画像重建并反映新数据', () => {
+describe('画像与缓存失效', () => {
+  it('invalidatePromptCache 后画像重建并反映新数据（4.5.1：原 bumpDataVersion 死机制删除，失效统一走 invalidatePromptCache）', () => {
     const u1 = getUserProfile(true)
     expect(u1).not.toBeNull()
     expect(u1).toContain('记录0篇')
@@ -76,7 +76,7 @@ describe('画像与数据版本', () => {
     uni.setStorageSync(`diary_${month}`, JSON.stringify([
       { title: '新记录', content: 'x', is_deleted: 0 }
     ]))
-    bumpDataVersion()
+    invalidatePromptCache()
     const u2 = getUserProfile()
     expect(u2).toContain('记录1篇')
     expect(u2).toContain('新记录')

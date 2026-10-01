@@ -186,9 +186,11 @@ function formatBills(d) {
   const items = Array.isArray(d.items) ? d.items : []
   if (items.length === 0) return `在 ${d.month || ''} 没有找到相关账单。`
   const lines = items.map(b =>
-    `${b.type === 'expense' ? '支出' : '收入'}¥${b.amount} ${b.category || '未分类'}${b.note ? '（' + b.note + '）' : ''} ${b.bill_date || ''}`
+    `${b.type === 'expense' ? '支出' : '收入'}¥${b.amount} ${b.category || '未分类'}${b.note ? '（' + b.note + '）' : ''} ${b.bill_date || ''}[id:${b.client_id || ''}]`
   )
   const total = items.reduce((s, b) => s + (b.amount || 0), 0)
+  // 结果必须带 id：update_bill/update_feedback 的 schema 强制 client_id，
+  // 「先查后改」链路靠这行把 id 递回给模型（4.5.1 修：原来查到了也改不了）
   return `${d.month || ''}共 ${d.count ?? items.length} 笔账单，合计¥${total}：\n` + lines.join('\n')
 }
 
@@ -210,8 +212,9 @@ function formatDiaries(d) {
   const lines = items.map(x => {
     const content = (x.content || '').replace(/\s+/g, ' ').substring(0, 60)
     const tags = Array.isArray(x.tags) && x.tags.length ? ` #${x.tags.join('#')}` : ''
-    return `- ${x.title || '无标题'}${tags}：${content}`
+    return `- ${x.title || '无标题'}${tags}：${content}[id:${x.client_id || ''}]`
   })
+  // 带 id 同 formatBills：update_diary 需要 client_id（4.5.1）
   return `${d.month || ''}共 ${d.count ?? items.length} 篇记录：\n` + lines.join('\n')
 }
 
@@ -219,8 +222,9 @@ function formatCombined(d) {
   const items = Array.isArray(d.items) ? d.items : []
   if (items.length === 0) return '没有找到相关结果。'
   const lines = items.map(x => {
-    if (x.type === 'bill') return `账单：${x.amount ? '¥' + x.amount : ''} ${x.category || ''} ${x.note || ''} ${x.date || ''}`
-    return `记录：${x.title || ''} ${x.content || ''} ${x.date || ''}`
+    const id = x.client_id ? `[id:${x.client_id}]` : ''
+    if (x.type === 'bill') return `账单：${x.amount ? '¥' + x.amount : ''} ${x.category || ''} ${x.note || ''} ${x.date || ''}${id}`
+    return `记录：${x.title || ''} ${x.content || ''} ${x.date || ''}${id}`
   })
   return `找到 ${d.count ?? items.length} 条结果：\n` + lines.join('\n')
 }
@@ -232,7 +236,7 @@ function formatPlans(d) {
     const status = { 0: '待开始', 1: '进行中', 2: '已完成' }[p.status] || ''
     const phaseCount = Array.isArray(p.phases) && p.phases.length ? `（${p.phases.length}个阶段）` : ''
     const subCount = Array.isArray(p.subtasks) ? `，${p.subtasks.length}个子任务` : ''
-    return `- ${p.title || ''}${phaseCount} [${status}]${subCount}${p.deadline ? ' 截止' + p.deadline : ''}`
+    return `- ${p.title || ''}${phaseCount} [${status}]${subCount}${p.deadline ? ' 截止' + p.deadline : ''}[id:${p.client_id || ''}]`
   })
   return `共 ${d.count ?? items.length} 个计划：\n` + lines.join('\n')
 }

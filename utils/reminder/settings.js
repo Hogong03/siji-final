@@ -20,8 +20,9 @@ export function getReminderSettings() {
       return {
         enabled: s.enabled !== false,
         defaultAdvanceMin: s.defaultAdvanceMin ?? 30,
-        quietHoursStart: s.quietHoursStart || '22:00',
-        quietHoursEnd: s.quietHoursEnd || '08:00',
+        // 4.5.1：显式空串 = 关闭免打扰（isInQuietHours 对空串返回 false）；缺省才回落 22:00-08:00
+        quietHoursStart: s.quietHoursStart === '' ? '' : (s.quietHoursStart || '22:00'),
+        quietHoursEnd: s.quietHoursEnd === '' ? '' : (s.quietHoursEnd || '08:00'),
         snoozeMin: normalizeSnoozeMin(s.snoozeMin),
         plans: s.plans || {}
       }

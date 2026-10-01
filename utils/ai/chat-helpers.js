@@ -95,9 +95,12 @@ export function buildChatMessages(userMessage, history, cfg) {
   }
 
   // 3.5.13：动静摘要 — 上次结算以来的完成/打卡/新增记录，让 AI 续得上「你不在时」发生的事
-  const progressDigest = buildProgressDigest()
-  if (progressDigest) {
-    system += progressDigest
+  // 4.5.1：very_low 能量档跳过 —— 降载口径（不主动提任务/计划）与摘要里的完成/打卡行冲突
+  if (energy.level !== 'very_low') {
+    const progressDigest = buildProgressDigest()
+    if (progressDigest) {
+      system += progressDigest
+    }
   }
 
   // 不再单独注入 detectMentionedRelations，避免重复
@@ -210,11 +213,23 @@ export function getRecentHistory() {
               return false
             })
             .slice(-20)
+          // 4.5.1：窗口内最后一条带文件的用户消息保留正文（与 buildChatHistory 同一口径），
+          // 更早的只留卡片摘要 —— 原来这条路径正文与标记全丢，跨轮追问文件等于失忆
+          let lastFileIdx = -1
+          for (let i = recent.length - 1; i >= 0; i--) {
+            if (recent[i].role === 'user' && recent[i].fileText) { lastFileIdx = i; break }
+          }
           // 返回前统一过预算（4.4.0）：长文回复不再被整段重发
-          return trimHistory(recent.map(m => ({
-            role: m.role,
-            content: m.aiReply || m.content
-          })))
+          return trimHistory(recent.map((m, i) => {
+            let content = m.aiReply || m.content
+            if (m.role === 'user' && m.fileText) {
+              const name = (m.file && m.file.name) || '文件'
+              content = i === lastFileIdx
+                ? '[文件 ' + name + ']\n' + m.fileText + '\n\n' + content
+                : '[已读过文件 ' + name + '] ' + content
+            }
+            return { role: m.role, content }
+          }))
         }
       }
     }

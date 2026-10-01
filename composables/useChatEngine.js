@@ -101,6 +101,20 @@ export function useChatEngine() {
       conv.messages = conv.messages.filter(m => !m._isWelcome)
     }
 
+    // 4.5.1：新消息发出前清掉上一轮的确认挂起 —— 引擎 refs 只保留最新一份，
+    // 旧确认卡留在场上可点，点旧卡执行的是最新挂起的 action、结果还写进最新消息
+    pendingAction.value = null
+    pendingActions.value = []
+    pendingReply.value = ''
+    if (conv) {
+      conv.messages.forEach((m) => {
+        if (m.pendingAction || (Array.isArray(m.pendingActions) && m.pendingActions.length > 0)) {
+          m.pendingAction = null
+          m.pendingActions = []
+        }
+      })
+    }
+
     isSending.value = true
     stopSignal.value = { stopped: false }
     sendStage.value = 'thinking'

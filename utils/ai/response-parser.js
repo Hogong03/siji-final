@@ -58,6 +58,11 @@ export function parseAiResponse(raw, conversationId) {
   // 剥离 <thinking>...</thinking> 变体
   cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim()
 
+  // 4.5.1：未闭合的 <think>/<thinking>（流式截断常见）—— 从开标签吃到结尾整段剥掉，
+  // 否则后半截思考内容被当正文展示给用户
+  if (/<think>/i.test(cleaned)) cleaned = cleaned.replace(/<think>[\s\S]*$/i, '').trim()
+  if (/<thinking>/i.test(cleaned)) cleaned = cleaned.replace(/<thinking>[\s\S]*$/i, '').trim()
+
   // 清理可能的 markdown 代码块包裹
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()

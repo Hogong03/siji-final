@@ -16,7 +16,6 @@ export const CORE_ACTIONS = `记录:
 - delete_diary: {client_id} needConfirm=true
 - query_diary: {keyword?,month?}
 - summarize_diaries: {period:"week"|"month"}  // 生成周报/月报总结
-- extract_todos: {content}  // 从记录中提取待办事项
 
 记账:
 - create_bill: {type:"expense"|"income",amount,category,note?,bill_date?}

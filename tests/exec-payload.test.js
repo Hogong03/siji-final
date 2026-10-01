@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import './setup.js'
-import { compactExecDetail, execCardText, isHeavyTool, EXEC_TITLE_LIMIT } from '../utils/ai/exec-payload.js'
+import { compactExecDetail, execCardText, EXEC_TITLE_LIMIT } from '../utils/ai/exec-payload.js'
 import { autoExecuteAndDisplay } from '../utils/ai/autoExecutor.js'
 import { canOpenType } from '../composables/useChatNavigation.js'
 
@@ -36,9 +36,6 @@ describe('compactExecDetail：搜索 / 读网页只留摘要', () => {
   it('其它工具的负载原样返回（账单 / 记录卡片不受影响）', () => {
     const detail = { type: 'bill', amount: 35, category: '餐饮' }
     expect(compactExecDetail('create_bill', detail)).toBe(detail)
-    expect(isHeavyTool('create_bill')).toBe(false)
-    expect(isHeavyTool('web_search')).toBe(true)
-    expect(isHeavyTool('read_url')).toBe(true)
   })
 })
 

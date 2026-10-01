@@ -15,10 +15,9 @@
  */
 import { buildProfileContext } from '../profile.js'
 import { holidayPromptLine } from '../holidays.js'
-import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES, isLiteChatMode } from './prompt-actions.js'
+import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES } from './prompt-actions.js'
 
-// 重新导出（保持向后兼容）
-export { isLiteChatMode }
+// 4.5.1：删除 isLiteChatMode 的向后兼容再导出（生产代码无人消费，判定函数本体仍在 prompt-actions.js）
 
 // ==================== P0-1A: 静态常量（已拆分到 prompt-actions.js）====================
 // CORE_ACTIONS / LITE_ACTIONS / BEHAVIOR_RULES / isLiteChatMode / _COMMAND_PATTERNS
@@ -88,21 +87,12 @@ let _cache = {
   systemPrompt: null,
   userProfile: null,
   systemPromptTime: 0,
-  userProfileTime: 0,
-  userProfileVersion: -1 // P1-B2: 数据版本号，-1 表示从未构建
+  userProfileTime: 0
 }
 const CACHE_TTL = 120000 // P0-2: 30s→120s（减少每轮重解析）
 
-// P1-B2: 数据版本计数器 — store/data.js 写操作时递增
-let _dataVersion = 0
-
-/** 递增数据版本 — 供 store/data.js 在写操作后调用 */
-export function bumpDataVersion() {
-  _dataVersion++
-  // 同时失效 userProfile 缓存（数据变了，画像需要重建）
-  _cache.userProfile = null
-  _cache.userProfileTime = 0
-}
+// 4.5.1：删除 P1-B2 的 bumpDataVersion/_dataVersion 机制 —— 生产代码从未调用过（唯一
+// 调用方是测试），写操作失效靠的是执行器统一调用的 invalidatePromptCache（覆盖面相同）
 
 /** 强制失效所有缓存 - 执行器在写操作后调用（P0-2） */
 export function invalidatePromptCache() {
@@ -127,7 +117,7 @@ export function checkExtensionData() {
 export function getUserProfile(forceRefresh = false) {
   const now = Date.now()
   // P1-B2: 数据版本变化时强制重建
-  if (!forceRefresh && _cache.userProfile && _cache.userProfileVersion === _dataVersion && (now - _cache.userProfileTime) < CACHE_TTL) {
+  if (!forceRefresh && _cache.userProfile && (now - _cache.userProfileTime) < CACHE_TTL) {
     return _cache.userProfile
   }
   try {
@@ -196,7 +186,6 @@ export function getUserProfile(forceRefresh = false) {
     const result = parts.join('\n\n')
     _cache.userProfile = result
     _cache.userProfileTime = now
-    _cache.userProfileVersion = _dataVersion // P1-B2: 记录构建时的数据版本
     return result
   } catch {
     return null

@@ -154,6 +154,11 @@ export function selectMemories(query, memories, opts = {}) {
   const ranked = rankMemories(query, list, opts).filter(item => item.score > 0)
   if (ranked.length > 0) return ranked.slice(0, limit).map(item => item.memory)
 
+  // 4.5.1：非空的过短 query（「嗯」「哦」这类闲聊）零命中时不再回落最近 30 条，
+  // 否则每次寒暄都往上下文扛全量记忆；空 query（无消息上下文）保留回落原行为
+  const q = String(query || '').trim()
+  if (q.length > 0 && q.length < 4) return []
+
   return list
     .slice()
     .sort((a, b) => ((b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)))

@@ -153,42 +153,18 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
     const queryCalls = callList.filter(c => QUERY_TOOLS.has(c.function?.name))
     const writeCalls = callList.filter(c => !QUERY_TOOLS.has(c.function?.name))
 
-    // 处理确认需求：同一轮所有需确认的写入工具全部挂起，返回待确认信息（单/多操作确认卡）
+    // 处理确认需求：先收集本轮所有需确认的写入工具（4.5.1：确认卡返回前，
+    // 查询与非确认写入先照常执行 —— 原来命中确认即 return，本轮的 query_*
+    // 和其他写入被静默丢弃，结果一个都不回传）
     const pendingCalls = []
+    const pendingCallSet = new Set()
     for (const call of writeCalls) {
       const fnName = call.function?.name
       const parsed = parseToolArgs(call.function?.arguments)
       if (!parsed.ok) continue // 参数不可用的调用不做确认，交给写入轮回传错误
       if (needsConfirmation(fnName, parsed.args)) {
         pendingCalls.push({ name: fnName, args: parsed.args })
-      }
-    }
-    if (pendingCalls.length > 0) {
-      const reasons = pendingCalls.map((p) => {
-        const isBill = (p.name === 'create_bill' || p.name === 'update_bill') && typeof p.args.amount === 'number'
-        return isBill ? `金额 ¥${p.args.amount} 较大` : (TOOL_LABELS[p.name] || p.name)
-      })
-      for (const p of pendingCalls) {
-        toolCalls.push({ name: p.name, args: p.args })
-        execResults.push({
-          name: p.name, ok: false, confirm: true,
-          message: `${reasons.join('、')}，需要你确认一下再执行`,
-          detail: { type: p.name, payload: p.args, confirmReason: reasons.join('、') }
-        })
-      }
-      const multi = pendingCalls.length > 1
-      const first = pendingCalls[0]
-      return {
-        reply: `我需要确认一下：${reasons.join('、')}${multi ? `（${pendingCalls.length} 个操作）` : ''}，确认执行吗？`,
-        action: multi
-          ? { type: 'multi', payload: null, needConfirm: true }
-          : { type: first.name, payload: first.args, needConfirm: true },
-        actions: multi ? pendingCalls.map(p => ({ type: p.name, payload: p.args, needConfirm: true })) : [],
-        toolCalls,
-        execResults,
-        conversation_id: conversationId,
-        _agentMode: true,
-        _agentExecuted: false
+        pendingCallSet.add(call)
       }
     }
 
@@ -228,8 +204,9 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       }
     }
 
-    // 串行执行写入类工具
+    // 串行执行写入类工具（4.5.1：挂起确认的调用跳过，由确认卡接管）
     for (const call of writeCalls) {
+      if (pendingCallSet.has(call)) continue
       const fnName = call.function?.name
       const parsed = parseToolArgs(call.function?.arguments)
       if (!parsed.ok) {
@@ -258,6 +235,36 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       messages.push({ role: 'tool', tool_call_id: call.id, content: resultText })
     }
 
+    // 4.5.1：挂起确认项 —— 结果卡里已带上本轮查询与非确认写入的结果，最后追加确认卡返回
+    if (pendingCalls.length > 0) {
+      const reasons = pendingCalls.map((p) => {
+        const isBill = (p.name === 'create_bill' || p.name === 'update_bill') && typeof p.args.amount === 'number'
+        return isBill ? `金额 ¥${p.args.amount} 较大` : (TOOL_LABELS[p.name] || p.name)
+      })
+      for (const p of pendingCalls) {
+        toolCalls.push({ name: p.name, args: p.args })
+        execResults.push({
+          name: p.name, ok: false, confirm: true,
+          message: `${reasons.join('、')}，需要你确认一下再执行`,
+          detail: { type: p.name, payload: p.args, confirmReason: reasons.join('、') }
+        })
+      }
+      const multi = pendingCalls.length > 1
+      const first = pendingCalls[0]
+      return {
+        reply: `我需要确认一下：${reasons.join('、')}${multi ? `（${pendingCalls.length} 个操作）` : ''}，确认执行吗？`,
+        action: multi
+          ? { type: 'multi', payload: null, needConfirm: true }
+          : { type: first.name, payload: first.args, needConfirm: true },
+        actions: multi ? pendingCalls.map(p => ({ type: p.name, payload: p.args, needConfirm: true })) : [],
+        toolCalls,
+        execResults,
+        conversation_id: conversationId,
+        _agentMode: true,
+        _agentExecuted: false
+      }
+    }
+
     // 3.5.11 自检：本轮写入失败 → 明确要求模型自纠，禁止把失败文本当结论回复用户
     const roundFailedWrites = execResults.slice(roundStart).filter(r => !r.ok && !r.confirm && !QUERY_TOOLS.has(r.name))
     if (roundFailedWrites.length > 0) {
@@ -275,6 +282,10 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   // 达到 maxRounds — 兜底：让 AI 基于已收集数据给最终回答
   logger.warn('[AgentLoop] Max rounds reached, forcing final reply')
   const response = await callWithTools(provider, cfg, messages, apiKey, true, onChunk)
+  // 4.5.1：兜底轮同样要检查 API 错误 —— 原来错误静默变成「走神了」正常气泡
+  if (response.error) {
+    throw new Error(response.error)
+  }
   const finalReply = response.message?.content || ''
   const result = parseAiResponse(finalReply, conversationId)
   return {

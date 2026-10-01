@@ -123,7 +123,9 @@ export function extractFallbackAction(userMessage, aiReply) {
       const billDate = dayToken ? normalizeDateStr(dayToken) : ''
       const payload = { type: isIncome ? 'income' : 'expense', amount: amount, category: '其他', note: '' }
       if (billDate) payload.bill_date = billDate
-      return { type: 'create_bill', payload: payload, needConfirm: false }
+      // 4.5.1：兜底产出的记账同样要过确认闸门（needConfirm 交给 confirm-gate 按金额判，
+      // 原来 false 会绕过大额确认，5000 元直接落库）
+      return { type: 'create_bill', payload: payload, needConfirm: true }
     }
   }
 

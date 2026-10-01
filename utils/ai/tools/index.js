@@ -80,7 +80,6 @@ export const TOOL_LABELS = {
   remove_tag: '删除标签',
   read_url: '读网页',
   query_conversations: '检索会话',
-  extract_todos: '提取待办',
   create_agent: '创建 Agent',
   create_glimmer: '收微光',
   query_glimmers: '查看微光本',
@@ -120,15 +119,4 @@ export function needsConfirmation(name, args) {
   return true  // 其余均视为 AI 写操作 → 默认需确认
 }
 
-/** 生成 tools 的简洁文本说明，注入 system prompt 供不支持原生 function-calling 的降级场景使用 */
-export function buildToolsInstruction() {
-  return TOOL_DEFINITIONS.map(t => {
-    const params = Object.entries(t.parameters.properties || {})
-      .map(([k, v]) => {
-        const required = (t.parameters.required || []).includes(k) ? '*' : '?'
-        return `${k}${required}`
-      })
-      .join(', ')
-    return `- ${t.name}(${params}) — ${t.description}`
-  }).join('\n')
-}
+// 4.5.1：删除零引用的 buildToolsInstruction（原生 function-calling 全覆盖，降级文本说明无人消费）

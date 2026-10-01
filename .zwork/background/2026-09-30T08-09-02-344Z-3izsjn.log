@@ -1,0 +1,15 @@
+ [32m✓[39m tests/nav-helper.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/confirm-writes.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/simulation-prompts.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/action-schema-consistency.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/uuid.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m84 passed[39m[22m[90m (84)[39m
+[2m      Tests [22m [1m[32m1203 passed[39m[22m[90m (1203)[39m
+[2m   Start at [22m 16:09:38
+[2m   Duration [22m 14.11s[2m (import 47%, transform 30%, tests 17%, setup 4%, worker 2%)[22m
+
+[2m  Transform [22m [33mtransforming modules took 4.97s[39m[2m · 30% of tracked time, re-done on every run[22m
+[2m            [22m [2mpersist transforms across runs with [22m[33mfsModuleCache: true[39m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#caching-between-reruns[22m
+
