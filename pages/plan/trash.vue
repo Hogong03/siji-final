@@ -289,6 +289,26 @@ function restoreAll() {
   &:active { transform: scale(0.95); }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .trash-page { background: #18181B; }
+  .search-bar { background: #27272A; border-bottom-color: #3F3F46; }
+  .search-box { background: #3F3F46; }
+  .search-input { color: #FAFAFA; }
+  .search-clear { color: #52525B; }
+  .restore-all { background: #FAFAFA; color: #18181B; }
+  .trash-card { background: #27272A; }
+  .card-title { color: #FAFAFA; }
+  .card-desc { color: #A1A1AA; }
+  .meta-text { color: #52525B; }
+  .card-actions { border-top-color: #3F3F46; }
+  .action-btn {
+    &.restore { background: #FAFAFA; color: #18181B; }
+    &.purge { background: #3F3F46; color: #F87171; }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .trash-page { background: #18181B; }
   .search-bar { background: #27272A; border-bottom-color: #3F3F46; }
@@ -306,4 +326,5 @@ function restoreAll() {
     &.purge { background: #3F3F46; color: #F87171; }
   }
 }
+/* #endif */
 </style>

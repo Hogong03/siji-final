@@ -99,8 +99,16 @@ defineProps({
   }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .ws-dot { background: #3F3F46; &.future { background: #27272A; } &.today { border-color: #FAFAFA; } }
+  .ws-num.today { color: #FAFAFA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .ws-dot { background: #3F3F46; &.future { background: #27272A; } &.today { border-color: #FAFAFA; } }
   .ws-num.today { color: #FAFAFA; }
 }
+/* #endif */
 </style>

@@ -144,6 +144,29 @@ function askAi() {
   line-height: 1.5;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .drafts {
+    background: #27272A;
+  }
+
+  .drafts-title,
+  .drafts-toggle,
+  .draft-copy,
+  .drafts-ai {
+    color: #FAFAFA;
+  }
+
+  .draft-item {
+    background: #18181B;
+  }
+
+  .draft-text {
+    color: #D4D4D8;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .drafts {
     background: #27272A;
@@ -164,4 +187,5 @@ function askAi() {
     color: #D4D4D8;
   }
 }
+/* #endif */
 </style>

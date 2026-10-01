@@ -410,6 +410,57 @@
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .detail-page { background: #18181B; }
+  .title-input { background: #27272A; color: #FAFAFA; border-left-color: #FAFAFA; }
+  .textarea-field { background: #27272A; color: #FAFAFA; }
+  .ta-btn { background: #3F3F46; }
+  .ai-menu { background: #27272A; }
+  .ai-menu-item { background: #3F3F46; color: #F4F4F5; }
+  .cat-chip { color: #A1A1AA; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .meta-add { color: #71717A; border-color: #52525B; }
+  .emotion-badge { background: #27272A; color: #F4F4F5; }
+  .ai-section { background: #27272A; }
+  .ai-section-title { color: #A1A1AA; }
+  .ai-refresh { color: #71717A; }
+  .ai-text { color: #F4F4F5; }
+  .related-header { background: #27272A; }
+  .related-title-text { color: #A1A1AA; }
+  .related-arrow { color: #71717A; }
+  .related-item { background: #27272A; }
+  .related-item-title { color: #FAFAFA; }
+  .related-item-preview { color: #A1A1AA; }
+  .bill-item { background: #27272A; }
+  .bill-category { color: #FAFAFA; }
+  .bill-amount { color: #FAFAFA; }
+  .tag-picker { background: #27272A; }
+  .tp-title { color: #FAFAFA; }
+  .tp-item { border-bottom-color: #3F3F46; }
+  .tp-name { color: #F4F4F5; }
+  .tp-input { background: #3F3F46; color: #FAFAFA; }
+  .tp-add { background: #FAFAFA; color: #18181B; }
+  .tp-done { color: #FAFAFA; }
+  .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
+  .bar-btn { background: #3F3F46; }
+  .bar-delete { background: #3F3F46; }
+  .bar-save { background: #FAFAFA; color: #18181B; }
+  /* 类型选择器深色 */
+  .type-picker { background: #27272A; }
+  .tp-type-card { background: #3F3F46; border-color: #52525B; &.active { background: #18181B; border-color: #FAFAFA; } }
+  .tp-type-label { color: #F4F4F5; }
+  .tp-type-desc { color: #A1A1AA; }
+  .tp-cancel { color: #A1A1AA; }
+  .filter-bar { background: #18181B; border-bottom-color: #27272A; }
+  .filter-type-label { color: #F4F4F5; }
+  .filter-toggle { color: #71717A; }
+  .read-entry { border-color: #3F3F46; }
+  .read-entry-text { color: #FAFAFA; }
+  .meta-section-title { color: #71717A; }
+  .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .detail-page { background: #18181B; }
   .title-input { background: #27272A; color: #FAFAFA; border-left-color: #FAFAFA; }
@@ -458,6 +509,7 @@
   .meta-section-title { color: #71717A; }
   .flash-mode .textarea-field { background: #18181B; border-color: #27272A; }
 }
+/* #endif */
 
 /* ─── 记录类型选择器 ─── */
 .type-picker-overlay {

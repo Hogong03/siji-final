@@ -415,6 +415,52 @@
 }
 
 /* profile.vue 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .profile-page { background: #18181B; }
+  .header-card { background: #27272A; }
+  .header-enabled { border-color: #52525B; }
+  .header-title { color: #FAFAFA; }
+  .header-desc { color: #71717A; }
+  .profile-card { background: #27272A; }
+  .profile-card.card-basic { border-left-color: #52525B; }
+  .profile-card.card-lifestyle { border-left-color: #71717A; }
+  .card-header { border-bottom-color: #3F3F46; }
+  .card-title-text { color: #A1A1AA; }
+  .title-input { color: #FAFAFA; border-bottom-color: #FAFAFA; }
+  .field-row { border-bottom-color: #3F3F46; }
+  .field-label { color: #71717A; }
+  .chip { background: #3F3F46; }
+  .chip:active { background: #52525B; }
+  .chip-text { color: #FAFAFA; }
+  .chip-add { border-color: #3F3F46; }
+  .chip-add-text { color: #71717A; }
+  .chip-input { border-color: #FAFAFA; }
+  .field-empty { color: #71717A; }
+  .field-input { color: #FAFAFA; border-bottom-color: #FAFAFA; }
+  .add-field-btn { color: #71717A; }
+  .add-card-btn { background: #27272A; border-color: #3F3F46; color: #71717A; }
+  .add-card-form { background: #27272A; }
+  .add-card-input { background: #3F3F46; }
+  .btn-cancel { color: #71717A; }
+  .btn-confirm { background: #FAFAFA; color: #18181B; }
+  .ai-prefs-section { background: #27272A; border-color: #3F3F46; }
+  .ai-prefs-title { color: #FAFAFA; }
+  .ai-prefs-count { color: #71717A; }
+  .ai-pref-item { border-bottom-color: #3F3F46; }
+  .ai-pref-content { color: #FAFAFA; }
+  .ai-pref-adopt { background: #FAFAFA; }
+  .ai-pref-adopt-text { color: #18181B; }
+  .ai-prefs-hint { color: #71717A; }
+  .btn-danger { color: #71717A; }
+  .relations-entry { background: #27272A; border-color: #3F3F46; }
+  .re-icon { background: #3F3F46; color: #FAFAFA; }
+  .re-title { color: #FAFAFA; }
+  .re-desc { color: #71717A; }
+  .re-arrow { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .profile-page { background: #18181B; }
   .header-card { background: #27272A; }
@@ -458,3 +504,4 @@
   .re-desc { color: #71717A; }
   .re-arrow { color: #71717A; }
 }
+/* #endif */

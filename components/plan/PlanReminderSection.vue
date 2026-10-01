@@ -230,6 +230,23 @@ function cancelCustom() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+    .reminder-desc { color: #A1A1AA; }
+    .reminder-chip {
+        background: #27272A;
+        border-color: #3F3F46;
+        color: #A1A1AA;
+        &.active { background: #FFFFFF; color: #18181B; border-color: #FFFFFF; }
+    }
+    .reminder-custom, .reminder-snooze { border-top-color: #3F3F46; }
+    .reminder-custom-label { color: #A1A1AA; }
+    .reminder-hint { color: #71717A; }
+    .quick-dates .qd-btn { color: #FAFAFA; background: #3F3F46; }
+    .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
     .reminder-desc { color: #A1A1AA; }
     .reminder-chip {
@@ -244,4 +261,5 @@ function cancelCustom() {
     .quick-dates .qd-btn { color: #FAFAFA; background: #3F3F46; }
     .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
 }
+/* #endif */
 </style>

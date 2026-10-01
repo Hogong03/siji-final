@@ -302,6 +302,36 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 .stop-icon { color: #FFFFFF; font-size: 28rpx; }
 
 /* ──── 深色模式 ──── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+	.input-area { background: #18181B; border-top-color: #27272A; }
+	.side-dot {
+		background: #27272A; border-color: #3F3F46;
+	}
+	.side-btn:active .side-dot { background: #3F3F46; }
+	.del-dot { background: rgba(255,255,255,.12); }
+	.img-preview { background: #27272A; border-color: #3F3F46; }
+	.img-preview-label { color: #A1A1AA; }
+	.file-badge { color: #A1A1AA; border-color: #3F3F46; }
+	.input-wrap {
+		background: #27272A; border-color: #3F3F46;
+		&:focus-within {
+			border-color: #FAFAFA;
+			background: #18181B;
+		}
+	}
+	.send-dot {
+		background: #3F3F46; opacity: .6;
+	}
+	.send-btn.active .send-dot {
+		background: #FAFAFA; opacity: 1;
+	}
+	.send-icon { color: #000000; }
+	.stop-dot { background: #27272A; }
+	.text-input { color: #F4F4F5; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
 	.input-area { background: #18181B; border-top-color: #27272A; }
 	.side-dot {
@@ -329,4 +359,5 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 	.stop-dot { background: #27272A; }
 	.text-input { color: #F4F4F5; }
 }
+/* #endif */
 </style>

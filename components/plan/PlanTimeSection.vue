@@ -180,6 +180,17 @@ function onEstTimeChange(e) {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+    .picker-value { background: #27272A; border-color: #3F3F46; }
+    .pv-text { color: #FAFAFA; }
+    .pv-placeholder { color: #71717A; }
+    .time-label { color: #71717A; }
+    .quick-dates .qd-btn { color: #FAFAFA; background: #3F3F46; }
+    .input-field { border-bottom-color: #3F3F46; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
     .picker-value { background: #27272A; border-color: #3F3F46; }
     .pv-text { color: #FAFAFA; }
@@ -188,4 +199,5 @@ function onEstTimeChange(e) {
     .quick-dates .qd-btn { color: #FAFAFA; background: #3F3F46; }
     .input-field { border-bottom-color: #3F3F46; }
 }
+/* #endif */
 </style>

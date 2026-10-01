@@ -444,25 +444,25 @@ padding-bottom: env(safe-area-inset-bottom);
 
 ## 十一、主题系统
 
-### 11.1 三种模式
+### 11.1 三种模式（4.8.0 实装）
 
 | 模式 | 值 | 行为 |
 |------|----|------|
-| 浅色 | `light` | 固定浅色 |
-| 深色 | `dark` | 固定深色 |
-| 跟随系统 | `auto` | 监听 `prefers-color-scheme` |
+| 跟随系统 | `system`（默认） | H5/App 监听 matchMedia·onThemeChange；小程序走媒体查询 |
+| 浅色 | `light` | 固定浅色，手动档 |
+| 深色 | `dark` | 固定深色，手动档 |
 
-### 11.2 实现机制
+### 11.2 实现机制（4.8.0 双路径）
 
-1. **CSS 变量**：`page` 选择器定义浅色默认值
-2. **媒体查询**：`@media (prefers-color-scheme: dark)` 覆盖
-3. **手动覆盖**：`[data-theme="dark"]` / `[data-theme="light"]` 属性选择器
-4. **DOM 同步**：`syncThemeToDOM()` 在每个页面 `onShow` 时调用
-5. **App 端**：`uni.setNavigationBarColor` + `uni.setTabBarStyle`
+1. **H5 / App**：深色规则全部包在 `.theme-dark {}` 类块内，`utils/theme.js` 往 `html` 挂/摘类；原生 tabBar/导航栏由 `applyTheme()` 调 `uni.setTabBarStyle` / `setTabBarItem` / `setNavigationBarColor`
+2. **微信小程序**：深色规则走 `@media (prefers-color-scheme: dark)`（`#ifdef MP-WEIXIN` 分支），系统跟随，无手动档
+3. **JS 注入色**：`useTheme()` 转出 theme.js 的响应式单例 `isDark`，图表配色/原生 switch/slider/标签圆点等动态绑定自动跟随
+4. **页面重刷**：main.js 全局 mixin 每页 `onShow` 幂等调 `applyTheme()`
+5. **历史说明**：本节曾描述 `[data-theme]` 属性选择器与 `syncThemeToDOM()`——那是未落地的规划，4.7.x 实际为纯系统跟随，4.8.0 才以类驱动方案实装手动档
 
 ### 11.3 存储键
 
-`siji_theme`，值为 `light` / `dark` / `auto`
+`siji_theme_mode`，值为 `system` / `light` / `dark`（入口：设置页 → 外观）
 
 ---
 

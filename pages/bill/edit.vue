@@ -457,6 +457,31 @@ function handleDelete() {
   &.confirm { background: #18181B; color: #FFFFFF; }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .edit-page { background: #18181B; }
+  .type-switch { background: #27272A; }
+  .ts-btn { color: #A1A1AA; &.active { color: #18181B; &.expense { background: #FAFAFA; } &.income { background: #A1A1AA; } } }
+  .amount-display { &.expense .currency, &.expense .amount-num { color: #FAFAFA; } &.income .currency, &.income .amount-num { color: #F4F4F5; } }
+  .detail-section { background: #27272A; }
+  .detail-row { border-bottom-color: #3F3F46; }
+  .d-label { color: #71717A; }
+  .d-value { color: #FAFAFA; }
+  .d-input { color: #FAFAFA; }
+  .d-arrow { color: #71717A; }
+  .qn-tag { background: #27272A; color: #A1A1AA; &:active { background: #3F3F46; } }
+  .np-key { background: #27272A; &:active { background: #3F3F46; } &.np-del { background: #3F3F46; } }
+  .np-text { color: #FAFAFA; }
+  .np-icon { color: #71717A; }
+  .action-btn { &.save { background: #FAFAFA; color: #18181B; } &.delete { background: rgba(239, 68, 68, 0.15); } }
+  .dp-content { background: #27272A; }
+  .dp-title { color: #FAFAFA; }
+  .dp-quick { background: #3F3F46; color: #F4F4F5; &:active { background: #52525B; } }
+  .dp-pick-text { color: #FAFAFA; }
+  .dp-btn { &.cancel { background: #3F3F46; color: #71717A; } &.confirm { background: #FAFAFA; color: #18181B; } }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .edit-page { background: #18181B; }
   .type-switch { background: #27272A; }
@@ -479,4 +504,5 @@ function handleDelete() {
   .dp-pick-text { color: #FAFAFA; }
   .dp-btn { &.cancel { background: #3F3F46; color: #71717A; } &.confirm { background: #FAFAFA; color: #18181B; } }
 }
+/* #endif */
 </style>

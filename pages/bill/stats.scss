@@ -293,6 +293,49 @@
 }
 
 /* ═══ 深色模式 ═══ */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .stats-page { background: #18181B; }
+  .month-header { background: #27272A; }
+  .month-title { color: #FAFAFA; }
+  .month-sub { color: #71717A; }
+  .mode-switch { background: #27272A; }
+  .mode-btn { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+
+  .overview-card { background: #27272A; }
+  .ov-label { color: #71717A; }
+  .ov-value { &.positive { color: #FAFAFA; } }
+  .ov-sub { &.up { color: #EF4444; } &.down { color: #A1A1AA; } }
+
+  .insights-card { background: #27272A; }
+  .insights-title { color: #FAFAFA; }
+  .insight-dot { color: #71717A; }
+  .insight-text { color: #F4F4F5; }
+
+  .chart-card { background: #27272A; }
+  .chart-title { color: #FAFAFA; }
+
+  .range-switch { background: #3F3F46; }
+  .range-btn { color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+
+  .ts-label { color: #71717A; }
+  .ts-value { color: #FAFAFA; }
+
+  .top5-row { border-bottom-color: #3F3F46; }
+  .top5-rank { background: #3F3F46; color: #F4F4F5; }
+  .top5-cat { color: #FAFAFA; }
+  .top5-date { color: #71717A; }
+  .top5-amount { color: #FAFAFA; }
+
+  .legend-name { color: #FAFAFA; }
+  .legend-amount { color: #F4F4F5; }
+
+  .cat-trend-chip { background: #3F3F46; color: #F4F4F5; &.active { background: #FAFAFA; color: #18181B; } }
+  .cat-trend-title { color: #F4F4F5; }
+  .no-data { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .stats-page { background: #18181B; }
   .month-header { background: #27272A; }
@@ -333,3 +376,4 @@
   .cat-trend-title { color: #F4F4F5; }
   .no-data { color: #71717A; }
 }
+/* #endif */

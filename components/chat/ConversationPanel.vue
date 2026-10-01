@@ -254,6 +254,35 @@ function handleSelectTag(tag) {
 }
 
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .conv-drawer {
+    background: #18181B;
+  }
+  .conv-group-header {
+    .conv-group-label { color: #52525B; }
+    .conv-group-count {
+      color: #52525B;
+      background: #27272A;
+    }
+  }
+  .conv-new-divider .conv-divider-line {
+    border-top-color: #27272A;
+  }
+  .conv-new-divider-text {
+    color: #71717A;
+    &:active { color: #FAFAFA; }
+  }
+  .conv-shortcut-item {
+    background: #18181B;
+    border-color: #27272A;
+  }
+  .conv-shortcut-text {
+    color: #A1A1AA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .conv-drawer {
     background: #18181B;
@@ -280,4 +309,5 @@ function handleSelectTag(tag) {
     color: #A1A1AA;
   }
 }
+/* #endif */
 </style>

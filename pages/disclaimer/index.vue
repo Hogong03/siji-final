@@ -237,6 +237,30 @@ function handleDecline() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .disclaimer-wrap { background: #18181B; }
+  .disclaimer-brand { color: #FAFAFA; }
+  .disclaimer-brand-sub { color: #71717A; }
+  .disclaimer-title { color: #FAFAFA; }
+  .disclaimer-date { color: #71717A; }
+  .disclaimer-section-title { color: #FAFAFA; }
+  .disclaimer-text { color: #A1A1AA; }
+  .disclaimer-footer {
+    border-top-color: #3F3F46;
+    background: #18181B;
+  }
+  .disclaimer-btn-primary {
+    background: #52525B;
+    color: #FFFFFF;
+  }
+  .disclaimer-btn-secondary {
+    background: #27272A;
+    color: #A1A1AA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .disclaimer-wrap { background: #18181B; }
   .disclaimer-brand { color: #FAFAFA; }
@@ -258,4 +282,5 @@ function handleDecline() {
     color: #A1A1AA;
   }
 }
+/* #endif */
 </style>

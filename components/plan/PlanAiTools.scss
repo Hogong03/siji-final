@@ -71,6 +71,17 @@
   }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .ai-tools-section { background: #27272A; border-color: #3F3F46; }
+  .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
+  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
+  .ai-result-title { color: #FAFAFA; }
+  .ai-result-text { color: #F4F4F5; }
+  .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .ai-tools-section { background: #27272A; border-color: #3F3F46; }
   .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
@@ -79,3 +90,4 @@
   .ai-result-text { color: #F4F4F5; }
   .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
 }
+/* #endif */

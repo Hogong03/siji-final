@@ -669,6 +669,24 @@
   50% { opacity: 0.25; }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .sending-strip {
+    background: #18181B;
+    border-top-color: #27272A;
+  }
+  .sending-dot {
+    background: #FAFAFA;
+  }
+  .sending-text {
+    color: #A1A1AA;
+  }
+  .sending-elapsed {
+    color: #52525B;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .sending-strip {
     background: #18181B;
@@ -684,6 +702,7 @@
     color: #52525B;
   }
 }
+/* #endif */
 
 // ==================== 重试栏 ====================
 .retry-bar {
@@ -760,6 +779,120 @@
   color: #A1A1AA;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .chat-page {
+    background: #18181B;
+  }
+  .custom-nav {
+    background: #18181B;
+    border-bottom-color: #27272A;
+  }
+  .sim-banner {
+    background: #27272A;
+  }
+  .nav-title {
+    color: #FAFAFA;
+  }
+  .nav-subtitle {
+    color: #52525B;
+  }
+  .nav-badge-unified {
+    background: #27272A;
+    border: 1rpx solid #27272A;
+    color: #A1A1AA;
+  }
+  .nav-badge {
+    background: #27272A;
+    border: 1rpx solid #27272A;
+    color: #A1A1AA;
+  }
+  .nav-menu-btn {
+    color: #FAFAFA;
+  }
+  .nav-guide-btn {
+    background: #27272A;
+    color: #A1A1AA;
+  }
+  .back-to-bottom {
+    background: #27272A;
+    border: 2rpx solid #3F3F46;
+  }
+  .modal-container {
+    background: #18181B;
+  }
+  .modal-header {
+    border-bottom: 1rpx solid #27272A;
+    color: #52525B;
+  }
+  .guide-section {
+    color: #A1A1AA;
+  }
+  .guide-item {
+    border-bottom: 1rpx solid #27272A;
+    color: #FFFFFF;
+  }
+  .guide-tip {
+    color: #A1A1AA;
+  }
+  .guide-more {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+  .switch-section-label {
+    color: #A1A1AA;
+  }
+  .switch-provider-item {
+    background: #18181B;
+    border-color: #FAFAFA;
+    color: #FAFAFA;
+  }
+  .switch-model-item {
+    background: #18181B;
+    border-color: #FAFAFA;
+    color: #FAFAFA;
+  }
+  .switch-config-btn {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+  .switch-empty {
+    color: #FAFAFA;
+    background: #27272A;
+  }
+  .suggestions-bar {
+    background: #18181B;
+    border-top: 1rpx solid #27272A;
+  }
+  .suggestion-chip {
+    background: #27272A;
+    color: #FAFAFA;
+    border: 1rpx solid #27272A;
+  }
+  .retry-bar {
+    background: #18181B;
+    border-top: 1rpx solid #27272A;
+  }
+  .retry-bar-title {
+    color: #A1A1AA;
+  }
+  .retry-btn {
+    border: 1rpx solid #27272A;
+    color: #FAFAFA;
+  }
+  .retry-btn-primary {
+    background: #F4F4F5;
+    border-color: #FAFAFA;
+  }
+  .retry-btn-secondary {
+    background: #27272A;
+  }
+  .load-more-hint {
+    color: #71717A;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .chat-page {
     background: #18181B;
@@ -871,6 +1004,7 @@
     color: #71717A;
   }
 }
+/* #endif */
 
 // ==================== 会话 Agent 绑定提示 + 开场引导 Starter（3.1）====================
 .conv-agent-hint {
@@ -937,6 +1071,42 @@
   color: #18181B;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .conv-agent-hint {
+    background: #18181B;
+    border-bottom: 1rpx solid #27272A;
+  }
+
+  .conv-agent-hint-text {
+    color: #A1A1AA;
+  }
+
+  .conv-agent-hint-btn {
+    background: #27272A;
+    border-color: #FAFAFA;
+  }
+
+  .conv-agent-hint-btn-text {
+    color: #FAFAFA;
+  }
+
+  .agent-starter-bar {
+    background: #18181B;
+    border-top: 1rpx solid #27272A;
+  }
+
+  .agent-starter-chip {
+    background: #27272A;
+    border: 1rpx solid #27272A;
+  }
+
+  .agent-starter-chip-text {
+    color: #FAFAFA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .conv-agent-hint {
     background: #18181B;
@@ -970,6 +1140,7 @@
     color: #FAFAFA;
   }
 }
+/* #endif */
 
 /* ─── 进入总结消息的操作行（3.5.19：总结改成对话消息，顶部卡片已移除） ─── */
 .enter-actions {
@@ -1097,6 +1268,79 @@
   @include text-ellipsis;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .enter-btn {
+    background: #27272A;
+    border-color: #3F3F46;
+  }
+
+  .enter-btn-text {
+    color: #FAFAFA;
+  }
+
+  .enter-btn-primary {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+  }
+
+  .enter-btn-primary .enter-btn-text {
+    color: #000000;
+  }
+
+  .resume-card {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .resume-title {
+    color: #FAFAFA;
+  }
+
+  .resume-label,
+  .resume-meta,
+  .resume-close-icon {
+    color: #A1A1AA;
+  }
+
+  .resume-btn {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+
+  .resume-btn-primary {
+    background: #FAFAFA;
+    color: #000000;
+  }
+
+  .ruler-viewport {
+    background: #3F3F46;
+  }
+
+  .ruler-bar {
+    background: #27272A;
+  }
+
+  .ruler-tick.tick-user .ruler-bar {
+    background: #52525B;
+  }
+
+  .ruler-tick.tick-active .ruler-bar {
+    background: #FAFAFA;
+  }
+
+  .ruler-preview {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .ruler-preview-text {
+    color: #D4D4D8;
+  }
+
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .enter-btn {
     background: #27272A;
@@ -1167,3 +1411,4 @@
   }
 
 }
+/* #endif */

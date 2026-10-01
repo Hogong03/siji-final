@@ -269,6 +269,105 @@
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .dev-feedback-page {
+    background: #18181B;
+  }
+
+  .section-title {
+    color: #FAFAFA;
+  }
+
+  .intro {
+    background: #27272A;
+  }
+
+  .intro-text {
+    color: #A1A1AA;
+  }
+
+  .chip {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .chip.active {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+    color: #18181B;
+  }
+
+  .conv-list {
+    background: #27272A;
+  }
+
+  .conv-item {
+    border-bottom-color: #3F3F46;
+  }
+
+  .conv-title {
+    color: #FAFAFA;
+  }
+
+  .conv-meta,
+  .conv-more,
+  .empty-tip,
+  .preview-hint {
+    color: #A1A1AA;
+  }
+
+  .option-row {
+    background: #27272A;
+  }
+
+  .option-label {
+    color: #FAFAFA;
+  }
+
+  .option-switch {
+    background: #3F3F46;
+    color: #A1A1AA;
+  }
+
+  .option-switch.on {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+
+  .stat-item {
+    background: #27272A;
+  }
+
+  .stat-num {
+    color: #FAFAFA;
+  }
+
+  .stat-label {
+    color: #71717A;
+  }
+
+  .preview-box {
+    background: #27272A;
+  }
+
+  .preview-text {
+    color: #F4F4F5;
+  }
+
+  .btn-secondary {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .btn-secondary:not([disabled]):active {
+    background: #3F3F46;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .dev-feedback-page {
     background: #18181B;
@@ -365,6 +464,7 @@
     background: #3F3F46;
   }
 }
+/* #endif */
 
 /* 自由选择面板 */
 .custom-panel {
@@ -493,6 +593,56 @@
 }
 
 /* 自由选择面板深色模式覆盖 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .custom-btn {
+    background: #27272A;
+    border-color: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .custom-btn:active {
+    background: #3F3F46;
+  }
+
+  .conv-check {
+    background: #27272A;
+    border-color: #3F3F46;
+  }
+
+  .conv-check.on {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+  }
+
+  .conv-check.on .conv-check-mark {
+    color: #18181B;
+  }
+
+  .msg-list {
+    background: #18181B;
+  }
+
+  .msg-item {
+    border-bottom-color: #3F3F46;
+  }
+
+  .msg-role-user {
+    background: #3F3F46;
+    color: #FAFAFA;
+  }
+
+  .msg-role-ai {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+
+  .msg-text {
+    color: #D4D4D8;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .custom-btn {
     background: #27272A;
@@ -540,3 +690,4 @@
     color: #D4D4D8;
   }
 }
+/* #endif */

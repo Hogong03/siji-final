@@ -233,6 +233,34 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
   &:active { transform: scale(0.97); }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .unified-section-label { color: #A1A1AA; }
+  .unified-divider { background: #27272A; }
+  .unified-provider-item,
+  .unified-agent-item {
+    background: #27272A;
+    &.active {
+      border-color: #FAFAFA;
+      background: #FAFAFA;
+      .unified-provider-name,
+      .unified-agent-name { color: #18181B; }
+      .unified-provider-desc,
+      .unified-agent-desc { color: #71717A; }
+    }
+  }
+  .unified-provider-logo-wrap { background: #18181B; }
+  .unified-provider-name,
+  .unified-agent-name { color: #FAFAFA; }
+  .unified-provider-desc,
+  .unified-agent-desc { color: #A1A1AA; }
+  .unified-config-btn {
+    background: #27272A;
+    text { color: #FAFAFA; }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .unified-section-label { color: #A1A1AA; }
   .unified-divider { background: #27272A; }
@@ -258,5 +286,6 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
     text { color: #FAFAFA; }
   }
 }
+/* #endif */
 
 </style>

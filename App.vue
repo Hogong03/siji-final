@@ -41,6 +41,9 @@
 		markLeaveBaseline,
 		refreshEnterSummary
 	} from '@/composables/useEnterSummary.js'
+	import {
+		initTheme
+	} from '@/utils/theme.js'
 
 	const store = useAppStore()
 
@@ -63,6 +66,9 @@
 		logger.log('[思迹] Launch')
 		// App 端先读一次真实版本号（基座里 plus.runtime.version 是宿主版本）
 		primeAppVersion()
+		// 0. 主题初始化（4.8.0）：读 siji_theme_mode → 挂 .theme-dark 类 → 刷 tabBar/导航栏。
+		// 放在最前，避免首屏闪浅色；MP 端自动退化（MP 无需类驱动）
+		initTheme()
 		// 1. 仅恢复关键配置（AI/对话/设备ID）— 延迟非关键初始化到 splash 后
 		store.restoreCriticalFromStorage()
 		logger.log('[思迹] Critical storage restored, device:', store.deviceId)
@@ -200,7 +206,16 @@
 		-webkit-font-smoothing: antialiased;
 	}
 
-	/* ─── 深色模式：页面底色统一 #18181B ─── */
+	/* ─── 深色模式（4.8.0 双路径：H5/App 类驱动 + MP 系统跟随）─── */
+	/* #ifndef MP-WEIXIN */
+	html.theme-dark,
+	html.theme-dark body,
+	page.theme-dark {
+		background-color: #18181B;
+		color: #F4F4F5;
+	}
+	/* #endif */
+	/* #ifdef MP-WEIXIN */
 	@media (prefers-color-scheme: dark) {
 		page,
 		html,
@@ -209,6 +224,7 @@
 			color: #F4F4F5;
 		}
 	}
+	/* #endif */
 
 	/* 滚动条隐藏 */
 	::-webkit-scrollbar {
@@ -226,12 +242,20 @@
 		color: #A1A1AA !important;
 	}
 
+	/* #ifndef MP-WEIXIN */
+	html.theme-dark .uni-input-placeholder,
+	html.theme-dark .uni-textarea-placeholder {
+		color: #71717A !important;
+	}
+	/* #endif */
+	/* #ifdef MP-WEIXIN */
 	@media (prefers-color-scheme: dark) {
 		.uni-input-placeholder,
 		.uni-textarea-placeholder {
 			color: #71717A !important;
 		}
 	}
+	/* #endif */
 
 	/* 安全区适配 */
 	.safe-area-bottom {

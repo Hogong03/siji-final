@@ -111,6 +111,23 @@ onMounted(() => {
   transition: width 0.5s ease, opacity 0.5s ease;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .splash {
+    background: #09090B;
+  }
+  .logo-text {
+    color: #FAFAFA;
+  }
+  .logo-sub {
+    color: #52525B;
+  }
+  .splash-line {
+    background: #27272A;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .splash {
     background: #09090B;
@@ -125,5 +142,6 @@ onMounted(() => {
     background: #27272A;
   }
 }
+/* #endif */
 
 </style>

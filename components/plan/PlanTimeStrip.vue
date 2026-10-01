@@ -89,6 +89,22 @@ defineProps({
   color: #71717A;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .strip-line {
+    background: #27272A;
+  }
+
+  .dot-today {
+    background: #18181B;
+  }
+
+  .strip-date {
+    color: #A1A1AA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .strip-line {
     background: #27272A;
@@ -102,4 +118,5 @@ defineProps({
     color: #A1A1AA;
   }
 }
+/* #endif */
 </style>

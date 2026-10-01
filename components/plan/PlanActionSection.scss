@@ -189,6 +189,28 @@
   &:active { background: rgba(0, 0, 0, 0.12); }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .next-step-card { background: #27272A; }
+  .ns-btn { background: #FAFAFA; color: #18181B; }
+
+  .checkin-card { background: #27272A; border-color: #3F3F46; }
+  .ci-label { color: #FAFAFA; }
+  .ci-sub { color: #71717A; }
+  .ci-btn { background: #FAFAFA; color: #18181B; }
+  .ci-btn.done { background: #3F3F46; color: #A1A1AA; }
+  .ci-backfill { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+  .ci-note { background: #3F3F46; color: #FAFAFA; }
+  .ci-save { background: #FAFAFA; color: #18181B; }
+  .ci-list { border-top-color: #3F3F46; }
+  .ci-item-note { color: #FAFAFA; }
+  .ci-tip { color: #52525B; }
+
+  .cal-day-text { color: #FAFAFA; }
+  .cal-undo { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .next-step-card { background: #27272A; }
   .ns-btn { background: #FAFAFA; color: #18181B; }
@@ -208,3 +230,4 @@
   .cal-day-text { color: #FAFAFA; }
   .cal-undo { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
 }
+/* #endif */

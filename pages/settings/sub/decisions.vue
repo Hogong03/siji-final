@@ -349,6 +349,29 @@ function goDetail(id) {
 .btn-cancel { background: #F4F4F5; color: #71717A; }
 .btn-confirm { background: #000000; color: #FFFFFF; }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .page { background: #09090B; }
+  .filter-bar { background: #18181B; border-bottom: 1rpx solid #27272A; }
+  .filter-tab { color: #A1A1AA; }
+  .filter-tab.active { background: #000000; color: #FFFFFF; }
+  .decision-card { background: #18181B; }
+  .card-title { color: #F4F4F5; }
+  .card-category { color: #A1A1AA; }
+  .card-deadline { color: #A1A1AA; }
+  .decision-label { color: #A1A1AA; }
+  .decision-text { color: #F4F4F5; }
+  .card-actions { border-top: 1rpx solid #27272A; }
+  .edit-btn { color: #F4F4F5; background: #3F3F46; }
+  .modal-content { background: #18181B; }
+  .modal-title { color: #F4F4F5; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #27272A; color: #F4F4F5; }
+  .form-textarea { background: #27272A; color: #F4F4F5; }
+  .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .page { background: #09090B; }
   .filter-bar { background: #18181B; border-bottom: 1rpx solid #27272A; }
@@ -369,6 +392,7 @@ function goDetail(id) {
   .form-textarea { background: #27272A; color: #F4F4F5; }
   .btn-cancel { background: #3F3F46; color: #A1A1AA; }
 }
+/* #endif */
 
 </style>
 

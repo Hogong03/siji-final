@@ -456,6 +456,25 @@ function goDetail(planId) {
 	line-height: 1.6;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+	.records-page { background: #18181B; }
+	.rp-head { background: #27272A; border-bottom-color: #3F3F46; }
+	.rp-chip { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+	.rp-count { color: #71717A; }
+	.rp-date-text { color: #FAFAFA; }
+	.rp-date-count { color: #52525B; }
+	.rp-item { background: #27272A; &:active { background: #3F3F46; } }
+	.rp-time-text { color: #52525B; }
+	.rp-kind.rk-checkin { background: #3F3F46; color: #A1A1AA; }
+	.rp-plan-title { color: #FAFAFA; }
+	.rp-note { color: #A1A1AA; }
+	.rp-arrow { color: #52525B; }
+	.rp-empty-text { color: #52525B; }
+	.rp-day-empty-text { color: #52525B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
 	.records-page { background: #18181B; }
 	.rp-head { background: #27272A; border-bottom-color: #3F3F46; }
@@ -472,4 +491,5 @@ function goDetail(planId) {
 	.rp-empty-text { color: #52525B; }
 	.rp-day-empty-text { color: #52525B; }
 }
+/* #endif */
 </style>

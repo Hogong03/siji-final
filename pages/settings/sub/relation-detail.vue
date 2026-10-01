@@ -368,6 +368,41 @@ function handleDelete() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .page { background: #18181B; }
+  .hero { background: #27272A; }
+  .hero-avatar { background: #FAFAFA; color: #18181B; }
+  .hero-name { color: #FAFAFA; }
+  .hero-role { color: #A1A1AA; }
+  .score-num { color: #FAFAFA; }
+  .score-max { color: #A1A1AA; }
+  .section { background: #27272A; }
+  .section-title { color: #FAFAFA; }
+  .section-text { color: #D4D4D8; }
+  .add-btn { color: #FAFAFA; }
+  .tag { background: #3F3F46; color: #D4D4D8; }
+  .tag-alt { background: #52525B; color: #A1A1AA; }
+  .empty-mini { color: #A1A1AA; }
+  .interaction-item { border-bottom-color: #3F3F46; }
+  .interaction-scene { color: #FAFAFA; }
+  .interaction-date { color: #A1A1AA; }
+  .interaction-content { color: #D4D4D8; }
+  .interaction-result, .interaction-emotion { color: #A1A1AA; }
+  .btn-action { background: #FAFAFA; color: #18181B; }
+  .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+  .empty { color: #A1A1AA; }
+  .modal-content { background: #27272A; }
+  .modal-title { color: #FAFAFA; }
+  .form-label { color: #A1A1AA; }
+  .form-input { background: #3F3F46; color: #FAFAFA; }
+  .form-textarea { background: #3F3F46; color: #FAFAFA; }
+  .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+  .btn-confirm { background: #FAFAFA; color: #18181B; }
+  .picker-display { color: #FAFAFA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .page { background: #18181B; }
   .hero { background: #27272A; }
@@ -400,6 +435,7 @@ function handleDelete() {
   .btn-confirm { background: #FAFAFA; color: #18181B; }
   .picker-display { color: #FAFAFA; }
 }
+/* #endif */
 
 </style>
 

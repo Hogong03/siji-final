@@ -158,6 +158,20 @@ const emit = defineEmits([
 	}
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+	.empty-btn {
+		&.primary { background: #FAFAFA; color: #18181B; }
+		&.outline { border-color: #FAFAFA; color: #FAFAFA; }
+	}
+	.swipe-action {
+		&.complete { background: #FAFAFA; .sa-icon, .sa-label { color: #18181B; } }
+		&.edit { background: #3F3F46; .sa-icon, .sa-label { color: #FAFAFA; } }
+		&.delete { background: #D35D5D; .sa-icon, .sa-label { color: #FFFFFF; } }
+	}
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
 	.empty-btn {
 		&.primary { background: #FAFAFA; color: #18181B; }
@@ -169,4 +183,5 @@ const emit = defineEmits([
 		&.delete { background: #D35D5D; .sa-icon, .sa-label { color: #FFFFFF; } }
 	}
 }
+/* #endif */
 </style>

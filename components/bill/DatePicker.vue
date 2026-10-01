@@ -217,6 +217,27 @@ function confirm() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+    .detail-row {
+        border-bottom-color: #3F3F46;
+        .d-label { color: #A1A1AA; }
+        .d-value { color: #FAFAFA; }
+        .d-arrow { color: #71717A; }
+    }
+    .date-picker-content { background: #27272A; }
+    .dp-title { color: #FAFAFA; }
+    .dp-quick {
+        background: #3F3F46;
+        color: #A1A1AA;
+        &:active { background: #27272A; }
+    }
+    .dp-pick-text { color: #FAFAFA; }
+    .dp-btn.cancel { background: #3F3F46; color: #A1A1AA; }
+    .dp-btn.confirm { background: #FFFFFF; color: #18181B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
     .detail-row {
         border-bottom-color: #3F3F46;
@@ -235,4 +256,5 @@ function confirm() {
     .dp-btn.cancel { background: #3F3F46; color: #A1A1AA; }
     .dp-btn.confirm { background: #FFFFFF; color: #18181B; }
 }
+/* #endif */
 </style>

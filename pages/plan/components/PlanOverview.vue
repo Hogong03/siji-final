@@ -185,6 +185,22 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 	font-size: 20rpx;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+	.overview-card { background: #27272A; }
+	.ov-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+	.ov-sub { color: #71717A; }
+	.ov-rate { color: #FAFAFA; }
+	.ov-rate-label { color: #71717A; }
+	.ov-action { background: #3F3F46; &:active { background: #52525B; } }
+	.os-item { color: #71717A; }
+	.os-num { color: #FAFAFA; }
+	.os-sub { color: #52525B; }
+	.os-sep { color: #3F3F46; }
+	.priority-bar { background: #3F3F46; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
 	.overview-card { background: #27272A; }
 	.ov-title { color: #FAFAFA; border-left-color: #FAFAFA; }
@@ -198,4 +214,5 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 	.os-sep { color: #3F3F46; }
 	.priority-bar { background: #3F3F46; }
 }
+/* #endif */
 </style>

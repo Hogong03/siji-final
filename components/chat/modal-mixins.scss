@@ -47,11 +47,20 @@
   animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) both;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .modal-container {
+    background: #18181B;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .modal-container {
     background: #18181B;
   }
 }
+/* #endif */
 
 // --- 动画 ---
 @keyframes maskFadeIn {
@@ -87,6 +96,17 @@
   }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .modal-header {
+    border-bottom-color: #27272A;
+    .modal-title {
+      color: #FAFAFA;
+    }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .modal-header {
     border-bottom-color: #27272A;
@@ -95,6 +115,7 @@
     }
   }
 }
+/* #endif */
 
 .modal-body {
   padding: 24rpx 32rpx;

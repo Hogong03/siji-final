@@ -344,8 +344,16 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .bubble-image-fallback { background: #3F3F46; }
+  .bubble-image-fallback-text { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .bubble-image-fallback { background: #3F3F46; }
   .bubble-image-fallback-text { color: #71717A; }
 }
+/* #endif */
 </style>

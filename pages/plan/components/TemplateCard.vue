@@ -86,6 +86,21 @@ defineEmits(['use', 'edit', 'delete'])
 .tpl-edit { color: #71717A; border-left: 1rpx solid #E4E4E7; }
 .tpl-del { color: #EF4444; border-left: 1rpx solid #E4E4E7; }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .tpl-card { background: #27272A; }
+  .tpl-name { color: #FFFFFF; }
+  .tpl-desc { color: #A1A1AA; }
+  .st-bullet { color: #FAFAFA; }
+  .st-title { color: #FAFAFA; }
+  .st-more { color: #52525B; }
+  .tpl-footer { border-top-color: #3F3F46; }
+  .tpl-use { color: #FAFAFA; }
+  .tpl-edit { color: #A1A1AA; border-left-color: #3F3F46; }
+  .tpl-del { color: #EF4444; border-left-color: #3F3F46; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .tpl-card { background: #27272A; }
   .tpl-name { color: #FFFFFF; }
@@ -98,4 +113,5 @@ defineEmits(['use', 'edit', 'delete'])
   .tpl-edit { color: #A1A1AA; border-left-color: #3F3F46; }
   .tpl-del { color: #EF4444; border-left-color: #3F3F46; }
 }
+/* #endif */
 </style>

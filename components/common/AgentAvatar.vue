@@ -79,6 +79,17 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
   border: none;
 }
 /* 深色模式：黑圆底头像加细边框，避免与深色页面背景融合 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .agent-avatar--icon {
+    border: 2rpx solid #3F3F46;
+  }
+  .avatar-text {
+    color: #FAFAFA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .agent-avatar--icon {
     border: 2rpx solid #3F3F46;
@@ -87,6 +98,7 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
     color: #FAFAFA;
   }
 }
+/* #endif */
 .avatar-icon-img {
   width: 100%;
   height: 100%;

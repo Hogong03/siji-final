@@ -154,6 +154,27 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
   }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .switch-model-item {
+    background: #27272A;
+    &.active {
+      border-color: #FAFAFA;
+      background: #18181B;
+    }
+    .agent-avatar-wrap { background: #27272A; border: 2rpx solid #3F3F46; }
+    .agent-avatar-fallback { background: #27272A; }
+    .agent-avatar-text { color: #FAFAFA; }
+    .switch-model-name { color: #FAFAFA; }
+    .switch-model-desc { color: #A1A1AA; }
+  }
+  .switch-config-btn {
+    background: #27272A;
+    text { color: #FAFAFA; }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .switch-model-item {
     background: #27272A;
@@ -172,4 +193,5 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
     text { color: #FAFAFA; }
   }
 }
+/* #endif */
 </style>

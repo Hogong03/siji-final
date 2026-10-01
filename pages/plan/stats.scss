@@ -140,6 +140,40 @@
 .hm-label { font-size: 20rpx; color: #71717A; margin: 0 4rpx; }
 
 /* ═══ 深色模式 ═══ */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .stats-page { background: #18181B; }
+  .range-item { background: #27272A; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+  .overview-card { background: #FAFAFA; }
+  .overview-card .card-title { color: #18181B; }
+  .overview-card .og-num { color: #18181B; }
+  .overview-card .og-label { color: rgba(24, 24, 27, 0.6); }
+  .card { background: #27272A; }
+  .card-title { color: #FAFAFA; }
+  .og-num { color: #FAFAFA; }
+  .og-label { color: #71717A; }
+  .mini-label { color: #FAFAFA; }
+  .mini-val { color: #71717A; }
+  .pc-label { color: #FAFAFA; }
+  .pc-bar-wrap { background: #3F3F46; }
+  .pc-text { color: #71717A; }
+  .legend-dot.done { background: #52525B; }
+  .legend-text { color: #71717A; }
+  .sp-num { color: #FAFAFA; }
+  .sp-label { color: #71717A; }
+  .empty-text { color: #71717A; }
+  .ts-label { color: #FAFAFA; }
+  .ts-bar-wrap { background: #3F3F46; }
+  .ts-bar { background: #FAFAFA; }
+  .ts-text { color: #71717A; }
+  .od-num { color: #FAFAFA; }
+  .od-num.danger { color: #F87171; }
+  .od-label { color: #71717A; }
+  .hm-day { color: #71717A; }
+  .hm-label { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .stats-page { background: #18181B; }
   .range-item { background: #27272A; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
@@ -171,3 +205,4 @@
   .hm-day { color: #71717A; }
   .hm-label { color: #71717A; }
 }
+/* #endif */

@@ -253,6 +253,35 @@
 /* ============================== */
 /* 深色模式                        */
 /* ============================== */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .functions-page { background: #18181B; }
+  .search-box { background: #27272A; }
+  .search-placeholder { color: #71717A; }
+  .seg-control { background: #3F3F46; }
+  .seg-text { color: #A1A1AA; }
+  .seg-item.active .seg-text { color: #FAFAFA; }
+  .seg-slider { background: #FAFAFA; }
+  .stats-bar { background: #27272A; }
+  .stats-val { color: #FAFAFA; }
+  .stats-lbl { color: #71717A; }
+  .stats-guide .stats-val { color: #A1A1AA; }
+  .card-list { background: #27272A; }
+  .entry-card { border-bottom-color: #3F3F46; }
+  .entry-card:active { background: #3F3F46; }
+  .entry-icon-circle { background: #3F3F46; }
+  .entry-title { color: #FAFAFA; }
+  .entry-desc { color: #71717A; }
+  .entry-new-btn { background: #FAFAFA; }
+  .entry-new-text { color: #18181B; }
+  .entry-arrow { color: #71717A; }
+  .analysis-link { background: #27272A; }
+  .analysis-link-text { color: #FAFAFA; }
+  .analysis-link-arrow.up { color: #F87171; }
+  .analysis-link-arrow.down { color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .functions-page { background: #18181B; }
   .search-box { background: #27272A; }
@@ -279,3 +308,4 @@
   .analysis-link-arrow.up { color: #F87171; }
   .analysis-link-arrow.down { color: #A1A1AA; }
 }
+/* #endif */

@@ -267,6 +267,27 @@
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .ai-eval-page { background: #000000; }
+  .intro, .warn-row, .row-detail { background: #18181B; }
+  .intro-text, .env-label, .row-tools, .summary-meta, .detail-value { color: #A1A1AA; }
+  .env-value, .row-title, .detail-fail { color: #FAFAFA; }
+  .btn-primary { background: #FAFAFA; }
+  .btn-primary .btn-text { color: #000000; }
+  .btn-primary.disabled { background: #52525B; }
+  .btn-plain { background: #18181B; }
+  .btn-plain .btn-text { color: #FAFAFA; }
+  .progress-track { background: #27272A; }
+  .progress-fill { background: #FAFAFA; }
+  .summary { border-color: #27272A; }
+  .summary-rate { color: #FAFAFA; }
+  .row { border-color: #27272A; }
+  .detail-line { color: #D4D4D8; }
+  .empty-text { color: #52525B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .ai-eval-page { background: #000000; }
   .intro, .warn-row, .row-detail { background: #18181B; }
@@ -285,3 +306,4 @@
   .detail-line { color: #D4D4D8; }
   .empty-text { color: #52525B; }
 }
+/* #endif */

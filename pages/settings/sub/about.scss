@@ -222,6 +222,39 @@
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .about-page { background: #18181B; }
+  .tab-bar { background: #18181B; border-bottom-color: #3F3F46; }
+  .tab-item.active { background: #27272A; border-color: #3F3F46; }
+  .tab-item .tab-label { color: #71717A; }
+  .tab-item.active .tab-label { color: #FAFAFA; }
+  .hero .hero-name { color: #FAFAFA; }
+  .hero .hero-version { color: #71717A; background: #3F3F46; }
+  .hero .hero-tagline { color: #A1A1AA; }
+  .feat-item { background: #27272A; border-color: #3F3F46; }
+  .feat-item .feat-label { color: #FAFAFA; }
+  .feat-item .feat-desc { color: #71717A; }
+  .section-title { color: #FAFAFA; }
+  .card { background: #27272A; border-color: #3F3F46; }
+  .card .card-title { color: #FAFAFA; }
+  .card .card-text { color: #A1A1AA; }
+  .example-item { border-bottom-color: rgba(255,255,255,0.06); }
+  .example-item .ex-tag.bill { background: rgba(245,158,11,0.18); color: #FBBF24; }
+  .example-item .ex-tag.diary { background: rgba(245,158,11,0.18); color: #FBBF24; }
+  .example-item .ex-tag.plan { background: rgba(16,185,129,0.18); color: #34D399; }
+  .example-item .ex-tag.multi { background: rgba(255,255,255,0.12); color: #FAFAFA; }
+  .example-item .ex-tag.query { background: rgba(14,165,233,0.18); color: #38BDF8; }
+  .example-item .ex-tag.undo { background: rgba(239,68,68,0.18); color: #F87171; }
+  .example-item .ex-text { color: #FAFAFA; }
+  .example-item .ex-result { color: #71717A; }
+  .feedback-card:active { background: #3F3F46; }
+  .fb-title { color: #FAFAFA; }
+  .fb-desc { color: #71717A; }
+  .fb-arrow { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .about-page { background: #18181B; }
   .tab-bar { background: #18181B; border-bottom-color: #3F3F46; }
@@ -252,3 +285,4 @@
   .fb-desc { color: #71717A; }
   .fb-arrow { color: #71717A; }
 }
+/* #endif */

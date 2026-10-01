@@ -156,6 +156,28 @@ function tapDelete() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+    .type-switch { background: #27272A; }
+    .ts-btn {
+        color: #A1A1AA;
+        &.active.expense { background: #FAFAFA; color: #18181B; }
+        &.active.income { background: #52525B; color: #FFFFFF; }
+    }
+    .amount-display {
+        &.expense .currency, &.expense .amount-num { color: #FBBF24; }
+        &.income .currency, &.income .amount-num { color: #34D399; }
+    }
+    .np-key {
+        background: #27272A;
+        &:active { background: #3F3F46; }
+        &.np-del { background: #3F3F46; }
+        .np-text { color: #FAFAFA; }
+        .np-icon { color: #A1A1AA; }
+    }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
     .type-switch { background: #27272A; }
     .ts-btn {
@@ -175,4 +197,5 @@ function tapDelete() {
         .np-icon { color: #A1A1AA; }
     }
 }
+/* #endif */
 </style>

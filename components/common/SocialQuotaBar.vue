@@ -152,6 +152,45 @@ refresh()
   color: #FFFFFF;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .quota-row {
+    background: #27272A;
+  }
+
+  .quota-text {
+    color: #D4D4D8;
+  }
+
+  .quota-btn {
+    color: #FAFAFA;
+  }
+
+  .quota-modal {
+    background: #18181B;
+  }
+
+  .quota-modal-title {
+    color: #FAFAFA;
+  }
+
+  .quota-input {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+
+  .quota-action {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+
+  .quota-action.primary {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .quota-row {
     background: #27272A;
@@ -188,4 +227,5 @@ refresh()
     color: #18181B;
   }
 }
+/* #endif */
 </style>

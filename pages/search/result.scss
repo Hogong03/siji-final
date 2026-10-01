@@ -287,6 +287,40 @@
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .search-page { background: #18181B; }
+  .search-bar { background: #27272A; }
+  .search-input-wrap { background: #3F3F46; }
+  .search-input { color: #FAFAFA; }
+  .clear-icon { color: #71717A; }
+  .cancel-btn { color: #A1A1AA; }
+  .filter-bar { background: #27272A; border-bottom-color: #3F3F46; }
+  .filter-divider { background: #3F3F46; }
+  .filter-chip { background: #3F3F46; color: #A1A1AA; }
+  .filter-chip.active { background: #FAFAFA; color: #18181B; }
+  .section-title { color: #A1A1AA; }
+  .clear-link { color: #71717A; }
+  .history-tag { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
+  .empty-text { color: #71717A; }
+  .result-count { color: #71717A; }
+  .loading-text { color: #71717A; }
+  .no-result-text { color: #71717A; }
+  .group-title { color: #FAFAFA; }
+  .group-count { color: #71717A; background: #3F3F46; }
+  .group-list { background: #27272A; }
+  .result-item { border-bottom-color: #3F3F46; }
+  .result-item:active { background: #3F3F46; }
+  .item-title { color: #FAFAFA; }
+  .item-preview { color: #A1A1AA; }
+  .item-extra { color: #FAFAFA; }
+  .item-date { color: #71717A; }
+  .conv-role-tag.user { background: #3F3F46; color: #A1A1AA; }
+  .conv-role-tag.assistant { background: #FAFAFA; color: #18181B; }
+  .conv-source { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .search-page { background: #18181B; }
   .search-bar { background: #27272A; }
@@ -318,3 +352,4 @@
   .conv-role-tag.assistant { background: #FAFAFA; color: #18181B; }
   .conv-source { color: #71717A; }
 }
+/* #endif */

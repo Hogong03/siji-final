@@ -15,7 +15,15 @@
   font-weight: 600;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .section { background: #27272A; }
+  .section-label { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .section { background: #27272A; }
   .section-label { color: #71717A; }
 }
+/* #endif */

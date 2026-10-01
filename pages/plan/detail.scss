@@ -62,6 +62,16 @@
 }
 
 /* ═══ 深色模式 ═══ */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .detail-page { background: #18181B; }
+  .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
+  .bottom-bar .btn-delete { background: #3F3F46; }
+  .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
+  .btn-freeze { background: #3F3F46; color: #D97706; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .detail-page { background: #18181B; }
   .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
@@ -69,3 +79,4 @@
   .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
   .btn-freeze { background: #3F3F46; color: #D97706; }
 }
+/* #endif */

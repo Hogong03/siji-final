@@ -423,6 +423,85 @@
   &.ok { background: #000000; color: #FFFFFF; }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .memory-page {
+    background: #09090B;
+  }
+  .switch-card {
+    background: #18181B;
+    color: #A1A1AA;
+  }
+  .stats-row {
+    background: #18181B;
+    color: #A1A1AA;
+  }
+  .filter-bar {
+    background: #27272A;
+    color: #A1A1AA;
+  }
+  .scope-bar .filter-chip {
+    background: #18181B;
+    color: #A1A1AA;
+  }
+  .memory-item {
+    background: #18181B;
+  }
+  .bottom-actions {
+    background: #18181B;
+    border-top: 1rpx solid #27272A;
+  }
+  .modal-content {
+    background: #18181B;
+  }
+  .modal-title {
+    color: #FAFAFA;
+  }
+  .modal-cat-chip {
+    background: #27272A;
+    color: #A1A1AA;
+  }
+  .modal-input {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+  .integrate-item {
+    background: #27272A;
+  }
+  .integrate-content {
+    color: #FAFAFA;
+  }
+  .integrate-input {
+    background: #18181B;
+    color: #FAFAFA;
+    border-color: #27272A;
+  }
+  .integrate-existing {
+    color: #FBBF24;
+  }
+  .integrated-tag {
+    color: #6EE7B7;
+    background: #064E3B;
+  }
+  .hidden-tag {
+    color: #A1A1AA;
+    background: #27272A;
+  }
+  .gov-check {
+    background: #18181B;
+    border-color: #52525B;
+  }
+  .select-badge {
+    background: #18181B;
+    border-color: #52525B;
+  }
+  .bottom-btn.integrate {
+    background: #27272A;
+    color: #FAFAFA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .memory-page {
     background: #09090B;
@@ -499,3 +578,4 @@
     color: #FAFAFA;
   }
 }
+/* #endif */

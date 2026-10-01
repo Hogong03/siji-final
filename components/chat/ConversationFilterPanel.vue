@@ -144,6 +144,33 @@ defineEmits(['set-filter', 'select-tag'])
 }
 
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .conv-filter-panel {
+    border-bottom-color: #27272A;
+  }
+  .filter-chip {
+    background: #27272A;
+    color: #A1A1AA;
+    &.active {
+      background: #FAFAFA;
+      color: #18181B;
+    }
+  }
+  .tag-empty-hint {
+    color: #52525B;
+  }
+  .tag-select-chip {
+    background: #27272A;
+    color: #A1A1AA;
+    &.active {
+      background: #FAFAFA;
+      color: #18181B;
+    }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .conv-filter-panel {
     border-bottom-color: #27272A;
@@ -168,4 +195,5 @@ defineEmits(['set-filter', 'select-tag'])
     }
   }
 }
+/* #endif */
 </style>

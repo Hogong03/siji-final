@@ -330,6 +330,22 @@ function clearAll() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .sub-page { background: #18181B; }
+  .card { background: #27272A;
+    .card-title { color: #FAFAFA; }
+    .card-desc { color: #A1A1AA; }
+  }
+  .danger-card { border-color: rgba(239, 68, 68, 0.3); }
+  .danger-title { color: #F87171 !important; }
+  .btn-primary { background: #FAFAFA; color: #18181B; }
+  .btn-outline { border-color: #FAFAFA; color: #FAFAFA; }
+  .restore-input { background: #3F3F46; color: #FAFAFA; }
+  .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .sub-page { background: #18181B; }
   .card { background: #27272A;
@@ -343,4 +359,5 @@ function clearAll() {
   .restore-input { background: #3F3F46; color: #FAFAFA; }
   .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
 }
+/* #endif */
 </style>

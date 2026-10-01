@@ -256,6 +256,22 @@ watch(() => props.visible, (v) => {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+    .tag-picker { background: #27272A; }
+    .tp-title { color: #FAFAFA; }
+    .tp-current { border-bottom-color: #3F3F46; }
+    .tp-item.selected { background: #3F3F46; }
+    .tp-name { color: #FAFAFA; }
+    .tp-count { color: #71717A; }
+    .tp-empty { color: #71717A; }
+    .tp-input-row { border-top-color: #3F3F46; }
+    .tp-input { background: #3F3F46; color: #FAFAFA; }
+    .tp-add { color: #FAFAFA; }
+    .tp-done { background: #FFFFFF; color: #18181B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
     .tag-picker { background: #27272A; }
     .tp-title { color: #FAFAFA; }
@@ -269,4 +285,5 @@ watch(() => props.visible, (v) => {
     .tp-add { color: #FAFAFA; }
     .tp-done { background: #FFFFFF; color: #18181B; }
 }
+/* #endif */
 </style>

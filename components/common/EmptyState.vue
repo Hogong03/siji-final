@@ -98,6 +98,17 @@ const emit = defineEmits(['action'])
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .empty-icon-wrap { background: #3F3F46; }
+  .empty-title { color: #A1A1AA; }
+  .empty-action {
+    background: #FAFAFA;
+    .empty-action-text { color: #000000; }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .empty-icon-wrap { background: #3F3F46; }
   .empty-title { color: #A1A1AA; }
@@ -106,4 +117,5 @@ const emit = defineEmits(['action'])
     .empty-action-text { color: #000000; }
   }
 }
+/* #endif */
 </style>

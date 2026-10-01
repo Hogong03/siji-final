@@ -576,6 +576,20 @@ function childWeekCells(child) {
   color: $text-hint;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .child-plan-card { background: rgba(255, 255, 255, 0.04); }
+  .child-plan-card.som-card { background: rgba(255, 255, 255, 0.02); }
+  .cp-title { color: #FAFAFA; }
+  .cp-recur-edit { color: #FAFAFA; background: rgba(255, 255, 255, 0.08); }
+  .cp-recur-panel { background: #27272A; border-color: #3F3F46; }
+  .cr-item { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
+  .cr-btn { background: rgba(255, 255, 255, 0.1); color: #A1A1AA; &.primary { background: #FAFAFA; color: #18181B; } }
+  .cp-act-check { background: #27272A; border-color: #3F3F46; color: #E4E4E7; }
+  .cp-act { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .child-plan-card { background: rgba(255, 255, 255, 0.04); }
   .child-plan-card.som-card { background: rgba(255, 255, 255, 0.02); }
@@ -587,4 +601,5 @@ function childWeekCells(child) {
   .cp-act-check { background: #27272A; border-color: #3F3F46; color: #E4E4E7; }
   .cp-act { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
 }
+/* #endif */
 </style>

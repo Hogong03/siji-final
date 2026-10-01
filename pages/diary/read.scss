@@ -294,6 +294,31 @@
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .read-page { background: #000000; }
+  .read-body { border-top-color: #18181B; }
+  .meta-text, .read-empty-text { color: #52525B; }
+  .meta-tag, .meta-section { color: #A1A1AA; }
+  .head-edit { color: #FAFAFA; border-color: #3F3F46; }
+  .head-title { color: #FAFAFA; }
+  .chapter-no { color: #52525B; }
+  .chapter-title { color: #FAFAFA; }
+  .read-section :deep(.md-renderer) { color: #D4D4D8; }
+  .read-end-text { color: #3F3F46; }
+  .ruler-spine { background: #18181B; }
+  .ruler-viewport { background: #18181B; }
+  .ruler-bar { background: #52525B; }
+  .ruler-tick.tick-active .ruler-bar { background: #FAFAFA; }
+  .ruler-preview { background: #FAFAFA; }
+  .ruler-preview-text { color: #000000; }
+  .to-top { background: #18181B; border-color: #27272A; }
+  .to-top-text { color: #FAFAFA; }
+  .read-progress { background: #18181B; }
+  .read-progress-fill { background: #FAFAFA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .read-page { background: #000000; }
   .read-body { border-top-color: #18181B; }
@@ -316,3 +341,4 @@
   .read-progress { background: #18181B; }
   .read-progress-fill { background: #FAFAFA; }
 }
+/* #endif */

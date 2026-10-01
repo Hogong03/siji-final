@@ -157,6 +157,34 @@ function getConvTags(conv) {
 }
 
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .conv-item {
+    border-bottom-color: #27272A;
+    &:active { background: #27272A; }
+    &.active {
+      background: #27272A;
+      border-left-color: #FAFAFA;
+    }
+  }
+  .conv-item-tag-btn {
+    color: #52525B;
+    &:active { color: #FAFAFA; }
+  }
+  .conv-item-rename {
+    color: #52525B;
+    &:active { color: #FAFAFA; }
+  }
+  .conv-item-title {
+    color: #FAFAFA;
+  }
+  .conv-item-tag {
+    color: #A1A1AA;
+    background: #27272A;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .conv-item {
     border-bottom-color: #27272A;
@@ -182,4 +210,5 @@ function getConvTags(conv) {
     background: #27272A;
   }
 }
+/* #endif */
 </style>

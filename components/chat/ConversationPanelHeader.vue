@@ -100,6 +100,34 @@ function getFilterLabel() {
 }
 
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .conv-drawer-header {
+    border-bottom-color: #27272A;
+    .conv-drawer-title {
+      color: #FAFAFA;
+    }
+  }
+  .conv-drawer-header::before {
+    background: #52525B;
+  }
+  .conv-filter-btn {
+    background: #27272A;
+    &.active {
+      background: #FAFAFA;
+      .conv-filter-label { color: #18181B; }
+      .conv-filter-arrow { color: #18181B; }
+    }
+  }
+  .conv-filter-label {
+    color: #A1A1AA;
+  }
+  .conv-filter-arrow {
+    color: #A1A1AA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .conv-drawer-header {
     border-bottom-color: #27272A;
@@ -125,4 +153,5 @@ function getFilterLabel() {
     color: #A1A1AA;
   }
 }
+/* #endif */
 </style>

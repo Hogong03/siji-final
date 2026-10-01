@@ -231,6 +231,34 @@ function goToAiConfig() { emit('close'); uni.navigateTo({ url: '/pages/settings/
   }
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .switch-section-label { color: #A1A1AA; }
+  .switch-provider-item {
+    background: #27272A;
+    &.active { border-color: #FAFAFA; background: #18181B; }
+    .switch-provider-name { color: #FAFAFA; }
+  }
+  .switch-model-item {
+    background: #27272A;
+    &.active { border-color: #FAFAFA; background: #18181B; }
+    .switch-model-name { color: #FAFAFA; }
+    .switch-model-desc { color: #A1A1AA; }
+  }
+  .switch-config-btn {
+    background: #27272A;
+    text { color: #FAFAFA; }
+  }
+  .switch-empty {
+    .switch-empty-text { color: #A1A1AA; }
+    .switch-empty-btn {
+      background: #27272A;
+      text { color: #FAFAFA; }
+    }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .switch-section-label { color: #A1A1AA; }
   .switch-provider-item {
@@ -256,5 +284,6 @@ function goToAiConfig() { emit('close'); uni.navigateTo({ url: '/pages/settings/
     }
   }
 }
+/* #endif */
 
 </style>

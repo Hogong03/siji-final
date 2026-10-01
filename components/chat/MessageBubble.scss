@@ -393,6 +393,90 @@
 }
 
 /* 深色模式覆盖 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .loading-bubble {
+    background: #27272A;
+    border-left-color: #3F3F46;
+  }
+  .loading-bar .bar-segment {
+    background: #A1A1AA;
+  }
+  .bubble-time-outer {
+    color: #52525B;
+  }
+  .bubble.assistant.streaming::after {
+    color: #FAFAFA;
+  }
+  .bubble.assistant {
+    background: #27272A;
+    color: #F4F4F5;
+    border-left-color: #27272A;
+    &.plain, &.short { background: #27272A; border-left: none; }
+    &.is-welcome { background: #18181B; border-color: #27272A; }
+    &.code { background: #27272A; }
+    &.quote { background: #18181B; }
+    &.rich { border-left-color: #FAFAFA; }
+    &.list { border-left-color: #A1A1AA; }
+    &.long { border-left-color: #FAFAFA; }
+    &.table { border-top-color: #FAFAFA; }
+    &.is-continuation { border-left-color: #18181B; }
+  }
+  .bubble.user {
+    background: #FAFAFA;
+    color: #000000;
+  }
+  .bubble-text { color: #F4F4F5; }
+  .welcome-chip {
+    background: #27272A;
+    border-color: #3F3F46;
+    text { color: #F4F4F5; }
+    &:active { background: #3F3F46; }
+  }
+  .confirm-card {
+    background: #18181B;
+    border-color: #FAFAFA;
+  }
+  .confirm-title { color: #FAFAFA; }
+  .confirm-detail { color: #A1A1AA; }
+  .confirm-btn {
+    &.cancel { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
+    &.ok { background: #FAFAFA; color: #000000; }
+  }
+  .exec-card {
+    background: #18181B;
+    border-color: #27272A;
+    &.failed { border-color: #EF4444; background: rgba(239, 68, 68, 0.12); }
+  }
+  .exec-error { color: #EF4444; }
+  .bubble-action-btn {
+    color: #52525B;
+    &:active { color: #FAFAFA; }
+  }
+  .bubble-action-strong {
+    color: #FAFAFA;
+    border-color: #FAFAFA;
+
+    &:active {
+      color: #000000;
+      background: #FAFAFA;
+    }
+  }
+  .bubble-truncated {
+    .bubble-truncated-hint { color: #71717A; }
+    .bubble-truncated-btn {
+      color: #FAFAFA;
+      border-color: #FAFAFA;
+
+      &:active {
+        color: #000000;
+        background: #FAFAFA;
+      }
+    }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .loading-bubble {
     background: #27272A;
@@ -474,6 +558,7 @@
     }
   }
 }
+/* #endif */
 
 /* ─── 待确认卡片 ─── */
 .confirm-card {
@@ -547,6 +632,18 @@
 }
 
 /* 深色补充：用户气泡反白为浅底黑字后，气泡文字与文件卡需跟着反色，否则白字隐没在浅底上 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .bubble.user .bubble-text { color: #000000; }
+  .bubble.user .bubble-file { background: rgba(0, 0, 0, 0.08); }
+  .bubble.user .bubble-file-badge {
+    color: #000000;
+    border-color: rgba(0, 0, 0, 0.35);
+  }
+  .bubble.user .bubble-file-name { color: #000000; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .bubble.user .bubble-text { color: #000000; }
   .bubble.user .bubble-file { background: rgba(0, 0, 0, 0.08); }
@@ -556,3 +653,4 @@
   }
   .bubble.user .bubble-file-name { color: #000000; }
 }
+/* #endif */

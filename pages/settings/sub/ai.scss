@@ -594,6 +594,91 @@
 }
 
 /* AI 配置页深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .ai-page { background: #18181B; }
+
+  /* 厂商卡片 */
+  .provider-card { background: #27272A; border-color: #3F3F46; }
+  .provider-header:active { background: #3F3F46; }
+  /* 透明底黑 logo（智谱/OpenAI）在深色卡片上隐形，统一垫白色底托；DeepSeek 本就白底 */
+  .provider-logo { background: #FFFFFF; }
+  .provider-info .provider-name { color: #FAFAFA; }
+  .provider-info .provider-desc { color: #71717A; }
+  .provider-status .key-dot.ok { background: #34D399; }
+  .provider-status .key-dot.none { background: #3F3F46; }
+  .provider-status .key-label { color: #71717A; }
+  .provider-arrow { color: #71717A; }
+  .provider-body { border-top-color: #3F3F46; }
+
+  /* 图片识别提示 */
+  .vision-notice { background: #3F3F46; border-left-color: #52525B; }
+  .vision-notice .vision-notice-text { color: #A1A1AA; }
+  .active-badge text { color: #34D399; }
+
+  /* 配置说明 */
+  .config-label { color: #A1A1AA; }
+  .config-hint { color: #71717A; }
+
+  /* Key 输入 */
+  .key-input-row .key-input { background: #3F3F46; }
+  .key-input-row .key-action.save { background: #3F3F46; color: #FAFAFA; }
+  .key-input-row .key-action.test { background: rgba(16,185,129,0.2); color: #34D399; }
+
+  /* 模型列表 */
+  .model-item { background: #3F3F46; }
+  .model-item.active { background: #3F3F46; border-color: #FAFAFA; }
+  .model-item.custom .model-name { color: #A1A1AA; }
+  .model-detail .model-name { color: #FAFAFA; }
+  .model-detail .model-no-vision-badge { color: #71717A; background: #3F3F46; }
+  .model-detail .model-desc { color: #71717A; }
+  .model-item .model-check { background: #FAFAFA; }
+  .model-check text { color: #18181B; }
+
+  .delete-provider { color: #F87171; }
+
+  /* 应用按钮 */
+  .apply-btn { background: #FAFAFA; }
+  .apply-btn text { color: #18181B; }
+
+  /* 添加自定义厂商 */
+  .add-custom-btn { background: #27272A; border-color: #3F3F46; }
+  .add-custom-btn text { color: #A1A1AA; }
+  .add-custom-btn:active { border-color: #FAFAFA; }
+
+  /* 自定义厂商表单 */
+  .custom-form { background: #27272A; border-color: #3F3F46; }
+  .form-title { color: #FAFAFA; }
+  .form-hint { color: #71717A; }
+  .field-label { color: #A1A1AA; }
+  .field-input { background: #3F3F46; color: #FAFAFA; }
+  .field-input:focus { border-color: #FAFAFA; }
+  .btn-cancel { background: #3F3F46; color: #FAFAFA; }
+  .btn-save { background: #FAFAFA; color: #18181B; }
+
+  /* 说明卡 */
+  .tips-card { background: #27272A; border-color: #3F3F46; }
+  .tips-card .tips-title { color: #FAFAFA; }
+  .tips-card .tips-text { color: #71717A; }
+
+  /* 联网搜索卡片 */
+  .search-card { background: #27272A; border-color: #3F3F46; }
+  .search-title { color: #FAFAFA; }
+  .search-subtitle { color: #71717A; }
+  /* 自定义开关：关=深轨浅钮；开=浅轨深钮 */
+  .search-switch { background: #3F3F46; }
+  .search-switch .search-knob { background: #FAFAFA; }
+  .search-switch.on { background: #FAFAFA; }
+  .search-switch.on .search-knob { background: #18181B; }
+  .search-hint { color: #71717A; }
+  .search-backend { background: #27272A; border-color: #3F3F46; }
+  .search-backend.active { border-color: #FAFAFA; background: #3F3F46; }
+  .search-backend-name { color: #FAFAFA; }
+  .search-backend-desc { color: #71717A; }
+  .search-backend .search-check { background: #FAFAFA; color: #18181B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .ai-page { background: #18181B; }
 
@@ -676,3 +761,4 @@
   .search-backend-desc { color: #71717A; }
   .search-backend .search-check { background: #FAFAFA; color: #18181B; }
 }
+/* #endif */

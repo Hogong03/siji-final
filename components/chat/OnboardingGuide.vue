@@ -373,6 +373,27 @@ const featureExamples = [
 }
 
 /* 深色模式覆盖 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .onb-card { background: #18181B; }
+  .onb-title { color: #FAFAFA; }
+  .onb-desc { color: #F4F4F5; }
+  .onb-tip { background: #27272A; }
+  .onb-tip-text { color: #A1A1AA; }
+  .onb-skip { color: #71717A; }
+  .feature-item { background: #27272A; }
+  .feature-text { color: #F4F4F5; }
+  .key-status { background: #27272A; }
+  .key-status-text { color: #F4F4F5; }
+  .key-status.ok { background: rgba(16, 185, 129, 0.15); }
+  .onb-dot { background: #3F3F46; }
+  .onb-dot.active { background: #FAFAFA; }
+  .onb-icon { background: #27272A; }
+  .onb-btn-primary { background: #FAFAFA; color: #18181B; }
+  .onb-btn-ghost { background: #27272A; color: #F4F4F5; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .onb-card { background: #18181B; }
   .onb-title { color: #FAFAFA; }
@@ -391,4 +412,5 @@ const featureExamples = [
   .onb-btn-primary { background: #FAFAFA; color: #18181B; }
   .onb-btn-ghost { background: #27272A; color: #F4F4F5; }
 }
+/* #endif */
 </style>

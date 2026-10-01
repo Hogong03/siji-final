@@ -12,6 +12,7 @@ import { useAppStore } from '@/store/index.js'
 import { AI_PROVIDERS } from '@/utils/api.js'
 import { hasPin } from '@/utils/pin.js'
 import { getVersion } from '@/utils/version-check.js'
+import { getThemeMode, setThemeMode, normalizeMode } from '@/utils/theme.js'
 
 const store = useAppStore()
 
@@ -29,6 +30,21 @@ const currentModel = computed(() => currentProvider.value.models?.find(m => m.id
 const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
 const pinStatus = computed(() => hasPin() ? '已开启' : '未开启')
 const appVersion = computed(() => 'v' + getVersion())
+
+// ─── 外观主题三选（4.8.0，MP-WEIXIN 隐藏）───
+const themeLabel = { system: '跟随系统', light: '浅色', dark: '深色' }
+const themeModeName = ref(themeLabel[getThemeMode()] || '跟随系统')
+function pickTheme() {
+  uni.showActionSheet({
+    itemList: [themeLabel.system, themeLabel.light, themeLabel.dark],
+    success(res) {
+      const next = ['system', 'light', 'dark'][res.tapIndex]
+      setThemeMode(normalizeMode(next))
+      themeModeName.value = themeLabel[next]
+    },
+    fail() { /* 取消选择，保持现状 */ }
+  })
+}
 
 // ─── AI 写操作自动执行开关（3.0：默认关 = AI 写入前需确认）───
 const autoWrite = ref(false)
@@ -112,6 +128,21 @@ function go(target) {
           <switch :checked="autoWrite" color="#000000" @change="toggleAutoWrite" />
         </view>
       </view>
+
+      <!-- ===== 外观（4.8.0，MP-WEIXIN 无类驱动能力隐藏）===== -->
+      <!-- #ifndef MP-WEIXIN -->
+      <view class="card slide-in-left-stagger">
+        <view class="row card-press" @tap="pickTheme">
+          <SijiIcon name="moon" size="lg" class="row-icon" />
+          <view class="row-body">
+            <text class="row-label">外观</text>
+            <text class="row-desc">深色模式下手动切换，不再强制跟随系统</text>
+          </view>
+          <text class="row-value">{{ themeModeName }}</text>
+          <text class="row-arrow">›</text>
+        </view>
+      </view>
+      <!-- #endif -->
 
       <!-- ===== 数据与安全 ===== -->
       <text class="sec-title">数据与安全</text>
@@ -239,6 +270,20 @@ function go(target) {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .page { background: #18181B; }
+  .sec-title { color: #FAFAFA; border-left-color: #FAFAFA; }
+  .card { background: #27272A; border-color: #3F3F46; }
+  .row { border-bottom-color: #3F3F46; &:active { background: #3F3F46; } }
+  .card-ai-section { border-top-color: #FFFFFF; }
+  .row-label { color: #FAFAFA; }
+  .row-desc, .row-value, .row-arrow { color: #A1A1AA; }
+  .dot.ok { background: #10B981; }
+  .dot.warn { background: #F59E0B; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .page { background: #18181B; }
   .sec-title { color: #FAFAFA; border-left-color: #FAFAFA; }
@@ -250,4 +295,5 @@ function go(target) {
   .dot.ok { background: #10B981; }
   .dot.warn { background: #F59E0B; }
 }
+/* #endif */
 </style>

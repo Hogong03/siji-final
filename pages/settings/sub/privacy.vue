@@ -160,6 +160,35 @@ function submit() {
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .sub-page { background: #18181B; }
+  .card { background: #27272A;
+    .card-title { color: #FAFAFA; }
+    .card-desc { color: #A1A1AA; }
+  }
+  .action-row {
+    .status-badge { color: #A1A1AA;
+      &.on { color: #34D399; background: rgba(16, 185, 129, 0.15); }
+    }
+    .action-btn { color: #FAFAFA; }
+  }
+  .pin-dialog { background: #27272A;
+    .pin-title { color: #FAFAFA; }
+    .pin-sub { color: #A1A1AA; }
+    .pin-error { color: #F87171; }
+    .pin-mask { color: #FAFAFA; }
+  }
+  .pin-pad {
+    .pin-key { background: #3F3F46; color: #FAFAFA; }
+  }
+  .pin-actions {
+    .pin-cancel { color: #A1A1AA; }
+    .pin-confirm { color: #FAFAFA; }
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .sub-page { background: #18181B; }
   .card { background: #27272A;
@@ -186,6 +215,7 @@ function submit() {
     .pin-confirm { color: #FAFAFA; }
   }
 }
+/* #endif */
 
 </style>
 

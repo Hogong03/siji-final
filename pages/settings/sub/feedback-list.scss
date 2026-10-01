@@ -191,6 +191,85 @@
 }
 
 /* ─── 深色模式 ─── */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .feedback-page {
+    background: #09090B;
+  }
+
+  .stats-bar {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .stat-num {
+    color: #FAFAFA;
+  }
+
+  .stat-label {
+    color: #71717A;
+  }
+
+  .empty-title {
+    color: #FAFAFA;
+  }
+
+  .empty-desc {
+    color: #71717A;
+  }
+
+  .feedback-card {
+    background: #18181B;
+    border-color: #27272A;
+
+    &:active {
+      background: #27272A;
+    }
+  }
+
+  .card-date {
+    color: #71717A;
+  }
+
+  .star {
+    color: #3F3F46;
+
+    &.active {
+      color: #FAFAFA;
+    }
+  }
+
+  .card-content {
+    color: #F4F4F5;
+  }
+
+  .card-contact {
+    border-top-color: #27272A;
+  }
+
+  .contact-label {
+    color: #71717A;
+  }
+
+  .contact-value {
+    color: #F4F4F5;
+  }
+
+  .card-edited {
+    color: #71717A;
+  }
+
+  .fab {
+    background: #FAFAFA;
+    box-shadow: none;
+  }
+
+  .fab-icon {
+    color: #000000;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .feedback-page {
     background: #09090B;
@@ -267,3 +346,4 @@
     color: #000000;
   }
 }
+/* #endif */

@@ -286,6 +286,19 @@ $spacing-lg: 32rpx;
   line-height: 1.5;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .start-chip {
+    background: #27272A;
+    border-color: #27272A;
+  }
+
+  .start-chip-text {
+    color: #FAFAFA;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .start-chip {
     background: #27272A;
@@ -296,3 +309,4 @@ $spacing-lg: 32rpx;
     color: #FAFAFA;
   }
 }
+/* #endif */

@@ -257,6 +257,29 @@ function handlePurge(item) {
   font-size: 24rpx; text-align: center;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .trash-page { background: #18181B; }
+  .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
+  .search-input-wrap { background: #3F3F46; }
+  .search-icon { color: #71717A; }
+  .search-input { color: #FAFAFA; }
+  .search-clear { color: #71717A; }
+  .tool-label { color: #F4F4F5; }
+  .tool-arrow { color: #71717A; }
+  .time-picker { background: #27272A; border-bottom-color: #3F3F46; }
+  .time-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .search-status { background: #27272A; border-bottom-color: #3F3F46; }
+  .status-text { color: #A1A1AA; }
+  .status-clear { color: #71717A; }
+  .trash-card { background: #27272A; }
+  .card-title { color: #FAFAFA; }
+  .card-preview { color: #A1A1AA; }
+  .btn-restore { background: #FAFAFA; color: #18181B; }
+  .btn-purge { background: #3F3F46; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .trash-page { background: #18181B; }
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
@@ -277,4 +300,5 @@ function handlePurge(item) {
   .btn-restore { background: #FAFAFA; color: #18181B; }
   .btn-purge { background: #3F3F46; }
 }
+/* #endif */
 </style>

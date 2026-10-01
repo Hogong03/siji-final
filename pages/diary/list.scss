@@ -560,6 +560,61 @@
   text-align: center;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .diary-page { background: #18181B; }
+  .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
+  .search-input-wrap { background: #3F3F46; }
+  .search-icon { color: #71717A; }
+  .search-input { color: #FAFAFA; }
+  .search-clear { color: #71717A; }
+  .tool-btn { color: #F4F4F5; }
+  .tool-label { color: #F4F4F5; }
+  .tool-arrow { color: #71717A; }
+  .tool-filter .filter-dot { background: #FAFAFA; }
+  .time-picker { background: #27272A; border-bottom-color: #3F3F46; }
+  .time-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .active-filters { background: #27272A; border-bottom-color: #3F3F46; }
+  .filter-tag { background: #3F3F46; color: #F4F4F5; }
+  .filter-clear-all { color: #71717A; }
+  .filter-overlay { background: rgba(0, 0, 0, 0.5); }
+  .filter-panel { background: #27272A; }
+  .fp-title { color: #FAFAFA; }
+  .fp-close { color: #71717A; }
+  .fp-section-label { color: #71717A; }
+  .fp-chip { color: #F4F4F5; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .fp-view-btn { color: #A1A1AA; background: #3F3F46; &.active { background: #FAFAFA; color: #18181B; } }
+  .fp-stats-text { color: #71717A; }
+  .fp-stats-arrow { color: #71717A; }
+  .fp-stats-detail { background: #3F3F46; }
+  .fp-stat-line { color: #F4F4F5; }
+  .emo-开心 { background: #92400E; color: #FEF3C7; }
+  .emo-平静 { background: #3F3F46; color: #F4F4F5; }
+  .emo-焦虑 { background: #991B1B; color: #FEE2E2; }
+  .emo-低落 { background: #3F3F46; color: #A1A1AA; }
+  .emo-愤怒 { background: #991B1B; color: #FEE2E2; }
+  .fp-reset { color: #A1A1AA; border-color: #3F3F46; }
+  .diary-card { background: #27272A; &.pinned { border-left-color: #FAFAFA; } }
+  .card-title { color: #FAFAFA; }
+  .card-preview { color: #A1A1AA; }
+  .card-month-badge { background: #3F3F46; color: #A1A1AA; }
+  .cat-badge { background: #3F3F46; color: #A1A1AA; }
+  .cal-weekday { background: #27272A; color: #A1A1AA; }
+  .cal-cell { background: #27272A; &.empty { background: #18181B; } }
+  .cal-day { color: #71717A; }
+  .cal-heatmap { background: #FAFAFA; }
+  .cal-count { background: #FAFAFA; color: #18181B; }
+  .timeline-date { color: #A1A1AA; border-left-color: #FAFAFA; }
+  .fab { background: #FAFAFA; box-shadow: none; }
+  .fab-icon { color: #18181B; }
+  .empty-btn { background: #FAFAFA; color: #18181B; }
+  .pg-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
+  .pg-page { background: #27272A; border-color: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
+  .pg-empty-text { color: #71717A; }
+  .fp-page-size-label { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .diary-page { background: #18181B; }
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
@@ -612,6 +667,7 @@
   .pg-empty-text { color: #71717A; }
   .fp-page-size-label { color: #71717A; }
 }
+/* #endif */
 
 /* ─── 快捷标签条 + 回顾卡（4.2.0） ─── */
 .quick-tags {
@@ -726,6 +782,20 @@
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .quick-tag { border-color: #27272A; color: #A1A1AA; }
+  .quick-tag.active { background: #FAFAFA; border-color: #FAFAFA; color: #000000; }
+  .quick-tag.sort-toggle { color: #FAFAFA; }
+  .tag-move { color: #FAFAFA; }
+  .tag-move.disabled { color: #3F3F46; }
+  .review-card { background: #18181B; }
+  .review-label, .review-close { color: #52525B; }
+  .review-why { color: #52525B; }
+  .review-title { color: #FAFAFA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .quick-tag { border-color: #27272A; color: #A1A1AA; }
   .quick-tag.active { background: #FAFAFA; border-color: #FAFAFA; color: #000000; }
@@ -737,3 +807,4 @@
   .review-why { color: #52525B; }
   .review-title { color: #FAFAFA; }
 }
+/* #endif */

@@ -87,6 +87,17 @@ const darkSrc = computed(() => {
 }
 
 /* 深色模式：切换为白色图标 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .siji-icon-light {
+    display: none;
+  }
+  .siji-icon-dark {
+    display: block;
+  }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .siji-icon-light {
     display: none;
@@ -95,6 +106,7 @@ const darkSrc = computed(() => {
     display: block;
   }
 }
+/* #endif */
 
 /* 次要图标：用透明度降低视觉重量（浅色/深色分别取值） */
 .siji-icon--secondary .siji-icon-light {

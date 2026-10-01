@@ -240,6 +240,27 @@ const totalChanges = computed(() => {
 }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .detail-page { background: #09090B; }
+  .version-header { background: #FAFAFA; }
+  .vh-version { color: #18181B; }
+  .vh-date { color: #71717A; }
+  .vh-title { color: #52525B; }
+  .vh-count { color: #71717A; }
+  .cat-card { background: #18181B; border-color: #27272A; }
+  .cat-arrow { color: #71717A; }
+  .cat-title { color: #FAFAFA; }
+  .cat-count { background: #27272A; color: #71717A; }
+  .cat-body { border-top-color: #27272A; }
+  .ci-dot { color: #71717A; }
+  .ci-text { color: #A1A1AA; }
+  .hint-text { color: #71717A; }
+  .empty-page { background: #09090B; }
+  .empty-text { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .detail-page { background: #09090B; }
   .version-header { background: #FAFAFA; }
@@ -258,4 +279,5 @@ const totalChanges = computed(() => {
   .empty-page { background: #09090B; }
   .empty-text { color: #71717A; }
 }
+/* #endif */
 </style>

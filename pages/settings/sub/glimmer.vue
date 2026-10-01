@@ -179,6 +179,18 @@ onShow(load)
   line-height: 1.6;
 }
 
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .page { background: #18181B; }
+  .head { background: #27272A; border-bottom-color: #3F3F46; }
+  .head-title { color: #FAFAFA; }
+  .row { background: #27272A; }
+  .row-content { color: #E4E4E7; }
+  .head-desc, .row-date, .head-total, .empty-title { color: #A1A1AA; }
+  .empty-hint { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .page { background: #18181B; }
   .head { background: #27272A; border-bottom-color: #3F3F46; }
@@ -188,4 +200,5 @@ onShow(load)
   .head-desc, .row-date, .head-total, .empty-title { color: #A1A1AA; }
   .empty-hint { color: #71717A; }
 }
+/* #endif */
 </style>

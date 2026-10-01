@@ -402,6 +402,36 @@ function goDetail(version) {
 .bottom-spacer { height: 40rpx; }
 
 /* 深色模式 */
+/* #ifndef MP-WEIXIN */
+.theme-dark {
+  .version-page { background: #09090B; }
+  .current-banner { background: #FAFAFA; }
+  .current-label { color: #71717A; }
+  .current-version { color: #18181B; }
+  .current-badge { background: #18181B; color: #FAFAFA; }
+  .current-badge-old { background: #27272A; color: #FAFAFA; }
+  .outdated-hint { background: #18181B; }
+  .outdated-hint-text { color: #A1A1AA; }
+  .group-head { background: #18181B; border-color: #27272A; }
+  .g-caret { color: #71717A; }
+  .g-name { color: #FAFAFA; }
+  .g-range { color: #71717A; }
+  .g-count { color: #71717A; }
+  .v-card { background: #18181B; border-color: #27272A; }
+  .v-card.latest { border-color: #FAFAFA; }
+  .v-version { color: #FAFAFA; }
+  .v-date { color: #71717A; }
+  .v-title { color: #F4F4F5; }
+  .s-dot { color: #71717A; }
+  .s-text { color: #A1A1AA; }
+  .v-footer { border-top-color: #27272A; }
+  .v-count { color: #71717A; }
+  .v-arrow { color: #71717A; }
+  .group-more { background: #18181B; border-color: #27272A; }
+  .group-more text { color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .version-page { background: #09090B; }
   .current-banner { background: #FAFAFA; }
@@ -429,4 +459,5 @@ function goDetail(version) {
   .group-more { background: #18181B; border-color: #27272A; }
   .group-more text { color: #A1A1AA; }
 }
+/* #endif */
 </style>
