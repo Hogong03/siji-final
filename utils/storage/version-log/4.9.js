@@ -6,6 +6,23 @@
 
 export const V49 = [
   {
+    version: '4.9.1',
+    date: '2026-10-02',
+    title: '4.9.1 修聚合层缺口：dropWelcomeMessages 未透传导致聊天页挂载崩溃',
+    summary: [
+      '修「store.dropWelcomeMessages is not a function」（聊天页 mounted 必触发）：useAppStore 聚合层漏透传 chat store 的 dropWelcomeMessages / updateConversationSummary 两个方法，而 useChatSession.appendEnterSummary（4.5.0 起恒产出路径）直接调用 —— 该崩溃自 4.5.0 就存在，一直被 App.vue onErrorCaptured 吞成 toast，控制台打开后才暴露',
+      '测试 88 文件 / 1229 用例全绿',
+    ],
+    categories: [
+      {
+        title: '聚合层透传修复（P0）',
+        items: [
+          'store/index.js：补 dropWelcomeMessages / updateConversationSummary 两处转发（chat store 导出与聚合层 return 的差集核对）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.9.0',
     date: '2026-10-02',
     title: '4.9.0 AI 强化：闲聊 lite 提示词（system 约 -35%）、自检语料 24→30、相对日期统一解析、记忆「可点名」、query 结果 id 前置',
