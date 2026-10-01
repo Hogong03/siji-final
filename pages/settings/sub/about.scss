@@ -252,6 +252,60 @@
   .fb-title { color: #FAFAFA; }
   .fb-desc { color: #71717A; }
   .fb-arrow { color: #71717A; }
+
+  .tab-item {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 12rpx 20rpx;
+    border-radius: $radius-md;
+    border: 1rpx solid transparent;
+    transition: all $transition-fast;
+    &.active {
+    background: #27272A;
+    border-color: #3F3F46;
+    }
+    .tab-label {
+    font-size: $font-xs;
+    font-weight: 600;
+    color: #A1A1AA;
+    }
+    &.active .tab-label {
+    color: #FAFAFA;
+    }
+  }
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: $spacing-xl $spacing-md;
+    margin-bottom: $spacing-md;
+    .hero-name {
+    font-size: 56rpx;
+    font-weight: 800;
+    color: #FAFAFA;
+    letter-spacing: 8rpx;
+    }
+    .hero-version {
+    font-size: $font-xs;
+    color: #A1A1AA;
+    background: #27272A;
+    padding: 4rpx 16rpx;
+    border-radius: 20rpx;
+    margin-top: 8rpx;
+    }
+    .hero-tagline {
+    font-size: $font-sm;
+    color: #71717A;
+    margin-top: 12rpx;
+    }
+  }
+  .feedback-card {
+    padding: $spacing-sm $spacing-md;
+    cursor: pointer;
+    &:active { background: #27272A; }
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

@@ -499,6 +499,35 @@
     background: #27272A;
     color: #FAFAFA;
   }
+
+  .scope-bar {
+    display: flex;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-sm;
+    padding: 4rpx 0;
+    .filter-chip {
+    display: inline-flex;
+    padding: 8rpx 24rpx;
+    border-radius: 20rpx;
+    background: #27272A;
+    font-size: $font-xs;
+    color: #71717A;
+    &.active {
+    background: #000000;
+    color: #FFFFFF;
+    }
+    }
+  }
+  .modal-btn {
+    flex: 1;
+    text-align: center;
+    padding: $spacing-sm;
+    border-radius: 12rpx;
+    font-size: $font-sm;
+    font-weight: 600;
+    &.cancel { background: #27272A; color: #71717A; }
+    &.ok { background: #000000; color: #27272A; }
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

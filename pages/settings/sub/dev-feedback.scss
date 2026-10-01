@@ -365,6 +365,13 @@
   .btn-secondary:not([disabled]):active {
     background: #3F3F46;
   }
+
+  .auto-hint {
+    margin-top: 16rpx;
+    background: #27272A;
+    border-radius: 12rpx;
+    padding: 16rpx 24rpx;
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

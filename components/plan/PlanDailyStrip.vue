@@ -267,6 +267,15 @@ function saveNote(item) {
 	.dc-name { color: #FAFAFA; }
 	.dc-meta { color: #A1A1AA; }
 	.dc-arrow { color: #52525B; }
+
+  .dc-note {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    padding: 12rpx 16rpx;
+    background: #18181B;
+    border-radius: 12rpx;
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

@@ -369,6 +369,22 @@ function goDetail(id) {
   .form-input { background: #27272A; color: #F4F4F5; }
   .form-textarea { background: #27272A; color: #F4F4F5; }
   .btn-cancel { background: #3F3F46; color: #A1A1AA; }
+
+  .status-reviewed {
+    background: #27272A; color: #52525B;
+  }
+  .option-chip {
+    font-size: 22rpx; padding: 4rpx 16rpx; background: #27272A; color: #18181B; border-radius: 8rpx;
+  }
+
+  .fab {
+    background: #FAFAFA;
+    color: #18181B;
+  }
+  .btn-confirm {
+    background: #FAFAFA;
+    color: #18181B;
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

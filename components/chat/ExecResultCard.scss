@@ -126,6 +126,34 @@
 .theme-dark {
   .plan-next-row { background: #27272A; }
   .plan-next-row .pn-label { background: #3F3F46; color: #FAFAFA; }
+
+  .exec-jump-btn {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #71717A;
+    padding: 8rpx 20rpx;
+    border: 1rpx solid #3F3F46;
+    border-radius: 12rpx;
+    background: #27272A;
+    &:active { background: #E4E4E7; }
+  }
+  .exec-type-icon {
+    width: 36rpx; height: 36rpx; border-radius: 8rpx;
+    display: flex; align-items: center; justify-content: center;
+    background: #27272A;
+    &.type-bill { background: rgba(239, 68, 68, 0.1); }
+    &.type-diary { background: rgba(59, 130, 246, 0.1); }
+    &.type-plan { background: rgba(34, 197, 94, 0.1); }
+    &.type-query { background: #27272A; }
+  }
+  .exec-body {
+    padding: 0 20rpx 16rpx; border-radius: 16rpx; background: #27272A;
+  }
+  .plan-progress-bar {
+    flex: 1; height: 8rpx; background: #27272A; border-radius: 4rpx; overflow: hidden;
+  }
+  .stat-grid { background: #27272A; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

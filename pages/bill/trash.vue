@@ -320,6 +320,28 @@ function handlePurge(item) {
   .card-note { color: #A1A1AA; }
   .btn-restore { background: #FAFAFA; color: #18181B; }
   .btn-purge { background: #3F3F46; }
+
+  .card-actions {
+    display: flex;
+    gap: 16rpx;
+    margin-top: 12rpx;
+    .btn-restore {
+    padding: 10rpx 32rpx;
+    background: #18181B;
+    color: #FFFFFF;
+    border-radius: 8rpx;
+    font-size: 22rpx;
+    text-align: center;
+    }
+    .btn-purge {
+    padding: 10rpx 32rpx;
+    background: #27272A;
+    color: #EF4444;
+    border-radius: 8rpx;
+    font-size: 22rpx;
+    text-align: center;
+    }
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

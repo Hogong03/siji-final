@@ -329,6 +329,13 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 	.send-icon { color: #000000; }
 	.stop-dot { background: #27272A; }
 	.text-input { color: #F4F4F5; }
+
+  .stop-btn {
+    background: #FAFAFA;
+  }
+  .stop-icon {
+    color: #18181B;
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

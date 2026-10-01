@@ -472,6 +472,22 @@ function goDetail(planId) {
 	.rp-arrow { color: #52525B; }
 	.rp-empty-text { color: #52525B; }
 	.rp-day-empty-text { color: #52525B; }
+
+  .rp-kind {
+    font-size: 20rpx;
+    font-weight: 700;
+    padding: 2rpx 12rpx;
+    border-radius: 14rpx;
+    flex-shrink: 0;
+    &.rk-checkin {
+    background: #27272A;
+    color: #71717A;
+    }
+    &.rk-done {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    }
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */

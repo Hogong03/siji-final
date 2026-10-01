@@ -6,6 +6,43 @@
 
 export const V48 = [
   {
+    version: '4.8.3',
+    date: '2026-10-02',
+    title: '4.8.3 深色补漏二期：页面体底色 + 白底类全量补齐（45 类）+ 反白按钮',
+    summary: [
+      '修「切深色后大量页面仍白」的根因：H5 的 page 选择器编译成 uni-page-body，运行时默认白底挡住画布色 —— App.vue 深浅两套根规则都补 .uni-page-body / uni-page-body 双写选择器',
+      '45 个白底顶层类批量补齐 theme-dark 覆盖（聊天页 16 处主通道、Agent 创建页 7 处、AI 配置 3 处等），背景/边框/文字按 Zinc 深色映射改写，规则内容与浅色结构一一对应',
+      '黑色主按钮深色反白：决策/账单 FAB、保存/确认按钮、发送停止钮 黑底白字 -> 白底黑字（品牌反白规格）',
+      '误报排除：黑底白字按钮、白字文字、SCSS 变量背景等 14 处确认为设计意图不补；确认按钮白底反白、锁屏白点、透明 logo 白底托 5 处深色反白保留',
+      '测试 86 文件 / 1213 用例全绿；守卫扫描剩余 15 处全部定性为设计意图',
+    ],
+    categories: [
+      {
+        title: '页面体底色根因（P0）',
+        items: [
+          'App.vue：浅色根规则补 .uni-page-body；深色根规则补 html.theme-dark .uni-page-body / html.theme-dark uni-page-body（类 + 元素双写，不赌编译器替换行为）',
+          '4.7.x 系统跟随模式下 media 版 page{} 编译后被替换为 uni-page-body 命中，故无此问题；4.8.0 类驱动后 page.theme-dark 匹配不上，暴露',
+        ],
+      },
+      {
+        title: '白底类批量补齐（P1）',
+        items: [
+          'pages/chat/chat.scss：聊天页主通道 16 处（页面壳/自定义导航/徽标/弹窗/引导/切换器/建议条/回去接着聊卡）',
+          'pages/settings/sub/agent_add.scss：7 处（表单输入/头像选项/操作栏/取消按钮/查看态）—— 4.7.0 时代深色块就只有 start-chip 两条，存量欠账',
+          'pages/settings/sub/ai.scss 3 处 + about.scss 3 处 + memory/dev-feedback/decisions 各 2 处 + lock/records/bill/trash/MessageBubble/PlanDailyStrip/ExecResultCard 各 1-4 处',
+          '映射规格：背景白 #FFF/#F4F4F5 -> #27272A、#FAFAFA -> #18181B；边框 #E4E4E7 -> #3F3F46；文字 #18181B -> #FAFAFA',
+        ],
+      },
+      {
+        title: '反白主操作（P1）',
+        items: [
+          'decisions.vue FAB/确认按钮、agent_add 保存按钮、bill FAB、聊天发送停止钮：黑底白字 -> 白底黑字',
+          'lock 页 pin-dot.filled 补双路径反白（黑底沉浸页白点）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.8.2',
     date: '2026-10-02',
     title: '4.8.2 AI 链路审查修复：先查后改带得回 ID、混合轮不再静默丢弃、兜底记账过确认闸门等 20 项',

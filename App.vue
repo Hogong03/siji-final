@@ -196,7 +196,8 @@
 	/* 基础排版：页面底色统一 #F4F4F5（对话/阅读/表单页在各自 scoped 中覆盖为白底） */
 	page,
 	html,
-	body {
+	body,
+	.uni-page-body {
 		background-color: #F4F4F5;
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
 			'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
@@ -210,7 +211,9 @@
 	/* #ifndef MP-WEIXIN */
 	html.theme-dark,
 	html.theme-dark body,
-	page.theme-dark {
+	page.theme-dark,
+	html.theme-dark .uni-page-body,
+	html.theme-dark uni-page-body {
 		background-color: #18181B;
 		color: #F4F4F5;
 	}

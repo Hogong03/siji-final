@@ -676,6 +676,70 @@
   .search-backend-name { color: #FAFAFA; }
   .search-backend-desc { color: #71717A; }
   .search-backend .search-check { background: #FAFAFA; color: #18181B; }
+
+  .provider-header {
+    display: flex;
+    align-items: center;
+    padding: $spacing-md;
+    gap: $spacing-sm;
+    box-sizing: border-box;
+    overflow: hidden;
+    &:active { background: #27272A; }
+  }
+  .provider-status {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    flex-shrink: 0;
+    .key-dot {
+    width: 12rpx;
+    height: 12rpx;
+    border-radius: 50%;
+    flex-shrink: 0;
+    &.ok { background: #059669; }
+    &.none { background: #27272A; }
+    }
+    .key-label {
+    font-size: $font-xs;
+    color: #A1A1AA;
+    white-space: nowrap;
+    }
+  }
+  .key-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    overflow: hidden;
+    .key-input {
+    flex: 1;
+    min-width: 0;
+    height: 64rpx;
+    padding: 0 16rpx;
+    background: #27272A;
+    border-radius: $radius-sm;
+    font-size: $font-xs;
+    font-family: monospace;
+    border: 1rpx solid transparent;
+    box-sizing: border-box;
+    overflow: hidden;
+    }
+    .key-action {
+    font-size: $font-xs;
+    font-weight: 600;
+    padding: 8rpx 16rpx;
+    border-radius: $radius-sm;
+    flex-shrink: 0;
+    white-space: nowrap;
+    &.save {
+    background: #27272A;
+    color: #FAFAFA;
+    }
+    &.test {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    }
+    }
+  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
