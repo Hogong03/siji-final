@@ -60,6 +60,48 @@ function readStoredMode() {
   return 'system'
 }
 
+// ─── tabBar API 守卫（4.8.1）───
+// setTabBarStyle / setTabBarItem 只能在 tab 页（对话/功能/设置）上调用，
+// 否则报 "not TabBar page"（启动时无页面、子页面 onShow 时都会命中）。
+const TAB_ROUTES = ['pages/chat/index', 'pages/functions/index', 'pages/settings/index']
+
+function isOnTabPage() {
+  try {
+    if (typeof getCurrentPages !== 'function') return false
+    const pages = getCurrentPages()
+    const top = pages && pages.length > 0 ? pages[pages.length - 1] : null
+    const route = top && top.route ? String(top.route) : ''
+    if (!route) return false
+    return TAB_ROUTES.some((r) => route === r || route.indexOf(r) === 0)
+  } catch (e) {
+    return false
+  }
+}
+
+/**
+ * H5 tabBar 图标 DOM 兜底（4.8.1）：
+ * uni-h5 把 tabBar 渲染成 .uni-tabbar DOM（任意页面下都在文档里，非 tab 页只是隐藏）。
+ * setTabBarItem 只在 tab 页可用，这里直接换 img 的 src，保证任意页面切档图标立即跟随；
+ * 幂等：已是目标后缀就跳过，与 API 成功后的结果一致不冲突。
+ */
+function syncH5TabIcons() {
+  try {
+    if (typeof document === 'undefined') return
+    const items = document.querySelectorAll('.uni-tabbar__item')
+    for (let i = 0; i < items.length; i++) {
+      const img = items[i].querySelector('img')
+      if (!img) continue
+      const src = img.getAttribute('src') || ''
+      if (src.indexOf('/static/tab/') === -1) continue
+      if (isDark.value && src.indexOf('-dark.png') === -1) {
+        img.setAttribute('src', src.replace(/-v2\.png$/, '-v2-dark.png'))
+      } else if (!isDark.value && src.indexOf('-dark.png') !== -1) {
+        img.setAttribute('src', src.replace(/-v2-dark\.png$/, '-v2.png'))
+      }
+    }
+  } catch (e) { /* 结构不符则无操作，API 层仍会兜 */ }
+}
+
 // ─── 平台分支实现：声明一次，运行时按平台能力分流 ───
 // 注意：不能用 #ifdef/#ifndef 包两份 function 声明 —— 条件编译只在 uni-app 编译器里生效，
 // vitest（node）会把两份声明同时编入报重复声明。这里统一用 let 绑定 + 赋值切换，
@@ -91,22 +133,25 @@ applyClass = () => {
     const root = document.documentElement
     if (isDark.value) root.classList.add(DARK_CLASS)
     else root.classList.remove(DARK_CLASS)
+    syncH5TabIcons()
   } catch (e) { /* 挂类失败静默 */ }
 }
 
 setNativeBars = () => {
   try {
     if (typeof uni === 'undefined') return
-    // tabBar：底色/文字色 + 三对图标（深浅两套文件已存在）
-    if (typeof uni.setTabBarStyle === 'function') {
+    // tabBar API 只在 tab 页可用（4.8.1 守卫），否则报 not TabBar page；H5 图标另有 DOM 兜底
+    const onTab = isOnTabPage()
+    if (onTab && typeof uni.setTabBarStyle === 'function') {
       uni.setTabBarStyle({
-        color: isDark.value ? '#A1A1AA' : '#A1A1AA',
+        color: '#A1A1AA',
         selectedColor: isDark.value ? '#FFFFFF' : '#000000',
         backgroundColor: isDark.value ? '#18181B' : '#F4F4F5',
-        borderStyle: isDark.value ? 'black' : 'white'
+        borderStyle: isDark.value ? 'black' : 'white',
+        fail: () => { /* 静默：CSS 层已兜底 */ }
       })
     }
-    if (typeof uni.setTabBarItem === 'function') {
+    if (onTab && typeof uni.setTabBarItem === 'function') {
       const items = [
         { index: 0, iconPath: '/static/tab/chat-v2.png', selectedIconPath: '/static/tab/chat-active-v2.png' },
         { index: 1, iconPath: '/static/tab/functions-v2.png', selectedIconPath: '/static/tab/functions-active-v2.png' },
@@ -119,7 +164,10 @@ setNativeBars = () => {
       ]
       const list = isDark.value ? dark : items
       list.forEach((it) => {
-        try { uni.setTabBarItem(it) } catch (e) { /* 单项失败不影响其余 */ }
+        try {
+          it.fail = () => { /* 静默：DOM 层已兜底 */ }
+          uni.setTabBarItem(it)
+        } catch (e) { /* 单项失败不影响其余 */ }
       })
     }
     // 导航栏：非 custom 页面（39 个）由这条刷；5 个 custom 页无导航栏天然跳过

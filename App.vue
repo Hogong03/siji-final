@@ -257,6 +257,26 @@
 	}
 	/* #endif */
 
+	/* ─── H5 tabBar 深色兜底（4.8.1）───
+	 * setTabBarStyle 只在 tab 页可调（子页面报 not TabBar page），
+	 * H5 的 tabBar 是 DOM（.uni-tabbar），任意页面下都在文档里 —— 直接用 CSS 盖色，
+	 * 颜色不依赖 JS API 成败；图标 src 由 theme.js 的 syncH5TabIcons 换。
+	 */
+	/* #ifndef MP-WEIXIN */
+	html.theme-dark .uni-tabbar {
+		background-color: #18181B !important;
+		border-top-color: #000000 !important;
+		box-shadow: none;
+	}
+	html.theme-dark .uni-tabbar__label {
+		color: #A1A1AA !important;
+	}
+	html.theme-dark .uni-tabbar__item.uni-tabbar__item--active .uni-tabbar__label,
+	html.theme-dark .uni-tabbar__item--active .uni-tabbar__label {
+		color: #FFFFFF !important;
+	}
+	/* #endif */
+
 	/* 安全区适配 */
 	.safe-area-bottom {
 		padding-bottom: constant(safe-area-inset-bottom);

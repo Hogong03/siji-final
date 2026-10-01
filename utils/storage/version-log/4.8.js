@@ -1,10 +1,31 @@
 /**
- * 版本日志数据段：4.8.0（新版本在前）
+ * 版本日志数据段：4.8.x（新版本在前）
  *
  * 纯数据，无逻辑；由 utils/storage/version-data.js 聚合后经 getDefaultHistory() 导出。
  */
 
 export const V48 = [
+  {
+    version: '4.8.1',
+    date: '2026-10-01',
+    title: '4.8.1 修 tabBar：not TabBar page 报错与图标不随主题',
+    summary: [
+      '修 setTabBarStyle/setTabBarItem 在非 tab 页报 not TabBar page：加当前页守卫，只在对话/功能/设置三个 tab 页调 API，fail 回调静默',
+      '修深色下 tab 图标不变化：H5 端直接换 .uni-tabbar 图标 img 的 src（任意页面切档立即生效，幂等），不再依赖仅在 tab 页可用的 API',
+      'App.vue 新增 H5 tabBar 深色 CSS 兑底（.uni-tabbar 背景色/文字色/选中白），颜色不依赖 JS API 成败',
+      '测试 86 文件 / 1213 用例全绿（4.8.0 时的 plan-checkin 跨月日期既有失败随日期窗口自然恢复）',
+    ],
+    categories: [
+      {
+        title: 'tabBar 修复（P0）',
+        items: [
+          'utils/theme.js：新增 isOnTabPage()（getCurrentPages 顶栏路由比对三个 tab 路由），setNativeBars 内 API 调用前守卫，setTabBarStyle/setTabBarItem 加 fail 静默回调',
+          'utils/theme.js：新增 syncH5TabIcons()（.uni-tabbar__item > img 的 src 换 -v2 与 -v2-dark 互转），applyClass 挂类后同步一次，任意页面切档图标立即跟随',
+          'App.vue：html.theme-dark .uni-tabbar 系列深色 CSS（#ifndef MP-WEIXIN 包裹），背景 #18181B、未选中 #A1A1AA、选中 #FFFFFF',
+        ],
+      },
+    ],
+  },
   {
     version: '4.8.0',
     date: '2026-10-01',
