@@ -424,7 +424,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .memory-page {
     background: #09090B;
   }

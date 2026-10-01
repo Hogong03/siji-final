@@ -249,7 +249,7 @@
 
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .tpl-page { background: #18181B; }
   .top-btn { background: #27272A; }
   .tb-text { color: #FAFAFA; }

@@ -145,7 +145,7 @@ defineEmits(['set-filter', 'select-tag'])
 
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .conv-filter-panel {
     border-bottom-color: #27272A;
   }

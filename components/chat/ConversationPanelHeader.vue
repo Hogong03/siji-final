@@ -101,7 +101,7 @@ function getFilterLabel() {
 
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .conv-drawer-header {
     border-bottom-color: #27272A;
     .conv-drawer-title {

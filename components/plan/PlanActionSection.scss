@@ -190,7 +190,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .next-step-card { background: #27272A; }
   .ns-btn { background: #FAFAFA; color: #18181B; }
 

@@ -77,19 +77,20 @@ describe('深色双路径守卫（防新深色块漏包装）', () => {
     expect(src).toMatch(/html\.theme-dark[\s\S]*?background-color:\s*#18181B/)
   })
 
-  it('除 App.vue 外，每个 media 深色块都必须在 #ifdef MP-WEIXIN 分支内，且与 #ifndef 分支的 .theme-dark 一比一配对', () => {
+  it('除 App.vue 外，每个 media 深色块都必须在 #ifdef MP-WEIXIN 分支内，且与 #ifndef 分支的 :global(html.theme-dark) 一比一配对（scoped 内裸 .theme-dark 编译成 .theme-dark[data-v-x]，挂在 html 的类永远命中不了，必须 :global 穿透）', () => {
     const bad = []
     for (const file of targets) {
       const name = path.basename(file)
-      if (name === 'App.vue') continue // App.vue 是手工双路径，单独断言
+      if (name === 'App.vue') continue // App.vue 全局无 scoped，单独断言
       const src = fs.readFileSync(file, 'utf8')
       const mediaCount = (src.match(/@media\s*\(prefers-color-scheme[^)]*\)/g) || []).length
       if (mediaCount === 0) continue
       const ifdef = (src.match(/\/\* #ifdef MP-WEIXIN \*\//g) || []).length
       const ifndef = (src.match(/\/\* #ifndef MP-WEIXIN \*\//g) || []).length
-      const darkClass = (src.match(/\.theme-dark\s*\{/g) || []).length
-      if (mediaCount !== ifdef || mediaCount !== ifndef || darkClass !== mediaCount) {
-        bad.push(`${rel(file)} media=${mediaCount} ifdef=${ifdef} ifndef=${ifndef} theme-dark=${darkClass}`)
+      const darkGlobal = (src.match(/:global\(html\.theme-dark\)\s*\{/g) || []).length
+      const bareDark = (src.match(/(^|[^:\w-])\.theme-dark\s*\{/g) || []).length
+      if (mediaCount !== ifdef || mediaCount !== ifndef || darkGlobal !== mediaCount || bareDark > 0) {
+        bad.push(`${rel(file)} media=${mediaCount} ifdef=${ifdef} ifndef=${ifndef} global=${darkGlobal} bare=${bareDark}`)
       }
       // 每个 #ifdef MP-WEIXIN 之后必须能找到配对的 #endif（顺序扫描，栈深度校验）
       const tokens = [...src.matchAll(/\/\* #(ifdef|ifndef|endif)[^\n]*\*\//g)].map((m) => m[1])

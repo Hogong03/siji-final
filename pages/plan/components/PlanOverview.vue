@@ -186,7 +186,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
 	.overview-card { background: #27272A; }
 	.ov-title { color: #FAFAFA; border-left-color: #FAFAFA; }
 	.ov-sub { color: #71717A; }

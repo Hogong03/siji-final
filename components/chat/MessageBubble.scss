@@ -394,7 +394,7 @@
 
 /* 深色模式覆盖 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .loading-bubble {
     background: #27272A;
     border-left-color: #3F3F46;
@@ -708,7 +708,7 @@
 
 /* 深色补充：用户气泡反白为浅底黑字后，气泡文字与文件卡需跟着反色，否则白字隐没在浅底上 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .bubble.user .bubble-text { color: #000000; }
   .bubble.user .bubble-file { background: rgba(0, 0, 0, 0.08); }
   .bubble.user .bubble-file-badge {

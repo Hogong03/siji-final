@@ -80,7 +80,7 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
 }
 /* 深色模式：黑圆底头像加细边框，避免与深色页面背景融合 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .agent-avatar--icon {
     border: 2rpx solid #3F3F46;
   }

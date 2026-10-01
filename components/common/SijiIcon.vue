@@ -88,7 +88,7 @@ const darkSrc = computed(() => {
 
 /* 深色模式：切换为白色图标 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .siji-icon-light {
     display: none;
   }

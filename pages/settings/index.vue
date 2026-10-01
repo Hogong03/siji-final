@@ -271,7 +271,7 @@ function go(target) {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .page { background: #18181B; }
   .sec-title { color: #FAFAFA; border-left-color: #FAFAFA; }
   .card { background: #27272A; border-color: #3F3F46; }

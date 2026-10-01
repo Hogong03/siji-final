@@ -350,7 +350,7 @@ function goDetail(id) {
 .btn-confirm { background: #000000; color: #FFFFFF; }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .page { background: #09090B; }
   .filter-bar { background: #18181B; border-bottom: 1rpx solid #27272A; }
   .filter-tab { color: #A1A1AA; }

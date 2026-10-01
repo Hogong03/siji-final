@@ -374,7 +374,7 @@ const featureExamples = [
 
 /* 深色模式覆盖 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .onb-card { background: #18181B; }
   .onb-title { color: #FAFAFA; }
   .onb-desc { color: #F4F4F5; }

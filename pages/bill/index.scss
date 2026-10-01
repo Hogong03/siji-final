@@ -540,7 +540,7 @@
 
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .bill-page { background: #18181B; }
   .summary-card { background: #27272A; }
   .sum-value { &.expense { color: #FAFAFA; } &.income { color: #F4F4F5; } }

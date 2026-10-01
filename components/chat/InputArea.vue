@@ -303,7 +303,7 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 
 /* ──── 深色模式 ──── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
 	.input-area { background: #18181B; border-top-color: #27272A; }
 	.side-dot {
 		background: #27272A; border-color: #3F3F46;

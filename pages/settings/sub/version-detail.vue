@@ -241,7 +241,7 @@ const totalChanges = computed(() => {
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .detail-page { background: #09090B; }
   .version-header { background: #FAFAFA; }
   .vh-version { color: #18181B; }

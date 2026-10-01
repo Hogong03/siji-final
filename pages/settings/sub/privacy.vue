@@ -161,7 +161,7 @@ function submit() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .sub-page { background: #18181B; }
   .card { background: #27272A;
     .card-title { color: #FAFAFA; }

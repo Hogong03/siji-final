@@ -288,7 +288,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .search-page { background: #18181B; }
   .search-bar { background: #27272A; }
   .search-input-wrap { background: #3F3F46; }

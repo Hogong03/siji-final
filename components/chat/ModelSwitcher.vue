@@ -232,7 +232,7 @@ function goToAiConfig() { emit('close'); uni.navigateTo({ url: '/pages/settings/
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .switch-section-label { color: #A1A1AA; }
   .switch-provider-item {
     background: #27272A;

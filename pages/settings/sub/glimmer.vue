@@ -180,7 +180,7 @@ onShow(load)
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .page { background: #18181B; }
   .head { background: #27272A; border-bottom-color: #3F3F46; }
   .head-title { color: #FAFAFA; }

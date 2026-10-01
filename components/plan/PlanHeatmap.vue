@@ -237,7 +237,7 @@ function canBackfill(cell) {
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .heatmap { background: #27272A; }
   .hm-dot.future { border-color: #3F3F46; }
   .hm-dot.future .hm-day { color: #52525B; }

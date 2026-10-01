@@ -155,7 +155,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .switch-model-item {
     background: #27272A;
     &.active {

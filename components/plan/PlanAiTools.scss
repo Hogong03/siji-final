@@ -72,7 +72,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .ai-tools-section { background: #27272A; border-color: #3F3F46; }
   .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
   .ai-result { background: #27272A; border-left-color: #FAFAFA; }

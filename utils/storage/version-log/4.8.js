@@ -6,6 +6,34 @@
 
 export const V48 = [
   {
+    version: '4.8.4',
+    date: '2026-10-02',
+    title: '4.8.4 深色失效总根因修复：scoped 穿透（:global）—— 所有页面深色真正生效',
+    summary: [
+      '总根因实锤：scoped 样式里的 .theme-dark 编译成 .theme-dark[data-v-x]（属性选择器挂在自身），而类挂在 html 根元素（无 data-v 属性）—— 4.8.0 以来所有写进 scoped 的类驱动深色块整体失效，包括决策页/计划页/功能页滑块/SijiIcon 图标切换',
+      '修法：93 处裸 .theme-dark { 全量改为 :global(html.theme-dark) {（编译实验证明产出干净祖先选择器，无 data-v 注入）；App.vue 全局样式无 scoped 不受影响',
+      '用户四症状全部归因此根因：决策页白 = scoped 失效；计划页白 = 同；功能页滑块不变 = 深色规则在但 scoped 失效；图标不变 = SijiIcon 的显隐切换同为 scoped 失效',
+      '「外观切浅色不变」同根因：此前手动摘类无效果是因为深色从未由类驱动上过色（页面一直是 4.7.x 系统跟随的旧产物）',
+      '守卫测试升级：新增断言禁止裸 .theme-dark（必须 :global 穿透），防回归；测试 88 文件 / 1228 用例绿（ai-enhance-490 为 uni-agent 进行中工作，其 1 失败与其无关）',
+    ],
+    categories: [
+      {
+        title: 'scoped 穿透总根因（P0）',
+        items: [
+          '实验定案（scripts/_scoped_probe.cjs / _scoped_probe2.cjs）：compileStyle(scoped:true) 把 .theme-dark { .page{} } 编译成 .theme-dark[data-v] .page[data-v]，html 上的类挂载点无 data-v 属性，永远匹配失败',
+          '写法对比实验：:global(html.theme-dark) 编译后为干净祖先链 html.theme-dark，无属性注入 —— 官方语义正解',
+          'scripts/_scoped_fix.py：全量 93 处替换（幂等，已 :global 跳过），替换后零裸残留',
+        ],
+      },
+      {
+        title: '守卫升级（P1）',
+        items: [
+          'tests/theme-mode.test.js：双路径配对断言改为 :global(html.theme-dark) 形态 + 新增裸 .theme-dark 禁止断言，防止以后新写深色块再踩 scoped 坑',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.8.3',
     date: '2026-10-02',
     title: '4.8.3 深色补漏二期：页面体底色 + 白底类全量补齐（45 类）+ 反白按钮',

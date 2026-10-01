@@ -223,7 +223,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .about-page { background: #18181B; }
   .tab-bar { background: #18181B; border-bottom-color: #3F3F46; }
   .tab-item.active { background: #27272A; border-color: #3F3F46; }

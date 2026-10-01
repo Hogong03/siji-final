@@ -595,7 +595,7 @@
 
 /* AI 配置页深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .ai-page { background: #18181B; }
 
   /* 厂商卡片 */

@@ -416,7 +416,7 @@
 
 /* profile.vue 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .profile-page { background: #18181B; }
   .header-card { background: #27272A; }
   .header-enabled { border-color: #52525B; }

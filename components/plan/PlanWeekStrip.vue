@@ -100,7 +100,7 @@ defineProps({
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .ws-dot { background: #3F3F46; &.future { background: #27272A; } &.today { border-color: #FAFAFA; } }
   .ws-num.today { color: #FAFAFA; }
 }

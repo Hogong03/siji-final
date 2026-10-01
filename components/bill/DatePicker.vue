@@ -218,7 +218,7 @@ function confirm() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
     .detail-row {
         border-bottom-color: #3F3F46;
         .d-label { color: #A1A1AA; }

@@ -16,7 +16,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .section { background: #27272A; }
   .section-label { color: #71717A; }
 }

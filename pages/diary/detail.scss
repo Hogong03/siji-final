@@ -411,7 +411,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .detail-page { background: #18181B; }
   .title-input { background: #27272A; color: #FAFAFA; border-left-color: #FAFAFA; }
   .textarea-field { background: #27272A; color: #FAFAFA; }

@@ -238,7 +238,7 @@ function handleDecline() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .disclaimer-wrap { background: #18181B; }
   .disclaimer-brand { color: #FAFAFA; }
   .disclaimer-brand-sub { color: #71717A; }

@@ -458,7 +458,7 @@ function handleDelete() {
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .edit-page { background: #18181B; }
   .type-switch { background: #27272A; }
   .ts-btn { color: #A1A1AA; &.active { color: #18181B; &.expense { background: #FAFAFA; } &.income { background: #A1A1AA; } } }

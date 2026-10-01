@@ -403,7 +403,7 @@ function goDetail(version) {
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .version-page { background: #09090B; }
   .current-banner { background: #FAFAFA; }
   .current-label { color: #71717A; }

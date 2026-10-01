@@ -159,7 +159,7 @@ const emit = defineEmits([
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
 	.empty-btn {
 		&.primary { background: #FAFAFA; color: #18181B; }
 		&.outline { border-color: #FAFAFA; color: #FAFAFA; }

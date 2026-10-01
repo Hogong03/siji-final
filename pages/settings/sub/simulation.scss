@@ -125,7 +125,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .page { background: #18181B; }
   .header-title { color: #FAFAFA; }
   .header-desc { color: #A1A1AA; }

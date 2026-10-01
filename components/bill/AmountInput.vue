@@ -157,7 +157,7 @@ function tapDelete() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
     .type-switch { background: #27272A; }
     .ts-btn {
         color: #A1A1AA;

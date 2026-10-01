@@ -158,7 +158,7 @@ function getConvTags(conv) {
 
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .conv-item {
     border-bottom-color: #27272A;
     &:active { background: #27272A; }

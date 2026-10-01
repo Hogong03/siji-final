@@ -234,7 +234,7 @@ function goToAgentConfig() { emit('close'); uni.navigateTo({ url: '/pages/settin
 }
 
 /* #ifndef MP-WEIXIN */
-.theme-dark {
+:global(html.theme-dark) {
   .unified-section-label { color: #A1A1AA; }
   .unified-divider { background: #27272A; }
   .unified-provider-item,
