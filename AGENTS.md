@@ -333,7 +333,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `280a46f`（fix: 4.8.2 AI 链路审查修复 20 项；此前 4.5.1-4.8.1 由并行会话发布：头像美化 / 图标体系 / 深色模式 / tabBar 修复）
+- 当前 HEAD: `d122845`（feat: 4.10.0 AI 能力拆分；随后 4.9.1 聚合层修复由并行会话发布）
 - 远端：`origin/main`，2026-10-02 推送成功（`0bdb242..280a46f`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
 - Mimosa 提交钩子会拦「高危」：本轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
 - `http.sslVerify` 保持 true
