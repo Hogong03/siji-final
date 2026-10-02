@@ -18,7 +18,7 @@ const KNOWN = new Set([
   'ai', 'add', 'arrow-down', 'arrow-left', 'arrow-right', 'bill', 'brain',
   'bug', 'calendar', 'check', 'chat-bubble', 'chevron-right', 'close',
   'clock', 'copy', 'diary', 'download', 'edit', 'export', 'file', 'heart',
-  'image', 'info', 'lock', 'mail', 'menu', 'moon', 'more', 'plan',
+  'image', 'info', 'lock', 'mail', 'menu', 'monitor', 'moon', 'more', 'plan',
   'refresh', 'search', 'settings', 'sparkle', 'stats', 'sun', 'target',
   'tip', 'trash', 'unlock', 'user'
 ])

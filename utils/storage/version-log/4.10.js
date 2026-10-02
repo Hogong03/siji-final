@@ -6,6 +6,36 @@
 
 export const V410 = [
   {
+    version: '4.10.4',
+    date: '2026-10-03',
+    title: '4.10.4 外观选择改自定义底部弹层：原生 ActionSheet 不随主题变色，重做为带图标的三选弹层',
+    summary: [
+      '用户实测：点「外观」弹出的系统 ActionSheet 是原生控件，深色模式下弹框仍是白底，且无配套图标 —— 原生控件样式不可控，重做为自定义底部弹层（与全项目「面板一律底部弹出」规矩一致）',
+      'pages/settings/index.vue：uni.showActionSheet 替换为 .theme-sheet 自定义弹层（蒙层 rgba(0,0,0,0.4) + 底部滑出动画 + 三行选项），每行 = SijiIcon 图标 + 名称 + 说明 + 激活对勾；样式带 html.theme-dark 深色块（弹层 #27272A / 文字 #FAFAFA）',
+      '新增「跟随系统」图标 monitor：components/common/SijiIcon.vue 的 KNOWN 集合登记 + scripts/gen-monitor-icon.cjs 一次性生成 monitor-v2.png / monitor-v2-dark.png（96×96 RGBA，Lucide monitor 几何：rect(2,3→22,17, rx2) + 底座线，×4 缩放描边 8px）',
+      '排坑记录：首版 PNG 三个 chunk 的 CRC 全是同一个常量 0x492f023f —— 根因不是环境改写文件，是生成脚本 crc32 手抄漏了「最低位为 1 才异或」分支（无条件异或是收缩映射，任何输入 32 轮后收敛到同一不动点）；补上 (c & 1) 分支后 CRC 校验通过',
+      '浏览器实测：深色弹层 #27272A / 浅色弹层 #FFFFFF，monitor/sun/moon/check 浅深两版 8 张图全部加载成功，激活行对勾随选择切换；测试 89 文件 / 1239 用例全绿',
+    ],
+    categories: [
+      {
+        title: '外观弹层重做（4.10.4）',
+        items: [
+          'pages/settings/index.vue：themeOptions 数据驱动三选（system=monitor / light=sun / dark=moon），pickTheme 打开弹层、chooseTheme 写入并关闭；点击蒙层关闭',
+          '样式浅深两套：浅色弹层 #FFFFFF + 边框 #E4E4E7 + 文字 #18181B；深色 html.theme-dark 弹层 #27272A + 文字 #FAFAFA；激活行对勾（check 图标）标当前模式',
+          'components/common/SijiIcon.vue：KNOWN 集合新增 monitor（渲染为 /static/icons/monitor-v2.png 与 -v2-dark.png，浅深自动切换）',
+          'scripts/gen-monitor-icon.cjs：一次性生成脚本入库（Canvas 原语手绘 PNG，与 gen-icons.cjs 同一套），crc32 为标准算法（含 LSB 分支）',
+        ],
+      },
+      {
+        title: '排坑记录（4.10.4）',
+        items: [
+          'PNG CRC 常量化之谜：仓库内外写读对照、同进程 write→read 复查均正常，最终定位到脚本自身算法缺陷 —— crc32 迭代漏写 (c & 1) 判断；教训：手写二进制编码先跑标准向量（IEND CRC 恒为 0xae426082）',
+          'uni-app 的 <image> 在 H5 编译为 uni-image 自定义元素（内层 div 背景 + img），调试加载状态要查内层 img.complete / naturalWidth，不能直接读外层 src',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.3',
     date: '2026-10-03',
     title: '4.10.3 修浅色下点 tab 变深（P0）：manifest 的 darkmode 框架跟随与手动切换体系打架，app-plus/h5 摘除 darkmode + App.vue 补浅色 tabbar 镜像',

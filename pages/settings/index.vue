@@ -31,19 +31,28 @@ const hasKey = computed(() => !!store.providerKeys[store.aiProvider])
 const pinStatus = computed(() => hasPin() ? '已开启' : '未开启')
 const appVersion = computed(() => 'v' + getVersion())
 
-// ─── 外观主题三选（4.8.0，MP-WEIXIN 隐藏）───
+// ─── 外观主题三选（4.8.0，MP-WEIXIN 隐藏；4.10.4 改自定义底部弹层）───
 const themeLabel = { system: '跟随系统', light: '浅色', dark: '深色' }
 const themeModeName = ref(themeLabel[getThemeMode()] || '跟随系统')
+const themeMode = ref(getThemeMode())
+const showThemeSheet = ref(false)
+const themeOptions = [
+  { id: 'system', label: '跟随系统', icon: 'monitor', desc: '随设备深浅自动切换' },
+  { id: 'light', label: '浅色', icon: 'sun', desc: '' },
+  { id: 'dark', label: '深色', icon: 'moon', desc: '' }
+]
+
+/** 打开自定义弹层（原生 ActionSheet 不随主题变色且无图标，弃用） */
 function pickTheme() {
-  uni.showActionSheet({
-    itemList: [themeLabel.system, themeLabel.light, themeLabel.dark],
-    success(res) {
-      const next = ['system', 'light', 'dark'][res.tapIndex]
-      setThemeMode(normalizeMode(next))
-      themeModeName.value = themeLabel[next]
-    },
-    fail() { /* 取消选择，保持现状 */ }
-  })
+  showThemeSheet.value = true
+}
+
+function chooseTheme(id) {
+  const next = normalizeMode(id)
+  setThemeMode(next)
+  themeMode.value = next
+  themeModeName.value = themeLabel[next]
+  showThemeSheet.value = false
 }
 
 // ─── AI 写操作自动执行开关（3.0：默认关 = AI 写入前需确认）───
@@ -193,6 +202,29 @@ function go(target) {
 
       <view style="height: 80rpx" />
     </scroll-view>
+
+    <!-- 外观三选：自定义底部弹层（4.10.4）—— 原生 ActionSheet 不随主题变色且无图标 -->
+    <view v-if="showThemeSheet" class="theme-sheet-mask" @tap="showThemeSheet = false">
+      <view class="theme-sheet" @tap.stop>
+        <view class="theme-sheet-head">
+          <text class="theme-sheet-title">外观</text>
+        </view>
+        <view
+          v-for="opt in themeOptions"
+          :key="opt.id"
+          class="theme-sheet-row"
+          :class="{ active: themeMode === opt.id }"
+          @tap="chooseTheme(opt.id)"
+        >
+          <SijiIcon :name="opt.icon" size="lg" class="theme-sheet-icon" />
+          <text class="theme-sheet-label">{{ opt.label }}</text>
+          <SijiIcon v-if="themeMode === opt.id" name="check" size="md" class="theme-sheet-check" />
+        </view>
+        <view class="theme-sheet-cancel" @tap="showThemeSheet = false">
+          <text class="theme-sheet-cancel-text">取消</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -281,6 +313,15 @@ html.theme-dark {
   .row-desc, .row-value, .row-arrow { color: #A1A1AA; }
   .dot.ok { background: #10B981; }
   .dot.warn { background: #F59E0B; }
+  /* 外观弹层（4.10.4） */
+  .theme-sheet { background: #27272A; }
+  .theme-sheet-title { color: #FAFAFA; }
+  .theme-sheet-row { border-bottom-color: #3F3F46; &:active { background: #3F3F46; } }
+  .theme-sheet-label { color: #FAFAFA; }
+  .theme-sheet-row.active .theme-sheet-label { color: #FAFAFA; font-weight: 700; }
+  .theme-sheet-icon { opacity: 1; }
+  .theme-sheet-cancel { border-top-color: #3F3F46; }
+  .theme-sheet-cancel-text { color: #A1A1AA; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -296,4 +337,69 @@ html.theme-dark {
   .dot.warn { background: #F59E0B; }
 }
 /* #endif */
+
+/* ─── 外观弹层（4.10.4 自定义底部弹层，替代原生 ActionSheet）─── */
+.theme-sheet-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: sheetMaskIn 0.2s ease both;
+}
+@keyframes sheetMaskIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.theme-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #FFFFFF;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  z-index: 1001;
+  animation: sheetUp 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.theme-sheet-head {
+  padding: 8rpx 8rpx 16rpx;
+}
+.theme-sheet-title {
+  font-size: $font-sm;
+  color: #71717A;
+}
+.theme-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 26rpx 12rpx;
+  border-bottom: 1rpx solid #F4F4F5;
+
+  &:last-of-type { border-bottom: none; }
+  &:active { background: #F4F4F5; }
+}
+.theme-sheet-icon { opacity: 0.75; }
+.theme-sheet-row.active .theme-sheet-icon { opacity: 1; }
+.theme-sheet-label {
+  flex: 1;
+  font-size: $font-md;
+  color: #18181B;
+}
+.theme-sheet-row.active .theme-sheet-label {
+  font-weight: 700;
+}
+.theme-sheet-check { color: #18181B; }
+.theme-sheet-cancel {
+  margin-top: 12rpx;
+  padding: 22rpx 0;
+  border-top: 1rpx solid #F4F4F5;
+  text-align: center;
+}
+.theme-sheet-cancel-text {
+  font-size: $font-md;
+  color: #71717A;
+}
 </style>
