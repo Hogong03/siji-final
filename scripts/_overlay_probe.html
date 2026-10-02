@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>思迹深色覆盖排查台</title>
+<style id="app-global">
+/* ===== App.vue 全局规则（等价展开） ===== */
+page, html, body, .uni-page-body {
+  background-color: #F4F4F5;
+  color: #18181B;
+}
+/* #ifndef MP-WEIXIN 展开后（H5 保留） */
+html.theme-dark,
+html.theme-dark body,
+html.theme-dark .uni-page-body,
+html.theme-dark uni-page-body {
+  background-color: #18181B;
+  color: #F4F4F5;
+}
+.uni-input-placeholder, .uni-textarea-placeholder { color: #A1A1AA !important; }
+html.theme-dark .uni-input-placeholder,
+html.theme-dark .uni-textarea-placeholder { color: #71717A !important; }
+html.theme-dark .uni-tabbar { background-color: #18181B !important; border-top-color: #000000 !important; }
+html.theme-dark .uni-tabbar__label { color: #A1A1AA !important; }
+html.theme-dark .uni-tabbar__item.uni-tabbar__item--active .uni-tabbar__label,
+html.theme-dark .uni-tabbar__item--active .uni-tabbar__label { color: #FFFFFF !important; }
+/* ===== chat.scss :global 块（4.8.3/4.8.4 等价展开，全部 16 类） ===== */
+:global(html.theme-dark) { }
+html.theme-dark .chat-page { background: #27272A; }
+html.theme-dark .custom-nav { background: #27272A; }
+html.theme-dark .modal-container { background: #27272A; }
+</style>
+</head>
+<body>
+<!-- 模拟 uni-h5 DOM 结构 -->
+<uni-app>
+  <uni-page>
+    <uni-page-head></uni-page-head>
+    <uni-page-wrapper>
+      <uni-page-body>
+        <div id="chat-page" class="chat-page" style="height:100vh">
+          <div class="custom-nav">导航</div>
+          <div class="messages-list">
+            <p>这条消息文本如果看不见，就是被背景覆盖</p>
+            <button class="test-btn" style="position:relative;z-index:2">测试按钮</button>
+          </div>
+        </div>
+      </uni-page-body>
+    </uni-page-wrapper>
+  </uni-page>
+  <uni-tabbar>
+    <div class="uni-tabbar">
+      <div class="uni-tabbar__item uni-tabbar__item--active">
+        <img src="x.png"><div class="uni-tabbar__label">思迹</div>
+      </div>
+    </div>
+  </uni-tabbar>
+</uni-app>
+<script>
+function probe() {
+  const el = document.getElementById('chat-page')
+  const msg = el.querySelector('p')
+  const cs = getComputedStyle(el)
+  const r = el.getBoundingClientRect()
+  const out = []
+  out.push('chat-page computed background: ' + cs.backgroundColor)
+  out.push('chat-page 尺寸: ' + r.width + 'x' + r.height + ' at (' + r.x + ',' + r.y + ')')
+  // 元素中心点上的最顶层元素是谁（覆盖检测的关键 API）
+  const cx = r.x + r.width / 2, cy = r.y + 40
+  const top = document.elementFromPoint(cx, cy)
+  out.push('页面中心最顶层元素: ' + (top ? top.tagName + '.' + top.className : 'null'))
+  out.push('顶层元素是否为 chat-page 内部: ' + (top ? el.contains(top) : 'n/a'))
+  out.push('消息文字 computed color: ' + getComputedStyle(msg).color)
+  out.push('body class: ' + document.body.className)
+  out.push('html class: ' + document.documentElement.className)
+  document.title = out.join(' || ')
+  const pre = document.createElement('pre')
+  pre.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:#fff;color:#000;font-size:12px;padding:8px;margin:0;max-width:100%;white-space:pre-wrap;'
+  pre.textContent = out.join('\n')
+  document.body.appendChild(pre)
+}
+window.addEventListener('load', probe)
+</script>
+</body>
+</html>
