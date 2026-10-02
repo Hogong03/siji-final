@@ -279,7 +279,7 @@ const dots = computed(() => {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   /* 锁屏本就是沉浸黑底（#000000），文字/数字键/圆点均为白底半透明暗色处理，深色下保持统一；仅按语义提亮错误红 */
   .lock-page { background: #000000; }
   .error-msg { color: #FCA5A5; }

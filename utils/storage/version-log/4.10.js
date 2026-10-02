@@ -6,6 +6,35 @@
 
 export const V410 = [
   {
+    version: '4.10.1',
+    date: '2026-10-02',
+    title: '4.10.1 修深色模式全页面失效（P0）：4.8.4 的 :global(html.theme-dark){嵌套} 写法被编译器剥掉子选择器，85 文件 96 处改回 html 元素前缀直写',
+    summary: [
+      '用户实测深色模式下切到对话页整页不可见（白底白字）—— 浏览器实测取证：编译产物里所有 :global(html.theme-dark) 块的嵌套子选择器被剥掉，塌缩成裸 html.theme-dark{...} 只作用于 html 自身，目标元素完全没有深色规则',
+      '探针实证三种形态：html 元素前缀直写（html.theme-dark { 嵌套 }）在 uni scoped 管线下编译完全正确（scoper 对 html 开头的选择器不注入 data-v）；整选择器 :global 包裹也可用；唯独 4.8.4 的 :global 包嵌套子选择器形态整块失效',
+      '85 文件 96 处 :global(html.theme-dark) 全部改回 html.theme-dark 直写（保留 SCSS 嵌套），浏览器复测：对话页背景 #27272A、文字 #F4F4F5、无 JS 报错',
+      'theme-mode 守卫测试改写为实证正确的不变量：禁止 :global(html.theme-dark)，要求 html.theme-dark 块与 media 块一比一配对（4.8.4 的守卫把错误写法锁成了规矩）',
+      '测试 89 文件 / 1239 用例全绿',
+    ],
+    categories: [
+      {
+        title: '深色失效根因与修复（P0）',
+        items: [
+          '根因链：scoped 组件里裸 .theme-dark 类选择器会被 scoper 注入 data-v（.theme-dark[data-v-x]，挂在 html 永远命不中）→ 4.8.4 用 :global(html.theme-dark){嵌套子选择器} 整体替换 → uni 的 scoped 编译器对这种形态剥掉全部嵌套子选择器，96 处深色块全部塌缩成裸 html.theme-dark{}（只改 html 自身样式）→ 深色模式下所有组件保持白底，而全局深色规则把文字改成浅色 → 白底白字整页不可见',
+          '修复：85 文件（pages/components/App.vue）的 :global(html.theme-dark) 全部替换为 html.theme-dark 元素前缀直写 —— 探针实证 html 开头的选择器 scoper 不注入 data-v，SCSS 嵌套正常编译',
+          '实证探针记录：flat html.theme-dark .x ✓ / :global(整选择器) ✓ / html.theme-dark{嵌套} ✓ / :global(html.theme-dark){嵌套} ✗（子选择器被剥）',
+        ],
+      },
+      {
+        title: '守卫测试改写（4.10.1）',
+        items: [
+          'tests/theme-mode.test.js：双路径守卫的不变量从「:global(html.theme-dark) 一比一配对」改为「html.theme-dark { 一比一配对 + 禁止 :global(html.theme-dark) + 禁止裸 .theme-dark」—— 守卫注释写明三种形态的实证结论，防止再次回退',
+          '保留：media 块必须在 #ifdef MP-WEIXIN 内、条件编译栈深度校验、App.vue 直写单独断言',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.0',
     date: '2026-10-02',
     title: '4.10.0 AI 能力拆分：11 项能力按组开关（设置 → AI 配置 → AI 能力），关掉即从工具/提示词/UI 三处消失',

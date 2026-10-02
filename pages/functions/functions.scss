@@ -254,7 +254,7 @@
 /* 深色模式                        */
 /* ============================== */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .functions-page { background: #18181B; }
   .search-box { background: #27272A; }
   .search-placeholder { color: #71717A; }

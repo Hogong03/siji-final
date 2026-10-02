@@ -290,7 +290,7 @@ function restoreAll() {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .trash-page { background: #18181B; }
   .search-bar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-box { background: #3F3F46; }

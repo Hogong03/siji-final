@@ -214,7 +214,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
   .textarea-field { color: #FAFAFA; }
   .priority-item { border-color: #3F3F46; color: #A1A1AA; &.active { border-color: #FAFAFA; background: #FAFAFA; color: #18181B; } }

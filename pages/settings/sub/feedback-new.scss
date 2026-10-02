@@ -189,7 +189,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .feedback-form-page { background: #18181B; }
   .edit-banner { background: #27272A; color: #FAFAFA; }
   .section-title { color: #FAFAFA; }

@@ -90,7 +90,7 @@ defineProps({
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .strip-line {
     background: #27272A;
   }

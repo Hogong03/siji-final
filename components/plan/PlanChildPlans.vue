@@ -577,7 +577,7 @@ function childWeekCells(child) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .child-plan-card { background: rgba(255, 255, 255, 0.04); }
   .child-plan-card.som-card { background: rgba(255, 255, 255, 0.02); }
   .cp-title { color: #FAFAFA; }

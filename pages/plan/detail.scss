@@ -63,7 +63,7 @@
 
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .detail-page { background: #18181B; }
   .bottom-bar { background: #27272A; border-top-color: #3F3F46; }
   .bottom-bar .btn-delete { background: #3F3F46; }

@@ -123,7 +123,7 @@
 }
 .plan-next-row .pn-arrow { font-size: 22rpx; color: #D4D4D8; }
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .plan-next-row { background: #27272A; }
   .plan-next-row .pn-label { background: #3F3F46; color: #FAFAFA; }
 
@@ -295,7 +295,7 @@
 
 /* 深色模式覆盖 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .exec-header { background: #18181B; }
   .exec-type-icon { background: #27272A; }
   .eti-text { color: #F4F4F5; }
@@ -466,7 +466,7 @@
   color: #A1A1AA;
 }
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .gl-content, .glq-content { color: #E4E4E7; }
   .gl-date, .glq-date { color: #71717A; }
   .glq-item { border-bottom-color: #27272A; }

@@ -561,7 +561,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .diary-page { background: #18181B; }
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-input-wrap { background: #3F3F46; }
@@ -783,7 +783,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .quick-tag { border-color: #27272A; color: #A1A1AA; }
   .quick-tag.active { background: #FAFAFA; border-color: #FAFAFA; color: #000000; }
   .quick-tag.sort-toggle { color: #FAFAFA; }

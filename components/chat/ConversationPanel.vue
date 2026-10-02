@@ -255,7 +255,7 @@ function handleSelectTag(tag) {
 
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .conv-drawer {
     background: #18181B;
   }

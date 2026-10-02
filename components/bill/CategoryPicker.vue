@@ -122,7 +122,7 @@ function tapQuickNote(qn) {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
     .cat-name { color: #A1A1AA; }
     .qn-tag {
         background: #27272A;

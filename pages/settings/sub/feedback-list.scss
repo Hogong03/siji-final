@@ -192,7 +192,7 @@
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .feedback-page {
     background: #09090B;
   }

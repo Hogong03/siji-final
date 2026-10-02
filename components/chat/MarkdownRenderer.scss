@@ -328,7 +328,7 @@
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .md-h { color: #F4F4F5; }
   .md-h1 { border-bottom-color: #F4F4F5; }
   .md-h2 { border-left-color: #FAFAFA; }

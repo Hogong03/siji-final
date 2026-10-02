@@ -153,7 +153,7 @@ refresh()
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .quota-row {
     background: #27272A;
   }

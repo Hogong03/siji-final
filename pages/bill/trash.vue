@@ -297,7 +297,7 @@ function handlePurge(item) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .trash-page { background: #18181B; }
   .toolbar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-input-wrap { background: #3F3F46; }

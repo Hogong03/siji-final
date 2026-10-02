@@ -145,7 +145,7 @@ function askAi() {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .drafts {
     background: #27272A;
   }

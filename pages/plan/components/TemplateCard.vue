@@ -87,7 +87,7 @@ defineEmits(['use', 'edit', 'delete'])
 .tpl-del { color: #EF4444; border-left: 1rpx solid #E4E4E7; }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .tpl-card { background: #27272A; }
   .tpl-name { color: #FFFFFF; }
   .tpl-desc { color: #A1A1AA; }

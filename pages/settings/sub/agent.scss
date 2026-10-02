@@ -287,7 +287,7 @@ $spacing-lg: 32rpx;
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .agent-page { background: #18181B; }
   .section-label { color: #71717A; }
   .section-add-btn { color: #FAFAFA; background: #3F3F46; }

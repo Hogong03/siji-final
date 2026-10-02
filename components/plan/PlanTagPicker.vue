@@ -257,7 +257,7 @@ watch(() => props.visible, (v) => {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
     .tag-picker { background: #27272A; }
     .tp-title { color: #FAFAFA; }
     .tp-current { border-bottom-color: #3F3F46; }

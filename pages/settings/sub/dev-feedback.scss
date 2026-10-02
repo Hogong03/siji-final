@@ -270,7 +270,7 @@
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .dev-feedback-page {
     background: #18181B;
   }
@@ -601,7 +601,7 @@
 
 /* 自由选择面板深色模式覆盖 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .custom-btn {
     background: #27272A;
     border-color: #3F3F46;

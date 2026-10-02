@@ -99,7 +99,7 @@ const emit = defineEmits(['action'])
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .empty-icon-wrap { background: #3F3F46; }
   .empty-title { color: #A1A1AA; }
   .empty-action {

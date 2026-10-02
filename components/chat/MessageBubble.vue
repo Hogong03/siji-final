@@ -345,7 +345,7 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .bubble-image-fallback { background: #3F3F46; }
   .bubble-image-fallback-text { color: #71717A; }
 }

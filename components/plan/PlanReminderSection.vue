@@ -231,7 +231,7 @@ function cancelCustom() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
     .reminder-desc { color: #A1A1AA; }
     .reminder-chip {
         background: #27272A;

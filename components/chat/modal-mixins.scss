@@ -48,7 +48,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .modal-container {
     background: #18181B;
   }
@@ -97,7 +97,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .modal-header {
     border-bottom-color: #27272A;
     .modal-title {

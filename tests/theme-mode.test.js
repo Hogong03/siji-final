@@ -77,7 +77,7 @@ describe('深色双路径守卫（防新深色块漏包装）', () => {
     expect(src).toMatch(/html\.theme-dark[\s\S]*?background-color:\s*#18181B/)
   })
 
-  it('除 App.vue 外，每个 media 深色块都必须在 #ifdef MP-WEIXIN 分支内，且与 #ifndef 分支的 :global(html.theme-dark) 一比一配对（scoped 内裸 .theme-dark 编译成 .theme-dark[data-v-x]，挂在 html 的类永远命中不了，必须 :global 穿透）', () => {
+  it('除 App.vue 外，每个 media 深色块都必须在 #ifdef MP-WEIXIN 分支内，且与 #ifndef 分支的 html.theme-dark 块一比一配对（4.10.1 实证定案：scoped 内裸 .theme-dark 类选择器会被 scoper 注入 data-v 挂死；而 :global(html.theme-dark){嵌套子选择器} 会被编译器剥掉子选择器、塌缩成裸 html.theme-dark{} 只作用于 html 自身 —— 正确形态是 html 元素前缀直写：html.theme-dark { 嵌套子选择器 }，scoper 对 html 开头的选择器不注入 data-v）', () => {
     const bad = []
     for (const file of targets) {
       const name = path.basename(file)
@@ -87,10 +87,13 @@ describe('深色双路径守卫（防新深色块漏包装）', () => {
       if (mediaCount === 0) continue
       const ifdef = (src.match(/\/\* #ifdef MP-WEIXIN \*\//g) || []).length
       const ifndef = (src.match(/\/\* #ifndef MP-WEIXIN \*\//g) || []).length
-      const darkGlobal = (src.match(/:global\(html\.theme-dark\)\s*\{/g) || []).length
+      // 4.10.1：类路径正确形态 = html 元素前缀直写（允许 SCSS 嵌套）
+      const darkBlocks = (src.match(/(^|[^:\w-])html\.theme-dark\s*\{/g) || []).length
+      // 4.8.4 的错误形态：:global 包嵌套子选择器 —— 编译后子选择器被剥掉，深色规则全部失效
+      const brokenGlobal = (src.match(/:global\(html\.theme-dark\)/g) || []).length
       const bareDark = (src.match(/(^|[^:\w-])\.theme-dark\s*\{/g) || []).length
-      if (mediaCount !== ifdef || mediaCount !== ifndef || darkGlobal !== mediaCount || bareDark > 0) {
-        bad.push(`${rel(file)} media=${mediaCount} ifdef=${ifdef} ifndef=${ifndef} global=${darkGlobal} bare=${bareDark}`)
+      if (mediaCount !== ifdef || mediaCount !== ifndef || darkBlocks !== mediaCount || bareDark > 0 || brokenGlobal > 0) {
+        bad.push(`${rel(file)} media=${mediaCount} ifdef=${ifdef} ifndef=${ifndef} htmlDark=${darkBlocks} brokenGlobal=${brokenGlobal} bare=${bareDark}`)
       }
       // 每个 #ifdef MP-WEIXIN 之后必须能找到配对的 #endif（顺序扫描，栈深度校验）
       const tokens = [...src.matchAll(/\/\* #(ifdef|ifndef|endif)[^\n]*\*\//g)].map((m) => m[1])

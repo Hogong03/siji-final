@@ -457,7 +457,7 @@ function goDetail(planId) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.records-page { background: #18181B; }
 	.rp-head { background: #27272A; border-bottom-color: #3F3F46; }
 	.rp-chip { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }

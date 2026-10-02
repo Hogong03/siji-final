@@ -141,7 +141,7 @@
 
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .stats-page { background: #18181B; }
   .range-item { background: #27272A; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
   .overview-card { background: #FAFAFA; }

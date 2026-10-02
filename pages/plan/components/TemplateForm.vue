@@ -349,7 +349,7 @@ function handleSave() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .modal-content { background: #27272A; }
   .modal-header { border-bottom-color: #3F3F46; }
   .modal-title { color: #FAFAFA; }

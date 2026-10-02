@@ -256,7 +256,7 @@ function saveNote(item) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.daily-card { background: #27272A; }
 	.dc-title { color: #FAFAFA; border-left-color: #FAFAFA; }
 	.dc-sub { color: #71717A; }
@@ -326,7 +326,7 @@ function saveNote(item) {
 	}
 }
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.dc-badge { color: #A1A1AA; background: #3F3F46; }
 	.dc-progress { color: #71717A; }
 	.dc-check { background: #FAFAFA; color: #18181B; &:active { background: #A1A1AA; } }

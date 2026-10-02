@@ -127,7 +127,7 @@ const props = defineProps({
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .animated ::v-deep .sk-line,
   .animated ::v-deep .sk-circle,
   .animated ::v-deep .sk-card,

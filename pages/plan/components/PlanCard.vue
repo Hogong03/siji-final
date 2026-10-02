@@ -237,7 +237,7 @@ function formatEst(ds) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.plan-card { background: #27272A; }
 	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #52525B; } }
 	.card-title { color: #FAFAFA; }
@@ -290,7 +290,7 @@ function formatEst(ds) {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.frozen-tag {
 		background: #3F3F46;
 		color: #D97706;

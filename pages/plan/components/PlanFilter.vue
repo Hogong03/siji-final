@@ -133,7 +133,7 @@ const expanded = ref(false)
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
 	.filter-bar { background: #27272A; border-bottom-color: #3F3F46; }
 	.filter-ext { border-top-color: #3F3F46; }
 	.ftag { background: #3F3F46; color: #F4F4F5; }

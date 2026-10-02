@@ -295,7 +295,7 @@
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .read-page { background: #000000; }
   .read-body { border-top-color: #18181B; }
   .meta-text, .read-empty-text { color: #52525B; }

@@ -265,7 +265,7 @@ function handleDelete() {
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .page { background: #18181B; }
   .hero { background: #27272A; }
   .hero-title { color: #FAFAFA; }

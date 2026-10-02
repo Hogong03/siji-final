@@ -670,7 +670,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .sending-strip {
     background: #18181B;
     border-top-color: #27272A;
@@ -1071,7 +1071,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .chat-page {
     background: #18181B;
   }
@@ -1363,7 +1363,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .conv-agent-hint {
     background: #18181B;
     border-bottom: 1rpx solid #27272A;
@@ -1560,7 +1560,7 @@
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .enter-btn {
     background: #27272A;
     border-color: #3F3F46;

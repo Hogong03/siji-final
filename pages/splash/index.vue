@@ -112,7 +112,7 @@ onMounted(() => {
 }
 
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .splash {
     background: #09090B;
   }

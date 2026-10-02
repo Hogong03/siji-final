@@ -294,7 +294,7 @@
 
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .stats-page { background: #18181B; }
   .month-header { background: #27272A; }
   .month-title { color: #FAFAFA; }

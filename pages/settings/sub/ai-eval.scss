@@ -268,7 +268,7 @@
 
 /* 深色模式 */
 /* #ifndef MP-WEIXIN */
-:global(html.theme-dark) {
+html.theme-dark {
   .ai-eval-page { background: #000000; }
   .intro, .warn-row, .row-detail { background: #18181B; }
   .intro-text, .env-label, .row-tools, .summary-meta, .detail-value { color: #A1A1AA; }
