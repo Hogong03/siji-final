@@ -211,7 +211,6 @@
 	/* #ifndef MP-WEIXIN */
 	html.theme-dark,
 	html.theme-dark body,
-	page.theme-dark,
 	html.theme-dark .uni-page-body,
 	html.theme-dark uni-page-body {
 		background-color: #18181B;
