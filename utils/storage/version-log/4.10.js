@@ -6,6 +6,35 @@
 
 export const V410 = [
   {
+    version: '4.10.3',
+    date: '2026-10-03',
+    title: '4.10.3 修浅色下点 tab 变深（P0）：manifest 的 darkmode 框架跟随与手动切换体系打架，app-plus/h5 摘除 darkmode + App.vue 补浅色 tabbar 镜像',
+    summary: [
+      '用户实测浅色下点 tabbar 变深色：浏览器取证 —— tabbar 元素带内联深色背景，且每次切页被重新写入；来源是 manifest 的 darkmode: true（app-plus/h5），框架跟随系统主题自动应用 theme.json 深色值，与 4.8.0 的手动类驱动切换体系互相打架',
+      '修复：app-plus / h5 摘除 darkmode（保留 mp-weixin —— 小程序本来就设计为系统跟随），框架不再抢写；主题唯一事实源 = 4.8.0 的类驱动手动切换',
+      'App.vue 补浅色 tabbar 镜像（html:not(.theme-dark) .uni-tabbar 系列 !important 规则）：框架或任何来源写下的深色内联在浅色侧都压不过镜像，双向兜底',
+      '浏览器实测：浅色下 functions/chat/settings 往返四跳 tabbar 恒为 #F4F4F5 浅底；深色切换（4.10.1/4.10.2 修复）不受影响',
+      '注意：manifest 变更需重启 dev server / 重新编译才完整生效（HMR 只覆盖样式部分）；测试 89 文件 / 1239 用例全绿',
+    ],
+    categories: [
+      {
+        title: '架构冲突修正（4.10.3）',
+        items: [
+          'manifest.json：app-plus 与 h5 摘除 "darkmode": true（保留 mp-weixin 与 themeLocation）—— 框架 darkmode 会按系统主题自动应用 theme.json 深色 tabbar（内联样式），绕过并对抗 4.8.0 建立的手动类驱动切换；H5/App 的主题唯一事实源 = html.theme-dark 类',
+          'App.vue：新增浅色 tabbar 镜像规则（html:not(.theme-dark) .uni-tabbar / __label / active label，全部 !important）—— 与深色规则对称，框架内联、uni.setTabBarStyle 残留等任何来源在浅色下都无法翻盘',
+        ],
+      },
+      {
+        title: '验证记录（4.10.3）',
+        items: [
+          '浅色：functions/chat/settings 往返四跳 tabbar 恒 #F4F4F5、内联干净（chat 页 uni 会写回浅色内联值，无害）',
+          '深色：4.10.1/4.10.2 修复不变（对话页 #27272A 底 + tabbar 深底深图标）',
+          '全量 NODE_OPTIONS=--max-old-space-size=4096 + vitest run --maxWorkers=2：89 文件 / 1239 用例全绿',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.2',
     date: '2026-10-03',
     title: '4.10.2 修深色切换两处残留：tabBar 内联样式卡死（uni.setTabBarStyle 在 H5 是静默 no-op）+ 功能页滑块激活文字与白滑块同色',

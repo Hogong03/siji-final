@@ -277,6 +277,20 @@
 	html.theme-dark .uni-tabbar__item--active .uni-tabbar__label {
 		color: #FFFFFF !important;
 	}
+	/* 4.10.3：浅色镜像 —— 框架 darkmode/内联残留（uni.setTabBarStyle 与 theme.json 跟随）
+	   都可能把 tabbar 写成深色，浅色侧用对称 !important 镜像压回，任何来源都翻不了盘 */
+	html:not(.theme-dark) .uni-tabbar {
+		background-color: #F4F4F5 !important;
+		border-top-color: #E4E4E7 !important;
+		box-shadow: none;
+	}
+	html:not(.theme-dark) .uni-tabbar__label {
+		color: #71717A !important;
+	}
+	html:not(.theme-dark) .uni-tabbar__item.uni-tabbar__item--active .uni-tabbar__label,
+	html:not(.theme-dark) .uni-tabbar__item--active .uni-tabbar__label {
+		color: #18181B !important;
+	}
 	/* #endif */
 
 	/* 安全区适配 */

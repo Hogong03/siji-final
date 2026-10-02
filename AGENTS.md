@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 89 文件 / 1239 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.2（修深色切换残留：tabBar 内联样式卡死 + 功能页滑块文字冲突；含 4.10.1 深色架构修复与 4.10.0 能力拆分） |
+| 版本 | v4.10.3（修浅色点 tab 变深：摘除 app-plus/h5 的 darkmode 框架跟随 + 浅色 tabbar 镜像；含 4.10.1/4.10.2 深色修复与 4.10.0 能力拆分） |
 
 ---
 
