@@ -108,3 +108,8 @@ export {
   getOwnReadKey, setOwnReadKey, hasOwnReadKey, resolveReadConfig,
   isReadUrlAvailable, readStatusText
 } from './ai/read-config.js'
+// 4.10.0：AI 能力注册表（设置页分组卡与各注入点统一裁决）
+export {
+  AI_FEATURES, FEATURE_GROUPS, TOOL_FEATURE_MAP,
+  listFeatureGroups, isFeatureOn, setFeatureOn, isFeatureActive
+} from './ai/features.js'

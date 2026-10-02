@@ -22,6 +22,7 @@ import { collectPlanAlerts } from '@/utils/plan-alerts.js'
 import { satisfiedToday } from '@/utils/plan-recur.js'
 import { pickNextStep, shouldOfferNextStep } from '@/utils/next-step.js'
 import { getPlanReminder } from '@/utils/reminder/settings.js'
+import { isFeatureOn } from '@/utils/ai/features.js'
 
 const pending = ref(null)
 /** 上次结算时间（内存态，不落盘）：refreshEnterSummary 节流用 */
@@ -91,8 +92,9 @@ function buildPlanExtras(plans, now) {
   let nextStep = null
   try { alerts = collectPlanAlerts(plans, now) } catch (e) { alerts = null }
   try { workStatus = collectWorkStatus(plans, now) } catch (e) { workStatus = null }
+  // 4.10.0：「下一步建议」能力开关
   try {
-    if (shouldOfferNextStep(now)) nextStep = pickNextStep(plans)
+    if (isFeatureOn('next_step') && shouldOfferNextStep(now)) nextStep = pickNextStep(plans)
   } catch (e) { nextStep = null }
   return { alerts: alerts, workStatus: workStatus, nextStep: nextStep }
 }
@@ -128,10 +130,13 @@ function computeSummary(since, now, source) {
   // 3.5.13：连续两天低落时给一句休息提示（不诊断、不评分、不催）
   const moodDip = scanMoodDip({ since, now, diaryReader: getDiaryList })
   // 3.5.14：每周账单播报（三个数字，一周只出一次；生成即标记，不重复打扰）
+  // 4.10.0：「周账单播报」能力开关
   let weekBill = null
   try {
-    weekBill = buildWeeklyBillAnnouncement({ now })
-    if (weekBill) markWeeklyBillAnnounced(now)
+    if (isFeatureOn('week_bill')) {
+      weekBill = buildWeeklyBillAnnouncement({ now })
+      if (weekBill) markWeeklyBillAnnounced(now)
+    }
   } catch (e) {
     weekBill = null
   }

@@ -7,9 +7,20 @@
  * v13：所有按钮触控热区扩到 ≥44px（88rpx），视觉圆点保持原尺寸
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
 import { pickOneFile, readPickedFile, fileCardText, classifyFile } from '@/utils/files/index.js'
+import { isFeatureOn } from '@/utils/ai/features.js'
+
+// ──── 图片识别按钮显隐（4.10.0 能力开关）────
+const visionOn = ref(isFeatureOn('vision'))
+function onFeaturesChanged() {
+	visionOn.value = isFeatureOn('vision')
+}
+uni.$on('ai-features-changed', onFeaturesChanged)
+onUnmounted(() => {
+	uni.$off('ai-features-changed', onFeaturesChanged)
+})
 
 const props = defineProps({
 	modelValue: { type: String, default: '' },
@@ -178,7 +189,7 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 
 		<!-- 输入行 -->
 		<view class="input-row">
-			<view class="side-btn" @tap="pickImage">
+			<view v-if="visionOn" class="side-btn" @tap="pickImage">
 				<view class="side-dot">
 					<SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
 				</view>

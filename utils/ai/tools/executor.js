@@ -5,6 +5,7 @@
 import { logger } from '../../logger.js'
 import { addCustomTag, getTagsByCategory, removeCustomTag, updateTagCategory } from '../../storage/tags.js'
 import { needsConfirmation, TOOL_LABELS, TOOL_DEFINITIONS } from './index.js'
+import { TOOL_FEATURE_MAP, isFeatureActive } from '../features.js'
 import { buildAgentPayload } from './agent.js'
 import { searchConversations } from '../../chat-search.js'
 
@@ -22,6 +23,11 @@ export function executeTool(store, name, args = {}) {
   try {
     if (!TOOL_NAMES.has(name)) {
       return { ok: false, text: `不存在名为 ${name} 的工具，请从工具列表里选择可用的工具重新调用`, detail: null }
+    }
+    // 4.10.0：能力开关拦截 —— 用户关掉的功能（微光/人脉/联网/读网址），模型幻觉调用也不执行
+    const fid = TOOL_FEATURE_MAP[name]
+    if (fid && !isFeatureActive(fid)) {
+      return { ok: false, text: `${name} 功能已在设置中关闭，请勿再调用；如用户需要请提示到「设置 → AI 配置 → AI 能力」开启`, detail: null }
     }
     // 确认闸门前置：写操作默认需用户确认（3.0 M3），查询/撤销直接放行
     if (needsConfirmation(name, args)) {

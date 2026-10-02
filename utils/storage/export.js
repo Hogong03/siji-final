@@ -141,7 +141,8 @@ const CHAT_KEYS = new Set([
 ])
 const AI_KEYS = new Set([
   'siji_long_term_memory', 'siji_monthly_memory', 'siji_structured_memory',
-  'siji_my_profile', 'siji_agents', 'siji_active_agent', 'siji_memory_enabled'
+  'siji_my_profile', 'siji_agents', 'siji_active_agent', 'siji_memory_enabled',
+  'siji_ai_features'
 ])
 
 /** 判断存储键属于哪个备份域 */

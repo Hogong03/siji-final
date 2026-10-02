@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 88 文件 / 1229 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.9.0（AI 强化：闲聊 lite 提示词 -35% / 语料 30 条 / date-parse 相对日期 / 记忆可点名；含 4.8.2 审查修复与 4.6-4.8.4 图标与深色体系） |
+| 测试 | 89 文件 / 1239 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.10.0（AI 能力拆分：11 项能力按组开关、注入五处收口；含 4.9.0 强化与 4.8.x 深色体系） |
 
 ---
 
@@ -129,6 +129,7 @@
 - Agent 不做删除类破坏性操作：TOOL_DEFINITIONS 只注册 `delete_feedback`，且它必须登记在 `CONFIRM_TOOLS`（开了「AI 自动执行写操作」也要确认）；今后新增 delete_* 必须同步登记 CONFIRM_TOOLS
 - `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500（**兜底路径产出的记账同样过闸门**，4.8.2）
 - **年度维护**：`docs/AI维护清单.md`（节假日表 / 厂商模型复核 / 真实模型自检 / 提示词预算，每年 1 月执行）
+- **能力开关**：可选 AI 能力（联网/读网址/记忆/摘要/能量/下一步/周播报/微光/人脉/演练/图片）统一在 `utils/ai/features.js` 注册表裁决（`isFeatureOn`/`isFeatureActive`）；新增可关能力 = 注册表加条目 + TOOL_FEATURE_MAP 映射 + 三处注入点接开关；写开关后必须 `invalidatePromptCache()`；**安全底座不可关**（确认闸门/白名单/撤销/记忆治理）
 
 ---
 
@@ -296,6 +297,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `notifier.js` 的 `showReminderActions`（ActionSheet：直达打卡/三档推迟/查看，关掉=默认档推迟）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI |
 | 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：问候+进展+状态+上班卡+下一步；`buildPlanAlertLines`/`buildWorkLine`/`buildNextStepLine`）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
+| 改 AI 能力开关 | `utils/ai/features.js`（注册表 + TOOL_FEATURE_MAP）+ `pages/settings/sub/ai.vue` 的「AI 能力」分组卡 + 各注入点（agent-transport 过滤 / executor 拦截 / chat-helpers 段 / prompt-builder extSection / useEnterSummary / InputArea） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
@@ -342,7 +344,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 88 文件 / 1229 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 89 文件 / 1239 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

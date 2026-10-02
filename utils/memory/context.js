@@ -8,6 +8,7 @@ import { selectMemories } from '../memory-rank.js'
 import { buildStructuredMemoryContext } from '../memory-structured.js'
 import { getAllMemories } from './store.js'
 import { getProfileValues } from './profile-values.js'
+import { isFeatureOn } from '../ai/features.js'
 import { buildMonthlyMemoryContext } from './monthly.js'
 
 const MEMORY_CONTEXT_POOL = 30              // 单次注入上下文的最大记忆条数（按相关度选取）
@@ -18,8 +19,8 @@ const MEMORY_CONTEXT_POOL = 30              // 单次注入上下文的最大记
  * 改动5：过滤已在画像中存在的记忆，减少 token 冗余
  */
 export function buildMemoryContext(query) {
-  const enabled = uni.getStorageSync('siji_memory_enabled')
-  if (enabled === 'false') return '' // 用户关闭了长期记忆
+  // 4.10.0：长期记忆开关收口到能力注册表（isFeatureOn('memory') 兼容旧键 siji_memory_enabled）
+  if (!isFeatureOn('memory')) return ''
 
   const all = getAllMemories()
 

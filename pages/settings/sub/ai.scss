@@ -593,6 +593,82 @@
   }
 }
 
+/* AI 能力分组卡（4.10.0 能力注册表） */
+.feature-card {
+  margin-top: $spacing-sm;
+  padding: $spacing-md;
+  background: #FFFFFF;
+  border-radius: $radius-md;
+  border: 1rpx solid #E4E4E7;
+  box-sizing: border-box;
+
+  .feature-group-head { margin-bottom: $spacing-xs; }
+
+  .feature-group-name {
+    font-size: $font-sm;
+    font-weight: 600;
+    color: #18181B;
+  }
+
+  .feature-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+    padding: $spacing-sm 0;
+    border-bottom: 1rpx solid #F4F4F5;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  .feature-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .feature-name {
+    font-size: $font-sm;
+    color: #18181B;
+  }
+
+  .feature-desc {
+    font-size: $font-xs;
+    color: #A1A1AA;
+    margin-top: 4rpx;
+    line-height: 1.5;
+  }
+
+  .feature-switch {
+    width: 84rpx;
+    height: 48rpx;
+    border-radius: 24rpx;
+    background: #E4E4E7;
+    padding: 4rpx;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+
+    .feature-knob {
+      width: 40rpx;
+      height: 40rpx;
+      border-radius: 50%;
+      background: #FFFFFF;
+      transition: transform $transition-fast;
+    }
+
+    &.on {
+      background: #000000;
+
+      .feature-knob {
+        transform: translateX(36rpx);
+      }
+    }
+  }
+}
+
 /* AI 配置页深色模式 */
 /* #ifndef MP-WEIXIN */
 :global(html.theme-dark) {
@@ -671,6 +747,16 @@
   .search-switch.on { background: #FAFAFA; }
   .search-switch.on .search-knob { background: #18181B; }
   .search-hint { color: #71717A; }
+  /* AI 能力分组卡 */
+  .feature-card { background: #27272A; border-color: #3F3F46; }
+  .feature-group-name { color: #FAFAFA; }
+  .feature-name { color: #FAFAFA; }
+  .feature-desc { color: #71717A; }
+  .feature-row { border-bottom-color: #27272A; }
+  .feature-switch { background: #3F3F46; }
+  .feature-switch .feature-knob { background: #FAFAFA; }
+  .feature-switch.on { background: #FAFAFA; }
+  .feature-switch.on .feature-knob { background: #18181B; }
   .search-backend { background: #27272A; border-color: #3F3F46; }
   .search-backend.active { border-color: #FAFAFA; background: #3F3F46; }
   .search-backend-name { color: #FAFAFA; }
@@ -819,6 +905,16 @@
   .search-switch.on { background: #FAFAFA; }
   .search-switch.on .search-knob { background: #18181B; }
   .search-hint { color: #71717A; }
+  /* AI 能力分组卡 */
+  .feature-card { background: #27272A; border-color: #3F3F46; }
+  .feature-group-name { color: #FAFAFA; }
+  .feature-name { color: #FAFAFA; }
+  .feature-desc { color: #71717A; }
+  .feature-row { border-bottom-color: #27272A; }
+  .feature-switch { background: #3F3F46; }
+  .feature-switch .feature-knob { background: #FAFAFA; }
+  .feature-switch.on { background: #FAFAFA; }
+  .feature-switch.on .feature-knob { background: #18181B; }
   .search-backend { background: #27272A; border-color: #3F3F46; }
   .search-backend.active { border-color: #FAFAFA; background: #3F3F46; }
   .search-backend-name { color: #FAFAFA; }

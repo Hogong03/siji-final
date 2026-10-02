@@ -11,8 +11,10 @@ import {
   listSearchBackends, isSearchEnabled, setSearchEnabled, getSearchBackendId, setSearchBackend,
   setOwnSearchKey, hasOwnSearchKey, resolveSearchConfig, searchStatusText,
   listReadBackends, isReadEnabled, setReadEnabled, getReadBackendId, setReadBackend,
-  setOwnReadKey, hasOwnReadKey, readStatusText
+  setOwnReadKey, hasOwnReadKey, readStatusText,
+  listFeatureGroups, isFeatureOn, setFeatureOn
 } from '@/utils/api.js'
+import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import {
   listDocBackends, getDocBackendId, setDocBackend, setOwnDocKey, hasOwnDocKey, docStatusText
 } from '@/utils/files/index.js'
@@ -98,7 +100,26 @@ onMounted(() => {
   expandedProvider.value = store.aiProvider
   customModelInput.value = store.getCustomModel(store.aiProvider)
   loadCustomProviders()
+  refreshFeatureState()
 })
+
+/* ---- AI 能力分组开关（4.10.0：能力注册表） ---- */
+const featureGroups = listFeatureGroups()
+const featureState = ref({})
+
+function refreshFeatureState() {
+  const map = {}
+  featureGroups.forEach(g => g.features.forEach(f => { map[f.id] = isFeatureOn(f.id) }))
+  featureState.value = map
+}
+
+function toggleFeature(id) {
+  setFeatureOn(id, !featureState.value[id])
+  refreshFeatureState()
+  // 关掉的段已进缓存（system prompt 120s），立即失效
+  try { invalidatePromptCache() } catch (e) { /* 缓存失效失败只影响当轮 */ }
+  uni.$emit('ai-features-changed')
+}
 
 function loadCustomProviders() {
   try {
@@ -133,6 +154,8 @@ function toggleWebSearch() {
   searchEnabled.value = !searchEnabled.value
   setSearchEnabled(searchEnabled.value)
   refreshSearchStatus()
+  // 4.10.0：分组卡上的联网搜索行与本卡共用同一开关，状态要同步
+  refreshFeatureState()
 }
 
 function chooseSearchBackend(id) {
@@ -182,6 +205,8 @@ function toggleReadUrl() {
   readEnabled.value = !readEnabled.value
   setReadEnabled(readEnabled.value)
   refreshReadStatus()
+  // 4.10.0：分组卡同步
+  refreshFeatureState()
 }
 
 function chooseReadBackend(id) {
@@ -548,6 +573,22 @@ async function testConnection() {
       <view class="form-actions">
         <button class="btn-cancel" @tap="showCustomForm = false">取消</button>
         <button class="btn-save" @tap="saveCustomProvider">保存并切换</button>
+      </view>
+    </view>
+
+    <!-- AI 能力：按组开关（4.10.0 能力注册表） -->
+    <view v-for="g in featureGroups" :key="g.id" class="feature-card">
+      <view class="feature-group-head">
+        <text class="feature-group-name">{{ g.name }}</text>
+      </view>
+      <view v-for="f in g.features" :key="f.id" class="feature-row">
+        <view class="feature-text">
+          <text class="feature-name">{{ f.name }}</text>
+          <text class="feature-desc">{{ f.desc }}</text>
+        </view>
+        <view class="search-switch" :class="{ on: featureState[f.id] }" @tap="toggleFeature(f.id)">
+          <view class="search-knob" />
+        </view>
       </view>
     </view>
 

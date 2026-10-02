@@ -6,6 +6,7 @@
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
 import { isLiteChatMode } from './prompt-actions.js'
+import { isFeatureOn } from './features.js'
 import { buildMemoryContext } from '@/utils/memory.js'
 import { buildRelationsContext, detectMentionedRelations } from '@/utils/relations.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
@@ -88,7 +89,9 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
 
   // 关系上下文已包含被提到的人物详情（buildRelationsContext 内部处理）
   // 3.4 M1：能量感知 — 低/极低时注入降载指令（纯本地推断，零用户输入）
-  const energy = energyScan(userMessage, history)
+  // 4.10.0：能力开关 —— 关掉「能量感知」时按中等档处理（不降载、不抑制点破）
+  const energyOn = isFeatureOn('energy')
+  const energy = energyOn ? energyScan(userMessage, history) : { level: 'medium', text: '' }
   if (energy.text) {
     system += energy.text
   }
@@ -101,7 +104,8 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
 
   // 3.5.13：动静摘要 — 上次结算以来的完成/打卡/新增记录，让 AI 续得上「你不在时」发生的事
   // 4.5.1：very_low 能量档跳过 —— 降载口径（不主动提任务/计划）与摘要里的完成/打卡行冲突
-  if (energy.level !== 'very_low') {
+  // 4.10.0：「动静摘要」能力开关
+  if (energy.level !== 'very_low' && isFeatureOn('digest')) {
     const progressDigest = buildProgressDigest()
     if (progressDigest) {
       system += progressDigest

@@ -8,8 +8,7 @@
 import { getReasoningConfig, getMaxTokens } from './providers.js'
 import { markReplyTruncated } from './response-parser.js'
 import { TOOL_DEFINITIONS } from './tools.js'
-import { isWebSearchAvailable } from './search-config.js'
-import { isReadUrlAvailable } from './read-config.js'
+import { TOOL_FEATURE_MAP, isFeatureActive } from './features.js'
 import { chatRequestChunkedStream } from './chat-chunked.js'
 import { logger } from '../logger.js'
 /**
@@ -262,9 +261,12 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
 /** 构建本轮 tools 列表：全局工具 + 已配置好的 web_search（门控与聊天厂商无关） */
 function buildToolList(provider, model) {
   // web_search 已入全局注册表；搜索后端配好 Key 才注入，跟聊天用哪个厂商无关（3.5.18）
+  // 4.10.0：功能开关收口 —— 工具→能力映射统一裁决（联网/读网址含 Key 可用性，见 features.js）
   const tools = TOOL_DEFINITIONS
-    .filter(t => t.name !== 'web_search' || isWebSearchAvailable())
-    .filter(t => t.name !== 'read_url' || isReadUrlAvailable())
+    .filter(t => {
+      const fid = TOOL_FEATURE_MAP[t.name]
+      return !fid || isFeatureActive(fid)
+    })
     .map(t => ({
     type: 'function',
     function: {

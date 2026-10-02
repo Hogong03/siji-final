@@ -16,6 +16,7 @@
 import { buildProfileContext } from '../profile.js'
 import { holidayPromptLine } from '../holidays.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES } from './prompt-actions.js'
+import { isFeatureOn } from './features.js'
 
 // 4.5.1：删除 isLiteChatMode 的向后兼容再导出（生产代码无人消费，判定函数本体仍在 prompt-actions.js）
 
@@ -106,9 +107,12 @@ export function invalidatePromptCache() {
 export function checkExtensionData() {
   let hasRelations = false, hasDecisions = false, hasSimulations = false
   try {
-    hasRelations = JSON.parse(uni.getStorageSync('siji_relations') || '[]').filter(r => r.is_deleted !== 1).length > 0
+    // 4.10.0：人脉/情景演练受能力开关约束（数据存在 + 开关打开才注入 extSection）
+    hasRelations = isFeatureOn('relation') &&
+      JSON.parse(uni.getStorageSync('siji_relations') || '[]').filter(r => r.is_deleted !== 1).length > 0
     hasDecisions = JSON.parse(uni.getStorageSync('siji_decisions') || '[]').filter(d => d.is_deleted !== 1).length > 0
-    hasSimulations = JSON.parse(uni.getStorageSync('siji_simulations') || '[]').filter(s => s.is_deleted !== 1).length > 0
+    hasSimulations = isFeatureOn('simulation') &&
+      JSON.parse(uni.getStorageSync('siji_simulations') || '[]').filter(s => s.is_deleted !== 1).length > 0
   } catch { /* ignore */ }
   return { hasRelations, hasDecisions, hasSimulations }
 }

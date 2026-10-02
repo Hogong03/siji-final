@@ -1,0 +1,59 @@
+/**
+ * 版本日志数据段：4.10.x（新版本在前）
+ *
+ * 纯数据，无逻辑；由 utils/storage/version-data.js 聚合后经 getDefaultHistory() 导出。
+ */
+
+export const V410 = [
+  {
+    version: '4.10.0',
+    date: '2026-10-02',
+    title: '4.10.0 AI 能力拆分：11 项能力按组开关（设置 → AI 配置 → AI 能力），关掉即从工具/提示词/UI 三处消失',
+    summary: [
+      'AI 能力注册表：新增 utils/ai/features.js 单一事实源 —— 11 项可选能力按 5 组管理（信息获取/上下文感知/主动关怀/记录通道/输入方式），状态存 siji_ai_features 随备份走',
+      '设置页新增「AI 能力」分组卡：每行能力名 + 一句话说明 + 开关，联网搜索/读网址与原有配置卡共用同一开关，图片识别开关控制输入区按钮显隐',
+      '注入五处收口：工具注入按能力过滤（原 web_search 专用过滤泛化成 TOOL_FEATURE_MAP）、执行器拦截幻觉调用（提示到设置开启）、动静摘要/能量感知段、extSection 人脉/演练段、进入消息的下一步与周播报',
+      '旧开关无缝迁移：siji_memory_enabled 首次读取迁移进注册表并写穿回旧键（记忆提取侧 isMemoryEnabled 无缝跟随），联网/读网址开关直接转发既有配置',
+      '默认全开 —— 升级用户零感知；关掉的能力同时省 token（agent 工具 38→按需）与心智；安全底座（确认闸门/操作白名单/撤销/记忆治理）不可关',
+      '测试 89 文件 / 1239 用例全绿（新增 ai-features 10 例：注册表/迁移/写穿/delegate 转发/执行器拦截/extSection 门控）',
+    ],
+    categories: [
+      {
+        title: '能力注册表（4.10.0）',
+        items: [
+          'utils/ai/features.js（新增）：AI_FEATURES 11 项清单 + FEATURE_GROUPS 5 组 + TOOL_FEATURE_MAP（工具名→能力 id，注入过滤与执行拦截共用）+ isFeatureOn/setFeatureOn/isFeatureActive（开关 + Key 资源可用性双裁决）',
+          '存储键 siji_ai_features；已登记进备份 AI_KEYS（export.js），随「AI 与记忆」分域导出',
+          'delegate 模式：联网搜索/读网址的开关与 Key 裁决由 search-config/read-config 承担，注册表只转发 —— 不复制状态，两处开关永不打架',
+          'legacy 模式：长期记忆开关写穿旧键 siji_memory_enabled（memory/store.js 的 isMemoryEnabled 管提取侧），读取侧兼容旧值',
+        ],
+      },
+      {
+        title: '注入收口（4.10.0）',
+        items: [
+          'utils/ai/agent-transport.js：buildToolList 过滤从 web_search 专用改为 TOOL_FEATURE_MAP 通查（微光/人脉/联网/读网址按开关出列）',
+          'utils/ai/tools/executor.js：executeTool 对已关能力直接拒绝（「功能已在设置中关闭」，不含确认卡），模型幻觉调用不再落库',
+          'utils/ai/chat-helpers.js：动静摘要段、能量感知段按开关注入（能量关闭按中等档处理，不降载不抑制点破）',
+          'utils/ai/prompt-builder.js：checkExtensionData 的 hasRelations/hasSimulations 叠加能力开关（数据存在且开关打开才注入完整 extSection）',
+          'composables/useEnterSummary.js：next_step / week_bill 开关短路（关闭时进入消息不再出现下一步行与账单行）',
+          'components/chat/InputArea.vue：图片识别按钮按 vision 开关显隐（监听 ai-features-changed 即时刷新）',
+          'utils/memory/context.js：buildMemoryContext 改查注册表（兼容旧键），注入与提取随同一开关',
+        ],
+      },
+      {
+        title: '设置页（4.10.0）',
+        items: [
+          'pages/settings/sub/ai.vue：新增「AI 能力」五组分组卡（置于联网搜索卡上方），开关切换即时生效并失效提示词缓存（invalidatePromptCache）；联网搜索/读网址行的开关与原配置卡双向同步',
+          'pages/settings/sub/ai.scss：feature-card 浅色 + 双深色块（:global 类驱动与媒体查询）样式',
+        ],
+      },
+      {
+        title: '测试与工程（4.10.0）',
+        items: [
+          'tests/ai-features.test.js（新增 10 例）：清单完整性与分组、持久化、未知 id 安全、旧键迁移与写穿、delegate 转发、isFeatureActive 双裁决、执行器拦截（关=拒绝无确认卡，开=走正常确认流）、extSection 门控（关=不注入 update_relation）、TOOL_FEATURE_MAP 与清单一致性',
+          '边界明确：确认闸门 / 操作白名单 / 撤销 / 记忆治理 / 对话核心 CRUD 不可关（安全与数据完整性底座）',
+          '全量 NODE_OPTIONS=--max-old-space-size=4096 + vitest run --maxWorkers=2：89 文件 / 1239 用例全绿',
+        ],
+      },
+    ],
+  },
+]
