@@ -260,7 +260,8 @@ html.theme-dark {
   .search-placeholder { color: #71717A; }
   .seg-control { background: #3F3F46; }
   .seg-text { color: #A1A1AA; }
-  .seg-item.active .seg-text { color: #FAFAFA; }
+  /* 4.10.2：滑块深色下为白底，激活文字必须用深色（原来同为 #FAFAFA，文字压进滑块看不见） */
+  .seg-item.active .seg-text { color: #18181B; }
   .seg-slider { background: #FAFAFA; }
   .stats-bar { background: #27272A; }
   .stats-val { color: #FAFAFA; }
@@ -288,7 +289,8 @@ html.theme-dark {
   .search-placeholder { color: #71717A; }
   .seg-control { background: #3F3F46; }
   .seg-text { color: #A1A1AA; }
-  .seg-item.active .seg-text { color: #FAFAFA; }
+  /* 4.10.2：滑块深色下为白底，激活文字必须用深色（原来同为 #FAFAFA，文字压进滑块看不见） */
+  .seg-item.active .seg-text { color: #18181B; }
   .seg-slider { background: #FAFAFA; }
   .stats-bar { background: #27272A; }
   .stats-val { color: #FAFAFA; }

@@ -134,6 +134,18 @@ applyClass = () => {
     if (isDark.value) root.classList.add(DARK_CLASS)
     else root.classList.remove(DARK_CLASS)
     syncH5TabIcons()
+    // 4.10.2：清掉 uni.setTabBarStyle 写下的内联 tabbar 样式 —— 实测该 API 在 H5 是
+    // 静默 no-op（success 回调照走但不写任何样式），它历史写下的内联深色背景会永远
+    // 压住 CSS（浅色模式没有任何代码清除它 → tabbar 卡在深色）。清掉后：深色由
+    // App.vue 的 !important 规则接管，浅色回框架默认。setTabBarItem 的图标交换仍走 DOM 兜底。
+    try {
+      document.querySelectorAll('.uni-tabbar').forEach((el) => {
+        if (el.style) {
+          el.style.removeProperty('background-color')
+          el.style.removeProperty('backdrop-filter')
+        }
+      })
+    } catch (e) { /* 清理失败不影响类切换 */ }
   } catch (e) { /* 挂类失败静默 */ }
 }
 

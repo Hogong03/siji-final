@@ -6,6 +6,31 @@
 
 export const V410 = [
   {
+    version: '4.10.2',
+    date: '2026-10-03',
+    title: '4.10.2 修深色切换两处残留：tabBar 内联样式卡死（uni.setTabBarStyle 在 H5 是静默 no-op）+ 功能页滑块激活文字与白滑块同色',
+    summary: [
+      'tabBar 切换不跟色：实测 uni.setTabBarStyle 在 H5 是静默 no-op（success 回调照走、元素纹丝不动），它历史写下的内联深色背景永远压住 CSS，切回浅色也不清除 —— applyClass 挂类后直接清掉 tabbar 内联 background-color/backdrop-filter，深色由 !important 规则接管、浅色回框架默认',
+      '功能页滑块：深色下滑块为白底（#FAFAFA）而激活文字同为 #FAFAFA ——「AI 面板」白字压白滑块看不见，激活文字改 #18181B（两个深色块同修）',
+      '浏览器实测双向闭环：深→浅（tabbar 回浅底、图标回浅色变体）→ 深（tabbar 深底、图标深色变体）全通过；测试 89 文件 / 1239 用例全绿',
+    ],
+    categories: [
+      {
+        title: 'tabBar 内联样式卡死（4.10.2）',
+        items: [
+          'utils/theme.js：applyClass（H5 分支）挂类后清掉 .uni-tabbar 的内联 background-color / backdrop-filter —— uni.setTabBarStyle 在 H5 实测不写任何样式（参数隔离实验：连 backgroundColor:#FF0000 单独调用都无效），内联残留只能 DOM 清理',
+          '参数隔离实验记录：完整 light 参数与单参数调用后元素 style 均无变化 → 该 API 在 H5 无法用于主题切换，颜色职责完全归 CSS（App.vue !important 深色规则 + 框架默认浅色）',
+        ],
+      },
+      {
+        title: '功能页滑块文字（4.10.2）',
+        items: [
+          'pages/functions/functions.scss：两个深色块的 .seg-item.active .seg-text 从 #FAFAFA 改 #18181B —— 深色下滑块是白底，激活文字必须深色；非激活文字 #A1A1AA 不变',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.1',
     date: '2026-10-02',
     title: '4.10.1 修深色模式全页面失效（P0）：4.8.4 的 :global(html.theme-dark){嵌套} 写法被编译器剥掉子选择器，85 文件 96 处改回 html 元素前缀直写',
