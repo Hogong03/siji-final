@@ -209,7 +209,15 @@ function makeRunner() {
 async function startEval() {
   if (running.value) return
   if (!hasKey.value) {
-    uni.showToast({ title: '先到 AI 配置里填 Key', icon: 'none' })
+    uni.showModal({
+      title: '还没连接 AI',
+      content: '自检会真实调用你配置的模型，先连接一个 AI 厂商再回来跑',
+      confirmText: '去连接',
+      cancelText: '先不连',
+      success: (res) => {
+        if (res.confirm) uni.navigateTo({ url: '/pages/settings/sub/key-guide' })
+      }
+    })
     return
   }
   running.value = true

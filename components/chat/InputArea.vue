@@ -1,9 +1,11 @@
 <script setup>
 /**
- * 输入区组件 v13 —— 图片识别 + 文件读取（3.6.0）
+ * 输入区组件 v14 —— 图片识别 + 文件读取 + 语音转文字
  *
- * 一行输入：图片 / 文件 -> 文本 -> 发送/停止
- * 语音功能已移除；文本类文件本地直读，pdf/office 走解析后端
+ * 一行输入：图片 / 文件 / 语音 -> 文本 -> 发送/停止
+ * 语音（v14）：录音 ≤25s → 智谱 ASR 转写 → 填入输入框（不自动发送）；
+ *   能力开关默认关（features.js 的 voice），无智谱 Key 时点击给引导提示
+ * 文本类文件本地直读，pdf/office 走解析后端
  * v13：所有按钮触控热区扩到 ≥44px（88rpx），视觉圆点保持原尺寸
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
@@ -11,15 +13,22 @@ import { ref, computed, onUnmounted } from 'vue'
 import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
 import { pickOneFile, readPickedFile, fileCardText, classifyFile } from '@/utils/files/index.js'
 import { isFeatureOn } from '@/utils/ai/features.js'
+import { getProviderKeys } from '@/utils/ai/providers.js'
+import { startRecording, stopRecording, cancelRecording } from '@/utils/ai/recorder.js'
+import { transcribeAudio } from '@/utils/ai/transcribe.js'
 
-// ──── 图片识别按钮显隐（4.10.0 能力开关）────
+// ──── 按钮显隐（能力开关：图片识别 4.10.0 / 语音转文字 v14，默认关）────
 const visionOn = ref(isFeatureOn('vision'))
+const voiceOn = ref(isFeatureOn('voice'))
 function onFeaturesChanged() {
 	visionOn.value = isFeatureOn('vision')
+	voiceOn.value = isFeatureOn('voice')
 }
 uni.$on('ai-features-changed', onFeaturesChanged)
 onUnmounted(() => {
 	uni.$off('ai-features-changed', onFeaturesChanged)
+	// 离开页面时若还在录音，直接丢弃（不转写）
+	if (recording.value) cancelRecording()
 })
 
 const props = defineProps({
@@ -100,6 +109,64 @@ async function pickFile() {
 	}
 }
 function clearFile() { selectedFile.value = null; emit('file-cleared') }
+
+// ──── 语音转文字（录音 → 智谱 ASR → 填入输入框，不自动发送）────
+const recording = ref(false)
+const transcribing = ref(false)
+
+/** 点麦克风：空闲则开录，录音中则停并转写 */
+async function toggleVoice() {
+	if (recording.value) { stopAndTranscribe(); return }
+	if (transcribing.value) return
+	const keys = getProviderKeys()
+	if (!keys || !keys.zhipu) {
+		uni.showToast({ title: '语音转写走智谱，先在 AI 配置里填智谱 Key', icon: 'none' })
+		return
+	}
+	const ok = await startRecording({
+		// 25s 自动停（recorder.js 内置限时）：走与手动停止同一条转写路径
+		onAutoStop: () => { stopAndTranscribe() }
+	})
+	if (!ok) {
+		uni.showToast({ title: '无法开始录音，请检查麦克风权限', icon: 'none' })
+		return
+	}
+	recording.value = true
+}
+
+async function stopAndTranscribe() {
+	if (!recording.value) return
+	recording.value = false
+	transcribing.value = true
+	try {
+		const res = await stopRecording()
+		if (!res || res.cancelled) return
+		let text = ''
+		// #ifdef H5
+		if (res.blob) text = await transcribeAudio('', res.blob)
+		// #endif
+		// #ifndef H5
+		if (res.path) text = await transcribeAudio(res.path)
+		// #endif
+		if (text) {
+			setVoiceText(text)
+		} else {
+			uni.showToast({ title: '没听清，再试一次', icon: 'none' })
+		}
+	} catch (e) {
+		uni.showToast({ title: (e && e.message) || '语音转写失败，请重试', icon: 'none' })
+	} finally {
+		transcribing.value = false
+	}
+}
+
+/** 转写结果填进输入框（不自动发送），与草稿保存同一套 */
+function setVoiceText(t) {
+	if (!t) return
+	text.value = t
+	emit('update:modelValue', t)
+	saveDraft(t)
+}
 
 // ──── H5 粘贴图片（截图/Ctrl+V 直接进压缩预览，阻止浏览器下载弹框） ────
 function onPaste(e) {
@@ -194,6 +261,16 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 					<SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
 				</view>
 			</view>
+			<!-- 语音转文字：能力开关默认关；录音中切实心停止态，转写中半透明 -->
+			<view v-if="voiceOn" class="side-btn" @tap="toggleVoice">
+				<view class="side-dot" :class="{ recording: recording }">
+					<view v-if="!recording" class="mic-glyph" :style="{ opacity: transcribing ? 0.4 : 1 }">
+						<view class="mic-body" />
+						<view class="mic-arc" />
+					</view>
+					<text v-else class="mic-stop">■</text>
+				</view>
+			</view>
 			<view class="side-btn" @tap="pickFile">
 				<view class="side-dot">
 					<SijiIcon name="file" size="sm" color="#71717A" :style="{ opacity: fileLoading ? 0.4 : 1 }" />
@@ -276,6 +353,27 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 }
 .side-btn:active .side-dot { transform: scale(0.9); background: #E4E4E7; }
 
+/* 麦克风：static/icons 无 mic 图标，用 CSS 画线框麦克风；录音中切实心停止态 */
+.mic-glyph {
+	display: flex; flex-direction: column; align-items: center;
+}
+.mic-body {
+	width: 14rpx; height: 24rpx; border-radius: 7rpx; background: #18181B;
+}
+.mic-arc {
+	width: 26rpx; height: 12rpx;
+	border: 3rpx solid #18181B; border-top: none;
+	border-radius: 0 0 14rpx 14rpx;
+	margin-top: 4rpx; box-sizing: border-box;
+}
+.side-dot.recording {
+	background: #18181B; border-color: #18181B;
+}
+.side-dot.recording:active { background: #18181B; }
+.mic-stop {
+	color: #FFFFFF; font-size: 24rpx; line-height: 1;
+}
+
 .input-wrap {
 	flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
 	background: #F4F4F5; border-radius: 36rpx; border: 1rpx solid #E4E4E7;
@@ -319,6 +417,12 @@ html.theme-dark {
 	.side-dot {
 		background: #27272A; border-color: #3F3F46;
 	}
+	.mic-body { background: #F4F4F5; }
+	.mic-arc { border-color: #F4F4F5; }
+	.side-dot.recording {
+		background: #FAFAFA; border-color: #FAFAFA;
+	}
+	.mic-stop { color: #18181B; }
 	.side-btn:active .side-dot { background: #3F3F46; }
 	.del-dot { background: rgba(255,255,255,.12); }
 	.img-preview { background: #27272A; border-color: #3F3F46; }
@@ -355,6 +459,12 @@ html.theme-dark {
 	.side-dot {
 		background: #27272A; border-color: #3F3F46;
 	}
+	.mic-body { background: #F4F4F5; }
+	.mic-arc { border-color: #F4F4F5; }
+	.side-dot.recording {
+		background: #FAFAFA; border-color: #FAFAFA;
+	}
+	.mic-stop { color: #18181B; }
 	.side-btn:active .side-dot { background: #3F3F46; }
 	.del-dot { background: rgba(255,255,255,.12); }
 	.img-preview { background: #27272A; border-color: #3F3F46; }

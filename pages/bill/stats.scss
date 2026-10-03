@@ -177,6 +177,12 @@
   .ts-value { font-size: 24rpx; font-weight: 700; color: #18181B; font-variant-numeric: tabular-nums; }
 }
 
+/* 心情趋势卡头 */
+.mood-avg {
+  font-size: 22rpx;
+  color: #71717A;
+}
+
 /* Top 5 */
 .top5-list {
   display: flex;
@@ -321,6 +327,8 @@ html.theme-dark {
   .ts-label { color: #71717A; }
   .ts-value { color: #FAFAFA; }
 
+  .mood-avg { color: #A1A1AA; }
+
   .top5-row { border-bottom-color: #3F3F46; }
   .top5-rank { background: #3F3F46; color: #F4F4F5; }
   .top5-cat { color: #FAFAFA; }
@@ -362,6 +370,8 @@ html.theme-dark {
 
   .ts-label { color: #71717A; }
   .ts-value { color: #FAFAFA; }
+
+  .mood-avg { color: #A1A1AA; }
 
   .top5-row { border-bottom-color: #3F3F46; }
   .top5-rank { background: #3F3F46; color: #F4F4F5; }

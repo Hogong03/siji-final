@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 90 文件 / 1250 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.7（4.10.0~4.10.7 已整合为单条版本记录：AI 能力拆分 + 深色修复链 + 外观弹层 + AI 纠偏轮与自检收尾；全部小版本线的历史记录已发布前合并） |
+| 测试 | 92 文件 / 1289 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.11.0（竞品差距收口：免 Key 引导流 + 自动本地备份 + 照片日记/心情 + 月报长图 + 引导追问/语音入口；方案见 docs/竞品对比与差距方案.md） |
 
 ---
 
@@ -129,7 +129,7 @@
 - Agent 不做删除类破坏性操作：TOOL_DEFINITIONS 只注册 `delete_feedback`，且它必须登记在 `CONFIRM_TOOLS`（开了「AI 自动执行写操作」也要确认）；今后新增 delete_* 必须同步登记 CONFIRM_TOOLS
 - `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500（**兜底路径产出的记账同样过闸门**，4.8.2）
 - **年度维护**：`docs/AI维护清单.md`（节假日表 / 厂商模型复核 / 真实模型自检 / 提示词预算，每年 1 月执行）
-- **能力开关**：可选 AI 能力（联网/读网址/记忆/摘要/能量/下一步/周播报/微光/人脉/演练/图片）统一在 `utils/ai/features.js` 注册表裁决（`isFeatureOn`/`isFeatureActive`）；新增可关能力 = 注册表加条目 + TOOL_FEATURE_MAP 映射 + 三处注入点接开关；写开关后必须 `invalidatePromptCache()`；**安全底座不可关**（确认闸门/白名单/撤销/记忆治理）
+- **能力开关**：可选 AI 能力（联网/读网址/记忆/摘要/能量/下一步/周播报/引导追问/微光/人脉/演练/图片/语音转文字）统一在 `utils/ai/features.js` 注册表裁决（`isFeatureOn`/`isFeatureActive`）；新增可关能力 = 注册表加条目 + TOOL_FEATURE_MAP 映射 + 三处注入点接开关；写开关后必须 `invalidatePromptCache()`；**安全底座不可关**（确认闸门/白名单/撤销/记忆治理）
 
 ---
 
@@ -146,7 +146,7 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.10.js；各小版本线已发布前合并）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.11.js；各小版本线已发布前合并）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
@@ -300,6 +300,11 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：问候+进展+状态+上班卡+下一步；`buildPlanAlertLines`/`buildWorkLine`/`buildNextStepLine`）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | 改 AI 能力开关 | `utils/ai/features.js`（注册表 + TOOL_FEATURE_MAP）+ `pages/settings/sub/ai.vue` 的「AI 能力」分组卡 + 各注入点（agent-transport 过滤 / executor 拦截 / chat-helpers 段 / prompt-builder extSection / useEnterSummary / InputArea） |
+| 改免 Key 引导流 | `pages/settings/sub/key-guide.vue`（厂商卡+验证保存）+ `utils/ai/key-verify.js`（真实请求验证）+ `pages/chat/index.vue` 无 Key 引导卡 + `pages/settings/sub/ai-eval.vue` 无 Key 弹窗 |
+| 改自动备份 | `utils/storage/backup.js`（纯函数可单测 + App 文件层）+ `pages/settings/sub/data.vue` 自动备份卡 + `App.vue` appReady 调度（App 端 `_doc/siji-backup/` 留 3 份；照片文件不进备份 v1） |
+| 改照片日记 / 心情 | `utils/diary-image.js`（三端选图持久化唯一入口）+ `pages/diary/detail.vue`（九宫格+心情 5 档）+ `pages/diary/list.vue` 缩略图；mood/images 字段收口在 `store/executors/diary.js`（clampMood/normalizeImages），工具 schema 在 `utils/ai/tools/diary.js` |
+| 改月报 | `utils/report-data.js`（buildMonthlyReport 聚合纯函数）+ `pages/stats/report.vue`（canvas 长图三端保存）+ `pages/diary/list.vue` 入口 |
+| 改语音转文字 | `utils/ai/features.js` 的 voice 开关（默认关）+ `components/chat/InputArea.vue` 麦克风 + `utils/ai/recorder.js`/`transcribe.js`（智谱 ASR，2.3 遗产复用） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；守卫 tests/theme-mode.test.js |
@@ -312,7 +317,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.10.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.11.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）

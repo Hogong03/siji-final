@@ -11,6 +11,7 @@ export const DIARY_TOOLS = [
       properties: {
         content: { type: 'string', description: '记录正文（首行作标题）' },
         record_type: { type: 'string', enum: ['note', 'diary', 'todo'], description: '记录类型，默认 note（想法/灵感/闪念都归 note）' },
+        mood: { type: 'integer', enum: [1, 2, 3, 4, 5], description: '心情打分 1=很低 2=偏低 3=一般 4=不错 5=很好；仅当能从正文判断时给，判断不了不传' },
         tags: { type: 'array', items: { type: 'string' }, description: '标签，尽量从历史标签中选' }
       },
       required: ['content']
@@ -26,6 +27,7 @@ export const DIARY_TOOLS = [
         title: { type: 'string', description: '修改标题' },
         content: { type: 'string', description: '修改正文' },
         record_type: { type: 'string', enum: ['note', 'diary', 'todo'], description: '修改记录类型（三选一）' },
+        mood: { type: 'integer', enum: [1, 2, 3, 4, 5], description: '修改心情打分（1~5），仅用户提到心情变化时传' },
         tags: { type: 'array', items: { type: 'string' } }
       },
       required: ['client_id']

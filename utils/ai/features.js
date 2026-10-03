@@ -29,10 +29,12 @@ export const AI_FEATURES = [
   { id: 'energy', name: '能量感知', desc: '状态低落时自动放轻语气、少提任务', group: 'context', default: true },
   { id: 'next_step', name: '下一步建议', desc: '进入对话时给一个约 5 分钟的最小行动', group: 'care', default: true },
   { id: 'week_bill', name: '周账单播报', desc: '每周一报上周支出概况', group: 'care', default: true },
+  { id: 'guide_ask', name: '引导追问', desc: '记录类回复末尾附一个深入追问（引导式日记）', group: 'care', default: true },
   { id: 'glimmer', name: '微光本收集', desc: 'AI 主动收集「还行的小事」', group: 'channel', default: true },
   { id: 'relation', name: '人脉互动', desc: '认识人、记互动、查关系（有人脉数据时）', group: 'channel', default: true },
   { id: 'simulation', name: '情景演练', desc: '与 AI 预演社交/规划对话', group: 'channel', default: true },
-  { id: 'vision', name: '图片识别', desc: '发图片让 AI 看（需模型支持）', group: 'input', default: true }
+  { id: 'vision', name: '图片识别', desc: '发图片让 AI 看（需模型支持）', group: 'input', default: true },
+  { id: 'voice', name: '语音转文字', desc: '输入区麦克风说话转文字（走智谱 ASR，需智谱 Key）', group: 'input', default: false }
 ]
 
 /** 能力分组（设置页渲染顺序） */

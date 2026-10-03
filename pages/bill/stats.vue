@@ -13,7 +13,7 @@
  *  ⑦ 环比对比 + 消费洞察
  */
 import { ref, computed, onMounted } from 'vue'
-import { getBillList } from '@/utils/storage.js'
+import { getBillList, getDiaryList } from '@/utils/storage.js'
 import SijiChart from '@/components/common/SijiChart.vue'
 import { EXPENSE_CATEGORIES } from '@/utils/categories.js'
 import { useTheme } from '@/composables/useTheme.js'
@@ -26,6 +26,7 @@ const singleBarColor = computed(() => isDark.value ? ['#FAFAFA'] : ['#18181B'])
 const currentMonth = ref('')
 const bills = ref([])
 const prevBills = ref([])
+const diaries = ref([]) // 当月记录（心情趋势卡用）
 const viewMode = ref('month') // month | year
 const trendRange = ref('week') // week | month | year
 const selectedCatTrend = ref('') // 分类趋势选中分类
@@ -50,6 +51,8 @@ function getPrevMonth(month) {
 }
 
 function loadData() {
+  // 心情趋势卡读当月记录（diary_YYYY-MM），月度/年度两种视图下都跟随选中的月份
+  diaries.value = getDiaryList(currentMonth.value)
   if (viewMode.value === 'year') {
     // 年度：加载12个月
     const year = parseInt(currentMonth.value.split('-')[0])
@@ -176,6 +179,36 @@ const trendData = computed(() => {
 const trendTotalExpense = computed(() => trendData.value.reduce((s, d) => s + d.expense, 0))
 const trendTotalIncome = computed(() => trendData.value.reduce((s, d) => s + d.income, 0))
 
+// ==================== 心情趋势（当月记录 mood 1~5） ====================
+// mood 收口口径与 store/executors/diary.js 的 clampMood 一致：1~5 整数，其余视为没打分
+const moodEntries = computed(() => {
+  return diaries.value
+    .filter(d => d && d.mood !== null && d.mood !== undefined)
+    .map(d => ({ ts: Number(d.created_at) || 0, mood: Number(d.mood) }))
+    .filter(d => d.ts > 0 && Number.isInteger(d.mood) && d.mood >= 1 && d.mood <= 5)
+    .sort((a, b) => a.ts - b.ts)
+})
+
+// 折线点：x=日。同一天多次打分取当天最新一次（已按时间升序，后写覆盖）
+const moodDayPoints = computed(() => {
+  const byDay = new Map()
+  moodEntries.value.forEach(e => {
+    byDay.set(new Date(e.ts).getDate(), e.mood)
+  })
+  return Array.from(byDay.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([day, mood]) => ({ label: String(day), value: mood }))
+})
+
+const moodCount = computed(() => moodEntries.value.length)
+const avgMood = computed(() => {
+  if (moodCount.value === 0) return '0.0'
+  const sum = moodEntries.value.reduce((s, e) => s + e.mood, 0)
+  return (sum / moodCount.value).toFixed(1)
+})
+// 少于 2 个有心情的日期（同一天多条只算一个点）整卡隐藏，不画单点
+const showMoodCard = computed(() => moodDayPoints.value.length >= 2)
+
 // ==================== 分类趋势对比 ====================
 const catTrendData = computed(() => {
   if (!selectedCatTrend.value) return []
@@ -297,6 +330,15 @@ function formatDate(ts) {
           <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#71717A' : '#A1A1AA' }" /><text class="ts-label">收入</text><text class="ts-value">¥{{ trendTotalIncome.toFixed(0) }}</text></view>
         </view>
         <SijiChart type="bar" :dark="isDark" :data="trendData.map(d => ({ label: d.label, values: [d.expense, d.income] }))" :group-mode="true" :colors="trendColors" :height="180" />
+      </view>
+
+      <!-- ②b 心情趋势（当月有 ≥2 个打分日才显示） -->
+      <view class="chart-card" v-if="showMoodCard">
+        <view class="chart-header">
+          <text class="chart-title">心情趋势</text>
+          <text class="mood-avg">平均 {{ avgMood }} · {{ moodCount }} 条有心情记录</text>
+        </view>
+        <SijiChart type="line" :dark="isDark" :data="moodDayPoints" :colors="trendColors" :height="160" />
       </view>
 
       <!-- ③ Top 5 -->

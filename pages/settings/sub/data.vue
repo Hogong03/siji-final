@@ -5,9 +5,20 @@
  */
 
 import SijiIcon from '@/components/common/SijiIcon.vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAppStore } from '@/store/index.js'
-import { exportCsv, rebuildIndex, exportBackupJson, parseBackup, importBackup } from '@/utils/storage.js'
+import {
+  exportCsv,
+  rebuildIndex,
+  exportBackupJson,
+  parseBackup,
+  importBackup,
+  isAutoBackupEnabled,
+  createAutoBackup,
+  listAutoBackups,
+  restoreAutoBackup,
+  AUTO_BACKUP_SWITCH_KEY
+} from '@/utils/storage.js'
 import { saveBackupToFile, buildBackupFileName } from '@/utils/backup-file.js'
 import { getVersion } from '@/utils/version-check.js'
 
@@ -183,6 +194,77 @@ function restoreFromText(text, merge) {
   }
 }
 
+/* ---- 自动本地备份（App 端专属）：开关 / 立即备份 / 列表 / 点选恢复 ---- */
+const autoEnabled = ref(isAutoBackupEnabled())
+const autoBackups = ref([])
+const autoBusy = ref(false)
+
+function toggleAutoBackup() {
+  autoEnabled.value = !autoEnabled.value
+  uni.setStorageSync(AUTO_BACKUP_SWITCH_KEY, autoEnabled.value ? '1' : '0')
+}
+
+function refreshAutoBackups() {
+  listAutoBackups().then(list => { autoBackups.value = list })
+}
+
+function doAutoBackupNow() {
+  if (autoBusy.value) return
+  autoBusy.value = true
+  uni.showLoading({ title: '备份中...' })
+  createAutoBackup().then((r) => {
+    uni.hideLoading()
+    autoBusy.value = false
+    if (r.ok) {
+      uni.showToast({ title: '已备份到本机', icon: 'success' })
+      refreshAutoBackups()
+    } else {
+      uni.showToast({ title: '备份失败：' + (r.message || r.reason || '未知原因'), icon: 'none' })
+    }
+  })
+}
+
+function formatAutoSize(bytes) {
+  if (!bytes) return '-'
+  return bytes >= 1024 ? (bytes / 1024).toFixed(1) + ' KB' : bytes + ' B'
+}
+
+function formatAutoTime(ts) {
+  if (!ts) return '-'
+  const d = new Date(ts)
+  const pad = n => String(n).padStart(2, '0')
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+}
+
+function confirmRestoreAuto(item) {
+  uni.showModal({
+    title: '恢复这份备份？',
+    content: item.name + '\n将把备份内容写回当前数据，确定继续吗？',
+    confirmText: '恢复',
+    confirmColor: '#000000',
+    success(res) {
+      if (!res.confirm) return
+      doRestoreAuto(item.name)
+    }
+  })
+}
+
+function doRestoreAuto(name) {
+  uni.showLoading({ title: '恢复中...' })
+  restoreAutoBackup(name).then((r) => {
+    uni.hideLoading()
+    if (r.ok) {
+      uni.showToast({ title: '已恢复，建议重启应用', icon: 'none', duration: 2500 })
+    } else {
+      uni.showToast({ title: '恢复失败：' + (r.message || r.reason || '未知原因'), icon: 'none' })
+    }
+  })
+}
+
+onMounted(() => {
+  refreshAutoBackups()
+})
+
 function doExportCsv() {
   uni.showActionSheet({
     itemList: ['导出记录 (CSV)', '导出账单 (CSV)', '导出计划 (CSV)'],
@@ -251,6 +333,33 @@ function clearAll() {
       />
       <view class="btn-danger" @tap="doRestore">校验并恢复</view>
     </view>
+
+    <!-- 自动备份（App 端专属：写本机 _doc/siji-backup/，保留 3 份） -->
+    <!-- #ifdef APP-PLUS -->
+    <view class="card">
+      <view class="card-title"><SijiIcon name="clock" size="sm" class="title-icon" /><text>自动备份</text></view>
+      <view class="auto-row">
+        <text class="auto-desc">每天自动备份到手机本机，保留最近 3 份</text>
+        <view class="auto-switch" :class="{ on: autoEnabled }" @tap="toggleAutoBackup">
+          <view class="auto-knob" />
+        </view>
+      </view>
+      <view class="btn-outline" @tap="doAutoBackupNow">立即备份</view>
+      <view class="auto-list" v-if="autoBackups.length > 0">
+        <text class="auto-list-title">本机备份（最新在前，点按恢复）</text>
+        <view
+          class="auto-item"
+          v-for="item in autoBackups"
+          :key="item.name"
+          @tap="confirmRestoreAuto(item)"
+        >
+          <text class="auto-item-name">{{ item.name }}</text>
+          <text class="auto-item-meta">{{ formatAutoSize(item.size) }} · {{ formatAutoTime(item.time) }}</text>
+        </view>
+      </view>
+      <text class="auto-empty" v-else>还没有本机备份，点上方「立即备份」生成第一份</text>
+    </view>
+    <!-- #endif -->
 
     <!-- 搜索索引 -->
     <view class="card">
@@ -329,6 +438,84 @@ function clearAll() {
   &:active { opacity: 0.85; }
 }
 
+/* 自动备份：开关行 + 备份列表 */
+.auto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+.auto-desc {
+  flex: 1;
+  font-size: $font-xs;
+  color: #A1A1AA;
+  line-height: 1.6;
+}
+.auto-switch {
+  width: 84rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background: #E4E4E7;
+  padding: 4rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+
+  .auto-knob {
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: #FFFFFF;
+    transition: transform 0.15s ease;
+  }
+
+  &.on {
+    background: #000000;
+
+    .auto-knob {
+      transform: translateX(36rpx);
+    }
+  }
+}
+.auto-list {
+  margin-top: 20rpx;
+  display: block;
+}
+.auto-list-title {
+  display: block;
+  font-size: $font-xs;
+  color: #71717A;
+  margin-bottom: 8rpx;
+}
+.auto-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #E4E4E7;
+
+  &:last-child { border-bottom: none; }
+  &:active { opacity: 0.7; }
+
+  .auto-item-name {
+    display: block;
+    font-size: $font-sm;
+    color: #18181B;
+    word-break: break-all;
+  }
+  .auto-item-meta {
+    display: block;
+    font-size: $font-xs;
+    color: #A1A1AA;
+    margin-top: 4rpx;
+  }
+}
+.auto-empty {
+  display: block;
+  font-size: $font-xs;
+  color: #A1A1AA;
+  margin-top: 16rpx;
+}
+
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
@@ -343,6 +530,18 @@ html.theme-dark {
   .btn-outline { border-color: #FAFAFA; color: #FAFAFA; }
   .restore-input { background: #3F3F46; color: #FAFAFA; }
   .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+  .auto-switch { background: #3F3F46;
+    .auto-knob { background: #FAFAFA; }
+    &.on { background: #FAFAFA;
+      .auto-knob { background: #18181B; }
+    }
+  }
+  .auto-list-title { color: #71717A; }
+  .auto-item { border-bottom-color: #3F3F46;
+    .auto-item-name { color: #FAFAFA; }
+    .auto-item-meta { color: #71717A; }
+  }
+  .auto-empty { color: #71717A; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -358,6 +557,18 @@ html.theme-dark {
   .btn-outline { border-color: #FAFAFA; color: #FAFAFA; }
   .restore-input { background: #3F3F46; color: #FAFAFA; }
   .btn-danger { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+  .auto-switch { background: #3F3F46;
+    .auto-knob { background: #FAFAFA; }
+    &.on { background: #FAFAFA;
+      .auto-knob { background: #18181B; }
+    }
+  }
+  .auto-list-title { color: #71717A; }
+  .auto-item { border-bottom-color: #3F3F46;
+    .auto-item-name { color: #FAFAFA; }
+    .auto-item-meta { color: #71717A; }
+  }
+  .auto-empty { color: #71717A; }
 }
 /* #endif */
 </style>

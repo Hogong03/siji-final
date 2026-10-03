@@ -51,6 +51,13 @@
     "navigationBarBackgroundColor": "@navBgColor",
     "navigationBarTextStyle": "@navTxtStyle"
    }
+  },
+  {
+   "path": "pages/stats/report",
+   "style": {
+    "navigationBarTitleText": "月度报告",
+    "navigationStyle": "custom"
+   }
   }
  ],
  "subPackages": [
@@ -61,6 +68,14 @@
      "path": "data",
      "style": {
       "navigationBarTitleText": "数据同步与导出",
+      "navigationBarBackgroundColor": "@navBgColor",
+      "navigationBarTextStyle": "@navTxtStyle"
+     }
+    },
+    {
+     "path": "key-guide",
+     "style": {
+      "navigationBarTitleText": "连接 AI",
       "navigationBarBackgroundColor": "@navBgColor",
       "navigationBarTextStyle": "@navTxtStyle"
      }

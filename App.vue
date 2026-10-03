@@ -25,7 +25,8 @@
 		ensureCet6Tips,
 		migrateRecordTypes,
 		migrateDiaryCategories,
-		getPlanList
+		getPlanList,
+		runAutoBackup
 	} from '@/utils/storage.js'
 	import {
 		initReminder,
@@ -96,6 +97,13 @@
 				startReminderChecker()
 				// 3.4.5 / 3.5.12：进入总结（冷启动 + 回前台两条路径，回前台结算见 onShow）
 				initEnterSummary()
+				// 自动本地备份（App 端专属）：开关开（siji_auto_backup 默认开）且距上次超过 24h
+				// 时静默备份到 _doc/siji-backup/（保留 3 份），失败不影响启动
+				try {
+					runAutoBackup().catch((e) => console.warn('[思迹] 自动备份失败:', (e && e.message) || e))
+				} catch (e) {
+					console.warn('[思迹] 自动备份调度失败:', (e && e.message) || e)
+				}
 			} catch (e) {
 				console.warn('[思迹] Init failed:', e.message)
 			}

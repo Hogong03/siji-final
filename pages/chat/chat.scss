@@ -633,6 +633,63 @@
   color: #FFFFFF;
 }
 
+/* ─── 无 Key 引导卡（免 Key 引导流：一个 Key 都没配时的空态引导） ─── */
+.no-key-card {
+  margin: 12rpx $spacing-md;
+  padding: 32rpx 24rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 14rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.no-key-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #F4F4F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+
+.no-key-title {
+  font-size: $font-md;
+  font-weight: 600;
+  color: #18181B;
+  text-align: center;
+}
+
+.no-key-desc {
+  font-size: $font-xs;
+  color: #71717A;
+  text-align: center;
+}
+
+.no-key-btn {
+  margin-top: 16rpx;
+  width: 320rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  background: #000000;
+  border-radius: 12rpx;
+}
+
+.no-key-btn:active {
+  opacity: 0.7;
+}
+
+.no-key-btn-text {
+  font-size: $font-sm;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
 /* ─── 发送中状态行（3.4.4 P1：正在思考/回复 + 计时） ─── */
 .sending-strip {
   display: flex;
@@ -1629,6 +1686,31 @@ html.theme-dark {
     color: #D4D4D8;
   }
 
+  .no-key-card {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .no-key-icon {
+    background: #27272A;
+  }
+
+  .no-key-title {
+    color: #FAFAFA;
+  }
+
+  .no-key-desc {
+    color: #A1A1AA;
+  }
+
+  .no-key-btn {
+    background: #FAFAFA;
+  }
+
+  .no-key-btn-text {
+    color: #000000;
+  }
+
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -1699,6 +1781,31 @@ html.theme-dark {
 
   .ruler-preview-text {
     color: #D4D4D8;
+  }
+
+  .no-key-card {
+    background: #18181B;
+    border-color: #27272A;
+  }
+
+  .no-key-icon {
+    background: #27272A;
+  }
+
+  .no-key-title {
+    color: #FAFAFA;
+  }
+
+  .no-key-desc {
+    color: #A1A1AA;
+  }
+
+  .no-key-btn {
+    background: #FAFAFA;
+  }
+
+  .no-key-btn-text {
+    color: #000000;
   }
 
 }

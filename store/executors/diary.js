@@ -87,12 +87,17 @@ export function createDiaryExecutors(ctx) {
     const recordType = RECORD_TYPE_KEYS.includes(p.record_type)
       ? p.record_type
       : (inferredType || 'note')
+    // 4.11.0：心情打分（AI 从正文判断时给，1~5）与照片（手动记录页选，≤9 张，本地路径）
+    const mood = clampMood(p.mood)
+    const images = normalizeImages(p.images)
 
     const diary = {
       client_id: ctx.generateEntityId('diary'),
       title: title || '无标题',
       content: content,
       record_type: recordType,
+      mood: mood,
+      images: images,
       // 4.2.0：用户/AI 没给标签时，自动打 1-3 个（先复用已有标签库，再落到内置关键词表）
       tags: Array.isArray(p.tags) && p.tags.length > 0
         ? p.tags
@@ -112,10 +117,33 @@ export function createDiaryExecutors(ctx) {
         type: 'diary', id: diary.client_id,
         title: diary.title, content: diary.content,
         record_type: diary.record_type,
+        mood: diary.mood,
+        images: diary.images,
         tags: diary.tags,
         created_at: diary.created_at
       }
     }
+  }
+
+  /** 心情打分收口：1~5 取整，越界/非法一律为空（不打分） */
+  function clampMood(v) {
+    const n = Math.round(Number(v))
+    if (!Number.isFinite(n) || n < 1 || n > 5) return null
+    return n
+  }
+  /** 照片路径收口：字符串数组、去空、去重、最多 9 张 */
+  function normalizeImages(list) {
+    if (!Array.isArray(list)) return []
+    const seen = new Set()
+    const out = []
+    for (const item of list) {
+      const s = String(item || '').trim()
+      if (!s || seen.has(s)) continue
+      seen.add(s)
+      out.push(s)
+      if (out.length >= 9) break
+    }
+    return out
   }
 
   // ==================== 修改/删除操作 ====================
@@ -167,13 +195,16 @@ export function createDiaryExecutors(ctx) {
     if (RECORD_TYPE_KEYS.includes(p.record_type)) updates.record_type = p.record_type
     // 旧类型值（idea / flash）改成 note，不再写进存储
     if (Array.isArray(p.tags)) updates.tags = p.tags
+    // 4.11.0：心情与照片同样可改（mood 传 null 表示清除打分；images 传数组为整组替换）
+    if (p.mood !== undefined) updates.mood = p.mood === null ? null : clampMood(p.mood)
+    if (p.images !== undefined) updates.images = Array.isArray(p.images) ? normalizeImages(p.images) : []
     updates.updated_at = Date.now()
 
     foundList[foundIdx] = { ...old, ...updates }
     asyncSetStorageJSON(`diary_${foundMonth}`, foundList)
 
     const changedFields = Object.keys(updates).filter(k => k !== 'updated_at')
-    const fieldLabels = { title: '标题', content: '内容', tags: '标签', record_type: '类型' }
+    const fieldLabels = { title: '标题', content: '内容', tags: '标签', record_type: '类型', mood: '心情', images: '照片' }
     const changedText = changedFields.map(k => fieldLabels[k] || k).join('、')
 
     invalidatePromptCache()

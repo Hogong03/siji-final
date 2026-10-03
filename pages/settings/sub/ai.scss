@@ -12,6 +12,16 @@
   gap: $spacing-sm;
 }
 
+/* 没有 Key 的引导入口（跳「连接 AI」页） */
+.guide-link-row {
+  padding: 4rpx 4rpx 20rpx;
+}
+.guide-link-text {
+  font-size: 26rpx;
+  color: #71717A;
+  text-decoration: underline;
+}
+
 .provider-card {
   background: #FFFFFF;
   border-radius: $radius-md;
@@ -673,6 +683,7 @@
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
   .ai-page { background: #18181B; }
+  .guide-link-text { color: #A1A1AA; }
 
   /* 厂商卡片 */
   .provider-card { background: #27272A; border-color: #3F3F46; }
@@ -831,6 +842,7 @@ html.theme-dark {
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .ai-page { background: #18181B; }
+  .guide-link-text { color: #A1A1AA; }
 
   /* 厂商卡片 */
   .provider-card { background: #27272A; border-color: #3F3F46; }

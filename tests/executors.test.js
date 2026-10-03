@@ -96,6 +96,29 @@ describe('记录 executor', () => {
     expect(q.detail.items[0].title).toBe('新标题')
   })
 
+  it('心情与照片：mood 收口 1~5、images 去重上限 9 张（4.11.0）', () => {
+    const c = store.executeAction({
+      type: 'create_diary',
+      payload: { content: '今天很开心', mood: 5, images: ['/x/a.jpg', '/x/a.jpg', '', '/x/b.jpg'] }
+    })
+    expect(c.detail.mood).toBe(5)
+    expect(c.detail.images).toEqual(['/x/a.jpg', '/x/b.jpg'])
+    // 非法 mood 不落分
+    const bad = store.executeAction({ type: 'create_diary', payload: { content: '没写心情', mood: 99 } })
+    expect(bad.detail.mood).toBe(null)
+    // 更新：mood 可改可清，images 整组替换
+    const u = store.executeAction({
+      type: 'update_diary',
+      payload: { client_id: c.detail.id, mood: 2, images: ['/x/c.jpg'] }
+    })
+    expect(u.success).toBe(true)
+    expect(u.detail.updatedFields).toEqual(expect.arrayContaining(['mood', 'images']))
+    const q = store.executeAction({ type: 'query_diary', payload: {} })
+    const hit = q.detail.items.find(d => d.client_id === c.detail.id)
+    expect(hit.mood).toBe(2)
+    expect(hit.images).toEqual(['/x/c.jpg'])
+  })
+
   it('旧类型值（idea / flash）不再写进存储：落到 note', () => {
     const c = store.executeAction({ type: 'create_diary', payload: { content: '有个想法', record_type: 'idea' } })
     expect(c.detail.record_type).toBe('note')

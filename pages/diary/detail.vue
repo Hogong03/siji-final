@@ -9,9 +9,9 @@ import { ref, computed } from 'vue'
 import { onLoad, onBackPress } from '@dcloudio/uni-app'
 import { getDiaryById, saveDiary, deleteDiary, togglePinDiary } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
+import { MAX_DIARY_IMAGES, pickDiaryImages, previewDiaryImages } from '@/utils/diary-image.js'
 import { useTagPicker } from '@/composables/useTagPicker.js'
 import { useRelatedRecords, useRelatedBills } from '@/composables/useDiaryRelations.js'
-import { useDiaryImages } from '@/composables/useDiaryImages.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { useTheme } from '@/composables/useTheme.js'
 
@@ -45,7 +45,7 @@ const currentType = computed(() => RECORD_TYPES.find(t => t.key === recordType.v
 // 4.2.0：闪念模式随类型收敛一并删除（它就是「note + 少几个控件」，不值得单独一种类型）
 const showMetaPanel = ref(false) // 类型条+标签区域可收起
 
-const form = ref({ title: '', content: '', tags: [], category: '', images: [], emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
+const form = ref({ title: '', content: '', tags: [], category: '', images: [], mood: null, emotion: '', ai_summary: '', ai_advice: '', record_type: 'note' })
 
 const { showTagPicker, newTagInput, allUsedTags, allCategories, selectedCategory, filteredTagList,
   openTagPicker, toggleTag, isTagSelected, addNewTag, removeTag, tagColor } = useTagPicker(form)
@@ -55,7 +55,30 @@ const { relatedRecords, loadRelated: loadRelatedRecords } = useRelatedRecords(
 )
 const { relatedBills, loadRelatedBills } = useRelatedBills(originalCreatedAt)
 
-const { chooseImage, removeImage, previewImage, MAX_IMAGES } = useDiaryImages(form)
+/** 照片（4.11.0）：选图/持久化收口在 utils/diary-image.js，页面不碰平台代码 */
+const choosingPhoto = ref(false)
+async function choosePhoto() {
+  if (choosingPhoto.value) return
+  choosingPhoto.value = true
+  try {
+    const added = await pickDiaryImages(form.value.images.length)
+    if (added.length > 0) form.value.images = form.value.images.concat(added)
+  } finally {
+    choosingPhoto.value = false
+  }
+}
+function removePhoto(idx) { form.value.images.splice(idx, 1) }
+function previewPhoto(idx) { previewDiaryImages(form.value.images, idx) }
+
+/** 心情 5 档（4.11.0）：与 AI 侧 mood 口径一致（1~5，取消 = null） */
+const MOOD_OPTIONS = [
+  { value: 1, face: '😞', label: '很低' },
+  { value: 2, face: '😕', label: '偏低' },
+  { value: 3, face: '😐', label: '一般' },
+  { value: 4, face: '🙂', label: '不错' },
+  { value: 5, face: '😄', label: '很好' },
+]
+function setMood(v) { form.value.mood = form.value.mood === v ? null : v }
 
 const { generating, Rewriting, extractingTodos, analyzingEmotion,
   generateAISummary: _genSummary, rewriteContent, extractTodos, analyzeEmotion } = useDiaryAI(form)
@@ -63,8 +86,16 @@ const { generating, Rewriting, extractingTodos, analyzingEmotion,
 const hasRelated = computed(() => relatedRecords.value.length > 0 || relatedBills.value.length > 0)
 
 const initialSnapshot = ref('')
+/** 脏值快照：mood 直接入快照；images 只记张数（H5 端是 dataURL，整组序列化太重） */
+function snapshotNow() {
+  return JSON.stringify({
+    t: form.value.title, c: form.value.content,
+    tags: [...form.value.tags].sort(), cat: form.value.category,
+    rt: recordType.value, mood: form.value.mood, imgs: (form.value.images || []).length
+  })
+}
 const isDirty = computed(() => {
-  return JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value }) !== initialSnapshot.value
+  return snapshotNow() !== initialSnapshot.value
 })
 
 onLoad((query) => {
@@ -85,7 +116,7 @@ onLoad((query) => {
       showTypePicker.value = false
     }
     applyTypeDefaults()
-    initialSnapshot.value = JSON.stringify({ t: '', c: '', tags: [], cat: '', rt: recordType.value })
+    initialSnapshot.value = snapshotNow()
     if (query.tag) form.value.tags = [decodeURIComponent(query.tag)]
     if (query.cat) form.value.category = decodeURIComponent(query.cat)
   }
@@ -108,7 +139,7 @@ function selectType(key) {
   recordType.value = key
   showTypePicker.value = false
   applyTypeDefaults()
-  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: key })
+  initialSnapshot.value = snapshotNow()
 }
 
 function closeTypePicker() {
@@ -156,10 +187,11 @@ function loadDiary() {
     content: item.content || '',
     tags: safeParseArray(item.tags), category: item.category || '',
     images: safeParseArray(item.images),
+    mood: item.mood || null,
     emotion: item.emotion || '', ai_summary: item.ai_summary || '', ai_advice: item.ai_advice || '',
     record_type: recordType.value
   }
-  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
+  initialSnapshot.value = snapshotNow()
   loadRelatedRecords()
   loadRelatedBills()
 }
@@ -191,12 +223,14 @@ async function handleSave() {
     client_id: isNew.value ? generateEntityId('diary') : diaryId.value,
     title, content: text,
     tags: [...form.value.tags], category: form.value.category,
-    images: form.value.images || [], emotion: form.value.emotion || '',
+    images: form.value.images || [],
+    mood: form.value.mood,
+    emotion: form.value.emotion || '',
     ai_summary: form.value.ai_summary, ai_advice: form.value.ai_advice,
     record_type: recordType.value,
     pinned: isPinned.value, created_at: createdAt, updated_at: Date.now(), is_deleted: 0
   })
-  initialSnapshot.value = JSON.stringify({ t: form.value.title, c: form.value.content, tags: [...form.value.tags].sort(), cat: form.value.category, rt: recordType.value })
+  initialSnapshot.value = snapshotNow()
   uni.showToast({ title: '已保存', icon: 'success' })
   setTimeout(() => { goBack() }, 800)
 }
@@ -306,7 +340,6 @@ const emotionLabel = computed(() => {
           <!-- #ifdef APP-PLUS -->
           <text class="ta-btn" :class="{ recording: isRecording }" @tap="startVoice">{{ isRecording ? '⏹' : '🎤' }}</text>
           <!-- #endif -->
-          <text class="ta-btn" @tap="chooseImage" v-if="form.images.length < MAX_IMAGES">🖼</text>
           <text class="ta-btn" @tap="showAIMenu = !showAIMenu" v-if="form.content.trim()">✨</text>
         </view>
       </view>
@@ -319,12 +352,32 @@ const emotionLabel = computed(() => {
         <view class="ai-menu-item" @tap="doAI('emotion')"><text>{{ analyzingEmotion ? '⏳ 分析中…' : '💭 情绪分析' }}</text></view>
       </view>
 
-      <!-- 图片（闪念模式隐藏） -->
-      <view class="image-section" v-if="form.images && form.images.length > 0">
+      <!-- 照片（4.11.0）：九宫格 + 添加格（添加格常驻，新建也要能加） -->
+      <view class="image-section">
         <view class="image-grid">
-          <view v-for="(img, i) in form.images" :key="i" class="image-item" @tap="previewImage(i)">
+          <view v-for="(img, i) in form.images" :key="i" class="image-item" @tap="previewPhoto(i)">
             <image :src="img" mode="aspectFill" class="img-thumb" />
-            <view class="img-remove" @tap.stop="removeImage(i)"><text>✕</text></view>
+            <view class="img-remove" @tap.stop="removePhoto(i)"><text>✕</text></view>
+          </view>
+          <view v-if="form.images.length < MAX_DIARY_IMAGES" class="image-item photo-add" @tap="choosePhoto">
+            <text class="photo-add-icon">+</text>
+            <text class="photo-add-text">{{ choosingPhoto ? '处理中…' : '添加' }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 心情（4.11.0）：5 档点选，再点一次取消 -->
+      <view class="mood-section">
+        <text class="mood-title">心情</text>
+        <view class="mood-row">
+          <view
+            v-for="m in MOOD_OPTIONS" :key="m.value"
+            class="mood-option"
+            :class="{ active: form.mood === m.value }"
+            @tap="setMood(m.value)"
+          >
+            <text class="mood-face">{{ m.face }}</text>
+            <text class="mood-label">{{ m.label }}</text>
           </view>
         </view>
       </view>
@@ -398,4 +451,122 @@ const emotionLabel = computed(() => {
 
 <style lang="scss" scoped>
 @import './detail.scss';
+
+/* ─── 照片九宫格（4.11.0，样式补在页面内：detail.scss 不在本次改动范围） ─── */
+.photo-add {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	border: 2rpx dashed #D4D4D8;
+	border-radius: 12rpx;
+	box-sizing: border-box;
+
+	.photo-add-icon {
+		font-size: 44rpx;
+		color: #A1A1AA;
+		line-height: 1;
+	}
+
+	.photo-add-text {
+		font-size: 20rpx;
+		color: #A1A1AA;
+		margin-top: 4rpx;
+	}
+}
+
+/* ─── 心情 5 档（4.11.0） ─── */
+.mood-section {
+	margin-bottom: 24rpx;
+}
+.mood-title {
+	display: block;
+	font-size: 24rpx;
+	color: #71717A;
+	margin-bottom: 12rpx;
+}
+.mood-row {
+	display: flex;
+	gap: 12rpx;
+}
+.mood-option {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 14rpx 0;
+	background: #FFFFFF;
+	border: 2rpx solid #E4E4E7;
+	border-radius: 12rpx;
+
+	.mood-face {
+		font-size: 40rpx;
+		line-height: 1.2;
+	}
+
+	.mood-label {
+		font-size: 20rpx;
+		color: #71717A;
+		margin-top: 4rpx;
+	}
+
+	&.active {
+		border-color: #18181B;
+		background: #18181B;
+
+		.mood-label {
+			color: #FAFAFA;
+		}
+	}
+}
+
+/* 深色（H5/App 路径：html.theme-dark 嵌套；MP 路径：@media 包在条件编译内） */
+/* #ifndef MP-WEIXIN */
+html.theme-dark {
+	.photo-add {
+		border-color: #52525B;
+
+		.photo-add-icon { color: #71717A; }
+		.photo-add-text { color: #71717A; }
+	}
+
+	.mood-option {
+		background: #27272A;
+		border-color: #3F3F46;
+
+		.mood-label { color: #A1A1AA; }
+
+		&.active {
+			border-color: #FAFAFA;
+			background: #FAFAFA;
+
+			.mood-label { color: #18181B; }
+		}
+	}
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+@media (prefers-color-scheme: dark) {
+	.photo-add {
+		border-color: #52525B;
+
+		.photo-add-icon { color: #71717A; }
+		.photo-add-text { color: #71717A; }
+	}
+
+	.mood-option {
+		background: #27272A;
+		border-color: #3F3F46;
+
+		.mood-label { color: #A1A1AA; }
+
+		&.active {
+			border-color: #FAFAFA;
+			background: #FAFAFA;
+
+			.mood-label { color: #18181B; }
+		}
+	}
+}
+/* #endif */
 </style>

@@ -275,12 +275,16 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
   // 注意：profileCtx 由 buildChatMessages 统一拼接，此处不再重复注入（修复双写问题）
   const dateLine = `当前时间:${todayStr} 星期${weekDay} ${timeStr}(昨天 ${yesterdayStr})`
   const holidaySection = holidayLine ? '\n' + holidayLine : ''
+  // 4.11.0：引导追问（Rosebud 式引导日记）—— 开关打开时给一句行为指令，关掉整句消失
+  const guideAskSection = isFeatureOn('guide_ask')
+    ? '\n引导追问：完成记录/记账类操作后，在回复末尾用一句真诚的追问引导用户多说一点（感受/细节/下一步），一问即可，别连环追问；闲聊与纯查询不加。'
+    : ''
   const extSection = extParts.length ? '\n\n' + extParts.join('\n') : ''
 
   // P2-1: agent 模式跳过身份行（让 agent.systemPrompt 定义 persona）
   const identityPrefix = agentMode ? '' : `${greeting}!${IDENTITY_LINE}`
   const promptCore = lite ? PROMPT_CORE_LITE : PROMPT_CORE_FULL
-  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${holidaySection}${extSection}`
+  const result = `${identityPrefix}${promptCore}\n\n${dateLine}${holidaySection}${guideAskSection}${extSection}`
 
   if (!lite && !agentMode) {
     _cache.systemPrompt = result

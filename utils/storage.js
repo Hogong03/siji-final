@@ -107,6 +107,21 @@ export {
   importBackup
 } from './storage/export.js'
 
+// 自动本地备份（App 端专属）
+export {
+  AUTO_BACKUP_SWITCH_KEY,
+  AUTO_BACKUP_LAST_KEY,
+  AUTO_BACKUP_INTERVAL_MS,
+  shouldAutoBackup,
+  pickKeepLatest,
+  fileNameToTime,
+  isAutoBackupEnabled,
+  createAutoBackup,
+  listAutoBackups,
+  restoreAutoBackup,
+  runAutoBackup
+} from './storage/backup.js'
+
 // 体验反馈
 export {
   getFeedbackList,

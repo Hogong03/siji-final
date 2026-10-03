@@ -39,6 +39,8 @@ function goDetail(clientId, m) {
 }
 function goNew() { uni.navigateTo({ url: '/pages/diary/detail?id=new' }) }
 function goTrash() { uni.navigateTo({ url: '/pages/diary/trash' }) }
+/** 月度报告长图（4.11.0）：自定义导航页 */
+function goReport() { uni.navigateTo({ url: '/pages/stats/report' }) }
 
 function toggleFilter() { showFilter.value = !showFilter.value }
 function closeFilter() { showFilter.value = false }
@@ -106,6 +108,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
           <text>⚙</text>
           <view class="filter-dot" v-if="hasActiveFilter"></view>
         </view>
+        <view class="tool-btn" @tap="goReport"><text class="tool-label">月报</text></view>
         <view class="tool-btn" @tap="goTrash"><text>🗑</text></view>
       </view>
     </view>
@@ -274,7 +277,11 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       <view v-if="filteredDiaries.length > 0 && pagedDiaries.length === 0" class="pg-empty">
         <text class="pg-empty-text">本页暂无内容</text>
       </view>
-      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
+      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item.client_id)">
+        <view class="card-photo" v-if="item.images && item.images.length > 0">
+          <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
+          <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
+        </view>
         <view class="card-header">
           <text class="card-date">{{ formatDate(item.created_at) }}</text>
           <text v-if="item.pinned" class="pin-badge">📌</text>
@@ -282,10 +289,6 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         </view>
         <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
         <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
-        <view class="card-images" v-if="item.images && item.images.length > 0">
-          <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
-          <text class="img-more" v-if="item.images.length > 3">+{{ item.images.length - 3 }}</text>
-        </view>
         <view v-if="getItemTags(item).length > 0" class="tag-row">
           <text v-for="t in getItemTags(item)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
         </view>
@@ -311,12 +314,13 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     <scroll-view v-else class="diary-scroll timeline-scroll" scroll-y>
       <view v-for="group in timelineGroups" :key="group.date" class="timeline-group">
         <view class="timeline-date">{{ group.date }}</view>
-        <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned }" @tap="goDetail(item.client_id)">
+        <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item.client_id)">
+          <view class="card-photo" v-if="item.images && item.images.length > 0">
+            <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
+            <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
+          </view>
           <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
           <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
-          <view class="card-images" v-if="item.images && item.images.length > 0">
-            <image v-for="(img, i) in item.images.slice(0, 3)" :key="i" :src="img" mode="aspectFill" class="card-img-thumb" />
-          </view>
           <view v-if="getItemTags(item).length > 0" class="tag-row">
             <text v-for="t in getItemTags(item)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
           </view>

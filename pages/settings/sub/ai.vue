@@ -428,10 +428,20 @@ async function testConnection() {
     testingKey.value = false
   }
 }
+
+/** 没有 Key 的用户引导去「连接 AI」页（申请步骤 + 验证保存一条龙） */
+function goKeyGuide() {
+  uni.navigateTo({ url: '/pages/settings/sub/key-guide' })
+}
 </script>
 
 <template>
   <view class="ai-page">
+    <!-- 没有 Key 的引导入口（显眼但不抢位：厂商列表上方一行文字链） -->
+    <view class="guide-link-row" @tap="goKeyGuide">
+      <text class="guide-link-text">没有 Key？按引导申请 →</text>
+    </view>
+
     <!-- 厂商列表 -->
     <view class="provider-list">
       <view

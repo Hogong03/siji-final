@@ -24,8 +24,8 @@ beforeEach(() => {
 })
 
 describe('注册表默认与持久化', () => {
-  it('清单完整：11 项能力、id 唯一、分组有效', () => {
-    expect(AI_FEATURES.length).toBe(11)
+  it('清单完整：13 项能力、id 唯一、分组有效', () => {
+    expect(AI_FEATURES.length).toBe(13)
     const ids = AI_FEATURES.map(f => f.id)
     expect(new Set(ids).size).toBe(AI_FEATURES.length)
     listFeatureGroups().forEach(g => {
@@ -45,6 +45,15 @@ describe('注册表默认与持久化', () => {
     expect(isFeatureOn('not_a_feature')).toBe(false)
     setFeatureOn('not_a_feature', true)
     expect(isFeatureOn('not_a_feature')).toBe(false)
+  })
+
+  it('4.11.0 新能力：guide_ask 默认开、voice 默认关，均可落盘读回', () => {
+    expect(isFeatureOn('guide_ask')).toBe(true)
+    expect(isFeatureOn('voice')).toBe(false)
+    setFeatureOn('voice', true)
+    expect(isFeatureOn('voice')).toBe(true)
+    setFeatureOn('voice', false)
+    expect(isFeatureOn('voice')).toBe(false)
   })
 })
 

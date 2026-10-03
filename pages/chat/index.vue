@@ -376,6 +376,15 @@ const starterChipsVisible = computed(() => {
   return !conv.messages.some(m => m.role === 'user')
 })
 
+// ===== 无 Key 引导卡（免 Key 引导流）=====
+// 一个厂商 Key 都没配时，在消息区空态引导去「连接 AI」页；有 resume 卡时放它上面
+const noKeyGuideVisible = computed(() => {
+  return !simulationMode.value && Object.keys(store.providerKeys || {}).length === 0
+})
+function goKeyGuide() {
+  uni.navigateTo({ url: '/pages/settings/sub/key-guide' })
+}
+
 // ===== 会话 Agent 绑定提示（3.1 M3）=====
 // 打开历史会话时若绑定 Agent 与当前活跃 Agent 不一致，提示一次，不自动切换
 const agentHintDismissed = ref(false)
@@ -623,6 +632,17 @@ function handleWelcomeChip(text) {
               >
                 <text class="enter-btn-text">返回旧对话 · {{ resumeTarget.title || '上次的对话' }}</text>
               </view>
+            </view>
+          </view>
+          <!-- 无 Key 引导卡：一个 Key 都没配时引导去连接（有 resume 卡时放它上面） -->
+          <view v-if="noKeyGuideVisible" class="no-key-card">
+            <view class="no-key-icon">
+              <SijiIcon name="sparkle" size="lg" />
+            </view>
+            <text class="no-key-title">连接一个 AI 就能开始对话</text>
+            <text class="no-key-desc">数据只存在本机</text>
+            <view class="no-key-btn" @tap="goKeyGuide">
+              <text class="no-key-btn-text">去连接</text>
             </view>
           </view>
           <!-- 新对话空态：回去接着聊 / 选择历史对话（3.5.16，可关） -->
