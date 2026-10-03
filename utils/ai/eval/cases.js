@@ -294,7 +294,9 @@ export const EVAL_CASES = [
   {
     id: 'work-checkout-chain',
     title: '不点名的打卡 → 先查计划拿到 id 再打（4.8.2 先查后改链路）',
-    needs: 'plan',
+    // 4.10.6：needs 从 plan 改绑 checkinPlan —— 4.10.5 实跑里模型先 query_plan 再如实说
+    // 「没有找到能打卡的计划」（行为正确却被判失败），库里得真有一个打卡子计划这条才可跑
+    needs: 'checkinPlan',
     message: '下班啦，打个卡',
     expect: {
       tools: ['log_plan_checkin'],

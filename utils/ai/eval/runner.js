@@ -51,7 +51,8 @@ export const CASE_STATUS = {
 /** 数据前置的中文说法（缺前置时告诉用户缺什么） */
 export const NEED_LABELS = {
   plan: '一条进行中的计划',
-  bill: '一笔支出账单'
+  bill: '一笔支出账单',
+  checkinPlan: '一个可打卡的每日计划（如「上班」模板）'
 }
 
 /**
@@ -65,9 +66,17 @@ export function buildEvalContext(data = {}) {
   const plan = plans[0] || null
   const bills = (Array.isArray(data.bills) ? data.bills : []).filter((b) => b && b.type === 'expense' && Number(b.amount) > 0)
   const bill = bills[0] || null
+  // 4.10.6：打卡语料的前置 —— 得有一个「打卡」子计划（上班模板的两个每日子计划是平铺存储的
+  // 子计划，query_plan 的 items 里看不到），模型查完只能对标题/描述做匹配，两处任一命中即可
+  const childPlans = (Array.isArray(data.childPlans) ? data.childPlans : []).filter((c) => c && c.status !== 2 && !c.frozen_at && !c.someday_at)
+  const checkinHit =
+    childPlans.find((c) => String(c.title || '').includes('打卡')) ||
+    plans.find((p) => String(p.title || '').includes('打卡') || String(p.description || '').includes('打卡')) ||
+    null
   return {
     plan: plan ? String(plan.title) : '',
     planId: plan ? String(plan.client_id || '') : '',
+    checkinPlan: checkinHit ? String(checkinHit.title) : '',
     bill: bill ? String(bill.category || bill.note || '账单') : '',
     // 没有账单时用空串：占位符保持原样，别把「不是 0 是 0」这种废话塞进语料
     billAmount: bill ? Number(bill.amount) : '',
@@ -262,7 +271,15 @@ export async function runCase(runner, caze, ctx) {
   }
   const caseForRun = Object.assign({}, caze, { message: resolved.message })
   try {
-    const res = (await runner(resolved.message, caseForRun)) || {}
+    // 4.10.6：网络抖动重试一次 —— 4.10.5 实跑 29 连发时 long-form 一条撞上
+    // 「网络连接失败」，单条网络错误不该在整个批次里留一个假失败
+    let res
+    try {
+      res = (await runner(resolved.message, caseForRun)) || {}
+    } catch (e) {
+      await new Promise((r) => setTimeout(r, 800))
+      res = (await runner(resolved.message, caseForRun)) || {}
+    }
     const judged = judgeCase(caseForRun, res)
     const fallbackAction = judged.pass ? null : detectFallback(caseForRun, res, judged.failures)
     const failures = judged.failures.slice()

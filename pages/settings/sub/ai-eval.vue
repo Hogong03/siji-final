@@ -28,6 +28,7 @@ import {
   buildEvalContext, EVAL_PROTOCOL_LABEL, CASE_STATUS
 } from '@/utils/ai/eval/runner.js'
 import { executeTool } from '@/utils/ai/tools.js'
+import { getPlanList, getPlanTemplates, ensureDefaultTemplates } from '@/utils/storage/plan.js'
 import { needUserConfirm } from '@/utils/ai/confirm-gate.js'
 import { getVersion } from '@/utils/version-check.js'
 
@@ -58,7 +59,39 @@ function fetchEvalContext() {
     const r = executeTool(store, 'query_bill', {})
     if (r && r.detail && Array.isArray(r.detail.items)) bills.push(...r.detail.items)
   } catch (e) { /* 同上 */ }
-  return buildEvalContext({ plans, bills })
+  // 4.10.6：打卡子计划平铺存储（带 parent_id），query_plan 的 items 里看不到，从存储直读（只读）
+  let childPlans = []
+  try {
+    childPlans = getPlanList().filter((p) => p.parent_id && p.status === 1)
+  } catch (e) { /* 读不到当没有 */ }
+  return buildEvalContext({ plans, bills, childPlans })
+}
+
+/** 一键补建「上班」打卡计划（4.10.6）：work-checkout 语料需要一个打卡子计划才能跑 */
+function ensurePrereqCheckin() {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title: '缺少可打卡的计划',
+      content: '「下班打个卡」这条语料需要一个每日打卡计划。帮你按「上班」模板建一个（含上下班打卡两个子计划，建后可在计划页删除）吗？',
+      confirmText: '建「上班」',
+      cancelText: '跳过该条',
+      success: (res) => {
+        if (!res.confirm) return resolve(true)
+        try {
+          ensureDefaultTemplates()
+          const tpl = getPlanTemplates().find((t) => t.client_id === 'tpl_work')
+          if (!tpl) throw new Error('tpl_work 不存在')
+          store.createPlanFromTemplate(tpl)
+          uni.showToast({ title: '已建「上班」计划', icon: 'none' })
+          resolve(true)
+        } catch (e) {
+          uni.showToast({ title: '建计划失败，该条将跳过', icon: 'none' })
+          resolve(true)
+        }
+      },
+      fail: () => resolve(true)
+    })
+  })
 }
 
 /**
@@ -98,6 +131,7 @@ const ctxText = computed(() => {
   if (!c) return ''
   const parts = []
   parts.push(c.plan ? `计划「${c.plan}」` : '计划（无进行中的计划）')
+  parts.push(c.checkinPlan ? `打卡计划「${c.checkinPlan}」` : '打卡计划（无可打卡的每日计划）')
   parts.push(c.billAmount > 0 ? `最近一笔支出 ¥${c.billAmount}` : '账单（本月没有支出）')
   return '数据前置：' + parts.join(' · ')
 })
@@ -170,13 +204,13 @@ async function startEval() {
   stopRef.stopped = false
   progress.value = { done: 0, total: EVAL_CASES.length }
   evalCtx.value = fetchEvalContext()
-  // 4.10.5：缺前置账单 → 提供一键补建（真实写入，需用户确认；bill-correction 语料不再被迫跳过）
+  // 4.10.5/4.10.6：缺前置 → 弹窗一键补建（真实写入需用户确认；对应语料不再被迫跳过）
   if (!evalCtx.value.billAmount) {
-    const go = await ensurePrereqBill()
-    if (!go) {
-      running.value = false
-      return
-    }
+    await ensurePrereqBill()
+    evalCtx.value = fetchEvalContext()
+  }
+  if (!evalCtx.value.checkinPlan) {
+    await ensurePrereqCheckin()
     evalCtx.value = fetchEvalContext()
   }
   try {

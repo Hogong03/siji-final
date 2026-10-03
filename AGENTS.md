@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 90 文件 / 1247 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.5（修 AI 零工具回闲聊：提示词 3 规则 + agent 短指令纠偏轮 + 自检口径 v5；含 4.10.4 外观弹层与 4.10.0~4.10.3 能力拆分/深色修复） |
+| 测试 | 90 文件 / 1249 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.10.6（自检 v5 复跑 27/29 收尾：打卡语料改绑 checkinPlan 前置 + 上班模板一键建 + 语料网络错误重试；含 4.10.5 纠偏轮、4.10.4 外观弹层） |
 
 ---
 
@@ -288,7 +288,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改动作类型白名单 | `store/data.js` 的 `isKnownActionType`（ACTION_MAP 是唯一事实来源）+ `store/index.js` 透传 + `utils/ai/autoExecutor.js` 的 `keepKnownActions`（幻觉类型按无 action 处理）+ `utils/ai/tools/executor.js` 的 `TOOL_NAMES`（不存在的工具名明确回传） |
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL`（度量语义变了就 +1，报告与页面都会显示）+ `formatFailureReport(rows, meta)` |
-| 改 AI 效果自检 | `utils/ai/eval/cases.js`（24 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置，缺前置判跳过）+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
+| 改 AI 效果自检 | `utils/ai/eval/cases.js`（30 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
 | 加六级内容（方法 / 资料） | 方法篇 `utils/storage/cet6-tips.js`（4 章，标签「技巧」）+ 资料篇 `utils/storage/cet6-material.js`（6 篇，标签「复习资料」）；都在 `App.vue` 的 appReady 调 `ensureCet6Tips()` 补发，改内容要 +`CET6_SEED_VERSION` |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/cet6-tips.js` 的 `ensureCet6Tips`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates` |
 | 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |

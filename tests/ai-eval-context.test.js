@@ -45,6 +45,20 @@ describe('buildEvalContext：从真实数据取值', () => {
     const ctx = buildEvalContext({ bills: [{ type: 'income', amount: 5000 }, { type: 'expense', amount: 12 }] })
     expect(ctx.billAmount).toBe(12)
   })
+
+  it('打卡前置（4.10.6）：打卡子计划 / 标题或描述带打卡的进行中计划都算命中', () => {
+    // 打卡子计划平铺存储（带 parent_id），query_plan items 里看不到 —— 从 childPlans 传入
+    const hit = buildEvalContext({
+      plans: PLANS,
+      childPlans: [{ client_id: 'plan_work_in', title: '上班打卡', status: 1, parent_id: 'plan_work' }]
+    })
+    expect(hit.checkinPlan).toBe('上班打卡')
+    // 顶层计划的标题/描述带打卡也算（模型对 query_plan 结果做匹配时能看到）
+    const topHit = buildEvalContext({ plans: [{ client_id: 'p2', title: '上班', description: '每天上下班打卡', status: 1 }] })
+    expect(topHit.checkinPlan).toBe('上班')
+    // 什么都没有 → 空串，语料判跳过
+    expect(buildEvalContext({ plans: PLANS }).checkinPlan).toBe('')
+  })
 })
 
 describe('resolveCase：占位符替换与前置判定', () => {
@@ -99,10 +113,21 @@ describe('缺数据前置 → 判跳过而不是失败', () => {
   })
 
   it('有前置时全部语料里带 needs 的都拿得到值', () => {
-    const ctx = buildEvalContext({ plans: PLANS, bills: BILLS })
+    // 4.10.6：work-checkout-chain 的 needs 是 checkinPlan，前置里要带一个打卡子计划
+    const ctx = buildEvalContext({
+      plans: PLANS, bills: BILLS,
+      childPlans: [{ client_id: 'plan_work_in', title: '上班打卡', status: 1, parent_id: 'plan_work' }]
+    })
     const needsList = EVAL_CASES.filter(c => c.needs)
     expect(needsList.length).toBeGreaterThan(0)
     needsList.forEach(c => expect(resolveCase(c, ctx).ok).toBe(true))
+  })
+
+  it('只带计划与账单（无打卡子计划）→ work-checkout-chain 判跳过并说明缺什么', async () => {
+    const caze = EVAL_CASES.find((c) => c.id === 'work-checkout-chain')
+    const row = await runCase(async () => ({}), caze, buildEvalContext({ plans: PLANS, bills: BILLS }))
+    expect(row.status).toBe(CASE_STATUS.SKIP)
+    expect(row.failures[0]).toContain('可打卡的每日计划')
   })
 })
 

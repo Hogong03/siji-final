@@ -6,6 +6,34 @@
 
 export const V410 = [
   {
+    version: '4.10.6',
+    date: '2026-10-03',
+    title: '4.10.6 自检 v5 复跑 27/29 后收尾：打卡语料改绑 checkinPlan 前置（补建上班模板）+ 语料网络错误重试一次',
+    summary: [
+      'v5 复跑结果（GLM-5.3 Flash）：27/29（93%），纠偏轮生效 —— work-checkout-chain 从「零工具直接回闲聊」变成「先 query_plan 再如实答复」，multi-intent / bill-stat 两条转绿',
+      'work-checkout-chain 剩余失败的根因是语料绑数据：库里没有可打卡的每日计划，模型查完如实说「没有找到能打卡的计划」——行为正确却被判失败（3.7.2 同款教训再次出现）。修复：needs 从 plan 改绑新前置 checkinPlan（打卡子计划平铺存储 query_plan 看不到，自检页从存储直读 childPlans），缺前置时弹窗一键按「上班」模板建计划',
+      'long-form-article 那条是网络抖动（请求失败：网络连接失败），29 条连发的单条网络错误不该留假失败 —— runCase 对抛错重试一次（800ms 后）',
+      '测试 90 文件 / 1249 用例全绿（ai-eval-context 新增 2 例：打卡前置命中/未命中 + 缺前置判跳过）',
+    ],
+    categories: [
+      {
+        title: '自检体系收尾（4.10.6）',
+        items: [
+          'utils/ai/eval/runner.js：buildEvalContext 新增 checkinPlan 检测（childPlans 打卡子计划优先，顶层计划标题/描述含打卡也命中）+ NEED_LABELS 补「一个可打卡的每日计划（如「上班」模板）」+ runCase 网络错误重试一次',
+          'utils/ai/eval/cases.js：work-checkout-chain 的 needs: plan → checkinPlan',
+          'pages/settings/sub/ai-eval.vue：fetchEvalContext 直读 getPlanList 的子计划；缺打卡前置时弹窗按「上班」模板一键建（getPlanTemplates 找 tpl_work → store.createPlanFromTemplate）；数据前置栏显示打卡计划状态',
+        ],
+      },
+      {
+        title: 'v5 首跑记录（4.10.6 登记）',
+        items: [
+          '通过 27/29（93%）、跳过 1（bill-correction 缺前置账单）、网络出错 1（long-form-article）',
+          '纠偏轮实测有效：work-checkout-chain 调了 query_plan（此前零工具）；转绿的是 multi-intent / bill-stat',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.5',
     date: '2026-10-03',
     title: '4.10.5 修 AI 零工具直接回闲聊（GLM-5.3 Flash 三类实测失败）：提示词补规则 + agent 循环短指令纠偏轮 + 自检页一键补建前置账单',
