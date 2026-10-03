@@ -56,8 +56,22 @@ function fetchEvalContext() {
     if (r && r.detail && Array.isArray(r.detail.items)) plans.push(...r.detail.items)
   } catch (e) { /* 取不到就是没有前置，交给跳过判定 */ }
   try {
-    const r = executeTool(store, 'query_bill', {})
-    if (r && r.detail && Array.isArray(r.detail.items)) bills.push(...r.detail.items)
+    // 4.10.7：query_bill 默认只查当月 —— 用户的历史账单在往月，前置检测跨近 3 个月合并，
+    // 否则月初跑自检永远「缺前置账单」，bill-correction 每次都被迫跳过
+    const now = new Date()
+    const seenIds = new Set()
+    for (const off of [0, -1, -2]) {
+      const d = new Date(now.getFullYear(), now.getMonth() + off, 1)
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      try {
+        const r = executeTool(store, 'query_bill', { month })
+        if (r && r.detail && Array.isArray(r.detail.items)) {
+          r.detail.items.forEach((b) => {
+            if (b && b.client_id && !seenIds.has(b.client_id)) { seenIds.add(b.client_id); bills.push(b) }
+          })
+        }
+      } catch (e) { /* 单月取失败不阻塞其余月份 */ }
+    }
   } catch (e) { /* 同上 */ }
   // 4.10.6：打卡子计划平铺存储（带 parent_id），query_plan 的 items 里看不到，从存储直读（只读）
   let childPlans = []

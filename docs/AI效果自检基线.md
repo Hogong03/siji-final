@@ -31,7 +31,8 @@
 | 2026-09-17 | 3.7.4 | v4 | 全绿 | 0 | 0 | 0 | 修完确认闸门绕过 + 嵌套 multi 拍平后复跑；报告自带口径版本，可自证 |
 | 2026-10-03 | 4.10.4 | v4 | 26/29 | 1 | 2 | 1 | GLM-5.3 Flash 实测：multi-intent / bill-stat / work-checkout-chain 三条全是「模型零工具直接回闲聊」（工具全量注入，排除闸门与传输层）；bill-correction 缺前置账单跳过 |
 | 2026-10-03 | 4.10.5 | v5 | 27/29 | 0 | 1 | 1 | 纠偏轮生效：multi-intent / bill-stat 转绿，work-checkout-chain 调了 query_plan 后如实说「没有能打卡的计划」（语料绑数据问题，非模型问题）；long-form 网络抖动出错 1 条；bill-correction 仍缺前置账单跳过 |
-| 2026-10-03 | 4.10.6 | v5 | 待复跑 | — | — | — | 打卡语料 needs 改绑 checkinPlan 前置 + 自检页一键建「上班」模板 + 语料网络错误重试一次；复跑预期：work-checkout 转绿、long-form 不再因单条网络抖动留假失败、bill-correction 弹窗补建后可跑 |
+| 2026-10-03 | 4.10.6 | v5 | 28/29 | 0 | 1 | 1 | work-checkout 转绿；plan-add-child 失败根因是补建的「上班」占掉了 {plan} 占位符（语料语义拧巴）；bill-correction 仍跳过 —— 真因是 query_bill 默认只查当月，历史账单不算前置，月初必误判 |
+| 2026-10-03 | 4.10.7 | v5 | 待复跑 | — | — | — | {plan} 排除打卡种子计划 + 账单前置跨近 3 个月合并；复跑预期：plan-add-child 指回真实内容计划、bill-correction 不再被当月限定误判（有历史账单即跑，无则弹窗补建一次） |
 
 ---
 

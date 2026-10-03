@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 90 文件 / 1249 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.6（自检 v5 复跑 27/29 收尾：打卡语料改绑 checkinPlan 前置 + 上班模板一键建 + 语料网络错误重试；含 4.10.5 纠偏轮、4.10.4 外观弹层） |
+| 测试 | 90 文件 / 1250 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.10.7（自检前置检测修正：{plan} 排除打卡种子计划 + 账单前置跨月合并；含 4.10.5 纠偏轮、4.10.6 打卡前置、4.10.4 外观弹层） |
 
 ---
 

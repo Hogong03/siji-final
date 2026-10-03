@@ -63,7 +63,6 @@ export const NEED_LABELS = {
 export function buildEvalContext(data = {}) {
   // 4.5.1：排除冷藏/顺延 —— 打卡语料会因 AI 正确拒绝给冷藏计划打卡而假失败
   const plans = (Array.isArray(data.plans) ? data.plans : []).filter((p) => p && p.title && p.status !== 2 && !p.frozen_at && !p.someday_at)
-  const plan = plans[0] || null
   const bills = (Array.isArray(data.bills) ? data.bills : []).filter((b) => b && b.type === 'expense' && Number(b.amount) > 0)
   const bill = bills[0] || null
   // 4.10.6：打卡语料的前置 —— 得有一个「打卡」子计划（上班模板的两个每日子计划是平铺存储的
@@ -73,6 +72,9 @@ export function buildEvalContext(data = {}) {
     childPlans.find((c) => String(c.title || '').includes('打卡')) ||
     plans.find((p) => String(p.title || '').includes('打卡') || String(p.description || '').includes('打卡')) ||
     null
+  // 4.10.7：{plan} 占位符排除打卡命中项 —— 4.10.6 补建上班模板后，「上班」成了最新计划，
+  // {plan} 全部落到它头上，语料变成「给上班加：每天读 20 页」这种语义拧巴的消息，模型查到也难做对
+  const plan = plans.find((p) => p !== checkinHit) || null
   return {
     plan: plan ? String(plan.title) : '',
     planId: plan ? String(plan.client_id || '') : '',

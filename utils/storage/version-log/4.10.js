@@ -6,6 +6,34 @@
 
 export const V410 = [
   {
+    version: '4.10.7',
+    date: '2026-10-03',
+    title: '4.10.7 自检 28/29 后修两处前置检测：账单前置跨月合并（query_bill 默认只查当月）+ {plan} 排除打卡种子计划',
+    summary: [
+      '4.10.6 复跑 28/29（97%）：work-checkout-chain 转绿，唯一失败 plan-add-child 的根因是 4.10.6 补建的「上班」成了最新计划、占掉了 {plan} 占位符 —— 语料变成「给上班加：每天读 20 页」这种语义拧巴的消息，模型查到也难做对（同场 plan-change 两条用同一个「上班」却通过，属模型发挥波动，但语料语义先摆正）',
+      '修复一：buildEvalContext 的 {plan} 槽位排除打卡命中项（checkinHit）—— 语料重新指向真实内容计划；只有打卡计划可挑时 plan 槽位宁可空（plan 类语料跳过）也不指错对象',
+      '修复二：bill-correction 连续三轮跳过的真因是 query_bill 默认只查当月 —— 用户历史账单在往月，月初跑自检永远「缺前置」；自检页账单前置改为跨近 3 个月合并去重',
+      '测试 90 文件 / 1250 用例全绿（ai-eval-context 新增 1 例：打卡命中项不占 {plan} 槽位）',
+    ],
+    categories: [
+      {
+        title: '自检前置检测修正（4.10.7）',
+        items: [
+          'utils/ai/eval/runner.js：buildEvalContext 里 plan 槽位从 plans[0] 改为 plans.find(p => p !== checkinHit) —— 打卡命中项不再占用内容计划的占位符',
+          'pages/settings/sub/ai-eval.vue：fetchEvalContext 的账单前置改为近 3 个月（当月/上月/上上月）逐月 query_bill 合并去重，单月失败不阻塞其余月份',
+          'tests/ai-eval-context.test.js：新增「打卡命中项不占 {plan} 槽位」用例（含只剩打卡计划时 plan 槽位为空的边界）',
+        ],
+      },
+      {
+        title: '4.10.6 复跑记录（4.10.7 登记）',
+        items: [
+          '通过 28/29（97%）、跳过 1（bill-correction，当月限定坑导致连续误判缺前置）、请求出错 0',
+          'work-checkout-chain 转绿（4.10.6 修复生效：checkinPlan 前置 + 上班模板补建）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.6',
     date: '2026-10-03',
     title: '4.10.6 自检 v5 复跑 27/29 后收尾：打卡语料改绑 checkinPlan 前置（补建上班模板）+ 语料网络错误重试一次',

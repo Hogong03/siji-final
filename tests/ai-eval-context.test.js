@@ -59,6 +59,22 @@ describe('buildEvalContext：从真实数据取值', () => {
     // 什么都没有 → 空串，语料判跳过
     expect(buildEvalContext({ plans: PLANS }).checkinPlan).toBe('')
   })
+
+  it('打卡命中项不占 {plan} 槽位（4.10.7）：补建上班模板后语料仍指向真实内容计划', () => {
+    // 4.10.6 实测坑：上班模板一建，{plan} 落到「上班」，语料变成「给上班加：每天读 20 页」
+    const ctx = buildEvalContext({
+      plans: [
+        { client_id: 'plan_work', title: '上班', description: '每天上下班打卡', status: 1 },
+        { client_id: 'plan_001', title: '一年读完12本有意思的书', status: 1 }
+      ]
+    })
+    expect(ctx.checkinPlan).toBe('上班')
+    expect(ctx.plan).toBe('一年读完12本有意思的书')
+    // 只有一个打卡计划可挑时：plan 槽位宁可空（plan 类语料跳过），也不指到打卡计划上
+    const only = buildEvalContext({ plans: [{ client_id: 'plan_work', title: '上班', description: '每天上下班打卡', status: 1 }] })
+    expect(only.plan).toBe('')
+    expect(only.checkinPlan).toBe('上班')
+  })
 })
 
 describe('resolveCase：占位符替换与前置判定', () => {
