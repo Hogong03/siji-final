@@ -14,6 +14,7 @@ import { computed, ref, watch } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import ExecResultCard from './ExecResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
+import EnterBriefing from './EnterBriefing.vue'
 import { previewImage } from '@/utils/image.js'
 
 const props = defineProps({
@@ -38,8 +39,17 @@ watch(imageSrc, () => { imageFailed.value = false })
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
   'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase', 'read-long',
-  'continue-write'
+  'continue-write', 'briefing-action'
 ])
+
+/** 4.12.0：结构化简报卡（v2 进入消息）—— 整卡渲染替代文本正文，按钮在卡内 */
+const isBriefing = computed(() => {
+  const m = props.message
+  return !!m && m._isEnterSummary === true && m._briefingVersion === 2 && !!m._briefing
+})
+function onBriefingAction(btn) {
+  emit('briefing-action', btn)
+}
 
 /** 文件卡文案：名称 · 大小 · 行数（3.6.0 读文件） */
 const fileLabel = computed(() => {
@@ -246,11 +256,15 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
             <text class="bubble-file-badge">文件</text>
             <text class="bubble-file-name">{{ fileLabel }}</text>
           </view>
-          <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
-          <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />
-          <text v-else-if="message.role === 'assistant'" class="bubble-text">{{ message.content }}</text>
-          <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播） -->
-          <text v-else class="bubble-text">{{ message.content }}</text>
+          <!-- 4.12.0：结构化简报卡（v2 进入消息整卡渲染，替代文本正文与页级按钮行） -->
+          <EnterBriefing v-if="isBriefing" :message="message" @action="onBriefingAction" />
+          <template v-else>
+            <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
+            <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />
+            <text v-else-if="message.role === 'assistant'" class="bubble-text">{{ message.content }}</text>
+            <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播） -->
+            <text v-else class="bubble-text">{{ message.content }}</text>
+          </template>
 
           <!-- 欢迎消息快捷示例 -->
           <view v-if="isWelcome" class="welcome-chips">

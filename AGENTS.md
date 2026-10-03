@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 92 文件 / 1289 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.11.1（修聊天页气泡外五处块缺入场动画：开场按钮/引导卡/恢复卡/建议条统一 chatRiseIn；含 4.11.0 竞品差距收口六项，方案见 docs/竞品对比与差距方案.md） |
+| 测试 | 92 文件 / 1296 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.12.0（初始对话重设计：进入消息升级结构化简报卡——指标格/唯一主按钮/问候变化池，EnterBriefing 组件 + _briefing v2；含 4.11.0 竞品差距收口） |
 
 ---
 
@@ -146,7 +146,7 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.11.js；各小版本线已发布前合并）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.12.js；各小版本线已发布前合并）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
@@ -298,7 +298,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改聊天历史窗口 | `utils/ai/chat-helpers.js` 的 `trimHistory()`（单条 1200 字 / 总量 6000 字 / 保底 6 条）+ `getRecentHistory()`。**长文能力上线后历史必须按预算裁**，否则一篇两三千字的回复会被每条消息重发一遍 |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
 | 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `notifier.js` 的 `showReminderActions`（ActionSheet：直达打卡/三档推迟/查看，关掉=默认档推迟）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI |
-| 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：问候+进展+状态+上班卡+下一步；`buildPlanAlertLines`/`buildWorkLine`/`buildNextStepLine`）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
+| 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：4.12.0 起同时产出文本 content 与 `_briefing` v2 结构化 payload；`buildBriefing` 组装指标格/主按钮/问候池）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `components/chat/EnterBriefing.vue`（v2 简报卡渲染，样式在组件 scoped）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext`/`readYesterdayExpense` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**页级按钮行只服务旧消息**（index.vue 按 `isBriefingV2` 组合判定）；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | 改 AI 能力开关 | `utils/ai/features.js`（注册表 + TOOL_FEATURE_MAP）+ `pages/settings/sub/ai.vue` 的「AI 能力」分组卡 + 各注入点（agent-transport 过滤 / executor 拦截 / chat-helpers 段 / prompt-builder extSection / useEnterSummary / InputArea） |
 | 改免 Key 引导流 | `pages/settings/sub/key-guide.vue`（厂商卡+验证保存）+ `utils/ai/key-verify.js`（真实请求验证）+ `pages/chat/index.vue` 无 Key 引导卡 + `pages/settings/sub/ai-eval.vue` 无 Key 弹窗 |
@@ -318,7 +318,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.11.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.12.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）

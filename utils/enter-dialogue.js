@@ -113,6 +113,98 @@ export function buildNextStepLine(nextStep) {
     : `下一步可以从「${nextStep.title}」开始。`
 }
 
+/* ==================== 4.12.0：简报卡（结构化开场，渲染层卡片化） ==================== */
+
+/** 简报卡版本：消息渲染与落盘白名单都认它；不带此字段的存量消息回落文本渲染 */
+export const BRIEFING_VERSION = 2
+
+/** 是否结构化简报卡消息（v2）—— 页面据此隐藏旧版页级按钮行 */
+export function isBriefingV2(message) {
+  return !!message && message._briefingVersion === BRIEFING_VERSION && !!message._briefing
+}
+
+/** 问候变化池：按时段给几条候选，按「年积日」轮换 —— 同一天同一句，隔天换一句（本地零成本） */
+const GREETING_POOL = {
+  deepNight: ['夜深了', '还没睡', '夜里的时光'],
+  morning: ['早上好', '早', '新的一天', '早安'],
+  noon: ['中午好', '午安', '半天过去了'],
+  afternoon: ['下午好', '下午茶时间', '一天过半'],
+  evening: ['晚上好', '今晚', '一天收尾了']
+}
+
+/** 简报卡问候语：时段池 + 年积日轮换（同一天稳定，跨天变化） */
+export function buildBriefingGreeting(now = Date.now()) {
+  const d = new Date(now)
+  const hour = d.getHours()
+  const slot = hour < 5 ? 'deepNight' : hour < 11 ? 'morning' : hour < 14 ? 'noon' : hour < 18 ? 'afternoon' : 'evening'
+  const pool = GREETING_POOL[slot]
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000)
+  return pool[dayOfYear % pool.length]
+}
+
+/** 指标格（无数据的格子不渲染；最多 3 格） */
+export function buildBriefingMetrics(summary) {
+  if (!summary) return []
+  const out = []
+  const expense = Number(summary.yesterdayExpense) || 0
+  if (expense > 0) out.push({ key: 'expense', value: `¥${expense}`, label: '昨日支出' })
+  if ((summary.streak || 0) >= 2) out.push({ key: 'streak', value: `${summary.streak} 天`, label: '连续打卡' })
+  if ((summary.diaryCount || 0) > 0) out.push({ key: 'diary', value: String(summary.diaryCount), label: '新记录' })
+  if ((summary.eventsTotal || 0) > 0) out.push({ key: 'events', value: String(summary.eventsTotal), label: '新进展' })
+  return out.slice(0, 3)
+}
+
+/**
+ * 简报卡主按钮：一屏只推一件事 —— 优先级 上班卡 > 过时/快到期计划 > 下一步
+ * @returns {{ key, label, action, value }|null} 与 _enterButtons 同构，action ∈ checkin/navigate/prefill
+ */
+export function buildBriefingPrimary(summary, extras) {
+  const work = extras && extras.workStatus
+  if (work && work.clientId) {
+    return { key: 'checkin', label: work.kind === 'out' ? '打下班卡' : '打上班卡', action: 'checkin', value: work.clientId }
+  }
+  const alerts = extras && extras.alerts
+  if (alerts && alerts.total > 0) {
+    return { key: 'plan', label: '看计划', action: 'navigate', value: '/pages/plan/index' }
+  }
+  const next = extras && extras.nextStep
+  if (next && next.title) {
+    return { key: 'next', label: '就做这个', action: 'prefill', value: `开始做「${next.title}」` }
+  }
+  return null
+}
+
+/** 次级 chips：从全量按钮里去掉已升为主按钮的那颗，再截前 3 个 */
+export function buildBriefingChips(summary, extras, primary) {
+  const all = buildEnterButtons(summary, extras)
+  const dropped = primary ? primary.key : ''
+  return all.filter(b => b.key !== dropped).slice(0, 3)
+}
+
+/**
+ * 结构化简报 payload（4.12.0）：挂在进入消息上由 EnterBriefing 组件渲染；
+ * 纯数据可单测。content 文本仍照旧生成 —— 老版本回落渲染与 AI 历史窗口都还吃它。
+ * @param {Object|null} summary buildEnterSummary 的返回值
+ * @param {{ alerts?, nextStep?, workStatus? }} [extras]
+ * @param {number} [now]
+ */
+export function buildBriefing(summary, extras = null, now = Date.now()) {
+  const pack = extras || summary || {}
+  const primary = buildBriefingPrimary(summary, pack)
+  const nextLine = buildNextStepLine(pack.nextStep)
+  return {
+    version: BRIEFING_VERSION,
+    greeting: buildBriefingGreeting(now),
+    opener: buildEnterOpener(summary, now),
+    metrics: buildBriefingMetrics(summary),
+    statusLines: buildPlanAlertLines(pack.alerts).concat(buildWorkLine(pack.workStatus)).filter(Boolean),
+    nextLine: nextLine,
+    primary: primary,
+    chips: buildBriefingChips(summary, pack, primary),
+    moodDip: !!(summary && summary.moodDip)
+  }
+}
+
 /**
  * 上班卡行（4.5.0：上班模板的打卡子计划今天还没打且已过提醒时刻）
  * @param {{ kind: 'in'|'out', name: string, clientId: string }} [workStatus]
@@ -127,7 +219,6 @@ export function buildWorkLine(workStatus) {
 
 /**
  * 摘要消息里预置的按钮（3.5.21；4.5.0 扩展计划状态 / 上班卡 / 下一步）
- *
  * 对话形式：点一下就能接着做，不用自己想说什么。六类 ——
  *   上下文（摘要里提到什么就给什么入口）/ 计划状态（过时快到期给「看计划」）/
  *   上班卡（直达打卡）/ 下一步（预置话术）/ 通用（记账、记录、计划）/ 情绪提示
@@ -259,6 +350,9 @@ export function buildEnterSummaryMessage(summary, extras = null, now = Date.now(
     _isOpener: true,
     _enterSummaryKind: (summary && summary.source === 'away') ? 'away' : 'cold',
     _enterButtons: buildEnterButtons(summary, pack),
+    // 4.12.0：结构化简报卡（渲染层卡片化；文本 content 保留供老版本回落与 AI 历史窗口）
+    _briefingVersion: BRIEFING_VERSION,
+    _briefing: buildBriefing(summary, pack, now),
     _enterSummaryDigest: {
       eventsTotal: (summary && summary.eventsTotal) || 0,
       diaryCount: (summary && summary.diaryCount) || 0,

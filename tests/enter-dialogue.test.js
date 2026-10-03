@@ -9,7 +9,8 @@ import {
   ENTER_SUMMARY_FLAG, ENTER_LINE_LIMIT, buildEnterOpener, buildEnterLines,
   buildEnterSummaryMessage, enterSummaryRoute, enterSummarySignature,
   shouldAppendEnterSummary, isEnterSummaryMessage, buildEnterButtons,
-  buildPlanAlertLines, buildNextStepLine, buildWorkLine, buildGreeting
+  buildPlanAlertLines, buildNextStepLine, buildWorkLine, buildGreeting,
+  buildBriefing, buildBriefingPrimary, isBriefingV2, buildBriefingGreeting, BRIEFING_VERSION
 } from '../utils/enter-dialogue.js'
 
 const NOW = new Date(2026, 8, 15, 15, 30, 0).getTime()
@@ -325,5 +326,74 @@ describe('buildEnterButtons：对话里预置的按钮', () => {
     expect(Array.isArray(msg._enterButtons)).toBe(true)
     expect(msg._enterButtons.length).toBeGreaterThan(3)
     expect(JSON.parse(JSON.stringify(msg))._enterButtons).toEqual(msg._enterButtons)
+  })
+})
+
+/* ==================== 4.12.0：结构化简报卡 ==================== */
+describe('buildBriefing：简报卡 payload', () => {
+  it('buildEnterSummaryMessage 挂 v2 标记与 _briefing，content 文本照旧（老版本回落 + AI 历史窗口）', () => {
+    const msg = buildEnterSummaryMessage(summary(), null, at(15))
+    expect(msg._briefingVersion).toBe(BRIEFING_VERSION)
+    expect(msg._briefing && typeof msg._briefing === 'object').toBe(true)
+    expect(msg._briefing.version).toBe(BRIEFING_VERSION)
+    expect(typeof msg._briefing.greeting).toBe('string')
+    expect(msg._briefing.greeting.length).toBeGreaterThan(0)
+    expect(typeof msg.content).toBe('string')
+    expect(msg.content).toContain('下午好')
+  })
+
+  it('指标格：昨日支出/连续打卡/新记录，最多 3 格；全空不渲染', () => {
+    const full = buildBriefing(summary({ yesterdayExpense: 42.5, eventsTotal: 2, diaryCount: 3, streak: 5 }), null, at(15))
+    expect(full.metrics.map(m => m.key)).toEqual(['expense', 'streak', 'diary'])
+    // 连续打卡 1 天不上格（与文案口径一致）
+    const low = buildBriefing(summary({ streak: 1, diaryCount: 0, eventsTotal: 0, yesterdayExpense: 0 }), null, at(15))
+    expect(low.metrics).toEqual([])
+  })
+
+  it('主按钮优先级：上班卡 > 过时计划 > 下一步，一屏只推一件', () => {
+    const work = { kind: 'in', name: '上班打卡', clientId: 'p_in' }
+    expect(buildBriefingPrimary(summary(), { workStatus: work, alerts: { total: 3, overdue: [], dueSoon: [] }, nextStep: { title: 'x' } }).key).toBe('checkin')
+    expect(buildBriefingPrimary(summary(), { alerts: { total: 3, overdue: [], dueSoon: [] }, nextStep: { title: 'x' } }).key).toBe('plan')
+    expect(buildBriefingPrimary(summary(), { nextStep: { title: 'x', minutes: 20 } }).key).toBe('next')
+    expect(buildBriefingPrimary(summary(), null)).toBe(null)
+  })
+
+  it('次级 chips：去掉主按钮那颗、上限 3 个；主按钮的动作用旧按钮语义（checkin/navigate/prefill）', () => {
+    const work = { kind: 'in', name: '上班打卡', clientId: 'p_in' }
+    const b = buildBriefing(summary(), { workStatus: work, nextStep: { title: '精翻阅读', minutes: 40 } }, at(15))
+    expect(b.primary.key).toBe('checkin')
+    expect(b.primary.action).toBe('checkin')
+    expect(b.chips.some(c => c.key === 'checkin')).toBe(false)
+    expect(b.chips.length).toBeLessThanOrEqual(3)
+    // 下一步没占主位时保留说明行
+    const b2 = buildBriefing(summary(), { nextStep: { title: '精翻阅读', minutes: 40 } }, at(15))
+    expect(b2.nextLine).toContain('精翻阅读')
+  })
+
+  it('isBriefingV2：新消息为真、旧消息（无 _briefing）为假；hasOpenerActions 语义不变', () => {
+    const msg = buildEnterSummaryMessage(summary(), null, at(15))
+    expect(isBriefingV2(msg)).toBe(true)
+    const legacy = { _isEnterSummary: true, _isOpener: true, _enterButtons: [] }
+    legacy[ENTER_SUMMARY_FLAG] = true
+    expect(isBriefingV2(legacy)).toBe(false)
+    // 页级按钮行仍由 hasOpenerActions 驱动（true），渲染与否由页面按 isBriefingV2 组合判定
+    expect(msg._enterButtons.length).toBeGreaterThan(0)
+  })
+
+  it('问候池：同一天同句，均为非空字符串', () => {
+    const noon1 = new Date(2026, 8, 15, 12, 0, 0).getTime()
+    const noon2 = new Date(2026, 8, 16, 12, 0, 0).getTime()
+    const a = buildBriefingGreeting(noon1)
+    expect(buildBriefingGreeting(noon1)).toBe(a)
+    expect(a.length).toBeGreaterThan(0)
+    expect(buildBriefingGreeting(noon2).length).toBeGreaterThan(0)
+  })
+
+  it('空状态简报：只有问候 + 通用 chips，无主按钮无指标', () => {
+    const b = buildBriefing(null, null, at(15))
+    expect(b.metrics).toEqual([])
+    expect(b.primary).toBe(null)
+    expect(b.statusLines).toEqual([])
+    expect(b.chips.map(c => c.key)).toEqual(['note', 'diary-new', 'plan-new'])
   })
 })

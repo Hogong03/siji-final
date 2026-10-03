@@ -25,7 +25,7 @@ import { useMessageEdit } from '@/composables/useMessageEdit.js'
 import { useChatNavigation } from '@/composables/useChatNavigation.js'
 import { useEnterSummary } from '@/composables/useEnterSummary.js'
 import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-session.js'
-import { hasOpenerActions } from '@/utils/enter-dialogue.js'
+import { hasOpenerActions, isBriefingV2 } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { useChatRuler } from '@/composables/useChatRuler.js'
@@ -614,9 +614,11 @@ function handleWelcomeChip(text) {
             @rephrase="handleRephraseReply"
             @read-long="handleReadLong"
             @continue-write="handleContinueWrite"
+            @briefing-action="handleEnterButton"
           />
             <!-- 开场消息的操作行：进入总结与欢迎语共用（3.10.0，按钮由 utils/enter-dialogue.js 生成）+ 返回旧对话 -->
-            <view v-if="hasOpenerActions(msg) && !simulationMode" class="enter-actions">
+            <!-- 4.12.0：v2 简报卡的按钮在卡内（EnterBriefing），页级按钮行只服务旧消息 -->
+            <view v-if="hasOpenerActions(msg) && !isBriefingV2(msg) && !simulationMode" class="enter-actions">
               <view
                 v-for="btn in (msg._enterButtons || [])"
                 :key="btn.key"

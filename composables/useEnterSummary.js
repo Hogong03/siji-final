@@ -14,6 +14,7 @@
 import { ref } from 'vue'
 import { getPlanList } from '@/utils/storage.js'
 import { getDiaryList } from '@/utils/storage/diary.js'
+import { getBillList } from '@/utils/storage/bill.js'
 import {
   buildEnterSummary, resolveSummaryWindow, scanMoodDip, CONFIRM_KEY, LEAVE_KEY
 } from '@/utils/enter-summary.js'
@@ -142,13 +143,31 @@ function computeSummary(since, now, source) {
   }
   // 4.5.0：计划状态包（过时/快到期 + 上班卡 + 下一步）跟着非空总结一起进消息
   const extras = buildPlanExtras(plans, now)
+  // 4.12.0：昨日支出（简报卡数字格用；取不到/异常按 0，不阻塞总结）
+  const yesterdayExpense = readYesterdayExpense(now)
   if (summary.eventsTotal === 0 && summary.diaryCount === 0 && !moodDip && !weekBill) return null
   return Object.assign({}, summary, {
     source: source,
     awayMs: Math.max(0, now - since),
     moodDip: moodDip,
-    weekBill: weekBill
+    weekBill: weekBill,
+    yesterdayExpense: yesterdayExpense
   }, extras)
+}
+
+/** 昨日支出合计（4.12.0 简报卡）：按昨天月份分片读账单再按日期过滤，异常吞掉返回 0 */
+function readYesterdayExpense(now) {
+  try {
+    const y = new Date(now)
+    y.setDate(y.getDate() - 1)
+    const pad = (n) => String(n).padStart(2, '0')
+    const month = `${y.getFullYear()}-${pad(y.getMonth() + 1)}`
+    const daySuffix = '-' + pad(y.getDate())
+    const bills = getBillList(month).filter(b => b && b.is_deleted !== 1 && b.type === 'expense' && String(b.bill_date || '').endsWith(daySuffix))
+    return Math.round(bills.reduce((s, b) => s + (Number(b.amount) || 0), 0) * 100) / 100
+  } catch (e) {
+    return 0
+  }
 }
 
 /** 应用冷启动时调用一次（App.vue appReady） */
