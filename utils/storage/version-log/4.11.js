@@ -6,6 +6,28 @@
 
 export const V411 = [
   {
+    version: '4.11.1',
+    date: '2026-10-04',
+    title: '4.11.1 修聊天页五处「静态出现」：气泡外的开场按钮/引导卡/恢复卡/快捷建议没有入场动画，统一补 chatRiseIn',
+    summary: [
+      '用户实测：进入聊天页时初始对话的几个预置按钮（去打卡/下一步等）瞬间固定在那里，不像其他气泡一样有弹跳入场 —— 根因是它们渲染在 MessageBubble 外面（气泡内的欢迎 chips 跟着容器动画没问题），而 .enter-actions/.enter-btn 样式里没有任何入场动画',
+      '修复：chat.scss 新增与气泡 bubbleIn 同款动效语言的 chatRiseIn keyframes（上移 16rpx + 0.96 缩放淡入），开场按钮逐钮延迟 0.1/0.16/0.22s 形成弹出节奏',
+      '同类排查另修三处：无 Key 引导卡（4.11.0 新增时漏了）、回去接着聊卡、快捷建议条 —— 全部补同款入场；回到底部按钮已有 bbFadeIn 淡入，不动',
+      '浏览器实测：3 个开场按钮 computed animation = chatRiseIn（scoped keyframes 编译正确），延迟逐钮递增；测试 92 文件 / 1289 用例全绿',
+    ],
+    categories: [
+      {
+        title: '入场动画补齐（4.11.1）',
+        items: [
+          'pages/chat/chat.scss：新增 @keyframes chatRiseIn（与 MessageBubble.scss 的 bubbleIn 同参数：translateY(16rpx) scale(0.96) → 0/1，0.3s cubic-bezier(0.4,0,0.2,1)）',
+          '.enter-actions .enter-btn：chatRiseIn both + nth-child 逐钮延迟（0.1s/0.16s/0.22s/0.28s）；「返回旧对话」按钮同享（v-for 插入时自然播放入场）',
+          '.no-key-card / .resume-card / .suggestions-bar：补 chatRiseIn（引导卡与恢复卡 0.05s 延迟，建议条即时）',
+          '结论沉淀：MessageBubble 气泡内的内容自动跟随容器动画，凡是渲染在气泡外的兄弟块都要自查入场动画（本次 4 处遗漏均属此类）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.11.0',
     date: '2026-10-04',
     title: '4.11.0 竞品差距收口：免 Key 引导流 + 自动本地备份 + 照片日记 + 心情曲线 + 月报长图 + 引导追问与语音入口',

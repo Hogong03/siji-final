@@ -63,6 +63,13 @@
   to   { transform: translateY(0); opacity: 1; }
 }
 
+/* 气泡外兄弟块的统一入场动画（4.11.1）—— 动效语言与 MessageBubble 的 bubbleIn 一致：
+   开场按钮行 / 无 Key 引导卡 / 回去接着聊卡 / 快捷建议条 / 回到底部，之前都是静态出现 */
+@keyframes chatRiseIn {
+  from { opacity: 0; transform: translateY(16rpx) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .sim-banner {
   @include flex-row;
   justify-content: space-between;
@@ -532,6 +539,7 @@
   white-space: nowrap;
   background: #FFFFFF;
   border-top: 1rpx solid #E4E4E7;
+  animation: chatRiseIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .suggestion-chip {
@@ -557,6 +565,7 @@
   background: #FFFFFF;
   border: 1rpx solid #E4E4E7;
   border-radius: 14rpx;
+  animation: chatRiseIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.05s both;
 }
 
 .resume-head {
@@ -644,6 +653,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
+  animation: chatRiseIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.05s both;
 }
 
 .no-key-icon {
@@ -1505,7 +1515,14 @@ html.theme-dark {
   border-radius: 10rpx;
   background: #F4F4F5;
   border: 1rpx solid #E4E4E7;
+  // 入场跟随所在气泡（bubbleIn 0.3s），逐钮延迟形成弹出节奏（4.11.1）
+  animation: chatRiseIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+.enter-actions .enter-btn:nth-child(1) { animation-delay: 0.1s; }
+.enter-actions .enter-btn:nth-child(2) { animation-delay: 0.16s; }
+.enter-actions .enter-btn:nth-child(3) { animation-delay: 0.22s; }
+.enter-actions .enter-btn:nth-child(n + 4) { animation-delay: 0.28s; }
 
 .enter-btn:active {
   opacity: 0.7;
