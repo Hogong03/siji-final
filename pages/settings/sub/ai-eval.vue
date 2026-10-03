@@ -61,6 +61,36 @@ function fetchEvalContext() {
   return buildEvalContext({ plans, bills })
 }
 
+/**
+ * 一键补建前置账单（4.10.5）：没有支出账单时，bill-correction 语料只能跳过。
+ * 弹窗征得同意后真实写入一条小额支出（这是唯一的真实写操作，写的是用户自己的库，可随时删除）。
+ * @returns {Promise<boolean>} 是否已就绪（本来就有 / 补建成功）
+ */
+function ensurePrereqBill() {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title: '缺少前置账单',
+      content: '「记错了改账单」这条语料需要一笔已有支出。帮你记一笔 ¥42 的测试账单（分类：自检前置，可随时删除）再开始吗？',
+      confirmText: '建一条',
+      cancelText: '跳过该条',
+      success: (res) => {
+        if (!res.confirm) return resolve(true)
+        try {
+          executeTool(store, 'create_bill', {
+            type: 'expense', amount: 42, category: '自检前置', note: 'AI 效果自检前置数据'
+          })
+          uni.showToast({ title: '已建测试账单', icon: 'none' })
+          resolve(true)
+        } catch (e) {
+          uni.showToast({ title: '建账单失败，该条将跳过', icon: 'none' })
+          resolve(true)
+        }
+      },
+      fail: () => resolve(true)
+    })
+  })
+}
+
 const protocolLabel = EVAL_PROTOCOL_LABEL
 
 const ctxText = computed(() => {
@@ -140,6 +170,15 @@ async function startEval() {
   stopRef.stopped = false
   progress.value = { done: 0, total: EVAL_CASES.length }
   evalCtx.value = fetchEvalContext()
+  // 4.10.5：缺前置账单 → 提供一键补建（真实写入，需用户确认；bill-correction 语料不再被迫跳过）
+  if (!evalCtx.value.billAmount) {
+    const go = await ensurePrereqBill()
+    if (!go) {
+      running.value = false
+      return
+    }
+    evalCtx.value = fetchEvalContext()
+  }
   try {
     const out = await runCases(makeRunner(), EVAL_CASES, {
       ctx: evalCtx.value,

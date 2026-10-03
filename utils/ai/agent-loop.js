@@ -28,6 +28,16 @@ import { logger } from '../logger.js'
 
 const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
 
+/**
+ * 强操作意图正则（4.10.5）：命中即视为「这条消息应该调工具」。
+ * 来源是 4.10.4 自检 GLM-5.3 Flash 实测的三类零工具失败：不点名打卡 / 口头问花费 / 一句多意图。
+ * 只收指令式动词，不收领域名词 —— 「今天下班去江边走了走」这类叙述不能命中，否则闲聊会被误纠偏。
+ */
+export const STRONG_ACTION_RE = /(打个?卡|记一笔|记一下|记账|帮我记|记个待办|写个记录|写一篇|写篇|存成|存为|花了多少|查一下|查账|查下|改一下|改成|改到|删掉|删除|撤销|撤回|创建计划|新建计划|建个计划)/
+
+/** 纠偏轮追问文案（4.10.5）：与写入失败自检同款 [系统] 前缀 */
+export const AGENT_NUDGE_TEXT = '[系统] 你刚才没有调用任何工具就直接回复了，但用户这条消息包含数据操作意图（如记账、记录、打卡、查询、修改）。请立即调用对应工具完成操作，拿到结果后再总结回答；只有确认消息与任何数据操作无关时，才允许直接回复。'
+
 /** 干跑时也要拦住的联网工具：跑批不该产生真实网络请求（工具选择与它们的内容无关） */
 const NETWORK_TOOLS = new Set(['web_search', 'read_url'])
 
@@ -76,6 +86,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   const toolCalls = []        // 记录所有 tool_call
   const execResults = []      // 记录所有执行结果
   let rounds = 0
+  let nudged = false          // 4.10.5 纠偏轮只发一次
 
   while (rounds < MAX_ROUNDS) {
     rounds++
@@ -102,6 +113,21 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
     // AI 没有请求工具 → 给出最终回复
     if (callList.length === 0) {
       const content = assistantMsg.content || ''
+      // 兼容：AI 仍可能返回 JSON action 格式（部分场景）
+      const result = parseAiResponse(content, conversationId)
+      const hasJsonAction = !!(result.action && result.action.type) ||
+        (Array.isArray(result.actions) && result.actions.length > 0)
+      // 4.10.5 纠偏轮：强操作意图的原话，模型却零工具直接回闲聊（GLM-5.3 Flash 实测三类：
+      // 不点名打卡 / 口头问花费 / 一句多意图）→ 追问一轮要求先调工具。
+      // 只纠一次（nudged）；回复里已带可执行 action 的走 JSON 路径不纠；
+      // 被丢弃的首轮回复不推流 —— 上层按流式累加消费 onChunk，先推再纠会出现重复气泡。
+      if (!toolCalls.length && !nudged && !hasJsonAction && cfg.nudge !== false && STRONG_ACTION_RE.test(message)) {
+        nudged = true
+        logger.warn('[AgentLoop] Strong-action message answered without tools, nudging once')
+        messages.push({ role: 'assistant', content })
+        messages.push({ role: 'user', content: AGENT_NUDGE_TEXT })
+        continue
+      }
       // 若有 onChunk（来自 runAgentChat），推送内容（非 H5 模拟逐字）
       if (onChunk && content) {
         const chars = content.split('')
@@ -114,8 +140,6 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
           await new Promise(r => setTimeout(r, delay))
         }
       }
-      // 兼容：AI 仍可能返回 JSON action 格式（部分场景）
-      const result = parseAiResponse(content, conversationId)
       return {
         reply: result.reply,
         action: result.action,

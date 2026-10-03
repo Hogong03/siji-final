@@ -31,11 +31,13 @@ import { OP_CLAIM_RE, OP_CLAIM_RE_FALLBACK } from '../constants.js'
  * v2：干跑只拦写操作与联网工具
  * v3：工具序列合并 tool_calls 与 JSON action；新增兜底档；确认判定与 App 共用 confirm-gate
  * v4：数据前置占位符（{plan} / {billAmount}）+ 动作类型白名单 + 缺前置判跳过
+ * v5：agent 循环新增短指令纠偏轮（强操作意图零工具 → 追问一轮，4.10.5）——
+ *     纠偏改变了模型的工具序列产出，v4 及之前的报告与 v5 不可直接对比
  */
-export const EVAL_PROTOCOL_VERSION = 4
+export const EVAL_PROTOCOL_VERSION = 5
 
 /** 口径说明（写进报告，便于对照是哪套度量） */
-export const EVAL_PROTOCOL_LABEL = 'v4（数据前置 + 动作白名单 + 确认闸门共用判定）'
+export const EVAL_PROTOCOL_LABEL = 'v5（数据前置 + 动作白名单 + 确认闸门共用判定 + 短指令纠偏轮）'
 
 /** 用例结果状态 */
 export const CASE_STATUS = {

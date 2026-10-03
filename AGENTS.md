@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 89 文件 / 1239 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.4（外观选择改自定义底部弹层：随主题变色 + monitor/sun/moon 配套图标；含 4.10.1~4.10.3 深色修复与 4.10.0 能力拆分） |
+| 测试 | 90 文件 / 1247 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.10.5（修 AI 零工具回闲聊：提示词 3 规则 + agent 短指令纠偏轮 + 自检口径 v5；含 4.10.4 外观弹层与 4.10.0~4.10.3 能力拆分/深色修复） |
 
 ---
 
@@ -173,6 +173,8 @@
   ├─ Agent Loop 路径（supportsToolCalling=true）
   │   → AI 带 tools → tool_calls → executeTool → 结果回传 → 再推理 → 最终回复
   │   → 最多 5 轮（MAX_ROUNDS=5）
+  │   → 短指令纠偏轮（4.10.5）：STRONG_ACTION_RE 命中 + 整循环零工具 + 无可执行 JSON action
+  │     → 追问一轮「请先调工具」（只纠一次，丢弃的首轮回复不推流；cfg.nudge=false 可关）
   └─ 传统 JSON Action 路径（兜底）
       → AI 返回 JSON {reply, action} → response-parser → autoExecutor → fallback
 ```

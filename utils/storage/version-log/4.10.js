@@ -6,6 +6,37 @@
 
 export const V410 = [
   {
+    version: '4.10.5',
+    date: '2026-10-03',
+    title: '4.10.5 修 AI 零工具直接回闲聊（GLM-5.3 Flash 三类实测失败）：提示词补规则 + agent 循环短指令纠偏轮 + 自检页一键补建前置账单',
+    summary: [
+      '4.10.4 自检报告（26/29）：multi-intent / bill-stat / work-checkout-chain 三条全是「模型零工具直接回闲聊」—— 排查确认工具是全量注入的（闲聊闸门与传输层都无过滤），是 GLM-5.3 Flash 对三类短消息的真实行为：不点名打卡（"下班啦，打个卡"）/ 口头问花费（"这个月花了多少钱"）/ 一句多意图（"记一笔…再写个记录…"）',
+      '提示词补 3 规则（AGENT_TOOL_INSTRUCTION）：花了多少钱也是数据问题先查再答；不点名打卡先 query_plan 再 log_plan_checkin；禁止不调工具就声称「已记录/都记好了」',
+      'agent 循环新增一次性纠偏轮（agent-loop.js）：STRONG_ACTION_RE 命中的强操作指令 + 整个循环零工具 + 回复里无可执行 JSON action → 追问一轮「请先调工具」；被丢弃的首轮回复不推流（上层 onChunk 按累加消费，先推再纠会重复气泡）；只纠一次不无限循环；cfg.nudge=false 可关',
+      '排坑：STRONG_ACTION_RE 首版漏了「打个卡」——"打"和"卡"之间隔着"个"，不含"打卡"子串，正则改成 打个?卡（测试先于发版抓到）',
+      '自检页缺前置账单时弹窗一键补建（¥42 测试账单，真实写入需确认，可删）：bill-correction 语料不再被迫跳过；自检口径 bump v5（纠偏改变工具序列产出，v4 报告与 v5 不可直接比）；测试 90 文件 / 1247 用例全绿（新增 tests/agent-nudge.test.js 8 例）',
+    ],
+    categories: [
+      {
+        title: 'AI 行为修复（4.10.5）',
+        items: [
+          'utils/ai/prompt-actions.js：AGENT_TOOL_INSTRUCTION 新增三条规则 —— 花费查询先 query_bill/query_stat、不点名打卡走 query_plan → log_plan_checkin 链路、禁止零工具口头声称完成',
+          'utils/ai/agent-loop.js：导出 STRONG_ACTION_RE（打个?卡/记一笔/记一下/记账/花了多少/查一下/改一下/撤销等指令式动词）与 AGENT_NUDGE_TEXT；runAgentLoop 在「零工具直接回复」分支加纠偏判定，追问后继续正常工具循环（MAX_ROUNDS 不变）',
+          '纠偏的三个豁免：回复里已带可执行 JSON action（走 JSON 路径语义）、已纠偏过一次、cfg.nudge === false',
+          '边界测试钉死（tests/agent-nudge.test.js）：三类实测原话命中 / 纯叙述闲聊不命中 / 丢弃回复不推流 / 追问文案进第二轮 messages / JSON action 豁免 / 纠偏后仍闲聊则接受（恰好两次请求）',
+        ],
+      },
+      {
+        title: '自检体系更新（4.10.5）',
+        items: [
+          'utils/ai/eval/runner.js：EVAL_PROTOCOL_VERSION 4 → 5，口径标签加「短指令纠偏轮」',
+          'pages/settings/sub/ai-eval.vue：startEval 前检测缺前置账单 → uni.showModal 一键补建（executeTool 真实写入 ¥42「自检前置」，用户确认后才写，可随时删除）→ 重取数据前置后开跑',
+          'docs/AI效果自检基线.md：登记 4.10.4 的 26/29 实测行与 4.10.5 修复行',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.10.4',
     date: '2026-10-03',
     title: '4.10.4 外观选择改自定义底部弹层：原生 ActionSheet 不随主题变色，重做为带图标的三选弹层',
