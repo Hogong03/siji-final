@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 90 文件 / 1250 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.10.7（自检前置检测修正：{plan} 排除打卡种子计划 + 账单前置跨月合并；含 4.10.5 纠偏轮、4.10.6 打卡前置、4.10.4 外观弹层） |
+| 版本 | v4.10.7（4.10.0~4.10.7 已整合为单条版本记录：AI 能力拆分 + 深色修复链 + 外观弹层 + AI 纠偏轮与自检收尾；全部小版本线的历史记录已发布前合并） |
 
 ---
 
@@ -146,7 +146,7 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.5.js）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.10.js；各小版本线已发布前合并）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
@@ -312,12 +312,13 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.5.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.10.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）
 3. 记录必须真实反映本次改动，不写“优化体验”类空话；引用具体文件名/功能名
 4. 完成后在版本历史页（设置 → 版本历史）确认新版本可见
+5. **发布前合并先例（4.10.7）**：未发布的开发过程小版本，允许在正式发布前把同一小版本线的补丁条目合并为一条（version 取该线最高补丁号，title 标注「整合 X.Y.0~X.Y.Z，发布前合并」，明细归并进 categories）。注意 tests/version-history.test.js 断言默认历史第一条 = manifest.versionName、同日期夹具版本必须在合并后仍存在。已照此整合：2.2 / 2.3 / 3.4 / 3.5 / 3.6 / 3.7 / 3.10 / 4.0 / 4.1 / 4.2 / 4.3 / 4.5 / 4.7 / 4.8 / 4.9 / 4.10（原 2.2-early/late、2.3-early/late、3.5-early 分段文件已删）
 
 ---
 

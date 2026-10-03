@@ -41,9 +41,10 @@ describe('getVersionHistory：老用户增量合并', () => {
 
   it('同日期多条按版本号倒序，合并结果与默认历史顺序一致', () => {
     const defs = getDefaultHistory()
+    // 4.10.7 发布前整合后，默认历史里同日期的版本对是 3.10.2 与 3.7.9（均 2026-09-17）
     const stored = [
-      { version: '3.4.1', date: '2026-09-09', title: 't1', summary: ['x'], categories: [{ title: 'a', items: ['b'] }] },
-      { version: '3.4.2', date: '2026-09-09', title: 't2', summary: ['x'], categories: [{ title: 'a', items: ['b'] }] }
+      { version: '3.7.9', date: '2026-09-17', title: 't1', summary: ['x'], categories: [{ title: 'a', items: ['b'] }] },
+      { version: '3.10.2', date: '2026-09-17', title: 't2', summary: ['x'], categories: [{ title: 'a', items: ['b'] }] }
     ]
     seed(stored)
     const list = getVersionHistory()
