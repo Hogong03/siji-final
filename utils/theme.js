@@ -102,6 +102,15 @@ function syncH5TabIcons() {
   } catch (e) { /* 结构不符则无操作，API 层仍会兜 */ }
 }
 
+/**
+ * 构造注入到页面 WebView 的类切换 JS（4.12.3 抽出可单测）
+ * App 端逻辑层没有 document，只能通过 plus.webview.evalJS 在各页面的视图层执行
+ */
+export function buildToggleJs(dark) {
+  const op = dark ? 'add' : 'remove'
+  return "try{document.documentElement.classList." + op + "('theme-dark')}catch(e){}"
+}
+
 // ─── 平台分支实现：声明一次，运行时按平台能力分流 ───
 // 注意：不能用 #ifdef/#ifndef 包两份 function 声明 —— 条件编译只在 uni-app 编译器里生效，
 // vitest（node）会把两份声明同时编入报重复声明。这里统一用 let 绑定 + 赋值切换，
@@ -192,6 +201,23 @@ setNativeBars = () => {
     }
   } catch (e) { /* 原生条刷色失败静默 */ }
 }
+
+// #ifdef APP-PLUS
+// App 端挂类（4.12.3）：逻辑层跑在独立 v8 引擎里没有 document，上面的 H5 DOM 路径在 App
+// 全程静默空转 —— 这就是「App 端外观只能改 tabBar/导航栏（原生层）、页面内容不跟色」的根因。
+// App 每个页面是独立 WebView：用 plus.webview.all() 逐个 evalJS 往各页面的 html 元素挂/摘类；
+// 新开页面的兜底靠 main.js 的全局 onShow mixin（applyTheme 幂等，页面显示时必重挂）。
+applyClass = () => {
+  try {
+    if (typeof plus === 'undefined' || !plus.webview || typeof plus.webview.all !== 'function') return
+    const js = buildToggleJs(isDark.value)
+    const wvs = plus.webview.all() || []
+    for (let i = 0; i < wvs.length; i++) {
+      try { if (wvs[i] && typeof wvs[i].evalJS === 'function') wvs[i].evalJS(js) } catch (e) { /* 单个 WebView 失败不影响其余 */ }
+    }
+  } catch (e) { /* App 挂类失败静默 */ }
+}
+// #endif
 
 watchSystem = (on) => {
   // H5：matchMedia change

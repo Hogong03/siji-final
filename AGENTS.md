@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 92 文件 / 1296 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.2（修 web 端读 docs 体验缺口：缺解析 Key 报错带「去配置」直达 + 引导页写明读 Word/PDF 需要 Moonshot；含 4.12.x） |
+| 测试 | 93 文件 / 1299 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.12.3（修 App 端深色切换只换 tabBar 不换页面：App 分支改 plus.webview 逐页 evalJS 挂类；含 4.12.x） |
 
 ---
 

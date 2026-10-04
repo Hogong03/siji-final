@@ -44,9 +44,15 @@ function workReminderPlan(clientId) {
     is_deleted: 0
   }
   savePlan(plan)
-  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
+  // 「5 分钟前」必须落在今天：凌晨 00:00~00:05 跑测试时 5 分钟前是昨天，而调度器按
+  // 「今天 + customTime 的钟点」算触发，昨天的日期永远不命中（3 例假失败，4.12.3 修）
+  let probe = new Date(Date.now() - 5 * 60 * 1000)
+  if (ymdOf(probe.getTime()) !== ymdOf(Date.now())) {
+    probe = new Date()
+    probe.setHours(0, 0, 1, 0)
+  }
   const pad = n => String(n).padStart(2, '0')
-  const customTime = `${ymdOf(fiveMinAgo.getTime())} ${pad(fiveMinAgo.getHours())}:${pad(fiveMinAgo.getMinutes())}:00`
+  const customTime = `${ymdOf(probe.getTime())} ${pad(probe.getHours())}:${pad(probe.getMinutes())}:00`
   // 顺序有讲究：先写免打扰关闭（此刻 plans 表为空，读改写无竞争），再 setPlanReminder
   // —— 它内部会重读设置再合并落盘，空串免打扰语义（settings.js 4.5.1）得以保留
   saveReminderSettings(Object.assign({}, getReminderSettings(), { quietHoursStart: '', quietHoursEnd: '' }))

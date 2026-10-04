@@ -6,6 +6,34 @@
 
 export const V412 = [
   {
+    version: '4.12.3',
+    date: '2026-10-05',
+    title: '4.12.3 修 App 端深色切换只换 tabBar 不换页面：逻辑层没有 document，App 分支改 plus.webview 逐页 evalJS 挂类',
+    summary: [
+      '用户实测：App 端切外观只有 tabBar/导航栏变色，页面内容不跟色 —— 根因：App 端逻辑层跑在独立 v8 引擎里没有 document，4.8.0 的 H5 DOM 挂类路径（applyClass）在 App 全程静默空转；tabBar/导航栏是原生层（setNativeBars 的 uni API 真生效），所以只有它们变色',
+      '修复：utils/theme.js 新增 App 分支（#ifdef APP-PLUS）—— plus.webview.all() 逐个 WebView evalJS 往各页面 html 元素挂/摘 theme-dark 类；新开页面的兜底靠 main.js 已有的全局 onShow mixin（applyTheme 幂等，页面显示时必重挂）',
+      'buildToggleJs(dark) 抽成导出的纯函数（注入脚本可单测）；新增 tests/theme-runtime.test.js 3 例（注入脚本内容 + 无 plus/document 环境下 applyTheme 不抛错的底线）',
+      '顺手修 tests/reminder-snooze.test.js 的跨天假失败：凌晨 00:00~00:05 跑测试时夹具的「5 分钟前」落在昨天，而调度器按「今天 + customTime 钟点」算触发永不命中 —— 夹具时间夹回今天',
+      '测试 93 文件 / 1299 用例全绿；App 端实际效果需真机验证（HBuilder X 重新编译后：切深色 → 各页面背景/文字即时跟色，新开页面也带色）',
+    ],
+    categories: [
+      {
+        title: 'App 端主题修复（4.12.3）',
+        items: [
+          'utils/theme.js：#ifdef APP-PLUS 分支重赋 applyClass —— plus.webview.all() 循环 evalJS(buildToggleJs(isDark))，单个 WebView 失败不影响其余；H5 分支（document 路径）与 MP 分支（no-op）不变',
+          '排坑记录：typeof document 在 App 逻辑层是 undefined，4.8.0 的 applyClass 第一行守卫就 return 了 —— 三平台的「条件编译同时编入 vitest」教训再次生效，用 let 绑定 + 赋值切换而非双份 function 声明',
+          '已知边界：App 冷启动深色模式下首帧可能有短暂浅色闪现（页面 WebView 创建先于 evalJS），onShow 兜底会立即补挂；刷新耗时随页面数线性增长（当前 <20 个 WebView，无感）',
+        ],
+      },
+      {
+        title: '测试基建（4.12.3）',
+        items: [
+          'tests/theme-runtime.test.js（新增 3 例）+ tests/reminder-snooze.test.js 夹具跨天修复（00:00~00:05 的假失败窗口消除）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.2',
     date: '2026-10-04',
     title: '4.12.2 修「web 端读不了 docs」的体验缺口：缺解析 Key 时报错弹窗带「去配置」直达 + 连接 AI 页写明读 Word/PDF 需要 Moonshot',
