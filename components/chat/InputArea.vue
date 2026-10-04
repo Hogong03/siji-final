@@ -11,7 +11,7 @@
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { ref, computed, onUnmounted } from 'vue'
 import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
-import { pickOneFile, readPickedFile, fileCardText, classifyFile } from '@/utils/files/index.js'
+import { pickOneFile, readPickedFile, fileCardText, classifyFile, isDocParseAvailable } from '@/utils/files/index.js'
 import { isFeatureOn } from '@/utils/ai/features.js'
 import { getProviderKeys } from '@/utils/ai/providers.js'
 import { startRecording, stopRecording, cancelRecording } from '@/utils/ai/recorder.js'
@@ -81,6 +81,26 @@ function hint(msg) {
 	uni.showToast({ title: msg, icon: 'none' })
 }
 
+/**
+ * 文档类读取失败：缺解析 Key 的场景给「去配置」直达（4.12.2）——
+ * Word/PDF 走 Moonshot 云端解析，无 Key 时其他提示都是死胡同
+ */
+function hintDocKey(result) {
+	if (result && result.kind === 'document' && !isDocParseAvailable()) {
+		uni.showModal({
+			title: '读 Word/PDF 需要解析 Key',
+			content: '文档解析走 Moonshot 云端完成，Key 可与 Kimi 聊天共用一份（设置 → AI 配置 → 读文件）。现在去配置吗？',
+			confirmText: '去配置',
+			cancelText: '先不了',
+			success: (res) => {
+				if (res.confirm) uni.navigateTo({ url: '/pages/settings/sub/ai' })
+			}
+		})
+		return
+	}
+	hint(result && result.reason)
+}
+
 async function pickFile() {
 	if (fileLoading.value) return
 	fileLoading.value = true
@@ -99,7 +119,7 @@ async function pickFile() {
 			return
 		}
 		const r = await readPickedFile(picked.pick)
-		if (!r.ok) { hint(r.reason); return }
+		if (!r.ok) { hintDocKey(r); return }
 		selectedFile.value = r
 		emit('file-selected', r)
 	} catch (e) {

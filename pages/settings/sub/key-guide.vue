@@ -19,7 +19,7 @@ const GUIDE_SELL = {
 	deepseek: '直连官网按量付费，不用订阅，价格低',
 	zhipu: '有免费模型可用，语音转文字也走智谱',
 	qwen: '阿里云百炼出品，模型选择多',
-	moonshot: 'Kimi 系列旗舰，长上下文表现好'
+	moonshot: 'Kimi 系列旗舰，长上下文表现好；读 Word/PDF 文档也走它的云端解析'
 }
 const GUIDE_STEPS = {
 	deepseek: ['打开 platform.deepseek.com 注册账号', '左侧「API keys」创建并复制 sk- 开头的 Key'],

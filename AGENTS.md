@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 92 文件 / 1296 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.1（修 EnterBriefing 局部 mixin 编译崩溃：组件 scoped SCSS 禁用页面局部 mixin；含 4.12.0 简报卡重设计与 4.11.x） |
+| 版本 | v4.12.2（修 web 端读 docs 体验缺口：缺解析 Key 报错带「去配置」直达 + 引导页写明读 Word/PDF 需要 Moonshot；含 4.12.x） |
 
 ---
 
@@ -273,7 +273,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
 | 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` 压缩 / `execCardText` 卡片文案）+ `utils/ai/autoExecutor.js`（agent 路径 `compact` 落盘点）+ `components/chat/ExecResultCard.vue`（`toolCardText` 分支）+ `composables/useChatNavigation.js` 的 `canOpenType`（有没有页面可跳） |
 | 改开场对话 / 卡片按钮 | `utils/enter-dialogue.js`（`buildWelcomeMessage` / `hasOpenerActions` / `buildEnterButtons(null)` 给通用按钮）+ `pages/chat/index.vue` 的 `.enter-actions` 渲染条件 + `components/chat/MessageBubble.vue` 的 `emitWelcomeChip`（按钮事件必须走 `uni.$emit`，与页面的 `uni.$on` 同一条通道）+ `store/chat/persist.js` 的 `_enterButtons` 白名单 |
-| 改计划时间显示 / 回填 | 计划时间有四个字段在流转：`start_time` / `end_time` / `estimated_time` / `due_date`（+ `deadline` 冗余）。**回填要依次回落**（`utils/ai` 之外看 `pages/plan/composables/usePlanForm.js` 的 `applyStoredItem`：开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上看着像没有时间 |\n| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
+| 改计划时间显示 / 回填 | 计划时间有四个字段在流转：`start_time` / `end_time` / `estimated_time` / `due_date`（+ `deadline` 冗余）。**回填要依次回落**（`utils/ai` 之外看 `pages/plan/composables/usePlanForm.js` 的 `applyStoredItem`：开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上看着像没有时间 |
+| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
 | 改计划时间 / 提醒 | `pages/plan/composables/usePlanForm.js`（`persistForm` 编辑值优先）+ `components/plan/PlanTimeSection.vue`（picker 里用 view，别用 disabled input）+ `utils/reminder/scheduler.js` 的 `computeDefaultFire` + `utils/reminder/notifier.js` 的 `ensureNotifyPermission` |
 | 改阅读页滚动条 | `pages/diary/read.vue` 的 `:show-scrollbar="false"`（App / 小程序）+ `pages/diary/read.scss` 里的 H5 段 `::-webkit-scrollbar`（条件编译）+ `.read-page { overflow: hidden }` —— 别让系统滚动条和左边目录尺叠在一起 |
 | 改目录尺刻度位置 | 刻度位置来自 `percent`：`splitSections` 与 `extractOutline` **必须同一套行位置算法**（`utils/text-outline.js`）—— 只给 sections 不给 percent，刻度会全堆在 0%（4.1.1 修过这个） |
@@ -310,7 +311,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
 | 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；守卫 tests/theme-mode.test.js |
-| 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |\n| 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
+| 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |
+| 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
 
 ---
 

@@ -6,6 +6,26 @@
 
 export const V412 = [
   {
+    version: '4.12.2',
+    date: '2026-10-04',
+    title: '4.12.2 修「web 端读不了 docs」的体验缺口：缺解析 Key 时报错弹窗带「去配置」直达 + 连接 AI 页写明读 Word/PDF 需要 Moonshot',
+    summary: [
+      '用户实测 web 端发 docs 文件提示读不了 —— 排查结论：不是 bug，doc/docx/pdf/xls/ppt 走 Moonshot 云端解析（三端一致），该浏览器环境一个 Key 都没配所以必然被拒；文本类（txt/md/csv 等）本地直读不受影响',
+      '修复一（components/chat/InputArea.vue）：文档类读取失败且未配置解析 Key 时，弹窗改为「读 Word/PDF 需要解析 Key」+「去配置」直达 AI 配置页 —— 之前只给一句死胡同提示，用户会以为是 bug（本次即被坑）',
+      '修复二（pages/settings/sub/key-guide.vue）：Moonshot 引导卡卖点补一句「读 Word/PDF 文档也走它的云端解析」—— 之前配了 DeepSeek 的用户读不了 docs 会误判为缺陷',
+      '两个改动文件过 dev server 编译审计（4.12.1 的 sass 坑复查）：主模块 + style 虚拟模块全 200；测试 92 文件 / 1296 用例全绿',
+    ],
+    categories: [
+      {
+        title: '文档解析引导（4.12.2）',
+        items: [
+          'components/chat/InputArea.vue：新增 hintDocKey(result) —— kind=document 且 isDocParseAvailable()=false 时弹「去配置」模态框（确认 → /pages/settings/sub/ai），其他失败照旧走 hint()',
+          'pages/settings/sub/key-guide.vue：GUIDE_SELL.moonshot 补文档解析说明（读 Word/PDF 走 Moonshot 云端，Key 可与 Kimi 聊天共用）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.1',
     date: '2026-10-04',
     title: '4.12.1 修简报卡 SFC 编译崩溃：EnterBriefing 用了页面局部 mixin（text-ellipsis），scoped SCSS 里不存在导致整个聊天页 chunk 500',
