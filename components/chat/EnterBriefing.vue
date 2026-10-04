@@ -127,7 +127,9 @@ export default {
 	font-weight: 600;
 	color: #18181B;
 	max-width: 100%;
-	@include text-ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .briefing-metric-label {

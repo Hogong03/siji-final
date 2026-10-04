@@ -6,6 +6,27 @@
 
 export const V412 = [
   {
+    version: '4.12.1',
+    date: '2026-10-04',
+    title: '4.12.1 修简报卡 SFC 编译崩溃：EnterBriefing 用了页面局部 mixin（text-ellipsis），scoped SCSS 里不存在导致整个聊天页 chunk 500',
+    summary: [
+      '用户报 bug：聊天页打不开，显示「连接服务器超时，点击屏幕重试」—— 现场排查：遮罩是 uni-h5 的 uni-async-error（异步页面 chunk 加载失败），不是 dev 服务器挂了（模块 fetch 全 200）；动态 import 逐模块定位到 EnterBriefing.vue',
+      '根因：EnterBriefing.vue 的 scoped 样式里写了 @include text-ellipsis —— 该 mixin 定义在 pages/chat/chat-mixins.scss（只有 chat.scss 上下文有），组件编译时 sass 报 Undefined mixin → 样式虚拟模块 500 → 页面 chunk 加载失败',
+      '修复：组件里改纯 CSS 三件套（white-space/overflow/text-overflow）；浏览器实测：简报卡正常渲染（问候池「早。」+ 通用 chips + 空状态无指标），页级按钮行对 v2 消息正确隐藏',
+      '教训：组件 scoped SCSS 里禁止 @include 页面局部 mixin（text-ellipsis 等定义在各页面的 *-mixins.scss，不进组件编译上下文）—— 要么写纯 CSS，要么把 mixin 上移到 uni.scss',
+    ],
+    categories: [
+      {
+        title: '修复与排坑（4.12.1）',
+        items: [
+          'components/chat/EnterBriefing.vue：@include text-ellipsis → white-space: nowrap + overflow: hidden + text-overflow: ellipsis',
+          '排坑路径记录：uni-async-error 遮罩 = 页面 chunk 加载失败 → fetch 模块全 200 说明是传递依赖挂 → 动态 import 逐模块缩小（EnterBriefing FAIL / enter-dialogue OK）→ fetch style 虚拟模块（?vue&type=style&lang.scss）拿到 sass 500 的具体报错',
+          '注意：sass 编译错误只在「加载该组件的模块请求」上暴露（fetch 主模块仍是 200），vitest 不编译 SFC 样式所以全量测试抓不到 —— 新组件入库前应在 HBuilder X 里跑一次页面',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.0',
     date: '2026-10-04',
     title: '4.12.0 初始对话重设计：进入消息从纯文本升级为结构化简报卡（指标格 + 唯一主按钮 + 次级 chips + 问候变化池）',

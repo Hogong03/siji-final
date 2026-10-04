@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 92 文件 / 1296 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.0（初始对话重设计：进入消息升级结构化简报卡——指标格/唯一主按钮/问候变化池，EnterBriefing 组件 + _briefing v2；含 4.11.0 竞品差距收口） |
+| 版本 | v4.12.1（修 EnterBriefing 局部 mixin 编译崩溃：组件 scoped SCSS 禁用页面局部 mixin；含 4.12.0 简报卡重设计与 4.11.x） |
 
 ---
 
@@ -83,6 +83,7 @@
 
 - **禁用 CSS 变量 `var(--xxx)`**：uni-app App 端 fixed 定位组件变量继承不稳定。统一硬编码 + `@media (prefers-color-scheme: dark)` 深色覆盖
 - **SCSS 编译期变量 `$xxx` 不受限**，可用 `uni.scss` 中定义的
+- **组件 scoped SCSS 禁止 @include 页面局部 mixin**（`text-ellipsis` 等定义在各页面的 `*-mixins.scss`，不进组件编译上下文；4.12.1 实证 sass Undefined mixin → 页面 chunk 500、聊天页打不开）—— 组件里写纯 CSS，或把 mixin 上移 `uni.scss`
 - **四级灰阶色值体系**：页面 `#F4F4F5` → 卡片/输入区 `#FFFFFF` → 次级 `#F4F4F5` → 边框/focus `#E4E4E7`
 - **零阴影**：全项目无 `box-shadow`
 - **零渐变**：禁止 `linear-gradient` / `backdrop-filter`
