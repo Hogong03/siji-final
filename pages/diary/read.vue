@@ -155,7 +155,7 @@ onShow(() => {
 							<text class="chapter-no">{{ sectionNumbers[sec.key] }}</text>
 							<text class="chapter-title">{{ sec.title }}</text>
 						</view>
-						<MarkdownRenderer v-if="sec.body" :content="sec.body" />
+						<MarkdownRenderer v-if="sec.body" :content="sec.body" :base-font-size="readBodyStyle.fontSize" />
 					</view>
 
 					<view v-if="!loading && !content" class="read-empty">

@@ -6,6 +6,28 @@
 
 export const V413 = [
   {
+    version: '4.13.3',
+    date: '2026-10-06',
+    title: '4.13.3 修字号切换对 AI 正文与阅读页不生效：三层显式字号拦截清除（md-* 改继承、标题改 em、阅读页传参）',
+    summary: [
+      '用户实测：切档位后 AI 回复正文与记录阅读页文字大小不变 —— 取证：MarkdownRenderer.scss 的 .md-text/.md-bold/.md-italic/.md-strike/.md-mark 五类行内元素硬编码 $font-sm（26rpx），子元素显式字号压过了根节点的内联继承，baseFontSize 传了也白传；read.vue 的 MarkdownRenderer 没传 base-font-size，且 read.scss 的 :deep(.md-renderer){font-size:28rpx} 显式规则同样压住容器继承',
+      '修复一（MarkdownRenderer.scss）：md-text/bold/italic/strike/mark 改 font-size: inherit（随根节点 baseFontSize 缩放）；标题 md-h1~h4 与行内 code 改 em 比例（36/32/28/26rpx → 1.385/1.23/1.077/1em、23rpx → 0.885em）随根字号等比缩放',
+      '修复二（pages/diary/read.vue）：MarkdownRenderer 传 :base-font-size="readBodyStyle.fontSize" —— 内联在根节点上，压过 read.scss 的 :deep 显式规则',
+      '修复三（pages/settings/index.vue）：字号档位激活态加内联样式兜底（.active 嵌套规则在 App 编译器不可靠，4.12.x 同族）—— 激活黑底黑边白字，深色下白描边区分弹层',
+      'H5 实测：简报卡问候 标准 14px → 特大 18px；md-* 继承链编译验证；全量测试 94 文件 / 1305 用例全绿；App 端重编译后 AI 正文/阅读页正文应随档位缩放',
+    ],
+    categories: [
+      {
+        title: '字号缩放链修复（4.13.3）',
+        items: [
+          'components/chat/MarkdownRenderer.scss：md-text/bold/italic/strike/mark → inherit；md-h1~h4 → em（1.385/1.23/1.077/1）；md-inline-code → 0.885em',
+          'pages/diary/read.vue：MarkdownRenderer 传 base-font-size',
+          'pages/settings/index.vue：字号 chips 激活态内联样式（chipStyle/chipTextStyle，isDark 深色白描边）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.13.2',
     date: '2026-10-06',
     title: '4.13.2 修字号档位按钮两种模式显示不一致：浅色规则被误嵌进 html.theme-dark 块（插入锚点在块内），整段搬出到顶层',

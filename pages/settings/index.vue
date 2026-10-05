@@ -14,6 +14,7 @@ import { hasPin } from '@/utils/pin.js'
 import { getVersion } from '@/utils/version-check.js'
 import { getThemeMode, setThemeMode, normalizeMode } from '@/utils/theme.js'
 import { FONT_SCALES, getFontScaleId, setFontScaleId } from '@/utils/font-scale.js'
+import { isDark } from '@/utils/theme.js'
 
 const store = useAppStore()
 
@@ -45,6 +46,18 @@ const themeOptions = [
 ]
 
 /** 打开自定义弹层（原生 ActionSheet 不随主题变色且无图标，弃用） */
+// 激活态内联兜底（4.13.3）：App 样式编译器对 .active 嵌套规则不可靠（4.12.x 同族），
+// 激活底色/边框/文字色直接内联；深色下加白色描边与深色弹层区分
+function chipStyle(fs) {
+  if (currentFontScaleId.value !== fs.id) return {}
+  const style = { background: '#000000', borderColor: '#000000' }
+  if (isDark.value) style.borderColor = '#FAFAFA'
+  return style
+}
+function chipTextStyle(fs) {
+  if (currentFontScaleId.value !== fs.id) return {}
+  return { color: '#FFFFFF' }
+}
 function chooseFontScale(id) {
   setFontScaleId(id)
   currentFontScaleId.value = id
@@ -235,9 +248,10 @@ function go(target) {
               :key="fs.id"
               class="font-size-opt"
               :class="{ active: currentFontScaleId === fs.id }"
+              :style="chipStyle(fs)"
               @tap="chooseFontScale(fs.id)"
             >
-              <text class="font-size-opt-text" :style="{ fontSize: Math.round(24 * fs.ratio) + 'rpx' }">{{ fs.label }}</text>
+              <text class="font-size-opt-text" :style="[chipTextStyle(fs), { fontSize: Math.round(24 * fs.ratio) + 'rpx' }]">{{ fs.label }}</text>
             </view>
           </view>
         </view>

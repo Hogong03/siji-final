@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 94 文件 / 1305 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.13.2（修字号按钮双模式不一致：浅色规则误嵌深色块整段搬出；含 4.13.x） |
+| 版本 | v4.13.3（修字号切换对 AI 正文/阅读页不生效：md-* 改继承、标题改 em、阅读页传参；含 4.13.x） |
 
 ---
 
@@ -311,7 +311,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改语音转文字 | `utils/ai/features.js` 的 voice 开关（默认关）+ `components/chat/InputArea.vue` 麦克风 + `utils/ai/recorder.js`/`transcribe.js`（智谱 ASR，2.3 遗产复用） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
-| 字号切换 | `utils/font-scale.js`（四档响应式比例 + fontRpx 内联字号）+ 设置外观弹层档位选择 + 缩放面（MessageBubble/MarkdownRenderer baseFontSize/EnterBriefing/diary read）；只缩阅读内容，UI 骨架字号稳定；**options API 组件的模板要用导入函数必须经 methods 暴露（4.13.1 实证）**；**脚本往 scss 插规则先确认锚点括号层级（4.13.2：锚点在深色块内导致浅色规则被静默改作用域）** |
+| 字号切换 | `utils/font-scale.js`（四档响应式比例 + fontRpx 内联字号）+ 设置外观弹层档位选择 + 缩放面（MessageBubble/MarkdownRenderer baseFontSize/EnterBriefing/diary read）；只缩阅读内容，UI 骨架字号稳定；**缩放面内禁止显式 font-size 拦截继承（md-* 用 inherit、标题用 em，4.13.3）**；**options API 组件的模板要用导入函数必须经 methods 暴露（4.13.1 实证）**；**脚本往 scss 插规则先确认锚点括号层级（4.13.2：锚点在深色块内导致浅色规则被静默改作用域）** |
 | 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；**SijiIcon 图标换色是 JS 驱动（消费 theme.js 的 isDark 响应式换 src）—— 跨端样式编译器差异优先 JS 方案（4.12.5）**；**关键主题视觉（图标/用户气泡反白/发送停止键）一律 JS/内联驱动（4.12.5/4.12.7/4.12.9 三轮实证：App 上 scss 深色块不可赌，真机复报直接改 JS/内联，别再调 scss）**；守卫 tests/theme-mode.test.js + tests/theme-runtime.test.js |
 | 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |
 | 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
