@@ -15,6 +15,7 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 import ExecResultCard from './ExecResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
 import EnterBriefing from './EnterBriefing.vue'
+import { isDark } from '@/utils/theme.js'
 import { previewImage } from '@/utils/image.js'
 
 const props = defineProps({
@@ -79,6 +80,24 @@ const edgeColor = computed(() => {
   if (t === 'glimmer' || t === 'query_glimmers') return '#B45309'
   return ''
 })
+
+/**
+ * 用户气泡深色反白的内联兜底（4.12.7）：设计是深色下用户气泡反白为浅底黑字，
+ * 规则在 MessageBubble.scss 的 html.theme-dark 块里 —— App 样式编译器实测对块内的
+ * background 不生效（text 翻黑而 bg 停留 #000 → 黑底黑字隐形，用户截图实证）。
+ * 内联样式不受编译器/优先级影响，与 SijiIcon v5 同一思路：跨端主题视觉优先 JS 驱动。
+ */
+const bubbleStyle = computed(() => {
+  const style = {}
+  if (edgeColor.value) style.borderLeftColor = edgeColor.value
+  if (props.message.role === 'user' && isDark.value) {
+    style.background = '#FAFAFA'
+    style.color = '#000000'
+  }
+  return style
+})
+/** 用户气泡文字的内联颜色（.bubble-text 的深色块规则在 App 上同为不可靠层） */
+const userTextColor = computed(() => (props.message.role === 'user' && isDark.value ? '#000000' : ''))
 
 /** AI 消息内容类型检测 — 用于气泡样式变化 */
 const contentStyle = computed(() => {
@@ -246,7 +265,7 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
     <template v-else>
       <!-- 消息行：单气泡，长按触发操作 -->
       <view class="msg-row" :class="message.role">
-        <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="edgeColor ? { borderLeftColor: edgeColor } : {}">
+        <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="bubbleStyle">
           <image v-if="message.image && !imageFailed" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" @error="onImageError" />
           <view v-else-if="message.image && imageFailed" class="bubble-image-fallback" @tap="onImageTap">
             <text class="bubble-image-fallback-text">图片已失效</text>
@@ -262,8 +281,8 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
             <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
             <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />
             <text v-else-if="message.role === 'assistant'" class="bubble-text">{{ message.content }}</text>
-            <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播） -->
-            <text v-else class="bubble-text">{{ message.content }}</text>
+            <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播）；深色反白文字内联兜底 -->
+            <text v-else class="bubble-text" :style="userTextColor ? { color: userTextColor } : {}">{{ message.content }}</text>
           </template>
 
           <!-- 欢迎消息快捷示例 -->

@@ -6,6 +6,25 @@
 
 export const V412 = [
   {
+    version: '4.12.7',
+    date: '2026-10-05',
+    title: '4.12.7 修深色下用户消息隐形：气泡反白（浅底黑字）的 background 在 App 编译器下不生效，改内联样式兜底',
+    summary: [
+      '用户真机截图实证：深色下用户消息气泡是纯黑块、文字完全不可见 —— 设计是深色下用户气泡反白为浅底黑字（#FAFAFA/#000000），规则在 MessageBubble.scss 的 html.theme-dark 块里；App 上 text 颜色翻黑生效了、background 却停留在浅色规则的 #000000 —— 同一选择器体系一半生效一半不生效，App 样式编译器行为差异（与 4.12.5 SijiIcon 同族）',
+      '修复：用户气泡的深色反白改内联样式兜底 —— bubbleStyle（user+深色时内联 background:#FAFAFA / color:#000000，与 edgeColor 合并）+ 用户气泡文字内联 color；内联样式不受编译器/优先级/顺序影响，三端行为一致；原有 scss 深色块保留（H5 继续走它，两处值相同不冲突）',
+      '跨端教训串联（4.12.5→4.12.7）：主题相关的关键视觉（图标、气泡反白）一律 JS/内联驱动；html.theme-dark 嵌套块只作为 H5 的主实现，App 端必须有 JS/内联兜底，真机必验',
+      '全量测试 93 文件 / 1299 用例全绿；App 端需 HBuilder X 重新编译目检（深色下发一条消息，用户气泡应为浅灰底黑字）',
+    ],
+    categories: [
+      {
+        title: '用户气泡深色反白（4.12.7）',
+        items: [
+          'components/chat/MessageBubble.vue：新增 bubbleStyle / userTextColor 两个 computed（isDark 来自 utils/theme.js 响应式单例）；bubble 的 :style 从 edgeColor 单值改为 bubbleStyle 合并；用户消息 <text> 深色时内联 color:#000000',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.6',
     date: '2026-10-05',
     title: '4.12.6 修对话编辑面板长按误触删除：ConversationListItem 的原生 @longpress 换 usePressHold（位移容差 + tap 守卫），agent 卡片冗余长按移除',

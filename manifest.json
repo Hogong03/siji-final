@@ -2,8 +2,8 @@
     "name" : "思迹",
     "appid" : "__UNI__128A9A5",
     "description" : "AI个人生活助手 — 对话式记录/记账/计划",
-    "versionName" : "4.12.6",
-    "versionCode" : "4126",
+    "versionName" : "4.12.7",
+    "versionCode" : "4127",
     "transformPx" : false,
     "app-plus" : {
         "themeLocation" : "theme.json",
