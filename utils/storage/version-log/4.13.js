@@ -6,6 +6,24 @@
 
 export const V413 = [
   {
+    version: '4.13.4',
+    date: '2026-10-06',
+    title: '4.13.4 字号切换真机诊断日志：tap 触发/存储写入/比例变化三点位打日志（HBuilder X 控制台过滤 FontScale）',
+    summary: [
+      '真机上字号按钮点击无反应且控制台无输出 —— 设备构建（01:26）已含 4.13.3 全部修复、编译绑定正确（onClick → chooseFontScale 在产物中确认），需要设备侧证据定位：加三条诊断日志',
+      'components/chat/../pages/settings/index.vue：pickTheme 打开弹层时记录当前比例；chooseFontScale 记录 tap 触发与 setFontScaleId 前后的比例变化 —— 真机调试时在 HBuilder X 控制台过滤「FontScale」即可看到链路走到哪一环',
+      '诊断判读：有 tap 日志但界面无变化 → 视图层问题；无 tap 日志 → 事件绑定/触控问题；另请核对 设置 → 关于思迹 的版本号是否为 4.13.4（排除旧构建）',
+    ],
+    categories: [
+      {
+        title: '真机诊断（4.13.4）',
+        items: [
+          'pages/settings/index.vue：chooseFontScale / pickTheme 加 logger.log 诊断线（logger 已有 utils/logger.js 通道）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.13.3',
     date: '2026-10-06',
     title: '4.13.3 修字号切换对 AI 正文与阅读页不生效：三层显式字号拦截清除（md-* 改继承、标题改 em、阅读页传参）',

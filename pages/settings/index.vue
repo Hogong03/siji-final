@@ -13,8 +13,9 @@ import { AI_PROVIDERS } from '@/utils/api.js'
 import { hasPin } from '@/utils/pin.js'
 import { getVersion } from '@/utils/version-check.js'
 import { getThemeMode, setThemeMode, normalizeMode } from '@/utils/theme.js'
-import { FONT_SCALES, getFontScaleId, setFontScaleId } from '@/utils/font-scale.js'
+import { FONT_SCALES, fontScale, getFontScaleId, setFontScaleId } from '@/utils/font-scale.js'
 import { isDark } from '@/utils/theme.js'
+import { logger } from '@/utils/logger.js'
 
 const store = useAppStore()
 
@@ -59,11 +60,15 @@ function chipTextStyle(fs) {
   return { color: '#FFFFFF' }
 }
 function chooseFontScale(id) {
+  // 真机诊断日志（4.13.4）：tap 是否触发、存储是否写入、比例是否变化 —— HBuilder X 控制台过滤 FontScale
+  logger.log('[FontScale] tap:', id, '| scale before:', fontScale.value)
   setFontScaleId(id)
   currentFontScaleId.value = id
+  logger.log('[FontScale] done:', id, '| scale after:', fontScale.value)
 }
 function pickTheme() {
   showThemeSheet.value = true
+  logger.log('[FontScale] sheet open | current scale:', fontScale.value)
 }
 
 function chooseTheme(id) {
