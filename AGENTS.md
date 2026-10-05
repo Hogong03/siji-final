@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 93 文件 / 1299 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.3（修 App 端深色切换只换 tabBar 不换页面：App 分支改 plus.webview 逐页 evalJS 挂类；含 4.12.x） |
+| 版本 | v4.12.4（图标分型补齐深色处理：厂商 logo 深色垫白底托 + Agent 头像深色底托；含 4.12.x） |
 
 ---
 
@@ -110,6 +110,7 @@
 - **更换图片内容必须同时改文件名**（追加 `-v2`/`-v3` 版本后缀，如 `chat.png` → `chat-v2.png`），App 端同名资源不刷新，只换内容不换名会"更新不生效"
 - 改名后必须全局搜索更新所有引用：`pages.json` tabBar、`static/icons/` 下 provider/agent 动态拼接、`store/agent.js`、`utils/agent-templates.js`、各 .vue 组件
 - 引用文件与磁盘文件名必须一致；改动后执行 `rg -n "static/(icons|tab)/" --glob "!static/**"` 检查无旧名残留
+- **图标分型规矩（4.12.3）**：A 型线条功能图标 = 必须浅深成对（走 scripts/gen-icons.cjs 成对产出，SijiIcon 双图自动切换）；B 型品牌 logo（provider-*）与 C 型彩色插画头像（agent-*）**不做深色反色版**，深色下垫白底托/加描边区分边界（ai.scss 与 settings/chat 首页已有先例）
 - 存量数据兼容：已持久化的旧 icon 路径在 `utils/agent-templates.js` 的 `AGENT_ICON_V2` 映射表中登记，`normalizeAgentIcon()` 渲染时归一化，禁止删除旧名文件前不登记映射
 
 ### 平台差异

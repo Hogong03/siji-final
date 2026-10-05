@@ -789,6 +789,8 @@ html.theme-dark {
     height: 28rpx;
     border-radius: 6rpx;
     flex-shrink: 0;
+    // 厂商 logo 保持品牌色不反色，深色下垫白底托（4.12.3，与 ai.scss 的 .provider-logo 同规矩）
+    background: #FFFFFF;
     }
     .nav-badge-text {
     font-size: $font-xs;

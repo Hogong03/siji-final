@@ -6,6 +6,30 @@
 
 export const V412 = [
   {
+    version: '4.12.4',
+    date: '2026-10-05',
+    title: '4.12.4 图标分型补齐深色处理：厂商 logo 深色垫白底托（chat 顶部/设置首页）+ Agent 头像深色底托，品牌色与插画一律不反色',
+    summary: [
+      '用户反馈「只有一套浅色图标缺乏深色图标」—— 全量盘点：56 张功能图标中 41 张早有 -v2-dark 深色版（SijiIcon 双图自动切换，4.12.3 后 App 端也生效）；真缺口是 15 张无深色版的图标，分属两类「本就不该反色」的东西：厂商品牌 logo ×5 与 Agent 插画头像 ×20（-v2/-v3 各十张）',
+      '方案按图标分型：A 型线条功能图标 = 必须浅深成对（gen-icons.cjs 成对产出）；B 型品牌 logo 与 C 型彩色插画头像 = 不做反色，深色下垫白色/中性底托区分边界 —— 行业惯例（微信/Telegram 头像同款处理），反色反而破坏品牌识别',
+      '修复一：chat 顶部厂商 logo（.nav-badge-logo 深色块）垫白底托 —— 之前只有 ai.scss（AI 配置页）有，chat 顶部的透明底黑 logo（智谱/OpenAI）在深色下直接隐形',
+      '修复二：设置首页厂商行 logo（.row-provider-logo 深色块）垫白底托，与 ai.scss 同规矩',
+      '修复三：AgentAvatar 深色下底托 #F4F4F5 → #27272A（描边 4.8.x 已有）—— 头像 PNG 已验证全透明底，底托能透出来',
+      '盘点确认 AgentSwitcher 与 agent_add 选择格的深色块 4.8.x 已盖过，无需改；AGENTS.md 图片资源节补「图标分型规矩」防复发；改动文件过 dev server 编译审计全 200，theme-mode 守卫 7 例全绿',
+    ],
+    categories: [
+      {
+        title: '图标分型补齐（4.12.4）',
+        items: [
+          'pages/chat/chat.scss：深色块 .nav-badge-logo 加 background: #FFFFFF',
+          'pages/settings/index.vue：深色块 .row-provider-logo 加 background: #FFFFFF',
+          'components/common/AgentAvatar.vue：深色块 .agent-avatar--icon 加 background: #27272A（描边已有）',
+          'AGENTS.md：图片资源节新增「图标分型规矩」——A 型成对产出 / B 型 logo 与 C 型头像不反色、垫底托',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.3',
     date: '2026-10-05',
     title: '4.12.3 修 App 端深色切换只换 tabBar 不换页面：逻辑层没有 document，App 分支改 plus.webview 逐页 evalJS 挂类',

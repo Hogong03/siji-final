@@ -309,6 +309,8 @@ html.theme-dark {
   .card { background: #27272A; border-color: #3F3F46; }
   .row { border-bottom-color: #3F3F46; &:active { background: #3F3F46; } }
   .card-ai-section { border-top-color: #FFFFFF; }
+  /* 厂商 logo 品牌色不反色，深色垫白底托（4.12.3，与 ai.scss 同规矩） */
+  .row-provider-logo { background: #FFFFFF; }
   .row-label { color: #FAFAFA; }
   .row-desc, .row-value, .row-arrow { color: #A1A1AA; }
   .dot.ok { background: #10B981; }

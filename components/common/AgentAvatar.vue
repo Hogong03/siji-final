@@ -82,6 +82,7 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
   .agent-avatar--icon {
+    background: #27272A;
     border: 2rpx solid #3F3F46;
   }
   .avatar-text {
@@ -92,6 +93,7 @@ html.theme-dark {
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .agent-avatar--icon {
+    background: #27272A;
     border: 2rpx solid #3F3F46;
   }
   .avatar-text {
