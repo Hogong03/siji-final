@@ -352,42 +352,43 @@ html.theme-dark {
   .theme-sheet-label { color: #FAFAFA; }
   .theme-sheet-row.active .theme-sheet-label { color: #FAFAFA; font-weight: 700; }
   .theme-sheet-icon { opacity: 1; }
-  .font-size-block {
-  padding: 20rpx 24rpx 8rpx;
-  border-top: 1rpx solid #E4E4E7;
-}
-.font-size-label {
-  font-size: 24rpx;
-  color: #71717A;
-}
-.font-size-opts {
-  display: flex;
-  gap: 12rpx;
-  margin-top: 12rpx;
-}
-.font-size-opt {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14rpx 0;
-  background: #F4F4F5;
-  border: 2rpx solid #E4E4E7;
-  border-radius: 12rpx;
-  &.active {
-    background: #000000;
-    border-color: #000000;
-    .font-size-opt-text { color: #FFFFFF; }
-  }
-}
-.font-size-opt-text {
-  font-size: 24rpx;
-  color: #18181B;
-}
 .theme-sheet-cancel { border-top-color: #3F3F46; }
   .theme-sheet-cancel-text { color: #A1A1AA; }
 }
 /* #endif */
+
+.font-size-block {
+padding: 20rpx 24rpx 8rpx;
+border-top: 1rpx solid #E4E4E7;
+}
+.font-size-label {
+font-size: 24rpx;
+color: #71717A;
+}
+.font-size-opts {
+display: flex;
+gap: 12rpx;
+margin-top: 12rpx;
+}
+.font-size-opt {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 14rpx 0;
+background: #F4F4F5;
+border: 2rpx solid #E4E4E7;
+border-radius: 12rpx;
+&.active {
+background: #000000;
+border-color: #000000;
+.font-size-opt-text { color: #FFFFFF; }
+}
+}
+.font-size-opt-text {
+font-size: 24rpx;
+color: #18181B;
+}
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .page { background: #18181B; }

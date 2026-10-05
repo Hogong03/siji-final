@@ -6,6 +6,25 @@
 
 export const V413 = [
   {
+    version: '4.13.2',
+    date: '2026-10-06',
+    title: '4.13.2 修字号档位按钮两种模式显示不一致：浅色规则被误嵌进 html.theme-dark 块（插入锚点在块内），整段搬出到顶层',
+    summary: [
+      '用户实测：跟随系统/浅色模式与深色模式下字号按钮长得不一样 —— 编译产物取证：设置页的浅色 .font-size-* 规则整段被编进了 html.theme-dark 前缀（插入锚点 .theme-sheet-cancel { 本身位于深色块内部，python 插入把浅色规则带进了块内），导致浅色规则只在深色模式生效、且排在其后覆盖了真正的深色规则 —— 深色下按钮显示成浅色样式，两种模式不一致',
+      '修复：浅色规则整段搬出深色块到顶层（深色块内只留 340-347 行的深色规则）；浏览器双模式复验：深色=深灰圆底 #27272A + 文字 #E4E4E7 + 激活反白 #FAFAFA/#18181B，浅色=#F4F4F5/#18181B + 激活 #000000/#FFFFFF，各自正确',
+      '排坑沉淀：python 脚本往 scss 插规则时，锚点（如 .theme-sheet-cancel {）本身可能在某个主题块内 —— 插入前必须确认锚点的括号层级，否则规则的作用域会被静默改变（编译不报错、样式「看起来对」但作用域错位）',
+      'theme-mode 守卫 7 例全绿；H5 双模式浏览器实测通过；App 端重新编译目检',
+    ],
+    categories: [
+      {
+        title: '修复与排坑（4.13.2）',
+        items: [
+          'pages/settings/index.vue：.font-size-block/.font-size-label/.font-size-opts/.font-size-opt/.font-size-opt-text 浅色规则从 html.theme-dark 块内搬至顶层',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.13.1',
     date: '2026-10-06',
     title: '4.13.1 修简报卡渲染崩溃与字号切换无效：EnterBriefing（options API）模板调用模块级 import 需经 methods 暴露',
