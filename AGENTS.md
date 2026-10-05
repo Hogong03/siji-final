@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 93 文件 / 1299 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.7（修深色下用户消息隐形：气泡反白改内联样式兜底，App 编译器对 html.theme-dark 块内 background 不生效；含 4.12.x） |
+| 版本 | v4.12.8（修深色下发送/停止键显示不清：移除停止键白色方块底、箭头/停止符颜色按态收窄；含 4.12.x） |
 
 ---
 

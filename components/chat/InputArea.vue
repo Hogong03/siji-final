@@ -461,16 +461,12 @@ html.theme-dark {
 	.send-btn.active .send-dot {
 		background: #FAFAFA; opacity: 1;
 	}
-	.send-icon { color: #000000; }
-	.stop-dot { background: #27272A; }
+	/* 黑箭头只配白圆（激活态）；未激活的深灰圆上保持浅色箭头，否则隐形（4.12.8） */
+	.send-btn.active .send-icon { color: #000000; }
+	.stop-dot { background: #3F3F46; }
+	.stop-icon { color: #F4F4F5; }
 	.text-input { color: #F4F4F5; }
 
-  .stop-btn {
-    background: #FAFAFA;
-  }
-  .stop-icon {
-    color: #18181B;
-  }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -503,8 +499,9 @@ html.theme-dark {
 	.send-btn.active .send-dot {
 		background: #FAFAFA; opacity: 1;
 	}
-	.send-icon { color: #000000; }
-	.stop-dot { background: #27272A; }
+	.send-btn.active .send-icon { color: #000000; }
+	.stop-dot { background: #3F3F46; }
+	.stop-icon { color: #F4F4F5; }
 	.text-input { color: #F4F4F5; }
 }
 /* #endif */

@@ -6,6 +6,25 @@
 
 export const V412 = [
   {
+    version: '4.12.8',
+    date: '2026-10-05',
+    title: '4.12.8 修深色下发送/停止键显示不清：移除停止键外层白色方块底、黑停止符改浅色，未激活发送箭头不再全局翻黑',
+    summary: [
+      '用户实测：深色下对话进行中的停止键有白色背景且显示不清 —— 两个叠加问题：① 深色块里 .stop-btn（88rpx 方形热区容器）被垫了 #FAFAFA 白底 → 圆形停止钮外面套着白色方块；② .stop-icon 翻成 #18181B 黑色，叠在 #27272A 深灰圆上几乎看不见',
+      '修复：移除 .stop-btn 白底；停止钮深色定为 #3F3F46 圆底 + #F4F4F5 浅色停止符（与发送键激活态的白圆黑箭互为镜像）',
+      '顺带修同类问题：深色块里 .send-icon 全局翻黑导致未激活发送键（#3F3F46 圆底）的黑箭头隐形 —— 黑箭头收窄到 .send-btn.active .send-icon（只配白圆），未激活保持浅色箭头',
+      'MP 深色块同款修复（.send-icon 全局翻黑 + .stop-dot #27272A）；全量测试 93 文件 / 1299 用例全绿；App 端重新编译后深色下对话进行中：停止键应为深灰圆 + 浅色方块符，无白色方块',
+    ],
+    categories: [
+      {
+        title: '发送/停止键深色修正（4.12.8）',
+        items: [
+          'components/chat/InputArea.vue：#ifndef MP-WEIXIN 与 MP-WEIXIN 两个深色块同步 —— 删 .stop-btn 白底与 .stop-icon 黑色；.stop-dot #27272A → #3F3F46、.stop-icon → #F4F4F5；.send-icon 黑色收窄到 .send-btn.active .send-icon',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.7',
     date: '2026-10-05',
     title: '4.12.7 修深色下用户消息隐形：气泡反白（浅底黑字）的 background 在 App 编译器下不生效，改内联样式兜底',
