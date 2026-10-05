@@ -103,7 +103,10 @@ export default {
 	methods: {
 		tap(btn) {
 			if (btn) this.$emit('action', btn)
-		}
+		},
+		// options API 的模板解析不到模块级 import —— fontRpx 必须经 methods 暴露给模板
+		// （4.13.1 排坑：直接在模板里调导入函数 → _ctx.fontRpx undefined → 渲染抛错整卡消失）
+		fontRpx
 	}
 }
 </script>

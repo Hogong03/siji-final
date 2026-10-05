@@ -6,6 +6,26 @@
 
 export const V413 = [
   {
+    version: '4.13.1',
+    date: '2026-10-06',
+    title: '4.13.1 修简报卡渲染崩溃与字号切换无效：EnterBriefing（options API）模板调用模块级 import 需经 methods 暴露',
+    summary: [
+      '用户实测：字号切换按钮无反馈且无效果 —— 现场排查：聊天页尾部挂着「应用遇到一点问题」toast，简报卡整卡消失。根因：EnterBriefing 是 options API 组件，4.13.0 在模板里直接调用模块级导入的 fontRpx —— options API 模板解析不到模块作用域导入（编译成 _ctx.fontRpx = undefined），渲染抛错整棵子树被 onErrorCaptured 吞掉',
+      '修复：fontRpx 挂进组件 methods 暴露给模板（options API 的模板只能读 this 上的成员）；浏览器实测简报卡恢复渲染（问候/指标/chips 齐全），字号切换端到端打通：切「特大」后简报卡问候 16px→18px、chips→14.5px（×1.3），存储与激活态联动正常',
+      '排坑沉淀：script setup 的模板能直接用导入绑定，options API 不行 —— 给 options 组件加模板可用的工具函数必须走 methods；另外该崩溃被 App.vue onErrorCaptured 吞成 toast，只能靠「页面少了一块」或控制台发现，遇到「某块凭空消失」先查渲染错误',
+      '新增 tests/font-scale.test.js 4 例（档位表/换算数学/非法档位忽略/响应式单例）；全量测试 94 文件 / 1305 用例全绿',
+    ],
+    categories: [
+      {
+        title: '修复与排坑（4.13.1）',
+        items: [
+          'components/chat/EnterBriefing.vue：methods 补 fontRpx 暴露',
+          'tests/font-scale.test.js（新增）：档位表结构、fontRpx 各档换算值（28→标准28/大32/小25；22→特大29）、非法档位忽略、fontScale 响应式',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.13.0',
     date: '2026-10-06',
     title: '4.13.0 UI 优化批次 + 字号切换：消息操作收纳长按呼出、深色对比度达标、字号四档切换（气泡/简报/阅读页）、统一空状态与统计 hero',
