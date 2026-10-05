@@ -6,6 +6,25 @@
 
 export const V412 = [
   {
+    version: '4.12.9',
+    date: '2026-10-05',
+    title: '4.12.9 停止键深色问题根修：发送/停止键配色改内联样式驱动（响应式 isDark），不再依赖 html.theme-dark 深色块',
+    summary: [
+      '用户复报 4.12.8 后停止键仍有白色背景且显示不清 —— 坐实 InputArea 的 html.theme-dark 深色块在 App 样式编译器上整体不可靠（4.12.7 同族：同一块内部分属性生效部分不生效，scss 里怎么改都赌不赢编译器）',
+      '根修：发送/停止键的圆底与图标配色全部改为内联样式驱动 —— sendDotStyle/sendIconStyle/stopDotStyle/stopIconStyle 四个 computed 由响应式 isDark 算出（浅色：黑圆白箭 / 深色可发：白圆黑箭 / 深色进行中：#3F3F46 圆 + #F4F4F5 停止符），内联优先级最高，三端编译器无解释空间',
+      'scss 深色块保留（H5 主实现），与内联值一致不冲突；这已是 4.12.5（SijiIcon）/4.12.7（用户气泡）之后第三处同族根修 —— 规矩升级：App 真机上深色出问题，先改 JS/内联，不要再调 scss',
+      '全量测试 93 文件 / 1299 用例全绿；App 端 HBuilder X 重新编译后：深色下进行中的停止键 = 深灰圆 + 浅色停止符，无白色方块',
+    ],
+    categories: [
+      {
+        title: '发送/停止键内联驱动（4.12.9）',
+        items: [
+          'components/chat/InputArea.vue：send-dot/send-icon/stop-dot/stop-icon 四处加 :style 内联绑定；新增 sendDotStyle/sendIconStyle/stopDotStyle/stopIconStyle 四个 computed（isDark + canSend 双态）；import isDark',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.8',
     date: '2026-10-05',
     title: '4.12.8 修深色下发送/停止键显示不清：移除停止键外层白色方块底、黑停止符改浅色，未激活发送箭头不再全局翻黑',

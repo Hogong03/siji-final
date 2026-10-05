@@ -13,6 +13,7 @@ import { ref, computed, onUnmounted } from 'vue'
 import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
 import { pickOneFile, readPickedFile, fileCardText, classifyFile, isDocParseAvailable } from '@/utils/files/index.js'
 import { isFeatureOn } from '@/utils/ai/features.js'
+import { isDark } from '@/utils/theme.js'
 import { getProviderKeys } from '@/utils/ai/providers.js'
 import { startRecording, stopRecording, cancelRecording } from '@/utils/ai/recorder.js'
 import { transcribeAudio } from '@/utils/ai/transcribe.js'
@@ -219,6 +220,22 @@ function onPaste(e) {
 // ──── 发送 ────
 const canSend = computed(() => !props.disabled && (text.value.trim() || selectedImage.value || selectedFile.value))
 
+/**
+ * 发送/停止键配色内联驱动（4.12.9）：html.theme-dark 深色块在 App 样式编译器上不可靠
+ * （4.12.7/4.12.8 两轮实证：同一块内部分属性生效部分不生效，停止键白方块/图标显示不清）。
+ * 配色直接由响应式 isDark 算出内联样式，内联优先级最高、三端编译器无解释空间；
+ * scss 深色块保留（H5 主实现），两处值一致不冲突。
+ */
+const sendDotStyle = computed(() => {
+  if (isDark.value) {
+    return canSend.value ? { background: '#FAFAFA', opacity: 1 } : { background: '#3F3F46', opacity: 0.6 }
+  }
+  return canSend.value ? { background: '#000000', opacity: 1 } : { background: '#A1A1AA', opacity: 0.5 }
+})
+const sendIconStyle = computed(() => ({ color: (isDark.value && canSend.value) ? '#000000' : '#FFFFFF' }))
+const stopDotStyle = computed(() => ({ background: isDark.value ? '#3F3F46' : '#18181B' }))
+const stopIconStyle = computed(() => ({ color: isDark.value ? '#F4F4F5' : '#FFFFFF' }))
+
 function handleSend() {
 	if (!canSend.value) return
 	const msg = text.value.trim()
@@ -316,10 +333,10 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 			</view>
 
 			<view v-if="!isSending" class="send-btn" :class="{ active: canSend }" @tap="handleSend">
-				<view class="send-dot"><text class="send-icon">↑</text></view>
+				<view class="send-dot" :style="sendDotStyle"><text class="send-icon" :style="sendIconStyle">↑</text></view>
 			</view>
 			<view v-else class="stop-btn" @tap="$emit('stop')">
-				<view class="stop-dot"><text class="stop-icon">■</text></view>
+				<view class="stop-dot" :style="stopDotStyle"><text class="stop-icon" :style="stopIconStyle">■</text></view>
 			</view>
 		</view>
 	</view>
