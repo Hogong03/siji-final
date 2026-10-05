@@ -6,6 +6,26 @@
 
 export const V412 = [
   {
+    version: '4.12.5',
+    date: '2026-10-05',
+    title: '4.12.5 修 App 端图标不跟主题：SijiIcon 从 CSS 双图切换改为 JS 驱动换 src（消费 theme.js 响应式 isDark）',
+    summary: [
+      '用户真机截图实证：App 深色下页面/简报卡/tabBar 都正常，但输入区图片/文件按钮等 primary/secondary 系图标仍停留在浅色版（黑线条在深底上若隐若现），而 white 系图标（发送箭头）正常 —— 指向 SijiIcon 的「双 <image> 叠放 + html.theme-dark CSS 切显隐」在 App 样式编译器下不生效（页面背景等同类选择器却生效，属 App 编译器差异）',
+      '修复：SijiIcon v5 改为单 <image>，src 直接由 theme.js 的响应式 isDark 单例驱动（isDark ? darkSrc : lightSrc）—— 彻底移除对 CSS 编译器行为的依赖，三端行为一致；secondary 灰图标的降权透明度沿用两档（浅 0.45 / 深 0.55）',
+      'MP-WEIXIN 同样受益：isDark 在 MP 走 uni.onThemeChange 系统跟随，无需 @media 包裹的 CSS 切换',
+      'theme-mode / theme-runtime 守卫 10 例全绿（SijiIcon 移除自身深色块后配对数 0:0 合法）；全量 93 文件 / 1299 用例全绿；App 端需 HBuilder X 重新编译目检',
+    ],
+    categories: [
+      {
+        title: 'SijiIcon v5（4.12.5）',
+        items: [
+          'components/common/SijiIcon.vue：模板改单 <image> :src="currentSrc"；currentSrc = isDark ? darkSrc : lightSrc（tone 语义不变：primary/secondary 浅色用 -v2、white 恒用 -v2-dark、amber 用 sun-amber 系列）；移除双图叠放与 html.theme-dark/@media 深色块',
+          '教训沉淀：跨三端的「主题切换视觉」优先 JS 驱动（响应式状态换 src/样式绑定），CSS 选择器方案（html.theme-dark 嵌套）在 H5 与 App 的样式编译器之间存在行为差异，真机必验',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.4',
     date: '2026-10-05',
     title: '4.12.4 图标分型补齐深色处理：厂商 logo 深色垫白底托（chat 顶部/设置首页）+ Agent 头像深色底托，品牌色与插画一律不反色',

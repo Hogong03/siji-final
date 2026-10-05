@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 93 文件 / 1299 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.12.4（图标分型补齐深色处理：厂商 logo 深色垫白底托 + Agent 头像深色底托；含 4.12.x） |
+| 版本 | v4.12.5（修 App 端图标不跟主题：SijiIcon 改 JS 驱动换 src（响应式 isDark），不再依赖 CSS 切换；含 4.12.x） |
 
 ---
 
@@ -311,7 +311,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改语音转文字 | `utils/ai/features.js` 的 voice 开关（默认关）+ `components/chat/InputArea.vue` 麦克风 + `utils/ai/recorder.js`/`transcribe.js`（智谱 ASR，2.3 遗产复用） |
 | AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
 | 加测试 | `tests/xxx.test.js` |
-| 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；守卫 tests/theme-mode.test.js |
+| 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；**SijiIcon 图标换色是 JS 驱动（消费 theme.js 的 isDark 响应式换 src）—— 跨端样式编译器差异优先 JS 方案（4.12.5）**；守卫 tests/theme-mode.test.js + tests/theme-runtime.test.js |
 | 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |
 | 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
 
