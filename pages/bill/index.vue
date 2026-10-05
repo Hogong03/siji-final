@@ -13,6 +13,7 @@ import { deleteBill, setMonthlyBudget } from '@/utils/storage.js'
 import { getCategoryInfo } from '@/utils/categories.js'
 import { useBillList } from './composables/useBillList.js'
 import { useBillSwipe } from './composables/useBillSwipe.js'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const showTimePicker = ref(false)
 const showCatPicker = ref(false)
@@ -189,9 +190,7 @@ function saveBudget() {
 
     <!-- 账单列表 -->
     <scroll-view class="bill-scroll" scroll-y>
-      <view v-if="groupedBills.length === 0" class="empty-state">
-        <text class="empty-text">暂无账单</text>
-      </view>
+      <EmptyState v-if="groupedBills.length === 0" icon="bill" title="暂无账单" />
       <view v-else>
         <view v-for="group in groupedBills" :key="group.date" class="bill-group">
           <view class="date-header">

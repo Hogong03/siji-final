@@ -260,9 +260,9 @@ html.theme-dark {
     background: #18181B;
   }
   .conv-group-header {
-    .conv-group-label { color: #52525B; }
+    .conv-group-label { color: #71717A; }
     .conv-group-count {
-      color: #52525B;
+      color: #71717A;
       background: #27272A;
     }
   }
@@ -288,9 +288,9 @@ html.theme-dark {
     background: #18181B;
   }
   .conv-group-header {
-    .conv-group-label { color: #52525B; }
+    .conv-group-label { color: #71717A; }
     .conv-group-count {
-      color: #52525B;
+      color: #71717A;
       background: #27272A;
     }
   }

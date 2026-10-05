@@ -463,15 +463,15 @@ html.theme-dark {
 	.rp-chip { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 	.rp-count { color: #71717A; }
 	.rp-date-text { color: #FAFAFA; }
-	.rp-date-count { color: #52525B; }
+	.rp-date-count { color: #71717A; }
 	.rp-item { background: #27272A; &:active { background: #3F3F46; } }
-	.rp-time-text { color: #52525B; }
+	.rp-time-text { color: #71717A; }
 	.rp-kind.rk-checkin { background: #3F3F46; color: #A1A1AA; }
 	.rp-plan-title { color: #FAFAFA; }
 	.rp-note { color: #A1A1AA; }
-	.rp-arrow { color: #52525B; }
-	.rp-empty-text { color: #52525B; }
-	.rp-day-empty-text { color: #52525B; }
+	.rp-arrow { color: #71717A; }
+	.rp-empty-text { color: #71717A; }
+	.rp-day-empty-text { color: #71717A; }
 
   .rp-kind {
     font-size: 20rpx;
@@ -497,15 +497,15 @@ html.theme-dark {
 	.rp-chip { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 	.rp-count { color: #71717A; }
 	.rp-date-text { color: #FAFAFA; }
-	.rp-date-count { color: #52525B; }
+	.rp-date-count { color: #71717A; }
 	.rp-item { background: #27272A; &:active { background: #3F3F46; } }
-	.rp-time-text { color: #52525B; }
+	.rp-time-text { color: #71717A; }
 	.rp-kind.rk-checkin { background: #3F3F46; color: #A1A1AA; }
 	.rp-plan-title { color: #FAFAFA; }
 	.rp-note { color: #A1A1AA; }
-	.rp-arrow { color: #52525B; }
-	.rp-empty-text { color: #52525B; }
-	.rp-day-empty-text { color: #52525B; }
+	.rp-arrow { color: #71717A; }
+	.rp-empty-text { color: #71717A; }
+	.rp-day-empty-text { color: #71717A; }
 }
 /* #endif */
 </style>

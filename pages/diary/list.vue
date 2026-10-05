@@ -242,11 +242,9 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     <!-- 内容区 -->
     <view v-if="loading" class="loading-hint">加载中...</view>
 
-    <EmptyState v-else-if="diaries.length === 0" icon="diary" title="还没有记录" description="点 + 写一篇吧">
-      <view class="empty-btn" @tap="goNew">写记录</view>
-    </EmptyState>
+    <EmptyState v-else-if="diaries.length === 0" icon="diary" title="还没有记录" desc="点 + 写一篇吧" action-text="写记录" @action="goNew" />
 
-    <EmptyState v-else-if="filteredDiaries.length === 0" icon="search" title="没有匹配的记录" :description="searchKeyword ? `搜索「${searchKeyword}」无结果` : '当前筛选无结果'" />
+    <EmptyState v-else-if="filteredDiaries.length === 0" icon="search" title="没有匹配的记录" :desc="searchKeyword ? `搜索「${searchKeyword}」无结果` : '当前筛选无结果'" />
 
     <!-- 日历视图 -->
     <scroll-view v-else-if="viewMode === 'calendar'" class="diary-scroll calendar-scroll" scroll-y>

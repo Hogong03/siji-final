@@ -142,7 +142,7 @@ export function useChatEngine() {
     if (imageData?.base64 && userMsg) saveImageAsync(imageData, store, userMsg)
     inputAreaRef?.value?.reset()
     scrollToBottom()
-    store.addMessage({ role: 'assistant', content: '', loading: true })
+    store.addMessage({ role: 'assistant', content: '', loading: true, _stageText: '正在思考…' })
     scrollToBottom()
 
     // 离线检测
@@ -183,11 +183,9 @@ export function useChatEngine() {
         image: imageData || null,
         store: store,
         onStatus: (toolNames) => {
-          // 工具执行进度反馈 — 更新当前消息的临时状态
+          // 工具执行阶段反馈（P2-4）：loading 气泡的阶段小字切换，不列工具名保持简短
           if (toolNames && toolNames.length > 0) {
-            const labels = { query_stat: '查询统计', query_bill: '查询账单', query_diary: '查询记录', query_plan: '查询计划', query_relation: '查询关系', query_decision: '查询决策', query_combined: '跨类型查询', summarize_diaries: '生成总结', get_profile: '读取画像', create_diary: '创建记录', create_bill: '创建账单', create_plan: '创建计划', create_plan_phases: '创建阶段计划', update_diary: '修改记录', update_bill: '修改账单', update_plan: '修改计划', update_plan_phase: '更新阶段', update_plan_subtask: '更新子项', create_relation: '创建关系', update_relation: '修改关系', log_interaction: '记录互动', create_decision: '创建决策', update_decision: '更新决策', smart_update_profile: '更新画像', create_feedback: '提交反馈', add_tag: '添加标签', update_tag_category: '修改标签分类', remove_tag: '删除标签', create_agent: '创建 Agent', undo_last: '撤销操作', web_search: '联网搜索', read_url: '读网页' }
-            const label = toolNames.map(n => labels[n] || n).join('、')
-            safeUpdate({ loading: true, statusHint: `正在${label}…` })
+            safeUpdate({ loading: true, _stageText: '正在调用工具…' })
           }
         }
       }
@@ -224,7 +222,7 @@ export function useChatEngine() {
       if (imageData && message && !userModelSupportsVision) {
         // 用户同时输入了图片和有意义的文字 → 两步组合
         logger.info('[ChatEngine] 图片+文字组合模式，先识别图片')
-        safeUpdate({ content: '正在识别图片…', loading: true })
+        safeUpdate({ content: '正在识别图片…', loading: true, _stageText: '' })
 
         const imageDesc = await recognizeImage(imageData, message, cfg)
         if (imageDesc) {
@@ -268,7 +266,8 @@ export function useChatEngine() {
         const n = displayQueue.length > 800 ? 16 : displayQueue.length > 400 ? 10 : displayQueue.length > 200 ? 6 : displayQueue.length > 50 ? 3 : 1
         lastDisplayed += displayQueue.slice(0, n)
         displayQueue = displayQueue.slice(n)
-        safeUpdate({ content: lastDisplayed, loading: true })
+        // 首帧正文到达即清阶段小字（正文已经会自己说话，别再挂「正在思考…」）
+        safeUpdate({ content: lastDisplayed, loading: true, _stageText: '' })
         // 每 3 帧滚一次到底部（避免每帧 scrollIntoView 性能开销）
         scrollTickCounter++
         if (scrollTickCounter % 3 === 0 && scrollHelpers?.scrollToBottomAnchor) {

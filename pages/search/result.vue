@@ -15,6 +15,7 @@ import { searchConversations } from '@/utils/conversation-search.js'
 import { debounce } from '@/utils/debounce.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAppStore } from '@/store/index.js'
 
 const keyword = ref('')
@@ -225,9 +226,7 @@ function switchTime(days) {
     </view>
 
     <!-- 空状态 -->
-    <view class="empty-state" v-if="showHistory && searchHistory.length === 0">
-      <text class="empty-text">输入关键词搜索</text>
-    </view>
+    <EmptyState v-if="showHistory && searchHistory.length === 0" icon="search" title="输入关键词搜索" />
 
     <!-- 搜索结果 -->
     <scroll-view v-if="!showHistory" class="result-scroll" scroll-y>
@@ -240,9 +239,7 @@ function switchTime(days) {
       </view>
 
       <!-- 无结果 -->
-      <view class="no-result" v-if="!loading && totalCount === 0">
-        <text class="no-result-text">未找到相关内容</text>
-      </view>
+      <EmptyState v-if="!loading && totalCount === 0" icon="search" title="未找到相关内容" />
 
       <!-- 对话搜索结果 -->
       <view v-if="!loading && convResults.length > 0" class="result-group">

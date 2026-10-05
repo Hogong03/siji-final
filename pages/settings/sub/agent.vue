@@ -9,6 +9,7 @@
 import { useAppStore } from '@/store/index.js'
 import AgentAvatar from '@/components/common/AgentAvatar.vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { PRESET_TEMPLATES } from '@/utils/agent-templates.js'
 
 const store = useAppStore()
@@ -96,9 +97,12 @@ function handleActivate(agent) {
         <text class="section-label">我的 Agent</text>
         <text class="section-add-btn" @tap="goAdd">＋ 从空白创建</text>
       </view>
-      <view v-if="!store.customAgents.length" class="tips-card empty-tips">
-        <text class="tips-text">还没有自定义 Agent：点上方模板创建，或直接对思迹助手说「帮我创建一个 XX Agent」。</text>
-      </view>
+      <EmptyState
+        v-if="!store.customAgents.length"
+        icon="ai"
+        title="还没有自定义 Agent"
+        desc="点上方模板创建，或直接对思迹助手说「帮我创建一个 XX Agent」。"
+      />
       <view
         v-for="agent in store.customAgents" :key="agent.id"
         class="agent-card"

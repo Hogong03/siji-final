@@ -9,10 +9,15 @@ import { computed } from 'vue'
 import { parseTokens, parseInline } from '@/utils/markdown-parser.js'
 
 const props = defineProps({
-  content: { type: String, required: true }
+  content: { type: String, required: true },
+  /** 基准正文字号（rpx 字符串，如 '32rpx'）：4.13.0 字号档位缩放入口，段落继承此值 */
+  baseFontSize: { type: String, default: '' }
 })
 
 const tokens = computed(() => parseTokens(props.content))
+
+/** 根节点内联字号：md-p/.md-text 无显式字号，继承此值实现全篇缩放 */
+const rootStyle = computed(() => (props.baseFontSize ? { fontSize: props.baseFontSize } : {}))
 
 function renderInline(text) {
   return parseInline(text)
@@ -32,7 +37,7 @@ function onLinkTap(href) {
 
 
 <template>
-  <view class="md-renderer">
+  <view class="md-renderer" :style="rootStyle">
     <template v-for="(token, ti) in tokens" :key="ti">
       <!-- 标题 -->
       <text v-if="token.type === 'heading'" :class="'md-h md-h' + token.level">

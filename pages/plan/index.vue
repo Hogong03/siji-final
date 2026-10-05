@@ -16,6 +16,7 @@
 	import PlanDailyStrip from '@/components/plan/PlanDailyStrip.vue'
 	import PlanFilter from './components/PlanFilter.vue'
 	import PlanList from './components/PlanList.vue'
+	import EmptyState from '@/components/common/EmptyState.vue'
 
 	const statusMap = { 0: '待开始', 1: '进行中', 2: '已完成' }
 	const priorityColors = { 0: '#A1A1AA', 1: '#E8A838', 2: '#EF4444' }
@@ -167,10 +168,13 @@
 		</view>
 
 		<!-- 重置筛选 -->
-		<view v-if="hasActiveFilter && filteredPlans.length === 0" class="empty-filter">
-			<text class="ef-text">没有匹配的计划</text>
-			<view class="ef-btn" @tap="resetFilters">重置筛选</view>
-		</view>
+		<EmptyState
+			v-if="hasActiveFilter && filteredPlans.length === 0"
+			icon="plan"
+			title="没有匹配的计划"
+			action-text="重置筛选"
+			@action="resetFilters"
+		/>
 
 		<!-- 列表视图 -->
 		<PlanList
@@ -289,29 +293,6 @@
 		&:active {
 			background: #E4E4E7;
 			transform: scale(0.92);
-		}
-	}
-
-	/* 重置筛选 */
-	.empty-filter {
-		text-align: center;
-		padding: 40rpx 0;
-
-		.ef-text {
-			font-size: 26rpx;
-			color: #71717A;
-			display: block;
-			margin-bottom: 12rpx;
-		}
-
-		.ef-btn {
-			display: inline-block;
-			padding: 12rpx 32rpx;
-			border-radius: 12rpx;
-			background: #18181B;
-			color: #FFFFFF;
-			font-size: 24rpx;
-			font-weight: 600;
 		}
 	}
 
@@ -460,9 +441,9 @@
 		.board-card { background: #27272A; }
 		.bc-name { color: #FAFAFA; }
 		.bc-desc { color: #A1A1AA; }
-		.bc-st-text { color: #52525B; }
+		.bc-st-text { color: #71717A; }
 		.bc-arrow { background: #3F3F46; color: #FAFAFA; }
-		.bc-empty { color: #52525B; }
+		.bc-empty { color: #71717A; }
 		.fab {
 			background: #FAFAFA;
 			box-shadow: none;
@@ -481,14 +462,12 @@
 			color: #FAFAFA;
 		}
 		.search-clear {
-			color: #52525B;
+			color: #71717A;
 		}
 		.tool-btn {
 			background: #3F3F46;
 			&:active { background: #52525B; }
 		}
-		.empty-filter .ef-text { color: #71717A; }
-		.empty-filter .ef-btn { background: #FAFAFA; color: #18181B; }
 	}
 /* #endif */
 	/* #ifdef MP-WEIXIN */
@@ -502,9 +481,9 @@
 		.board-card { background: #27272A; }
 		.bc-name { color: #FAFAFA; }
 		.bc-desc { color: #A1A1AA; }
-		.bc-st-text { color: #52525B; }
+		.bc-st-text { color: #71717A; }
 		.bc-arrow { background: #3F3F46; color: #FAFAFA; }
-		.bc-empty { color: #52525B; }
+		.bc-empty { color: #71717A; }
 		.fab {
 			background: #FAFAFA;
 			box-shadow: none;
@@ -523,14 +502,12 @@
 			color: #FAFAFA;
 		}
 		.search-clear {
-			color: #52525B;
+			color: #71717A;
 		}
 		.tool-btn {
 			background: #3F3F46;
 			&:active { background: #52525B; }
 		}
-		.empty-filter .ef-text { color: #71717A; }
-		.empty-filter .ef-btn { background: #FAFAFA; color: #18181B; }
 	}
 	/* #endif */
 </style>

@@ -52,36 +52,62 @@
 .stats-scroll { flex: 1; padding: 12rpx 20rpx; 
  box-sizing: border-box;}
 
-/* 总览 */
+/* 总览：支出做 hero，收入/结余/日均缩为次级一行三列 */
 .overview-section { margin-bottom: 12rpx; }
 
-.overview-row {
-  display: flex;
-  gap: 12rpx;
-  margin-bottom: 8rpx;
-}
-
-.overview-card {
-  flex: 1;
-  padding: 16rpx 12rpx;
+.ov-hero {
+  background: #FFFFFF;
   border-radius: 12rpx;
+  padding: 24rpx 24rpx 20rpx;
+  margin-bottom: 8rpx;
 
-  &.expense-card { background: #FFFFFF; }
-  &.income-card { background: #FFFFFF; }
-  &.balance-card { background: #FFFFFF; }
-  &.avg-card { background: #FFFFFF; }
-
-  .ov-label { font-size: 20rpx; color: #A1A1AA; display: block; }
-  .ov-value {
-    font-size: 32rpx; font-weight: 800; display: block; margin-top: 4rpx;
+  .ov-hero-label { font-size: 20rpx; color: #71717A; display: block; }
+  .ov-hero-main {
+    display: flex;
+    align-items: baseline;
+    gap: 16rpx;
+    margin-top: 6rpx;
+  }
+  .ov-hero-value {
+    font-size: 56rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: #18181B;
+    letter-spacing: -1rpx;
     font-variant-numeric: tabular-nums;
-    &.positive { color: #18181B; }
-    &.negative { color: #EF4444; }
   }
   .ov-sub {
-    font-size: 18rpx; display: block; margin-top: 4rpx;
+    font-size: 18rpx;
     &.up { color: #EF4444; }
     &.down { color: #52525B; }
+  }
+}
+
+.ov-mini-row {
+  display: flex;
+  gap: 8rpx;
+}
+
+.ov-mini {
+  flex: 1;
+  min-width: 0;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 12rpx;
+
+  .ov-label { font-size: 20rpx; color: #A1A1AA; display: block; }
+  .ov-mini-value {
+    font-size: 32rpx;
+    font-weight: 800;
+    display: block;
+    margin-top: 4rpx;
+    color: #18181B;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    &.positive { color: #18181B; }
+    &.negative { color: #EF4444; }
   }
 }
 
@@ -308,10 +334,13 @@ html.theme-dark {
   .mode-switch { background: #27272A; }
   .mode-btn { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 
-  .overview-card { background: #27272A; }
-  .ov-label { color: #71717A; }
-  .ov-value { &.positive { color: #FAFAFA; } }
+  .ov-hero { background: #27272A; }
+  .ov-hero-label { color: #71717A; }
+  .ov-hero-value { color: #FAFAFA; }
   .ov-sub { &.up { color: #EF4444; } &.down { color: #A1A1AA; } }
+  .ov-mini { background: #27272A; }
+  .ov-label { color: #71717A; }
+  .ov-mini-value { &.positive { color: #FAFAFA; } }
 
   .insights-card { background: #27272A; }
   .insights-title { color: #FAFAFA; }
@@ -352,10 +381,13 @@ html.theme-dark {
   .mode-switch { background: #27272A; }
   .mode-btn { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 
-  .overview-card { background: #27272A; }
-  .ov-label { color: #71717A; }
-  .ov-value { &.positive { color: #FAFAFA; } }
+  .ov-hero { background: #27272A; }
+  .ov-hero-label { color: #71717A; }
+  .ov-hero-value { color: #FAFAFA; }
   .ov-sub { &.up { color: #EF4444; } &.down { color: #A1A1AA; } }
+  .ov-mini { background: #27272A; }
+  .ov-label { color: #71717A; }
+  .ov-mini-value { &.positive { color: #FAFAFA; } }
 
   .insights-card { background: #27272A; }
   .insights-title { color: #FAFAFA; }

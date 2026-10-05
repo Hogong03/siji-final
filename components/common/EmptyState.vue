@@ -1,24 +1,41 @@
 <script setup>
-/** 空状态占位组件 — 含引导操作 */
+/**
+ * 空状态占位组件 — 统一「图标圆 + 标题 + 副文案（+ 主按钮）」
+ *
+ * API：
+ *   icon       SijiIcon 名，默认 'info'
+ *   title      必填，主标题
+ *   desc       副文案（description 为旧别名，等价 desc，存量页面迁移后删除）
+ *   actionText 主按钮文案（可选），点击 emit('action')
+ *   size       'sm' 120rpx 图标圆（默认） / 'lg' 160rpx 图标圆
+ */
+import { computed } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 
-defineProps({
-  icon: { type: String, default: 'diary' },
-  title: { type: String, default: '暂无数据' },
+const props = defineProps({
+  icon: { type: String, default: 'info' },
+  title: { type: String, required: true },
+  desc: { type: String, default: '' },
+  /** @deprecated 旧 prop 名，等价 desc */
   description: { type: String, default: '' },
-  actionText: { type: String, default: '' }
+  actionText: { type: String, default: '' },
+  size: { type: String, default: 'sm' }
 })
 
 const emit = defineEmits(['action'])
+
+const descText = computed(() => props.desc || props.description)
+const circleSize = computed(() => (props.size === 'lg' ? '160rpx' : '120rpx'))
+const iconSize = computed(() => (props.size === 'lg' ? 72 : 48))
 </script>
 
 <template>
-  <view class="empty-state">
-    <view class="empty-icon-wrap">
-      <SijiIcon :name="icon" size="xxl" class="empty-icon" />
+  <view class="empty-state" :class="'empty-state--' + size">
+    <view class="empty-icon-wrap" :style="{ width: circleSize, height: circleSize }">
+      <SijiIcon :name="icon" :size="iconSize" class="empty-icon" />
     </view>
     <text class="empty-title">{{ title }}</text>
-    <text v-if="description" class="empty-desc">{{ description }}</text>
+    <text v-if="descText" class="empty-desc">{{ descText }}</text>
     <view v-if="actionText" class="empty-action" @tap="emit('action')">
       <text class="empty-action-text">{{ actionText }}</text>
     </view>
@@ -51,16 +68,16 @@ const emit = defineEmits(['action'])
 }
 
 .empty-title {
-  font-size: $font-lg;
+  font-size: $font-md;
   font-weight: 600;
-  color: #71717A;
+  color: #18181B;
   margin-bottom: $spacing-xs;
   animation: emptyTextFadeIn 0.5s ease 0.3s both;
 }
 
 .empty-desc {
   font-size: $font-sm;
-  color: #A1A1AA;
+  color: #71717A;
   text-align: center;
   line-height: 1.6;
   max-width: 480rpx;
@@ -69,9 +86,15 @@ const emit = defineEmits(['action'])
 
 .empty-action {
   margin-top: $spacing-lg;
-  padding: 16rpx 48rpx;
+  min-width: 320rpx;
+  height: 72rpx;
+  padding: 0 $spacing-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   background: #000000;
-  border-radius: $radius-lg;
+  border-radius: 12rpx;
   transition: transform $transition-fast;
   animation: emptyTextFadeIn 0.5s ease 0.5s both;
 
@@ -81,7 +104,7 @@ const emit = defineEmits(['action'])
   }
 
   .empty-action-text {
-    font-size: $font-md;
+    font-size: $font-sm;
     color: #FFFFFF;
     font-weight: 600;
   }
@@ -101,7 +124,7 @@ const emit = defineEmits(['action'])
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
   .empty-icon-wrap { background: #3F3F46; }
-  .empty-title { color: #A1A1AA; }
+  .empty-title { color: #E4E4E7; }
   .empty-action {
     background: #FAFAFA;
     .empty-action-text { color: #000000; }
@@ -111,7 +134,7 @@ html.theme-dark {
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .empty-icon-wrap { background: #3F3F46; }
-  .empty-title { color: #A1A1AA; }
+  .empty-title { color: #E4E4E7; }
   .empty-action {
     background: #FAFAFA;
     .empty-action-text { color: #000000; }

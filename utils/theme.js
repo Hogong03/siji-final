@@ -320,6 +320,10 @@ function initTheme() {
     watchSystem(true)
   }
   applyTheme()
+  // 4.13.0：冷启动预挂 —— 首页 WebView 在 onLaunch 后才出现，逐轮把类挂上（有界，防泄漏）
+  for (let i = 1; i <= 10; i++) {
+    setTimeout(() => { try { applyTheme() } catch (e) { /* 静默 */ } }, 150 * i)
+  }
 }
 
 export {

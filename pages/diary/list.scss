@@ -277,15 +277,6 @@
   color: #A1A1AA;
   font-size: 26rpx;
 }
-.empty-btn {
-  display: inline-block;
-  margin-top: 24rpx;
-  padding: 20rpx 48rpx;
-  background: #18181B;
-  color: #FFFFFF;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-}
 
 .diary-scroll {
   flex: 1;
@@ -633,7 +624,6 @@ html.theme-dark {
   .timeline-date { color: #A1A1AA; border-left-color: #FAFAFA; }
   .fab { background: #FAFAFA; box-shadow: none; }
   .fab-icon { color: #18181B; }
-  .empty-btn { background: #FAFAFA; color: #18181B; }
   .pg-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
   .pg-page { background: #27272A; border-color: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
   .pg-empty-text { color: #71717A; }
@@ -689,7 +679,6 @@ html.theme-dark {
   .timeline-date { color: #A1A1AA; border-left-color: #FAFAFA; }
   .fab { background: #FAFAFA; box-shadow: none; }
   .fab-icon { color: #18181B; }
-  .empty-btn { background: #FAFAFA; color: #18181B; }
   .pg-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
   .pg-page { background: #27272A; border-color: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; border-color: #FAFAFA; color: #18181B; } }
   .pg-empty-text { color: #71717A; }
@@ -818,8 +807,8 @@ html.theme-dark {
   .tag-move { color: #FAFAFA; }
   .tag-move.disabled { color: #3F3F46; }
   .review-card { background: #18181B; }
-  .review-label, .review-close { color: #52525B; }
-  .review-why { color: #52525B; }
+  .review-label, .review-close { color: #71717A; }
+  .review-why { color: #71717A; }
   .review-title { color: #FAFAFA; }
 }
 /* #endif */
@@ -831,8 +820,8 @@ html.theme-dark {
   .tag-move { color: #FAFAFA; }
   .tag-move.disabled { color: #3F3F46; }
   .review-card { background: #18181B; }
-  .review-label, .review-close { color: #52525B; }
-  .review-why { color: #52525B; }
+  .review-label, .review-close { color: #71717A; }
+  .review-why { color: #71717A; }
   .review-title { color: #FAFAFA; }
 }
 /* #endif */

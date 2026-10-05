@@ -224,11 +224,11 @@ html.theme-dark {
   .parent-section { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
   .parent-title { color: #FAFAFA; }
   .parent-label { color: #71717A; }
-  .parent-arrow { color: #52525B; }
+  .parent-arrow { color: #71717A; }
   .repeat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
   .time-collapse-btn { color: #FAFAFA; background: #27272A; }
   .recur-count-label { color: #A1A1AA; }
-  .recur-hint { color: #52525B; }
+  .recur-hint { color: #71717A; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -242,10 +242,10 @@ html.theme-dark {
   .parent-section { background: #27272A; border-color: #3F3F46; &:active { background: #3F3F46; } }
   .parent-title { color: #FAFAFA; }
   .parent-label { color: #71717A; }
-  .parent-arrow { color: #52525B; }
+  .parent-arrow { color: #71717A; }
   .repeat-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
   .time-collapse-btn { color: #FAFAFA; background: #27272A; }
   .recur-count-label { color: #A1A1AA; }
-  .recur-hint { color: #52525B; }
+  .recur-hint { color: #71717A; }
 }
 /* #endif */

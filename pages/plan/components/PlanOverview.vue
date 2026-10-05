@@ -195,7 +195,7 @@ html.theme-dark {
 	.ov-action { background: #3F3F46; &:active { background: #52525B; } }
 	.os-item { color: #71717A; }
 	.os-num { color: #FAFAFA; }
-	.os-sub { color: #52525B; }
+	.os-sub { color: #71717A; }
 	.os-sep { color: #3F3F46; }
 	.priority-bar { background: #3F3F46; }
 }
@@ -210,7 +210,7 @@ html.theme-dark {
 	.ov-action { background: #3F3F46; &:active { background: #52525B; } }
 	.os-item { color: #71717A; }
 	.os-num { color: #FAFAFA; }
-	.os-sub { color: #52525B; }
+	.os-sub { color: #71717A; }
 	.os-sep { color: #3F3F46; }
 	.priority-bar { background: #3F3F46; }
 }

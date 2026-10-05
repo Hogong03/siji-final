@@ -288,18 +288,6 @@
   padding: 0 20rpx;
 }
 
-.empty-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200rpx;
-
-  .empty-text {
-    font-size: 24rpx;
-    color: #A1A1AA;
-  }
-}
-
 .bill-group {
   margin-bottom: 8rpx;
 }
@@ -598,7 +586,7 @@ html.theme-dark {
     margin-bottom: 20rpx;
     .quick-val {
     font-size: 22rpx;
-    color: #52525B;
+    color: #71717A;
     padding: 8rpx 20rpx;
     background: #27272A;
     border-radius: 20rpx;

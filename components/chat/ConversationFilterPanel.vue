@@ -158,7 +158,7 @@ html.theme-dark {
     }
   }
   .tag-empty-hint {
-    color: #52525B;
+    color: #71717A;
   }
   .tag-select-chip {
     background: #27272A;
@@ -184,7 +184,7 @@ html.theme-dark {
     }
   }
   .tag-empty-hint {
-    color: #52525B;
+    color: #71717A;
   }
   .tag-select-chip {
     background: #27272A;

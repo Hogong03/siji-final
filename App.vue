@@ -45,6 +45,7 @@
 	import {
 		initTheme
 	} from '@/utils/theme.js'
+	import { initFontScale } from '@/utils/font-scale.js'
 
 	const store = useAppStore()
 
@@ -70,6 +71,8 @@
 		// 0. 主题初始化（4.8.0）：读 siji_theme_mode → 挂 .theme-dark 类 → 刷 tabBar/导航栏。
 		// 放在最前，避免首屏闪浅色；MP 端自动退化（MP 无需类驱动）
 		initTheme()
+		// 字号档位初始化（4.13.0）：阅读面内联字号依赖这个响应式比例
+		initFontScale()
 		// 1. 仅恢复关键配置（AI/对话/设备ID）— 延迟非关键初始化到 splash 后
 		store.restoreCriticalFromStorage()
 		logger.log('[思迹] Critical storage restored, device:', store.deviceId)

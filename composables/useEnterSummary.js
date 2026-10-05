@@ -20,7 +20,7 @@ import {
 } from '@/utils/enter-summary.js'
 import { buildWeeklyBillAnnouncement, markWeeklyBillAnnounced } from '@/utils/bill-weekly.js'
 import { collectPlanAlerts } from '@/utils/plan-alerts.js'
-import { satisfiedToday } from '@/utils/plan-recur.js'
+import { satisfiedToday, isRecurring } from '@/utils/plan-recur.js'
 import { pickNextStep, shouldOfferNextStep } from '@/utils/next-step.js'
 import { getPlanReminder } from '@/utils/reminder/settings.js'
 import { isFeatureOn } from '@/utils/ai/features.js'
@@ -83,8 +83,17 @@ function collectWorkStatus(plans, now) {
   return null
 }
 
+/** 今日打卡进度（4.13.0 简报卡）：在跑的循环计划（daily/weekly，未完成未冷藏未顺延）里今天已打 / 共几个；没有可打卡计划返回 null */
+function collectCheckinToday(plans, now) {
+  const list = (Array.isArray(plans) ? plans : []).filter(p => isRecurring(p))
+  if (list.length === 0) return null
+  let done = 0
+  list.forEach(p => { if (satisfiedToday(p, now)) done += 1 })
+  return { done, total: list.length }
+}
+
 /**
- * 计划状态包：过时/快到期 + 上班卡 + 下一步候选
+ * 计划状态包：过时/快到期 + 上班卡 + 下一步 + 今日打卡进度
  * nextStep 只挑不标记 —— 消息真正落对话时才占用当天名额（useChatSession.appendEnterSummary）
  */
 function buildPlanExtras(plans, now) {
@@ -97,7 +106,10 @@ function buildPlanExtras(plans, now) {
   try {
     if (isFeatureOn('next_step') && shouldOfferNextStep(now)) nextStep = pickNextStep(plans)
   } catch (e) { nextStep = null }
-  return { alerts: alerts, workStatus: workStatus, nextStep: nextStep }
+  // 4.13.0：今日打卡进度（简报卡进度行；无可打卡计划为 null）
+  let checkinToday = null
+  try { checkinToday = collectCheckinToday(plans, now) } catch (e) { checkinToday = null }
+  return { alerts: alerts, workStatus: workStatus, nextStep: nextStep, checkinToday: checkinToday }
 }
 
 /**

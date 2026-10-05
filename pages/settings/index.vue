@@ -13,6 +13,7 @@ import { AI_PROVIDERS } from '@/utils/api.js'
 import { hasPin } from '@/utils/pin.js'
 import { getVersion } from '@/utils/version-check.js'
 import { getThemeMode, setThemeMode, normalizeMode } from '@/utils/theme.js'
+import { FONT_SCALES, getFontScaleId, setFontScaleId } from '@/utils/font-scale.js'
 
 const store = useAppStore()
 
@@ -36,6 +37,7 @@ const themeLabel = { system: '跟随系统', light: '浅色', dark: '深色' }
 const themeModeName = ref(themeLabel[getThemeMode()] || '跟随系统')
 const themeMode = ref(getThemeMode())
 const showThemeSheet = ref(false)
+const currentFontScaleId = ref(getFontScaleId())
 const themeOptions = [
   { id: 'system', label: '跟随系统', icon: 'monitor', desc: '随设备深浅自动切换' },
   { id: 'light', label: '浅色', icon: 'sun', desc: '' },
@@ -43,6 +45,10 @@ const themeOptions = [
 ]
 
 /** 打开自定义弹层（原生 ActionSheet 不随主题变色且无图标，弃用） */
+function chooseFontScale(id) {
+  setFontScaleId(id)
+  currentFontScaleId.value = id
+}
 function pickTheme() {
   showThemeSheet.value = true
 }
@@ -220,6 +226,21 @@ function go(target) {
           <text class="theme-sheet-label">{{ opt.label }}</text>
           <SijiIcon v-if="themeMode === opt.id" name="check" size="md" class="theme-sheet-check" />
         </view>
+        <!-- 字号档位（4.13.0）：作用于对话气泡/简报卡/记录阅读页正文等阅读面 -->
+        <view class="font-size-block">
+          <text class="font-size-label">字号</text>
+          <view class="font-size-opts">
+            <view
+              v-for="fs in FONT_SCALES"
+              :key="fs.id"
+              class="font-size-opt"
+              :class="{ active: currentFontScaleId === fs.id }"
+              @tap="chooseFontScale(fs.id)"
+            >
+              <text class="font-size-opt-text" :style="{ fontSize: Math.round(24 * fs.ratio) + 'rpx' }">{{ fs.label }}</text>
+            </view>
+          </view>
+        </view>
         <view class="theme-sheet-cancel" @tap="showThemeSheet = false">
           <text class="theme-sheet-cancel-text">取消</text>
         </view>
@@ -316,13 +337,54 @@ html.theme-dark {
   .dot.ok { background: #10B981; }
   .dot.warn { background: #F59E0B; }
   /* 外观弹层（4.10.4） */
+  .font-size-block { border-top-color: #3F3F46; }
+  .font-size-label { color: #A1A1AA; }
+  .font-size-opt { background: #27272A; border-color: #3F3F46; }
+  .font-size-opt-text { color: #E4E4E7; }
+  .font-size-opt.active {
+    background: #FAFAFA;
+    border-color: #FAFAFA;
+    .font-size-opt-text { color: #18181B; }
+  }
   .theme-sheet { background: #27272A; }
   .theme-sheet-title { color: #FAFAFA; }
   .theme-sheet-row { border-bottom-color: #3F3F46; &:active { background: #3F3F46; } }
   .theme-sheet-label { color: #FAFAFA; }
   .theme-sheet-row.active .theme-sheet-label { color: #FAFAFA; font-weight: 700; }
   .theme-sheet-icon { opacity: 1; }
-  .theme-sheet-cancel { border-top-color: #3F3F46; }
+  .font-size-block {
+  padding: 20rpx 24rpx 8rpx;
+  border-top: 1rpx solid #E4E4E7;
+}
+.font-size-label {
+  font-size: 24rpx;
+  color: #71717A;
+}
+.font-size-opts {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+.font-size-opt {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 0;
+  background: #F4F4F5;
+  border: 2rpx solid #E4E4E7;
+  border-radius: 12rpx;
+  &.active {
+    background: #000000;
+    border-color: #000000;
+    .font-size-opt-text { color: #FFFFFF; }
+  }
+}
+.font-size-opt-text {
+  font-size: 24rpx;
+  color: #18181B;
+}
+.theme-sheet-cancel { border-top-color: #3F3F46; }
   .theme-sheet-cancel-text { color: #A1A1AA; }
 }
 /* #endif */

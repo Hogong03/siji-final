@@ -396,4 +396,27 @@ describe('buildBriefing：简报卡 payload', () => {
     expect(b.statusLines).toEqual([])
     expect(b.chips.map(c => c.key)).toEqual(['note', 'diary-new', 'plan-new'])
   })
+
+  it('今日打卡进度：checkinToday（total>0）进 payload，summary 与 extras 包两处都认', () => {
+    // computeSummary 把 extras 并进 summary 的路径
+    const fromSummary = buildBriefing(summary({ checkinToday: { done: 1, total: 3 } }), null, at(15))
+    expect(fromSummary.checkin).toEqual({ done: 1, total: 3 })
+    // snapshot 开场（extras 单独传）的路径
+    const fromPack = buildBriefing(summary(), { checkinToday: { done: 2, total: 4 } }, at(15))
+    expect(fromPack.checkin).toEqual({ done: 2, total: 4 })
+    // 落成消息后挂在 _briefing 上
+    const msg = buildEnterSummaryMessage(summary({ checkinToday: { done: 3, total: 3 } }), null, at(15))
+    expect(msg._briefing.checkin).toEqual({ done: 3, total: 3 })
+    // 脏数据收敛：done 不越过 total
+    const clamp = buildBriefing(summary({ checkinToday: { done: 9, total: 3 } }), null, at(15))
+    expect(clamp.checkin).toEqual({ done: 3, total: 3 })
+  })
+
+  it('今日打卡进度：total 为 0 或没带字段都不产出', () => {
+    expect(buildBriefing(summary({ checkinToday: { done: 0, total: 0 } }), null, at(15)).checkin).toBe(null)
+    // 没有可打卡计划时 useEnterSummary 给 null，简报卡同样不出进度行
+    expect(buildBriefing(summary({ checkinToday: null }), null, at(15)).checkin).toBe(null)
+    expect(buildBriefing(summary(), null, at(15)).checkin).toBe(null)
+    expect(buildBriefing(null, null, at(15)).checkin).toBe(null)
+  })
 })

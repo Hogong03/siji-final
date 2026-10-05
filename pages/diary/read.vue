@@ -18,6 +18,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer.vue'
+import { fontRpx } from '@/utils/font-scale.js'
+
+// 正文随字号档位缩放（4.13.0）
+const readBodyStyle = computed(() => ({ fontSize: fontRpx(28) }))
 import { useOutlineRuler } from '@/composables/useOutlineRuler.js'
 import { splitSections, extractOutline, shouldShowOutline } from '@/utils/text-outline.js'
 import { getDiaryList } from '@/utils/storage.js'
@@ -146,7 +150,7 @@ onShow(() => {
 						:id="'sec-view-' + sec.index"
 						class="read-section"
 						:class="{ 'is-chapter': !!sec.title }"
-					>
+					 :style="readBodyStyle">
 						<view v-if="sec.title" class="chapter-head">
 							<text class="chapter-no">{{ sectionNumbers[sec.key] }}</text>
 							<text class="chapter-title">{{ sec.title }}</text>

@@ -120,7 +120,7 @@ html.theme-dark {
     color: #FAFAFA;
   }
   .logo-sub {
-    color: #52525B;
+    color: #71717A;
   }
   .splash-line {
     background: #27272A;
@@ -136,7 +136,7 @@ html.theme-dark {
     color: #FAFAFA;
   }
   .logo-sub {
-    color: #52525B;
+    color: #71717A;
   }
   .splash-line {
     background: #27272A;

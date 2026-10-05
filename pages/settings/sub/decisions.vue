@@ -371,7 +371,7 @@ html.theme-dark {
   .btn-cancel { background: #3F3F46; color: #A1A1AA; }
 
   .status-reviewed {
-    background: #27272A; color: #52525B;
+    background: #27272A; color: #71717A;
   }
   .option-chip {
     font-size: 22rpx; padding: 4rpx 16rpx; background: #27272A; color: #18181B; border-radius: 8rpx;

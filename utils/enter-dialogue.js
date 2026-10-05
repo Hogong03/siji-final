@@ -154,6 +154,15 @@ export function buildBriefingMetrics(summary) {
   return out.slice(0, 3)
 }
 
+/** 今日打卡进度（4.13.0）：pack/summary 里带 checkinToday（total>0）才产出，done 收敛到 [0, total] */
+function buildBriefingCheckin(summary, pack) {
+  const src = (pack && pack.checkinToday) || (summary && summary.checkinToday) || null
+  const total = Number(src && src.total) || 0
+  if (total <= 0) return null
+  const done = Math.min(Math.max(Number(src.done) || 0, 0), total)
+  return { done: done, total: total }
+}
+
 /**
  * 简报卡主按钮：一屏只推一件事 —— 优先级 上班卡 > 过时/快到期计划 > 下一步
  * @returns {{ key, label, action, value }|null} 与 _enterButtons 同构，action ∈ checkin/navigate/prefill
@@ -197,6 +206,8 @@ export function buildBriefing(summary, extras = null, now = Date.now()) {
     greeting: buildBriefingGreeting(now),
     opener: buildEnterOpener(summary, now),
     metrics: buildBriefingMetrics(summary),
+    // 4.13.0：今日打卡进度（无可打卡计划为 null，渲染层不出进度行）
+    checkin: buildBriefingCheckin(summary, pack),
     statusLines: buildPlanAlertLines(pack.alerts).concat(buildWorkLine(pack.workStatus)).filter(Boolean),
     nextLine: nextLine,
     primary: primary,

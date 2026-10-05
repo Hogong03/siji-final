@@ -240,11 +240,11 @@ function canBackfill(cell) {
 html.theme-dark {
   .heatmap { background: #27272A; }
   .hm-dot.future { border-color: #3F3F46; }
-  .hm-dot.future .hm-day { color: #52525B; }
+  .hm-dot.future .hm-day { color: #71717A; }
   .hm-mark { background: #A1A1AA; }
   .heatmap.flat { background: transparent; }
   .hm-title { color: #FAFAFA; }
-  .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #52525B; } }
+  .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #71717A; } }
   .hm-dot { background: #3F3F46; &.today { border-color: #FAFAFA; } }
   .hm-dot.lv-2 .hm-day, .hm-dot.lv-3 .hm-day { color: #18181B; }
   .hm-total { color: #A1A1AA; }
@@ -254,11 +254,11 @@ html.theme-dark {
 @media (prefers-color-scheme: dark) {
   .heatmap { background: #27272A; }
   .hm-dot.future { border-color: #3F3F46; }
-  .hm-dot.future .hm-day { color: #52525B; }
+  .hm-dot.future .hm-day { color: #71717A; }
   .hm-mark { background: #A1A1AA; }
   .heatmap.flat { background: transparent; }
   .hm-title { color: #FAFAFA; }
-  .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #52525B; } }
+  .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #71717A; } }
   .hm-dot { background: #3F3F46; &.today { border-color: #FAFAFA; } }
   .hm-dot.lv-2 .hm-day, .hm-dot.lv-3 .hm-day { color: #18181B; }
   .hm-total { color: #A1A1AA; }

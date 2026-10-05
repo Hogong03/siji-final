@@ -418,7 +418,6 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 	transition: border-color 0.2s ease, background-color 0.2s ease;
 	&:focus-within {
 		border-color: #000000;
-		background: #E4E4E7;
 	}
 }
 .text-input {
@@ -469,7 +468,6 @@ html.theme-dark {
 		background: #27272A; border-color: #3F3F46;
 		&:focus-within {
 			border-color: #FAFAFA;
-			background: #18181B;
 		}
 	}
 	.send-dot {
@@ -507,7 +505,6 @@ html.theme-dark {
 		background: #27272A; border-color: #3F3F46;
 		&:focus-within {
 			border-color: #FAFAFA;
-			background: #18181B;
 		}
 	}
 	.send-dot {

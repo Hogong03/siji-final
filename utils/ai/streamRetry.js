@@ -77,13 +77,14 @@ export async function retryStreamWithBackoff(streamFn, originalMessage, updateLa
 
     logger.warn(`[Stream Empty Retry] ${streamRetry}/${MAX_STREAM_RETRIES}, waiting ${delay}ms...`)
 
-    // 显示退避提示
+    // 显示退避提示（同时清掉阶段小字，避免和重试文案叠在一起）
     streamedText = ''
     updateLastMessage({
       content: streamRetry === 1
         ? '正在重新思考...'
         : `第 ${streamRetry} 次重试中...`,
-      loading: true
+      loading: true,
+      _stageText: ''
     })
 
     await new Promise(r => setTimeout(r, delay))

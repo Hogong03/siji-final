@@ -16,6 +16,8 @@ import ExecResultCard from './ExecResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
 import EnterBriefing from './EnterBriefing.vue'
 import { isDark } from '@/utils/theme.js'
+import { fontRpx } from '@/utils/font-scale.js'
+import { usePressHold } from '@/composables/usePressHold.js'
 import { previewImage } from '@/utils/image.js'
 
 const props = defineProps({
@@ -98,6 +100,57 @@ const bubbleStyle = computed(() => {
 })
 /** 用户气泡文字的内联颜色（.bubble-text 的深色块规则在 App 上同为不可靠层） */
 const userTextColor = computed(() => (props.message.role === 'user' && isDark.value ? '#000000' : ''))
+
+/** 正文字号随全局字号档位缩放（4.13.0）：AI 的 Markdown 根节点 + 用户纯文本都吃这个值 */
+const bodyFontSize = computed(() => fontRpx(28))
+
+// ──── 长按气泡 → 操作面板（4.13.0 收纳 meta 行后的唯一操作入口）────
+const hold = usePressHold()
+function onBubbleTouchStart(e) {
+  hold.onTouchStart(e, showActions)
+}
+function onBubbleTouchMove(e) {
+  hold.onTouchMove(e)
+}
+function onBubbleTouchEnd() {
+  hold.onTouchEnd()
+}
+function showActions() {
+  const items = []
+  const acts = []
+  if (props.message.content) {
+    items.push('复制内容')
+    acts.push(copyContent)
+  }
+  if (props.message.role === 'assistant') {
+    if (props.message.content && props.operable) {
+      items.push('重新生成')
+      acts.push(onRegenerate)
+      items.push('换一种说法')
+      acts.push(onRephrase)
+    }
+    if (props.message._truncated) {
+      items.push('继续写完')
+      acts.push(onContinueWrite)
+    }
+    if (isLongText.value) {
+      items.push('按章节阅读')
+      acts.push(onReadLong)
+    }
+  } else if (props.message.content) {
+    items.push('编辑')
+    acts.push(editOwn)
+  }
+  if (items.length === 0) return
+  uni.showActionSheet({
+    itemList: items,
+    success: (r) => {
+      const fn = acts[r.tapIndex]
+      if (typeof fn === 'function') fn()
+    },
+    fail: () => { /* 取消不处理 */ }
+  })
+}
 
 /** AI 消息内容类型检测 — 用于气泡样式变化 */
 const contentStyle = computed(() => {
@@ -259,13 +312,15 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
         <view class="bar-segment" />
         <view class="bar-segment" />
       </view>
+      <!-- 阶段文案（P2-4）：正在思考 / 正在调用工具 -->
+      <text v-if="message._stageText" class="bubble-stage">{{ message._stageText }}</text>
     </view>
 
     <!-- 消息内容 -->
     <template v-else>
       <!-- 消息行：单气泡，长按触发操作 -->
       <view class="msg-row" :class="message.role">
-        <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="bubbleStyle">
+        <view class="bubble" :class="[message.role, contentStyle, { 'has-edge': edgeColor, 'is-welcome': isWelcome, 'is-continuation': isContinuation, 'is-short': isShort, 'streaming': message.role === 'assistant' && message.loading && message.content }]" :style="bubbleStyle" @touchstart="onBubbleTouchStart" @touchmove="onBubbleTouchMove" @touchend="onBubbleTouchEnd" @touchcancel="onBubbleTouchEnd">
           <image v-if="message.image && !imageFailed" :src="imageSrc" class="bubble-image" mode="widthFix" @tap="onImageTap" @error="onImageError" />
           <view v-else-if="message.image && imageFailed" class="bubble-image-fallback" @tap="onImageTap">
             <text class="bubble-image-fallback-text">图片已失效</text>
@@ -279,10 +334,10 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
           <EnterBriefing v-if="isBriefing" :message="message" @action="onBriefingAction" />
           <template v-else>
             <!-- AI 消息：流式期间用纯文本（避免每帧全量解析 Markdown），结束后切富文本 -->
-            <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" />
-            <text v-else-if="message.role === 'assistant'" class="bubble-text">{{ message.content }}</text>
+            <MarkdownRenderer v-if="message.role === 'assistant' && !(message.loading && message.content)" :content="message.content" :base-font-size="bodyFontSize" />
+            <text v-else-if="message.role === 'assistant'" class="bubble-text" :style="{ fontSize: bodyFontSize }">{{ message.content }}</text>
             <!-- 用户消息保持纯文本（禁用复制/选择，削弱幻觉传播）；深色反白文字内联兜底 -->
-            <text v-else class="bubble-text" :style="userTextColor ? { color: userTextColor } : {}">{{ message.content }}</text>
+            <text v-else class="bubble-text" :style="[userTextColor ? { color: userTextColor } : {}, { fontSize: bodyFontSize }]">{{ message.content }}</text>
           </template>
 
           <!-- 欢迎消息快捷示例 -->
@@ -297,6 +352,9 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
               <text>帮我规划下周工作</text>
             </view>
           </view>
+
+          <!-- 阶段文案（P2-4）：只在 loading 期间挂在气泡内容之后 -->
+          <text v-if="message.loading && message._stageText" class="bubble-stage">{{ message._stageText }}</text>
         </view>
       </view>
 
@@ -306,16 +364,9 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
         <text class="bubble-truncated-btn" @tap.stop="onContinueWrite">继续写完</text>
       </view>
 
-      <!-- 时间戳 + 操作按钮（AI: 复制；用户: 复制+编辑） -->
+      <!-- 时间戳 + 操作按钮（4.13.0 收纳：操作进「长按气泡」面板，行内只留时间戳） -->
       <view class="bubble-meta" :class="message.role">
         <text class="bubble-time-outer">{{ message.time }}</text>
-        <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
-        <text v-if="message.role === 'user' && message.content" class="bubble-action-btn" @tap.stop="editOwn">编辑</text>
-        <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRegenerate">重新生成</text>
-        <text v-if="message.role === 'assistant' && message.content && operable" class="bubble-action-btn" @tap.stop="onRephrase">换一种说法</text>
-        <text v-if="message.role === 'assistant' && message.content" class="bubble-action-btn" @tap.stop="copyContent">复制</text>
-        <!-- 长文：给一个按章节读的入口（会先存成记录，再进阅读页的目录尺版式） -->
-        <text v-if="isLongText" class="bubble-action-btn bubble-action-strong" @tap.stop="onReadLong">按章节阅读</text>
       </view>
 
       <!-- 待确认卡片 -->
@@ -374,6 +425,16 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
 .bubble-image-fallback-text {
   font-size: 24rpx;
   color: #A1A1AA;
+}
+
+/* ─── 阶段文案（P2-4）：loading 期间挂在气泡内容之后的小字 ─── */
+/* 两种主题同色（#71717A 在深浅底上都可读），无需深色覆盖块 */
+.bubble-stage {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: #71717A;
+  line-height: 1.5;
 }
 
 /* ─── 深色模式 ─── */

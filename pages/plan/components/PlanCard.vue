@@ -239,7 +239,7 @@ function formatEst(ds) {
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
 	.plan-card { background: #27272A; }
-	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #52525B; } }
+	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #71717A; } }
 	.card-title { color: #FAFAFA; }
 	.card-desc { color: #A1A1AA; }
 	.status-tag {
@@ -258,7 +258,7 @@ html.theme-dark {
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
 	.plan-card { background: #27272A; }
-	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #52525B; } }
+	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #71717A; } }
 	.card-title { color: #FAFAFA; }
 	.card-desc { color: #A1A1AA; }
 	.status-tag {

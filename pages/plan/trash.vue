@@ -295,12 +295,12 @@ html.theme-dark {
   .search-bar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-box { background: #3F3F46; }
   .search-input { color: #FAFAFA; }
-  .search-clear { color: #52525B; }
+  .search-clear { color: #71717A; }
   .restore-all { background: #FAFAFA; color: #18181B; }
   .trash-card { background: #27272A; }
   .card-title { color: #FAFAFA; }
   .card-desc { color: #A1A1AA; }
-  .meta-text { color: #52525B; }
+  .meta-text { color: #71717A; }
   .card-actions { border-top-color: #3F3F46; }
   .action-btn {
     &.restore { background: #FAFAFA; color: #18181B; }
@@ -314,12 +314,12 @@ html.theme-dark {
   .search-bar { background: #27272A; border-bottom-color: #3F3F46; }
   .search-box { background: #3F3F46; }
   .search-input { color: #FAFAFA; }
-  .search-clear { color: #52525B; }
+  .search-clear { color: #71717A; }
   .restore-all { background: #FAFAFA; color: #18181B; }
   .trash-card { background: #27272A; }
   .card-title { color: #FAFAFA; }
   .card-desc { color: #A1A1AA; }
-  .meta-text { color: #52525B; }
+  .meta-text { color: #71717A; }
   .card-actions { border-top-color: #3F3F46; }
   .action-btn {
     &.restore { background: #FAFAFA; color: #18181B; }

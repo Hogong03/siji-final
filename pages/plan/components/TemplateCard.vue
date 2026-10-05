@@ -93,7 +93,7 @@ html.theme-dark {
   .tpl-desc { color: #A1A1AA; }
   .st-bullet { color: #FAFAFA; }
   .st-title { color: #FAFAFA; }
-  .st-more { color: #52525B; }
+  .st-more { color: #71717A; }
   .tpl-footer { border-top-color: #3F3F46; }
   .tpl-use { color: #FAFAFA; }
   .tpl-edit { color: #A1A1AA; border-left-color: #3F3F46; }
@@ -107,7 +107,7 @@ html.theme-dark {
   .tpl-desc { color: #A1A1AA; }
   .st-bullet { color: #FAFAFA; }
   .st-title { color: #FAFAFA; }
-  .st-more { color: #52525B; }
+  .st-more { color: #71717A; }
   .tpl-footer { border-top-color: #3F3F46; }
   .tpl-use { color: #FAFAFA; }
   .tpl-edit { color: #A1A1AA; border-left-color: #3F3F46; }

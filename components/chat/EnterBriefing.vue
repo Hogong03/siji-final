@@ -2,37 +2,45 @@
 	<view class="briefing">
 		<!-- 问候行：时段池轮换 + 离开回来的语境 -->
 		<view class="briefing-greet">
-			<text class="briefing-greet-text">{{ greetLine }}</text>
+			<text class="briefing-greet-text" :style="{ fontSize: fontRpx(28) }">{{ greetLine }}</text>
 		</view>
 
 		<!-- 指标格：最多 3 格，无数据的格子不渲染 -->
 		<view v-if="briefing.metrics && briefing.metrics.length > 0" class="briefing-metrics">
 			<view v-for="m in briefing.metrics" :key="m.key" class="briefing-metric">
-				<text class="briefing-metric-value">{{ m.value }}</text>
-				<text class="briefing-metric-label">{{ m.label }}</text>
+				<text class="briefing-metric-value" :style="{ fontSize: fontRpx(30) }">{{ m.value }}</text>
+				<text class="briefing-metric-label" :style="{ fontSize: fontRpx(20) }">{{ m.label }}</text>
+			</view>
+		</view>
+
+		<!-- 今日打卡进度：有可打卡的循环计划才渲染（4.13.0） -->
+		<view v-if="briefing.checkin" class="briefing-checkin">
+			<text class="briefing-checkin-text" :style="{ fontSize: fontRpx(22) }">今日打卡 {{ briefing.checkin.done }}/{{ briefing.checkin.total }}</text>
+			<view class="briefing-checkin-bar">
+				<view class="briefing-checkin-fill" :style="{ width: checkinPercent }" />
 			</view>
 		</view>
 
 		<!-- 状态区：唯一主按钮 + 次要状态行 -->
 		<view v-if="briefing.primary" class="briefing-primary-wrap">
 			<view class="briefing-primary" @tap.stop="tap(briefing.primary)">
-				<text class="briefing-primary-text">{{ briefing.primary.label }}</text>
+				<text class="briefing-primary-text" :style="{ fontSize: fontRpx(26) }">{{ briefing.primary.label }}</text>
 			</view>
 		</view>
 		<view v-if="briefing.statusLines && briefing.statusLines.length > 0" class="briefing-status">
 			<view v-for="(line, i) in briefing.statusLines" :key="i" class="briefing-status-line">
 				<view class="briefing-status-dot" />
-				<text class="briefing-status-text">{{ line }}</text>
+				<text class="briefing-status-text" :style="{ fontSize: fontRpx(22) }">{{ line }}</text>
 			</view>
 		</view>
 
 		<!-- 下一步：主按钮被占时只剩说明行 -->
 		<view v-if="briefing.nextLine" class="briefing-next">
-			<text class="briefing-next-text">{{ briefing.nextLine }}</text>
+			<text class="briefing-next-text" :style="{ fontSize: fontRpx(22) }">{{ briefing.nextLine }}</text>
 		</view>
 		<!-- 低落提示（moodDip）：软行 -->
 		<view v-if="briefing.moodDip" class="briefing-next">
-			<text class="briefing-next-text">这两天记录里写着低落，今天慢一点也算数。</text>
+			<text class="briefing-next-text" :style="{ fontSize: fontRpx(22) }">这两天记录里写着低落，今天慢一点也算数。</text>
 		</view>
 
 		<!-- 次级 chips：最多 3 个 -->
@@ -43,7 +51,7 @@
 				class="briefing-chip"
 				@tap.stop="tap(btn)"
 			>
-				<text class="briefing-chip-text">{{ btn.label }}</text>
+				<text class="briefing-chip-text" :style="{ fontSize: fontRpx(22) }">{{ btn.label }}</text>
 			</view>
 		</view>
 	</view>
@@ -64,6 +72,8 @@
  * 样式注意：本组件是 MessageBubble 的子组件，父页 scoped 样式作用不到这里，
  * 深色块必须写在组件自己的 scoped 样式里（html.theme-dark 嵌套写法）。
  */
+import { fontRpx } from '@/utils/font-scale.js'
+
 export default {
 	name: 'EnterBriefing',
 	props: {
@@ -80,6 +90,14 @@ export default {
 				return `${b.greeting || ''}，回来了。`
 			}
 			return `${b.greeting || ''}。`
+		},
+		/* 今日打卡进度条填充宽度（done/total，异常收敛到 0-100%） */
+		checkinPercent() {
+			const c = this.briefing.checkin
+			const total = Number(c && c.total) || 0
+			if (total <= 0) return '0%'
+			const pct = Math.round(((Number(c.done) || 0) / total) * 100)
+			return Math.min(100, Math.max(0, pct)) + '%'
 		}
 	},
 	methods: {
@@ -135,6 +153,33 @@ export default {
 .briefing-metric-label {
 	font-size: 20rpx;
 	color: #71717A;
+}
+
+/* 今日打卡进度 */
+.briefing-checkin {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+
+.briefing-checkin-text {
+	font-size: 22rpx;
+	color: #52525B;
+	flex-shrink: 0;
+}
+
+.briefing-checkin-bar {
+	flex: 1;
+	height: 8rpx;
+	border-radius: 4rpx;
+	background: #E4E4E7;
+	overflow: hidden;
+}
+
+.briefing-checkin-fill {
+	height: 8rpx;
+	border-radius: 4rpx;
+	background: #000000;
 }
 
 /* 主按钮：一屏唯一 */
@@ -238,6 +283,18 @@ html.theme-dark {
 		color: #A1A1AA;
 	}
 
+	.briefing-checkin-text {
+		color: #A1A1AA;
+	}
+
+	.briefing-checkin-bar {
+		background: #3F3F46;
+	}
+
+	.briefing-checkin-fill {
+		background: #FAFAFA;
+	}
+
 	.briefing-status-text {
 		color: #D4D4D8;
 	}
@@ -286,6 +343,18 @@ html.theme-dark {
 
 	.briefing-metric-label {
 		color: #A1A1AA;
+	}
+
+	.briefing-checkin-text {
+		color: #A1A1AA;
+	}
+
+	.briefing-checkin-bar {
+		background: #3F3F46;
+	}
+
+	.briefing-checkin-fill {
+		background: #FAFAFA;
 	}
 
 	.briefing-status-text {

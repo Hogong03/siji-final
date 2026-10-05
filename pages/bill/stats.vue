@@ -278,31 +278,31 @@ function formatDate(ts) {
     </view>
 
     <scroll-view class="stats-scroll" scroll-y>
-      <!-- ① 总览 -->
+      <!-- ① 总览：支出做 hero，收入/结余/日均缩为次级一行三列 -->
       <view class="overview-section">
-        <view class="overview-row">
-          <view class="overview-card expense-card">
-            <text class="ov-label">总支出</text>
-            <text class="ov-value">¥{{ totalExpense.toFixed(2) }}</text>
+        <view class="ov-hero">
+          <text class="ov-hero-label">{{ viewMode === 'year' ? '总支出' : '本月支出' }}</text>
+          <view class="ov-hero-main">
+            <text class="ov-hero-value">¥{{ totalExpense.toFixed(2) }}</text>
             <text class="ov-sub" v-if="expenseChange !== null" :class="parseFloat(expenseChange) > 0 ? 'up' : 'down'">
               环比 {{ parseFloat(expenseChange) > 0 ? '↑' : '↓' }} {{ Math.abs(parseFloat(expenseChange)) }}%
             </text>
           </view>
-          <view class="overview-card income-card">
-            <text class="ov-label">总收入</text>
-            <text class="ov-value">¥{{ totalIncome.toFixed(2) }}</text>
-          </view>
         </view>
-        <view class="overview-row">
-          <view class="overview-card balance-card">
+        <view class="ov-mini-row">
+          <view class="ov-mini">
+            <text class="ov-label">总收入</text>
+            <text class="ov-mini-value">¥{{ totalIncome.toFixed(2) }}</text>
+          </view>
+          <view class="ov-mini">
             <text class="ov-label">结余</text>
-            <text class="ov-value" :class="balance >= 0 ? 'positive' : 'negative'">
+            <text class="ov-mini-value" :class="balance >= 0 ? 'positive' : 'negative'">
               {{ balance >= 0 ? '+' : '' }}¥{{ balance.toFixed(2) }}
             </text>
           </view>
-          <view class="overview-card avg-card">
+          <view class="ov-mini">
             <text class="ov-label">日均支出</text>
-            <text class="ov-value">¥{{ avgDailyExpense.toFixed(2) }}</text>
+            <text class="ov-mini-value">¥{{ avgDailyExpense.toFixed(2) }}</text>
           </view>
         </view>
       </view>

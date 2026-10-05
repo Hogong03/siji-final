@@ -126,18 +126,13 @@ function getConvTags(conv) {
   flex-shrink: 0;
 }
 
-.conv-item-tag-btn {
-  font-size: 32rpx;
-  color: #A1A1AA;
-  padding: 4rpx 8rpx;
-
-  &:active { color: #18181B; }
-}
-
+.conv-item-tag-btn,
 .conv-item-rename {
   font-size: 32rpx;
   color: #A1A1AA;
-  padding: 4rpx 8rpx;
+  /* 热区垫高（4.13.0）：视觉尺寸不变，触区扩到 ~56rpx，小图标不再难点/误点 */
+  padding: 12rpx;
+  margin: -12rpx;
 
   &:active { color: #18181B; }
 }
@@ -192,11 +187,11 @@ html.theme-dark {
     }
   }
   .conv-item-tag-btn {
-    color: #52525B;
+    color: #71717A;
     &:active { color: #FAFAFA; }
   }
   .conv-item-rename {
-    color: #52525B;
+    color: #71717A;
     &:active { color: #FAFAFA; }
   }
   .conv-item-title {
@@ -219,11 +214,11 @@ html.theme-dark {
     }
   }
   .conv-item-tag-btn {
-    color: #52525B;
+    color: #71717A;
     &:active { color: #FAFAFA; }
   }
   .conv-item-rename {
-    color: #52525B;
+    color: #71717A;
     &:active { color: #FAFAFA; }
   }
   .conv-item-title {
