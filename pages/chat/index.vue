@@ -603,6 +603,7 @@ function handleWelcomeChip(text) {
             <MessageBubble
             :message="msg"
             :prev-role="vi > 0 ? visibleMessages[vi - 1].role : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].role : '')"
+            :prev-time="vi > 0 ? visibleMessages[vi - 1].time : (toGlobalIndex(vi) > 0 ? allMessages[toGlobalIndex(vi) - 1].time : '')"
             :is-last="vi === visibleMessages.length - 1"
             :operable="msg.role === 'assistant' && !msg.loading && !!msg.content && !msg.failed && !msg._isWelcome && !msg._isEnterSummary && !msg.pendingAction && !msg.execResult && toGlobalIndex(vi) === allMessages.length - 1"
             @confirm-action="handleConfirmActionCard"

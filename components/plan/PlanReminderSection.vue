@@ -38,6 +38,11 @@ const emit = defineEmits([
 ])
 
 const snoozeMin = ref(getSnoozeMin())
+function requestNotify() {
+  // 被永久拒绝的系统不会再弹 —— 此时引导用户去系统设置（设置 → 应用 → 思迹 → 通知）
+  import('@/utils/reminder/notifier.js').then(m => m.ensureNotifyPermission())
+  uni.showToast({ title: '若仍未弹出授权，请到系统设置开启通知', icon: 'none' })
+}
 
 function selectSnooze(min) {
   snoozeMin.value = setSnoozeMin(min)
@@ -73,6 +78,12 @@ function cancelCustom() {
       <text class="section-label">提醒</text>
       <switch :checked="enabled" @change="onSwitchChange" :color="isDark ? '#FFFFFF' : '#000000'" />
     </view>
+    <!-- 通知权限引导（4.14.0）：Android 13+ 通知权限被拒时到点提醒不会出现在系统通知栏 -->
+    <!-- #ifdef APP-PLUS -->
+    <view class="notify-guide" @tap="requestNotify">
+      <text class="notify-guide-text">📱 到点提醒需要系统通知权限：若收不到通知栏推送，点这里重新授权</text>
+    </view>
+    <!-- #endif -->
     <template v-if="enabled">
       <view class="reminder-options">
         <text class="reminder-desc">基于截止时间提前提醒</text>
@@ -232,6 +243,8 @@ function cancelCustom() {
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
+  .notify-guide { background: #3F2E06; }
+  .notify-guide-text { color: #FCD34D; }
     .reminder-desc { color: #A1A1AA; }
     .reminder-chip {
         background: #27272A;
@@ -262,4 +275,17 @@ html.theme-dark {
     .input-field { border-bottom-color: #3F3F46; color: #FAFAFA; }
 }
 /* #endif */
+
+/* 通知权限引导条（4.14.0）—— 仅 App 端渲染 */
+.notify-guide {
+  margin: 8rpx 0 4rpx;
+  padding: 12rpx 16rpx;
+  background: #FEF3C7;
+  border-radius: $radius-sm;
+}
+.notify-guide-text {
+  font-size: $font-xs;
+  color: #92400E;
+  line-height: 1.5;
+}
 </style>

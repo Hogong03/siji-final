@@ -22,6 +22,12 @@ export function streakKindOf(plan) {
  * @returns {number} 跨过的里程碑数值（未跨过 0）
  */
 export function checkinFeedback(afterStreak, beforeStreak, fallback, kind = 'day') {
+	// 触觉反馈（4.14.0）：打卡成功轻震一下 —— H5/部分环境静默失败，无成本
+	try {
+		if (typeof uni !== 'undefined' && typeof uni.vibrateShort === 'function') {
+			uni.vibrateShort({ type: 'light', fail: () => {} })
+		}
+	} catch (e) { /* 震动失败不影响回执 */ }
   const hit = streakMilestoneOf(afterStreak, beforeStreak, kind)
   if (hit > 0) {
     uni.showToast({

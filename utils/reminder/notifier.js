@@ -141,8 +141,12 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
       sound: 'system',
       cover: false
     })
+    // 4.14.0：失败不再静默 —— 通知权限被拒（Android 13+）时这里是排查的第一现场
     if (pushMsg) logger.log('[reminder] Push message created')
-  } catch (e) { /* plus.push 可能不可用 */ }
+    else logger.warn('[reminder] Push message rejected (check POST_NOTIFICATIONS permission)')
+  } catch (e) {
+    logger.warn('[reminder] push create failed:', e && e.message)
+  }
   // #endif
 
   // H5 通知

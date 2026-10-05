@@ -92,6 +92,8 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
   }
 
   function handleDeleteConversation(conv) {
+    // 删除是破坏性操作：确认弹窗前轻震提示（4.14.0）
+    try { uni.vibrateShort && uni.vibrateShort({ type: 'light', fail: () => {} }) } catch (e) { /* ignore */ }
     uni.showModal({
       title: '删除对话',
       content: `确定删除「${conv.title || '未命名对话'}」吗?`,

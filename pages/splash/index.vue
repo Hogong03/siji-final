@@ -144,4 +144,20 @@ html.theme-dark {
 }
 /* #endif */
 
+
+/* 深色模式（4.14.0）：启动页随主题，深色用户不再先看一屏亮白 */
+/* #ifndef MP-WEIXIN */
+html.theme-dark {
+  .splash { background: #18181B; }
+  .logo-text { color: #FAFAFA; }
+  .logo-sub { color: #71717A; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+@media (prefers-color-scheme: dark) {
+  .splash { background: #18181B; }
+  .logo-text { color: #FAFAFA; }
+  .logo-sub { color: #71717A; }
+}
+/* #endif */
 </style>

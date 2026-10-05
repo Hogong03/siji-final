@@ -23,6 +23,7 @@ import { previewImage } from '@/utils/image.js'
 const props = defineProps({
   message: { type: Object, required: true },
   prevRole: { type: String, default: '' },
+  prevTime: { type: String, default: '' },
   operable: { type: Boolean, default: false },
   isLast: { type: Boolean, default: false }
 })
@@ -101,6 +102,9 @@ const bubbleStyle = computed(() => {
 /** 用户气泡文字的内联颜色（.bubble-text 的深色块规则在 App 上同为不可靠层） */
 const userTextColor = computed(() => (props.message.role === 'user' && isDark.value ? '#000000' : ''))
 
+/** 连续消息时间戳去重（4.14.0）：与上一条可见消息同一分钟则不重复显示时间行 */
+const showTime = computed(() => props.message.time !== props.prevTime)
+
 /** 正文字号随全局字号档位缩放（4.13.0）：AI 的 Markdown 根节点 + 用户纯文本都吃这个值 */
 const bodyFontSize = computed(() => fontRpx(28))
 
@@ -116,6 +120,8 @@ function onBubbleTouchEnd() {
   hold.onTouchEnd()
 }
 function showActions() {
+  // 呼出操作面板前轻震（4.14.0），与打卡/删除的触觉语言一致
+  try { uni.vibrateShort && uni.vibrateShort({ type: 'light', fail: () => {} }) } catch (e) { /* ignore */ }
   const items = []
   const acts = []
   if (props.message.content) {
@@ -365,7 +371,7 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
       </view>
 
       <!-- 时间戳 + 操作按钮（4.13.0 收纳：操作进「长按气泡」面板，行内只留时间戳） -->
-      <view class="bubble-meta" :class="message.role">
+      <view v-if="showTime" class="bubble-meta" :class="message.role">
         <text class="bubble-time-outer">{{ message.time }}</text>
       </view>
 

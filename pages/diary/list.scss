@@ -322,7 +322,12 @@
   padding: 2rpx 12rpx;
   border-radius: 8rpx;
 }
-.card-title {
+.card-mood {
+  font-size: 24rpx;
+  flex-shrink: 0;
+  margin-right: 6rpx;
+}
+
   display: block;
   font-size: 28rpx;
   font-weight: 600;

@@ -14,6 +14,7 @@ import { chooseAndCompress, compressFileObject, compressImagePath } from '@/util
 import { pickOneFile, readPickedFile, fileCardText, classifyFile, isDocParseAvailable } from '@/utils/files/index.js'
 import { isFeatureOn } from '@/utils/ai/features.js'
 import { isDark } from '@/utils/theme.js'
+import { fontRpx } from '@/utils/font-scale.js'
 import { getProviderKeys } from '@/utils/ai/providers.js'
 import { startRecording, stopRecording, cancelRecording } from '@/utils/ai/recorder.js'
 import { transcribeAudio } from '@/utils/ai/transcribe.js'
@@ -317,6 +318,7 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 			<view class="input-wrap">
 				<textarea
 					class="text-input"
+					:style="{ fontSize: fontRpx(30) }"
 					:value="text"
 					placeholder="说点什么…"
 					:auto-height="true"
