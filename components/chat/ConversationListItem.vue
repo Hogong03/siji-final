@@ -1,15 +1,36 @@
 <script setup>
 /**
  * ConversationListItem - single conversation row (split from ConversationPanel)
+ *
+ * 长按 = 删除对话（4.12.6）：不用原生 @longpress —— 它只看「按住 350ms」不看滑动，
+ * 对话编辑面板里滑动列表时总是误触删除弹窗（4.4.0 反馈列表同款坑）。改用
+ * usePressHold（按住 550ms + 位移容差 10px + 触发后忽略随后的 tap）。
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import { usePressHold } from '@/composables/usePressHold.js'
 
-defineProps({
+const props = defineProps({
   conv: { type: Object, default: () => ({}) },
   active: { type: Boolean, default: false }
 })
 
-defineEmits(['switch', 'delete', 'add-tag', 'rename'])
+const emit = defineEmits(['switch', 'delete', 'add-tag', 'rename'])
+
+const hold = usePressHold()
+function onTouchStart(e) {
+  hold.onTouchStart(e, () => emit('delete', props.conv))
+}
+function onTouchMove(e) {
+  hold.onTouchMove(e)
+}
+function onTouchEnd() {
+  hold.onTouchEnd()
+}
+/** 长按刚触发过就吞掉随后那次 tap，避免删除弹窗打开的同时又切走会话 */
+function onItemTap() {
+  if (hold.justFired()) return
+  emit('switch', props.conv.id)
+}
 
 function formatConvTime(ts) {
   if (!ts) return ''
@@ -32,8 +53,11 @@ function getConvTags(conv) {
         :key="conv.id"
         class="conv-item"
         :class="{ active: active }"
-        @tap="$emit('switch', conv.id)"
-        @longpress="$emit('delete', conv)"
+        @tap="onItemTap"
+        @touchstart="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        @touchcancel="onTouchEnd"
       >
         <view class="conv-item-info">
           <view class="conv-item-title-row">

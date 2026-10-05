@@ -104,8 +104,8 @@ function handleActivate(agent) {
         class="agent-card"
         :class="{ active: store.activeAgentId === agent.id }"
         @tap="handleActivate(agent)"
-        @longpress="goEdit(agent)"
       >
+        <!-- 长按进编辑已移除（4.12.6）：卡片上有可见的「编辑」按钮，原生 longpress 在滑动列表时会误开编辑页 -->
         <AgentAvatar :name="agent.name" :icon="agent.icon" :size="72" />
         <view class="agent-info">
           <text class="agent-name">{{ agent.name }}</text>

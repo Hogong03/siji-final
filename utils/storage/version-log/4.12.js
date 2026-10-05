@@ -6,6 +6,27 @@
 
 export const V412 = [
   {
+    version: '4.12.6',
+    date: '2026-10-05',
+    title: '4.12.6 修对话编辑面板长按误触删除：ConversationListItem 的原生 @longpress 换 usePressHold（位移容差 + tap 守卫），agent 卡片冗余长按移除',
+    summary: [
+      '用户实测：对话编辑面板里滑动列表时总是误触删除弹窗 —— 根因是 ConversationListItem 用原生 @longpress 直接触发删除，而原生 longpress 只看「按住 350ms」不看手指滑动（4.4.0 反馈列表「滑动弹出删除」的同款坑，这里漏改）',
+      '修复：ConversationListItem 换 composables/usePressHold（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）—— 滑动列表不再误弹删除；tap 守卫避免删除弹窗打开的同时又切走会话；删除仍走原确认弹窗（uni.showModal）不直删',
+      'agent.vue 的 Agent 卡片移除「长按进编辑」（卡片上有可见的「编辑」按钮，原生 longpress 滑动时会误开编辑页，冗余且误扰）—— 编辑入口保留按钮路径',
+      '盘点全项目剩余 @longpress：plan 组件三处（热力图/日条/打卡行的网格单元）无滑动误扰场景，保留；规矩重申：列表/可滚动容器里的长按一律 usePressHold',
+      '全量测试 93 文件 / 1299 用例全绿',
+    ],
+    categories: [
+      {
+        title: '长按手势修正（4.12.6）',
+        items: [
+          'components/chat/ConversationListItem.vue：@longpress → usePressHold 三件套（touchstart/touchmove/touchend + touchcancel），onItemTap 加 justFired() 守卫',
+          'pages/settings/sub/agent.vue：移除 Agent 卡片 @longpress="goEdit(agent)"（冗余入口，编辑按钮仍在）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.12.5',
     date: '2026-10-05',
     title: '4.12.5 修 App 端图标不跟主题：SijiIcon 从 CSS 双图切换改为 JS 驱动换 src（消费 theme.js 响应式 isDark）',
