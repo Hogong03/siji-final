@@ -213,7 +213,7 @@
 						@tap="goPage(card.listPage)">
 						<view class="entry-left">
 							<view class="entry-icon-circle">
-								<SijiIcon :name="card.iconName" size="md" color="#18181B" />
+								<SijiIcon :name="card.iconName" size="xl" color="#18181B" />
 							</view>
 							<view class="entry-info">
 								<text class="entry-title">{{ card.title }}</text>
@@ -260,7 +260,7 @@
 						@tap="goSub(entry.route)">
 						<view class="entry-left">
 							<view class="entry-icon-circle">
-								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+								<SijiIcon :name="entry.iconName" size="xl" color="#18181B" />
 							</view>
 							<view class="entry-info">
 								<text class="entry-title">{{ entry.title }}</text>
@@ -281,7 +281,7 @@
 						@tap="goSub(entry.route)">
 						<view class="entry-left">
 							<view class="entry-icon-circle">
-								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+								<SijiIcon :name="entry.iconName" size="xl" color="#18181B" />
 							</view>
 							<view class="entry-info">
 								<text class="entry-title">{{ entry.title }}</text>

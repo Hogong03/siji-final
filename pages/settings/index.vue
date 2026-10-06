@@ -203,7 +203,7 @@ function go(target) {
           <text class="row-arrow">›</text>
         </view>
         <view class="row card-press" @tap="go('version')">
-          <SijiIcon name="info" size="lg" class="row-icon" />
+          <SijiIcon name="clock" size="lg" class="row-icon" />
           <view class="row-body"><text class="row-label">版本历史</text></view>
           <text class="row-arrow">›</text>
         </view>
