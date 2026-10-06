@@ -158,6 +158,50 @@
 .cal-section {
   padding-top: 12rpx;
 }
+/* 4.12：日历折叠头（默认收起，点行展开/收起） */
+.cal-fold { padding-top: 12rpx; }
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 0;
+}
+.fold-head .section-label { flex-shrink: 0; }
+.fold-hint {
+  flex: 1;
+  text-align: right;
+  font-size: 22rpx;
+  color: #A1A1AA;
+}
+.fold-arrow {
+  flex-shrink: 0;
+  font-size: 30rpx;
+  color: #A1A1AA;
+  font-weight: 300;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+.fold-arrow.open {
+  transform: rotate(270deg);
+}
+/* 4.12：打卡记录折叠行 */
+.ci-records-fold {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 12rpx;
+  background: rgba(0, 0, 0, 0.04);
+
+  &:active { background: rgba(0, 0, 0, 0.08); }
+}
+.ci-records-title {
+  font-size: 22rpx;
+  color: #71717A;
+}
+.ci-records-fold .fold-arrow { font-size: 26rpx; }
 .cal-day-text {
   display: block;
   margin-top: 8rpx;
@@ -208,6 +252,11 @@ html.theme-dark {
 
   .cal-day-text { color: #FAFAFA; }
   .cal-undo { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+  .fold-hint { color: #71717A; }
+  .fold-arrow { color: #71717A; }
+  .ci-records-fold { background: rgba(255, 255, 255, 0.08); }
+  .ci-records-fold:active { background: #3F3F46; }
+  .ci-records-title { color: #A1A1AA; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -229,5 +278,10 @@ html.theme-dark {
 
   .cal-day-text { color: #FAFAFA; }
   .cal-undo { background: rgba(255, 255, 255, 0.08); color: #A1A1AA; }
+  .fold-hint { color: #71717A; }
+  .fold-arrow { color: #71717A; }
+  .ci-records-fold { background: rgba(255, 255, 255, 0.08); }
+  .ci-records-fold:active { background: #3F3F46; }
+  .ci-records-title { color: #A1A1AA; }
 }
 /* #endif */

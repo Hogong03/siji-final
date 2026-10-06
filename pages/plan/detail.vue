@@ -14,7 +14,7 @@
  *   视图分块 → components/plan/PlanActionSection.vue + PlanFieldsSection.vue + PlanAiTools.vue
  */
 import { onBackPress, onLoad, onShow } from '@dcloudio/uni-app'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PlanChildPlans from '@/components/plan/PlanChildPlans.vue'
 import PlanTagPicker from '@/components/plan/PlanTagPicker.vue'
 import PlanActionSection from '@/components/plan/PlanActionSection.vue'
@@ -160,6 +160,21 @@ function goParentPlan() {
 	}
 }
 
+// ===== 4.13 内容分层：只突出行动区 + 子计划 =====
+// 其余功能（计划信息表单 + AI 工具）收进「计划设置与工具」底部弹窗：
+// 新建默认弹出（要填表）；查看已有计划默认收起（标题已显示在行动区卡上）
+const showSheet = ref(true)
+watch(isNew, (v) => { showSheet.value = !!v }, { immediate: true })
+
+/** 关弹窗：表单改动仍保留在 form 上，未保存离开页面仍由 onBackPress 拦截确认 */
+function closeSheet() { showSheet.value = false }
+
+/** 弹窗内保存：复用页面 handleSave，成功后收起弹窗 */
+function onSheetSave() {
+	handleSave()
+	showSheet.value = false
+}
+
 </script>
 
 <template>
@@ -205,36 +220,6 @@ function goParentPlan() {
 				@backfill-day="onCalBackfill"
 			/>
 
-			<!-- 字段区：父计划 / 优先级 / 状态 / 标题 / 描述 / 标签 / 时间 / 循环 / 提醒 -->
-			<PlanFieldsSection
-				:parent-plan="parentPlan"
-				v-model:priority="form.priority"
-				v-model:status="form.status"
-				v-model:title="form.title"
-				v-model:description="form.description"
-				:tags="form.tags"
-				v-model:show-time-editor="showTimeEditor"
-				:time-strip="timeStrip"
-				:time-summary="timeSummary"
-				v-model:estimated-date="form.estimated_time"
-				v-model:estimated-time="form.estimated_time_value"
-				v-model:due-date="form.due_date"
-				v-model:due-time="form.due_time"
-				v-model:recur-type="form.recur_type"
-				v-model:recur-count="form.recur_count"
-				:recur-hint="recurHintText()"
-				v-model:reminder-enabled="reminderEnabled"
-				v-model:reminder-advance-min="reminderAdvanceMin"
-				v-model:reminder-custom-date="reminderCustomDate"
-				v-model:reminder-custom-time-value="reminderCustomTimeValue"
-				:reminder-advance-options="REMINDER_ADVANCE_OPTIONS"
-				v-model:repeat-type="repeatType"
-				:tag-color="tagColor"
-				@remove-tag="removeTagFromPlan"
-				@open-tag-picker="openTagPicker"
-				@go-parent="goParentPlan"
-			/>
-
 			<!-- 子计划（新模型：计划直接包含子计划，点击子计划查看完整情况） -->
 			<PlanChildPlans
 				:child-plans="form.childPlans"
@@ -253,20 +238,12 @@ function goParentPlan() {
 				@activate-child="(clientId) => toggleChildSomeday(clientId, false)"
 			/>
 
-			<!-- AI 工具 + AI 建议 -->
-			<PlanAiTools
-				:status="form.status"
-				:scheduling="aiScheduling"
-				:review="aiReview"
-				:next-step-loading="aiNextStep"
-				:schedule-result="aiScheduleResult"
-				:review-result="aiReviewResult"
-				:next-step-result="aiNextStepResult"
-				:ai-advice="form.ai_advice"
-				@schedule="generateSchedule"
-				@review="generateReview"
-				@next-step="generateNextStep"
-			/>
+			<!-- 4.13 计划设置与工具（弹窗入口：点击弹出底部抽屉） -->
+			<view class="fold-head" @tap="showSheet = true">
+				<text class="fold-title">计划设置与工具</text>
+				<text class="fold-hint">标题 · 时间 · 循环 · 提醒 · AI 工具</text>
+				<text class="fold-arrow">›</text>
+			</view>
 		</scroll-view>
 
 		<!-- 标签选择弹窗 -->
@@ -283,6 +260,66 @@ function goParentPlan() {
 			<view v-if="!isNew" class="btn-freeze" @tap="toggleFrozen">{{ form.frozen_at ? '恢复计划' : '先放一放' }}</view>
 			<view v-if="!isNew" class="btn-delete" @tap="handleDelete">删除</view>
 			<view class="btn-save" @tap="handleSave">保存计划</view>
+		</view>
+
+		<!-- 4.13 计划设置与工具弹窗（底部抽屉：表单字段 + AI 工具） -->
+		<view v-if="showSheet" class="sheet-mask" @tap="closeSheet" @touchmove.stop.prevent>
+			<view class="sheet-panel" @tap.stop>
+				<view class="sheet-head">
+					<text class="sheet-title">计划设置与工具</text>
+					<view class="sheet-close" @tap="closeSheet"><text class="sheet-close-x">✕</text></view>
+				</view>
+				<scroll-view class="sheet-body" scroll-y>
+					<!-- 字段区：父计划 / 优先级 / 状态 / 标题 / 描述 / 标签 / 时间 / 循环 / 提醒 -->
+					<PlanFieldsSection
+						:parent-plan="parentPlan"
+						v-model:priority="form.priority"
+						v-model:status="form.status"
+						v-model:title="form.title"
+						v-model:description="form.description"
+						:tags="form.tags"
+						v-model:show-time-editor="showTimeEditor"
+						:time-strip="timeStrip"
+						:time-summary="timeSummary"
+						v-model:estimated-date="form.estimated_time"
+						v-model:estimated-time="form.estimated_time_value"
+						v-model:due-date="form.due_date"
+						v-model:due-time="form.due_time"
+						v-model:recur-type="form.recur_type"
+						v-model:recur-count="form.recur_count"
+						:recur-hint="recurHintText()"
+						v-model:reminder-enabled="reminderEnabled"
+						v-model:reminder-advance-min="reminderAdvanceMin"
+						v-model:reminder-custom-date="reminderCustomDate"
+						v-model:reminder-custom-time-value="reminderCustomTimeValue"
+						:reminder-advance-options="REMINDER_ADVANCE_OPTIONS"
+						v-model:repeat-type="repeatType"
+						:tag-color="tagColor"
+						@remove-tag="removeTagFromPlan"
+						@open-tag-picker="openTagPicker"
+						@go-parent="goParentPlan"
+					/>
+
+					<!-- AI 工具 + AI 建议 -->
+					<PlanAiTools
+						:status="form.status"
+						:scheduling="aiScheduling"
+						:review="aiReview"
+						:next-step-loading="aiNextStep"
+						:schedule-result="aiScheduleResult"
+						:review-result="aiReviewResult"
+						:next-step-result="aiNextStepResult"
+						:ai-advice="form.ai_advice"
+						@schedule="generateSchedule"
+						@review="generateReview"
+						@next-step="generateNextStep"
+					/>
+					<view class="sheet-pad" />
+				</scroll-view>
+				<view class="sheet-footer">
+					<view class="sheet-save" @tap="onSheetSave"><text>保存计划</text></view>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>

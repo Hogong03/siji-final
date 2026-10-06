@@ -40,9 +40,13 @@ onMounted(() => {
 })
 onShow(() => { loadDiaries(); loadTags() })
 
-function goDetail(clientId, m) {
-  const useMonth = m || currentMonth.value
-  if (clientId) uni.navigateTo({ url: `/pages/diary/detail?clientId=${clientId}&month=${useMonth}` })
+function goDetail(item) {
+  if (!item || !item.client_id) return
+  // 月份分片 key 以记录自身 created_at 计算（formatMonthOf → YYYY-MM）。
+  // 不能用 currentMonth 兜底：时间范围=「全部」时它是 'all'，
+  // 拼出 diary_all 分片不存在 → 详情页空白（列表卡有内容、打开无内容的根因）
+  const month = formatMonthOf(item.created_at)
+  uni.navigateTo({ url: `/pages/diary/detail?clientId=${item.client_id}&month=${month}` })
 }
 function goNew() { uni.navigateTo({ url: '/pages/diary/detail?id=new' }) }
 function goTrash() { uni.navigateTo({ url: '/pages/diary/trash' }) }
@@ -267,7 +271,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       </view>
       <view v-for="cell in calendarDays.filter(c => !c.empty && c.count > 0)" :key="'cal-' + cell.day" class="cal-day-records">
         <text class="cal-day-label">{{ cell.day }}日 · {{ cell.count }}篇 · {{ cell.words }}字</text>
-        <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r.client_id)">
+        <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r)">
           <text v-if="moodFace(r)" class="card-mood">{{ moodFace(r) }}</text>
           <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
           <text class="card-preview" v-if="r.content">{{ firstSentence(r.content) }}</text>
@@ -283,7 +287,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       <view v-if="filteredDiaries.length > 0 && pagedDiaries.length === 0" class="pg-empty">
         <text class="pg-empty-text">本页暂无内容</text>
       </view>
-      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item.client_id)">
+      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item)">
         <view class="card-photo" v-if="item.images && item.images.length > 0">
           <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
           <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
@@ -321,7 +325,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     <scroll-view v-else class="diary-scroll timeline-scroll" scroll-y>
       <view v-for="group in timelineGroups" :key="group.date" class="timeline-group">
         <view class="timeline-date">{{ group.date }}</view>
-        <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item.client_id)">
+        <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item)">
           <view class="card-photo" v-if="item.images && item.images.length > 0">
             <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
             <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>

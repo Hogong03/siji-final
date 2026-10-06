@@ -58,7 +58,7 @@ th{background:#F4F4F5;font-weight:600}td:last-child{color:#71717A}
 <h1>思迹 图标与 UI 设计图鉴</h1>
 <div class="sub">极简黑白 + Zinc 灰阶 · 零阴影 · 零渐变 · AI 内容是唯一视觉焦点</div>
 
-<h2>① TabBar 底部导航（6）</h2>
+<h2>① TabBar 底部导航（6，深浅成对）</h2>
 <div class="grid">
   <div class="card"><img src="static/tab/chat-v2.png"><div class="cap">chat</div></div>
   <div class="card"><img src="static/tab/chat-active-v2.png"><div class="cap">chat-active</div></div>
@@ -67,9 +67,21 @@ th{background:#F4F4F5;font-weight:600}td:last-child{color:#71717A}
   <div class="card"><img src="static/tab/settings-v2.png"><div class="cap">settings</div></div>
   <div class="card"><img src="static/tab/settings-active-v2.png"><div class="cap">settings-active</div></div>
 </div>
-<p class="note">普通态 #A1A1AA / 选中态 #000000。</p>
+<p class="note">浅色：普通态 #A1A1AA / 选中态 #000000。</p>
+<div class="dark" style="margin-top:14px">
+  <h3>深色模式下的同一组（深色 tab 图标）</h3>
+  <div class="grid">
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/chat-v2-dark.png"><div class="cap" style="color:#A1A1AA">chat</div></div>
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/chat-active-v2-dark.png"><div class="cap" style="color:#A1A1AA">chat-active</div></div>
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/functions-v2-dark.png"><div class="cap" style="color:#A1A1AA">functions</div></div>
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/functions-active-v2-dark.png"><div class="cap" style="color:#A1A1AA">functions-active</div></div>
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/settings-v2-dark.png"><div class="cap" style="color:#A1A1AA">settings</div></div>
+    <div class="card" style="background:transparent;border-color:#27272A"><img src="static/tab/settings-active-v2-dark.png"><div class="cap" style="color:#A1A1AA">settings-active</div></div>
+  </div>
+  <p class="note" style="color:#71717A">深色：普通态 #71717A / 选中态 #FFFFFF。图标路径由 theme.json 的 tabIcon* 变量按主题切换。</p>
+</div>
 
-<h2>② 通用 UI 图标（40） · Lucide 线框</h2>
+<h2>② 通用 UI 图标（41） · Lucide 线框（浅深成对）</h2>
 <div class="grid" id="ui"></div>
 
 <h2>③ Agent 头像（10）</h2>
@@ -139,7 +151,8 @@ th{background:#F4F4F5;font-weight:600}td:last-child{color:#71717A}
   <div class="loader"><i></i><i></i><i></i></div>
 </div>
 
-<h2>⑧ 深色模式</h2>
+<h2>⑧ 深色模式（4.8.0 三态类驱动）</h2>
+<p class="note">三档：跟随系统（默认）/ 浅色 / 深色，存 siji_theme_mode。H5·App 走 <code>html.theme-dark</code> 类驱动 + SijiIcon 按 isDark 换图标 src；小程序走 @media 媒体查询；原生 tabBar/导航栏由 uni.setTabBarStyle JS 切换。</p>
 <div class="dark">
   <h3>深色下组件</h3>
   <div class="dcard"><div class="dbub-u">今天午餐花了 25</div></div>
@@ -147,10 +160,44 @@ th{background:#F4F4F5;font-weight:600}td:last-child{color:#71717A}
   <div class="dcard">
     <div class="row"><span class="dchip on">全部</span><span class="dchip">本周</span><span class="dchip">本月</span></div>
   </div>
+  <div class="dcard" style="background:#27272A;border:1px solid #3F3F46">
+    <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+      <span style="color:#A1A1AA;font-size:13px">○ 跟随系统</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+      <span style="color:#A1A1AA;font-size:13px">○ 浅色</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+      <span style="color:#F4F4F5;font-size:13px">● 深色</span><span style="color:#34D399;font-size:13px">✓</span>
+    </div>
+  </div>
 </div>
 
+<h2>⑨ 进入简报卡 EnterBriefing（4.12.0）</h2>
+<div class="demo">
+  <div style="font-size:13px;color:#18181B;margin-bottom:10px">早上好，今天有 3 件事</div>
+  <div style="display:flex;gap:10px;margin-bottom:12px">
+    <div style="flex:1;background:#F4F4F5;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:#18181B">¥28</div><div style="font-size:10.5px;color:#71717A">昨日支出</div></div>
+    <div style="flex:1;background:#F4F4F5;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:#18181B">5</div><div style="font-size:10.5px;color:#71717A">连续打卡</div></div>
+    <div style="flex:1;background:#F4F4F5;border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:#18181B">2</div><div style="font-size:10.5px;color:#71717A">新记录</div></div>
+  </div>
+  <div style="font-size:11.5px;color:#71717A;margin-bottom:8px">今日打卡 1/2</div>
+  <div style="height:6px;background:#E4E4E7;border-radius:3px;margin-bottom:12px"><div style="width:50%;height:6px;background:#000;border-radius:3px"></div></div>
+  <div style="background:#000;color:#fff;text-align:center;border-radius:21px;padding:10px;font-size:13px;margin-bottom:10px">去上班打卡</div>
+  <div style="display:flex;gap:8px"><span class="chip">记一笔</span><span class="chip">写记录</span></div>
+</div>
+<p class="note">问候行 → 指标格（最多3格）→ 打卡进度 → 唯一主按钮（一屏只推一件事）→ 状态行 → 次级 chips（最多3个）。字号全部走 fontRpx()，随字号档位缩放。</p>
+
+<h2>⑩ 字号四档（4.13.0）</h2>
+<div class="demo">
+  <div style="display:flex;gap:8px">
+    <span class="chip">小 · 0.9</span><span class="chip on">标准 · 1.0</span><span class="chip">大 · 1.15</span><span class="chip">特大 · 1.3</span>
+  </div>
+</div>
+<p class="note">只缩放阅读内容（对话气泡 / 简报卡 / 记录阅读页正文），UI 骨架字号稳定；存 siji_font_scale，fontRpx(base) 产出内联 font-size 即时生效。</p>
+
 <script>
-var ui=["ai-v2","add-v2","arrow-down-v2","arrow-left-v2","arrow-right-v2","bill-v2","brain-v2","bug-v2","calendar-v2","chat-bubble-v2","check-v2","chevron-right-v2","close-v2","clock-v2","copy-v2","diary-v2","download-v2","edit-v2","export-v2","file-v2","heart-v2","image-v2","info-v2","lock-v2","mail-v2","menu-v2","moon-v2","more-v2","plan-v2","refresh-v2","search-v2","settings-v2","sparkle-v2","stats-v2","sun-v2","target-v2","tip-v2","trash-v2","unlock-v2","user-v2"];
+var ui=["ai-v2","add-v2","arrow-down-v2","arrow-left-v2","arrow-right-v2","bill-v2","brain-v2","bug-v2","calendar-v2","chat-bubble-v2","check-v2","chevron-right-v2","close-v2","clock-v2","copy-v2","diary-v2","download-v2","edit-v2","export-v2","file-v2","heart-v2","image-v2","info-v2","lock-v2","mail-v2","menu-v2","monitor-v2","moon-v2","more-v2","plan-v2","refresh-v2","search-v2","settings-v2","sparkle-v2","stats-v2","sun-v2","target-v2","tip-v2","trash-v2","unlock-v2","user-v2"];
 var agents=["agent-career-v3","agent-custom-v3","agent-finance-v3","agent-fitness-v3","agent-minimal-v3","agent-psychologist-v3","agent-relationship-v3","agent-siji-v3","agent-study-v3","agent-workplace-v3"];
 function fill(id,list,pre,cap){
   document.getElementById(id).innerHTML=list.map(function(n){

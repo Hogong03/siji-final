@@ -1,10 +1,10 @@
 # 思迹（Siji）UI 设计标准规范
 
-> **版本**: 1.0  
-> **提取日期**: 2026-07-05  
+> **版本**: 1.1  
+> **更新日期**: 2026-10-06（校准深色模式类驱动机制、图标数 41、清理死引用、与 AGENTS.md 对齐）  
 > **项目**: 思迹 — AI 对话式生活助手  
 > **平台**: uni-app（H5 / App / 微信小程序）  
-> **设计语言**: 极简科技 + 温暖生活（微拟物 + 玻璃拟物残影）
+> **设计语言**: 极简黑白 + Zinc 灰阶（零阴影 / 零渐变 / 零毛玻璃）
 
 ---
 
@@ -21,6 +21,8 @@
 ---
 
 ## 二、色彩系统
+
+> 下表的 `--xxx` 仅为**语义分组示意**，不是运行时 CSS 变量。实际代码一律硬编码 hex 色值，深色通过 `html.theme-dark` 类（H5·App）或 `@media (prefers-color-scheme: dark)`（小程序）覆盖，见第十一节。
 
 ### 2.1 主色调
 
@@ -39,11 +41,11 @@
 | 变量 | 浅色值 | 深色值 | 用途 |
 |------|--------|--------|------|
 | `--bg-page` | `#F4F4F5` (Zinc-100) | `#18181B` | 页面背景 |
-| `--bg-card` | `#FFFFFF` | `#18181B` (Zinc-900) | 卡片/输入区背景 |
-| `--bg-card-alt` | `#F8F8F8` | `#222226` | 卡片交替背景 |
-| `--bg-input` | `#F4F4F5` (Zinc-100) | `#27272A` (Zinc-800) | 输入框/Chip 背景 |
-| `--bg-subtle` | `#FAFAFA` | `#18181B` | 微妙背景 |
-| `--bg-muted` | `#F4F4F5` | `#27272A` | 静音背景 |
+| `--bg-card` | `#FFFFFF` | `#27272A` (Zinc-800) | 卡片背景 |
+| `--bg-card-alt` | `#F4F4F5` | `#27272A` | AI 气泡背景 |
+| `--bg-input` | `#F4F4F5` (Zinc-100) | `#3F3F46` (Zinc-700) | 输入框/Chip 背景 |
+| `--bg-subtle` | `#FAFAFA` | `#27272A` | 微妙背景 |
+| `--bg-muted` | `#F4F4F5` | `#3F3F46` | 静音背景 |
 
 ### 2.3 功能色
 
@@ -72,7 +74,8 @@
 
 - ❌ 禁止 `linear-gradient`（全部纯色）
 - ❌ 禁止 `backdrop-filter: blur()`（已废弃玻璃拟物）
-- ❌ 禁止硬编码颜色值（必须使用 CSS 变量或 SCSS 变量）
+- ❌ 禁止 `box-shadow`（层级靠底色对比 + 1rpx 边框表达）
+- ❌ **禁止 CSS 变量 `var(--xxx)`**（App 端 fixed 组件变量继承不稳定）——统一硬编码色值 + 主题类覆盖；SCSS 编译期变量 `$xxx` 不受限
 - ❌ 禁止紫色/Indigo/Slate 系列残留
 
 ---
@@ -101,6 +104,17 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
 - 概览大数字：`48~56rpx`，`font-weight: 800`，`letter-spacing: -1rpx`
 - 品牌 Logo：`72rpx`，`font-weight: 700`，`letter-spacing: 8rpx`
 - 品牌副标题：`22rpx`，`letter-spacing: 12rpx`，`text-transform: uppercase`
+
+### 3.2.1 阅读字号四档（4.13.0）
+
+`utils/font-scale.js`：存储键 `siji_font_scale`，只缩放**阅读内容**（对话气泡 / 简报卡 / 记录阅读页正文），UI 骨架（图标/按钮/导航）字号稳定。关键阅读面用 `fontRpx(baseRpx)` 产出内联 `font-size`，切换即时生效。
+
+| 档位 | id | 比例 |
+|------|----|------|
+| 小 | `small` | `0.9` |
+| 标准 | `normal`（默认） | `1.0` |
+| 大 | `large` | `1.15` |
+| 特大 | `xlarge` | `1.3` |
 
 ### 3.3 行高与字重
 
@@ -221,21 +235,27 @@ AI 加载使用三段横线伸缩（非旋转 spinner）：
 
 ## 八、组件规范
 
+> 以下示例中的 `var(--xxx)` 与第二节色彩表一样，仅为语义示意，不是可执行代码。实际写样式时替换为对应硬编码 hex，并在 `html.theme-dark` 块内写深色值——8.1 卡片示例已是正确写法范本。
+
 ### 8.1 卡片
 
 ```scss
-// 标准卡片
-background: var(--bg-card);
-border-radius: $radius-md;  // 或 $radius-lg 用于概览卡
-border: 1rpx solid var(--border-color);
-box-shadow: $shadow-sm;
-padding: $spacing-md;       // 或 $spacing-lg $spacing-md
-margin: $spacing-sm $spacing-md;  // 或 $spacing-md
+// 标准卡片（硬编码 hex + 主题类覆盖；SCSS 变量 $spacing/$radius 可用于间距/圆角）
+background: #FFFFFF;
+border-radius: 16rpx;        // 概览卡 24rpx
+border: 1rpx solid #E4E4E7;
+padding: 24rpx;
+margin: 16rpx 24rpx;
 box-sizing: border-box;
 overflow: hidden;
+
+html.theme-dark & {
+  background: #27272A;
+  border-color: #3F3F46;
+}
 ```
 
-**交互反馈**: `&:active { transform: scale(0.98); border-color: var(--text-primary); }`
+**交互反馈**: `&:active { transform: scale(0.98); border-color: #18181B; }`（深色下 border-color: #FAFAFA）
 
 ### 8.2 按钮
 
@@ -264,12 +284,11 @@ color: var(--text-primary);
 
 | 属性 | 用户消息 | AI 消息 |
 |------|----------|---------|
-| 背景 | `var(--color-ai)` | `#F8F8F8` |
-| 文字色 | `var(--bg-card)` (#FFF) | `var(--text-primary)` |
+| 背景 | `#000000`（深色反白 `#FFFFFF`） | `#F4F4F5`（深色 `#27272A`） |
+| 文字色 | `#FFFFFF` | `#18181B`（深色 `#FAFAFA`） |
 | 圆角 | `24rpx 24rpx 8rpx 24rpx` | `24rpx 24rpx 24rpx 8rpx` |
-| 左边框 | 无 | `3rpx solid var(--border-color)` |
 | 最大宽度 | `85%` | `85%` |
-| Padding | `$spacing-sm $spacing-md` | 同左 |
+| Padding | `16rpx 24rpx` | 同左 |
 | 对齐 | `flex-end` | `flex-start` |
 
 ### 8.5 标签 (Chip / Tag)
@@ -364,8 +383,8 @@ width: 85%;
 
 ### 9.1 组件
 
-统一使用 `SijiIcon.vue`（v4），基于 Lucide 线框图标，共 40 个图标名。
-三端统一用 `<image>` 渲染 PNG（不再用 Unicode 字符或内联 SVG），杜绝跨平台字形不一致、个别字符变彩色 emoji 的问题。
+统一使用 `SijiIcon.vue`（v4），基于 Lucide 线框图标，共 41 个图标名（浅深成对 `{name}-v2.png` / `{name}-v2-dark.png`）。
+三端统一用 `<image>` 渲染 PNG（不再用 Unicode 字符或内联 SVG），杜绝跨平台字形不一致、个别字符变彩色 emoji 的问题。**换图标 src 是 JS 驱动**：SijiIcon 消费 theme.js 的 `isDark` 响应式切换浅/深图，不靠 CSS。
 
 ### 9.2 尺寸
 
@@ -431,9 +450,10 @@ padding-bottom: env(safe-area-inset-bottom);
 ### 10.4 TabBar
 
 - 3 入口：思迹 / 功能 / 设置
-- 未选中色: `#94A3B8`（注：硬编码于 pages.json，需迁移）
-- 选中色: `#000000`
-- 背景: `#FFFFFF`
+- 未选中色: `#A1A1AA`（浅色）/ `#71717A`（深色）
+- 选中色: `#000000`（浅色）/ `#FFFFFF`（深色）
+- 背景: `#FFFFFF`（浅色）/ `#18181B`（深色）
+- 配色与图标路径由 theme.json 三变量化，`applyTheme()` 按主题 JS 切换（4.7 已完成）
 
 ### 10.5 导航栏
 
@@ -481,39 +501,27 @@ padding-bottom: env(safe-area-inset-bottom);
 
 ## 十三、全局工具类
 
+> 以下为示意骨架；实际项目以组件 scoped 样式内的硬编码 hex + `html.theme-dark` 覆盖为准。`.glass-card` 已于 4.6.0 删除，禁止重新引入。
+
 ```scss
-// 文字
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-hint { color: var(--text-hint); }
-.text-success { color: $success; }
-.text-warning { color: $warning; }
-.text-danger { color: $danger; }
-.text-ai { color: var(--color-ai); }
+// 文字色（实际值：primary #18181B / secondary #52525B / hint #71717A，深色对应 #FAFAFA/#A1A1AA/#71717A）
 .text-center { text-align: center; }
 
 // 字号
-.font-xs { font-size: $font-xs; }
-.font-sm { font-size: $font-sm; }
-.font-md { font-size: $font-md; }
-.font-lg { font-size: $font-lg; }
-.font-xl { font-size: $font-xl; }
-.font-xxl { font-size: $font-xxl; }
+.font-xs { font-size: 22rpx; }
+.font-sm { font-size: 26rpx; }
+.font-md { font-size: 28rpx; }
+.font-lg { font-size: 32rpx; }
+.font-xl { font-size: 36rpx; }
+.font-xxl { font-size: 44rpx; }
 
 // 间距
-.mt-xs { margin-top: $spacing-xs; }
-.mt-sm { margin-top: $spacing-sm; }
-.mt-md { margin-top: $spacing-md; }
-.mt-lg { margin-top: $spacing-lg; }
-.mb-sm { margin-bottom: $spacing-sm; }
-.mb-md { margin-bottom: $spacing-md; }
-
-// 卡片
-.glass-card {
-  background: var(--bg-card);
-  border: 1rpx solid var(--border-color);
-  border-radius: $radius-md;
-}
+.mt-xs { margin-top: 8rpx; }
+.mt-sm { margin-top: 16rpx; }
+.mt-md { margin-top: 24rpx; }
+.mt-lg { margin-top: 32rpx; }
+.mb-sm { margin-bottom: 16rpx; }
+.mb-md { margin-bottom: 24rpx; }
 
 // 动画
 .fade-in-up { animation: fadeInUp 0.4s ease both; }
@@ -565,13 +573,14 @@ pages/
 
 ## 十五、已知待修复项
 
-| 项目 | 现状 | 应为 |
-|------|------|------|
-| TabBar `color` | `#94A3B8` 硬编码 | 应为 `var(--text-hint)` 或 `#A1A1AA` |
-| TabBar 各页 `navigationBarBackgroundColor` | `#FFFFFF` 硬编码 | 深色模式需 `#18181B` |
-| 气泡 AI 背景 `#F8F8F8` | 硬编码 | 应为 `var(--bg-card-alt)` |
-| `budget-hint-text` | `rgba(255,255,255,0.6)` | 应为 `var(--text-hint)` |
-| `hero-sub` | `rgba(255,255,255,0.7)` | 可接受（AI 色上的白字透明） |
+深色模式三态（4.8.0）、原生 tabBar/导航栏变量化（4.7）、气泡背景统一（4.8）均已落地。当前无待修复硬编码项。
+
+| 项 | 状态 |
+|----|------|
+| TabBar color / 选中色 / 背景 | 已由 theme.json 三变量化，`applyTheme()` 按主题切换 |
+| 各页 navigationBar 背景/文字色 | 已由 theme.json 三变量化 |
+| AI 气泡背景 | 已统一 `#F4F4F5` / `#27272A` |
+| budget-hint / hero-sub 白字透明 | 保留（深色底或品牌色上的白字透明，语义正确） |
 
 ---
 
@@ -579,11 +588,11 @@ pages/
 
 1. **零渐变**：所有 `$gradient-*` 变量均为纯色 `#000000`
 2. **零毛玻璃**：`backdrop-filter` 已废弃，`$glass-blur: none`
-3. **零硬编码颜色**：所有颜色必须走 CSS 变量或 SCSS 变量
+3. **零 CSS 变量**：运行时颜色硬编码 hex + 主题类覆盖；SCSS 变量仅用于静态间距/圆角/字号
 4. **零紫色残留**：Slate/Indigo/Purple 系列全部清除
 5. **box-sizing: border-box**：所有容器必须设置，防溢出
 6. **overflow: hidden**：卡片/容器默认隐藏溢出
 7. **tabular-nums**：所有金额/统计数字必须使用等宽数字
 8. **SijiIcon 统一**：禁止内联 emoji 替代图标（教学卡片/用户数据除外）
 9. **rpx 单位**：所有尺寸用 `rpx`，禁止 `px`（`transform` 中的 `%` 除外）
-10. **CSS 变量优先**：运行时颜色必须用 `var(--xxx)`，SCSS 变量仅用于静态值
+10. **类驱动主题**：H5·App 深色规则写在 `html.theme-dark {}` 内；小程序走 `@media (prefers-color-scheme: dark)`（包在 `#ifdef MP-WEIXIN`）；图标换色由 JS 消费 `isDark` 切换 src

@@ -16,19 +16,12 @@
 	import {
 		useFunctionsData
 	} from '@/composables/useFunctionsData.js'
-	import {
-		getProfile
-	} from '@/utils/profile.js'
 
 	// ─── Tab 切换 ───
 	const activeTab = ref('life') // 'life' | 'ai'
 
-	// ─── 我的画像 ───
-	const profileData = ref({ cards: [] })
-	const profileName = computed(() => {
-		const c = profileData.value.cards.find(c => c.id === 'basic')
-		return c?.fields?.nickname || '我'
-	})
+	// ─── AI 面板「更多」折叠（低频管理项默认收起，保持页面只露核心入口）───
+	const showMoreAI = ref(false)
 
 	const {
 		dashboard,
@@ -96,11 +89,11 @@
 	onShow(() => {
 		loadAll()
 		loadAIStats()
-		try { profileData.value = getProfile() } catch { profileData.value = { cards: [] } }
 	})
 
 	// ─── AI 面板入口 ───
-	const aiEntries = computed(() => {
+	// 核心（高频）：我的信息 / 微光本 / 情景模拟
+	const aiCoreEntries = computed(() => {
 		const list = [{
 			id: 'profile',
 			iconName: 'user',
@@ -120,22 +113,6 @@
 		})
 
 		list.push({
-			id: 'memory',
-			iconName: 'brain',
-			title: '记忆管理',
-			desc: memoryEnabled.value ? '已开启' : '已关闭',
-			route: '/pages/settings/sub/memory'
-		})
-
-		list.push({
-			id: 'decisions',
-			iconName: 'target',
-			title: '决策日志',
-			desc: `${decisionStats.value.total} 条`,
-			route: '/pages/settings/sub/decisions'
-		})
-
-		list.push({
 			id: 'simulation',
 			iconName: 'chat-bubble',
 			title: '情景模拟',
@@ -144,6 +121,24 @@
 		})
 
 		return list
+	})
+
+	// 更多（低频管理项）：默认收起，点「更多 AI 功能」展开
+	const aiMoreEntries = computed(() => {
+		return [{
+			id: 'memory',
+			iconName: 'brain',
+			title: '记忆管理',
+			desc: memoryEnabled.value ? '已开启' : '已关闭',
+			route: '/pages/settings/sub/memory'
+		},
+		{
+			id: 'decisions',
+			iconName: 'target',
+			title: '决策日志',
+			desc: `${decisionStats.value.total} 条`,
+			route: '/pages/settings/sub/decisions'
+		}]
 	})
 
 	// ─── 跳转 ───
@@ -259,9 +254,30 @@
 					</view>
 				</view>
 
-				<!-- AI 入口列表 -->
+				<!-- 核心 AI 入口 -->
 				<view class="card-list">
-					<view v-for="entry in aiEntries" :key="entry.id" class="entry-card card-press"
+					<view v-for="entry in aiCoreEntries" :key="entry.id" class="entry-card card-press"
+						@tap="goSub(entry.route)">
+						<view class="entry-left">
+							<view class="entry-icon-circle">
+								<SijiIcon :name="entry.iconName" size="md" color="#18181B" />
+							</view>
+							<view class="entry-info">
+								<text class="entry-title">{{ entry.title }}</text>
+								<text class="entry-desc">{{ entry.desc }}</text>
+							</view>
+						</view>
+						<text class="entry-arrow">›</text>
+					</view>
+				</view>
+
+				<!-- 更多 AI 功能（低频管理项，默认收起） -->
+				<view class="more-toggle" @tap="showMoreAI = !showMoreAI">
+					<text class="more-toggle-text">{{ showMoreAI ? '收起' : '更多 AI 功能' }}</text>
+					<text class="more-toggle-arrow" :class="{ open: showMoreAI }">›</text>
+				</view>
+				<view v-if="showMoreAI" class="card-list">
+					<view v-for="entry in aiMoreEntries" :key="entry.id" class="entry-card card-press"
 						@tap="goSub(entry.route)">
 						<view class="entry-left">
 							<view class="entry-icon-circle">

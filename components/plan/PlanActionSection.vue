@@ -3,11 +3,13 @@
  * 计划行动区（3.5.7：从 pages/plan/detail.vue 抽出）
  *
  * 下一步单卡 + 打卡轻记录 + 本月打卡日历，纯展示：状态与动作全部由页面注入
+ * 4.12：打卡日历默认收起（非核心信息，点折叠头展开），展开状态为本组件内部 UI 态
  */
+import { ref, computed } from 'vue'
 import PlanWeekStrip from '@/components/plan/PlanWeekStrip.vue'
 import PlanHeatmap from '@/components/plan/PlanHeatmap.vue'
 
-defineProps({
+const props = defineProps({
 	nextStep: { type: Object, default: null },
 	planTitle: { type: String, default: '' },
 	metaText: { type: String, default: '' },
@@ -36,6 +38,12 @@ defineProps({
 	calDayText: { type: String, default: '' },
 	calDayChecked: { type: Boolean, default: false }
 })
+
+// 打卡日历折叠（纯 UI 态）：showCalendar 表示"日历可用"，calOpen 表示"用户是否展开"
+const calOpen = ref(false)
+const calVisible = computed(() => props.showCalendar && calOpen.value)
+// 打卡记录列表折叠（纯 UI 态）：默认只露条数
+const recordsOpen = ref(false)
 
 const emit = defineEmits([
 	'complete-next-step',
@@ -102,7 +110,12 @@ function onNoteInput(e) {
 				/>
 				<view class="ci-save" @tap.stop="emit('submit-checkin')"><text>{{ todayDone ? '更新' : '记录' }}</text></view>
 			</view>
-			<view v-if="checkinRecords.length" class="ci-list">
+			<!-- 4.12：打卡记录折叠（默认收起，长按撤销的提示随之隐藏） -->
+			<view v-if="checkinRecords.length" class="ci-records-fold" @tap="recordsOpen = !recordsOpen">
+				<text class="ci-records-title">打卡记录 · {{ checkinRecords.length }}</text>
+				<text class="fold-arrow" :class="{ open: recordsOpen }">›</text>
+			</view>
+			<view v-if="checkinRecords.length && recordsOpen" class="ci-list">
 				<view
 					v-for="r in checkinRecords" :key="r.date"
 					class="ci-item"
@@ -115,29 +128,35 @@ function onNoteInput(e) {
 			</view>
 		</view>
 
-		<!-- 3.5.5：本月打卡日历（点某天看当天，长按某天补记） -->
-		<view v-if="showCalendar" class="section cal-section">
-			<text class="section-label">打卡日历</text>
-			<PlanHeatmap
-				flat
-				:year="calYear"
-				:month="calMonth"
-				:weeks="calWeeks"
-				:totals="calTotals"
-				:can-next="calCanNext"
-				:selected-date="calSelected"
-				:backfill-map="calBackfillMap"
-				@prev="emit('cal-prev')"
-				@next="emit('cal-next')"
-				@select-day="(d) => emit('select-day', d)"
-				@backfill-day="(d) => emit('backfill-day', d)"
-			/>
-			<view v-if="calDayText" class="cal-day-row">
-				<text class="cal-day-text">{{ calDayText }}</text>
-				<view v-if="calDayChecked" class="cal-undo" @tap.stop="emit('remove-checkin', calSelected)">
-					<text>撤销这天</text>
-				</view>
+		<!-- 3.5.5：本月打卡日历（点某天看当天，长按某天补记）—— 4.12 默认收起 -->
+		<view v-if="showCalendar" class="section cal-fold">
+			<view class="fold-head" @tap="calOpen = !calOpen">
+				<text class="section-label">打卡日历</text>
+				<text class="fold-hint">{{ calOpen ? '收起' : '展开' }}</text>
+				<text class="fold-arrow" :class="{ open: calOpen }">›</text>
 			</view>
+			<template v-if="calVisible">
+				<PlanHeatmap
+					flat
+					:year="calYear"
+					:month="calMonth"
+					:weeks="calWeeks"
+					:totals="calTotals"
+					:can-next="calCanNext"
+					:selected-date="calSelected"
+					:backfill-map="calBackfillMap"
+					@prev="emit('cal-prev')"
+					@next="emit('cal-next')"
+					@select-day="(d) => emit('select-day', d)"
+					@backfill-day="(d) => emit('backfill-day', d)"
+				/>
+				<view v-if="calDayText" class="cal-day-row">
+					<text class="cal-day-text">{{ calDayText }}</text>
+					<view v-if="calDayChecked" class="cal-undo" @tap.stop="emit('remove-checkin', calSelected)">
+						<text>撤销这天</text>
+					</view>
+				</view>
+			</template>
 		</view>
 	</view>
 </template>

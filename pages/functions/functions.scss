@@ -129,6 +129,37 @@
 }
 
 /* ============================== */
+/* 「更多 AI 功能」折叠行           */
+/* ============================== */
+.more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+}
+.more-toggle:active {
+  background: #FAFAFA;
+}
+.more-toggle-text {
+  font-size: 26rpx;
+  color: #71717A;
+  font-weight: 500;
+}
+.more-toggle-arrow {
+  font-size: 28rpx;
+  color: #A1A1AA;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+.more-toggle-arrow.open {
+  transform: rotate(270deg);
+}
+
+/* ============================== */
 /* 卡片列表                        */
 /* ============================== */
 .card-list {
@@ -220,7 +251,7 @@
 }
 .entry-arrow {
   font-size: 36rpx;
-  color: #F4F4F5;
+  color: #D4D4D8;
   font-weight: 300;
   flex-shrink: 0;
 }
@@ -265,14 +296,18 @@ html.theme-dark {
   .seg-slider { background: #FAFAFA; }
   .stats-bar { background: #27272A; }
   .stats-val { color: #FAFAFA; }
-  .stats-lbl { color: #71717A; }
+  .stats-lbl { color: #A1A1AA; }
   .stats-guide .stats-val { color: #A1A1AA; }
+  .more-toggle { background: #27272A; }
+  .more-toggle:active { background: #3F3F46; }
+  .more-toggle-text { color: #A1A1AA; }
+  .more-toggle-arrow { color: #71717A; }
   .card-list { background: #27272A; }
   .entry-card { border-bottom-color: #3F3F46; }
   .entry-card:active { background: #3F3F46; }
   .entry-icon-circle { background: #3F3F46; }
   .entry-title { color: #FAFAFA; }
-  .entry-desc { color: #71717A; }
+  .entry-desc { color: #A1A1AA; }
   .entry-new-btn { background: #FAFAFA; }
   .entry-new-text { color: #18181B; }
   .entry-arrow { color: #71717A; }
@@ -294,14 +329,18 @@ html.theme-dark {
   .seg-slider { background: #FAFAFA; }
   .stats-bar { background: #27272A; }
   .stats-val { color: #FAFAFA; }
-  .stats-lbl { color: #71717A; }
+  .stats-lbl { color: #A1A1AA; }
   .stats-guide .stats-val { color: #A1A1AA; }
+  .more-toggle { background: #27272A; }
+  .more-toggle:active { background: #3F3F46; }
+  .more-toggle-text { color: #A1A1AA; }
+  .more-toggle-arrow { color: #71717A; }
   .card-list { background: #27272A; }
   .entry-card { border-bottom-color: #3F3F46; }
   .entry-card:active { background: #3F3F46; }
   .entry-icon-circle { background: #3F3F46; }
   .entry-title { color: #FAFAFA; }
-  .entry-desc { color: #71717A; }
+  .entry-desc { color: #A1A1AA; }
   .entry-new-btn { background: #FAFAFA; }
   .entry-new-text { color: #18181B; }
   .entry-arrow { color: #71717A; }

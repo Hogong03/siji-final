@@ -61,6 +61,115 @@
   }
 }
 
+/* ═══ 4.12 内容分层：折叠头（计划信息 / AI 助手） ═══ */
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 16rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+
+  &:active { background: #FAFAFA; }
+}
+.fold-title {
+  flex-shrink: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #18181B;
+}
+.fold-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 24rpx;
+  color: #A1A1AA;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fold-arrow {
+  flex-shrink: 0;
+  font-size: 32rpx;
+  color: #A1A1AA;
+  font-weight: 300;
+}
+
+/* ═══ 4.13 设置与工具弹窗（底部抽屉） ═══ */
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+}
+.sheet-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 82vh;
+  background: #F4F4F5;
+  border-radius: 28rpx 28rpx 0 0;
+  overflow: hidden;
+  animation: sheetUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes sheetUp {
+  from { transform: translateY(10%); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx 8rpx;
+}
+.sheet-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #18181B;
+}
+.sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: #E4E4E7;
+}
+.sheet-close-x {
+  font-size: 26rpx;
+  color: #71717A;
+  line-height: 1;
+}
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 0 20rpx;
+}
+.sheet-pad { height: 20rpx; }
+.sheet-footer {
+  padding: 12rpx 20rpx;
+  padding-bottom: calc(12rpx + env(safe-area-inset-bottom));
+  background: #FFFFFF;
+  border-top: 1rpx solid #E4E4E7;
+}
+.sheet-save {
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  background: #18181B;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
 /* ═══ 深色模式 ═══ */
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
@@ -69,6 +178,16 @@ html.theme-dark {
   .bottom-bar .btn-delete { background: #3F3F46; }
   .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
   .btn-freeze { background: #3F3F46; color: #D97706; }
+  .fold-head { background: #27272A; }
+  .fold-head:active { background: #3F3F46; }
+  .fold-title { color: #FAFAFA; }
+  .fold-hint { color: #71717A; }
+  .fold-arrow { color: #71717A; }
+  .sheet-panel { background: #18181B; }
+  .sheet-title { color: #FAFAFA; }
+  .sheet-close { background: #3F3F46; }
+  .sheet-footer { background: #27272A; border-top-color: #3F3F46; }
+  .sheet-save { background: #FAFAFA; color: #18181B; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -78,5 +197,15 @@ html.theme-dark {
   .bottom-bar .btn-delete { background: #3F3F46; }
   .bottom-bar .btn-save { background: #FAFAFA; color: #18181B; }
   .btn-freeze { background: #3F3F46; color: #D97706; }
+  .fold-head { background: #27272A; }
+  .fold-head:active { background: #3F3F46; }
+  .fold-title { color: #FAFAFA; }
+  .fold-hint { color: #71717A; }
+  .fold-arrow { color: #71717A; }
+  .sheet-panel { background: #18181B; }
+  .sheet-title { color: #FAFAFA; }
+  .sheet-close { background: #3F3F46; }
+  .sheet-footer { background: #27272A; border-top-color: #3F3F46; }
+  .sheet-save { background: #FAFAFA; color: #18181B; }
 }
 /* #endif */

@@ -64,7 +64,7 @@ const iconSize = computed(() => (props.size === 'lg' ? 72 : 48))
 }
 
 .empty-icon {
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
 .empty-title {

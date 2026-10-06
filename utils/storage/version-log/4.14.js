@@ -6,6 +6,28 @@
 
 export const V414 = [
   {
+    version: '4.14.1',
+    date: '2026-10-07',
+    title: 'UI 可读性微调：空状态图标提亮 / 功能页箭头修复 / 深色次要文字对比 + 补聚合 4.14 段',
+    summary: [
+      '对照 UI设计图鉴 与 DESIGN_SYSTEM 校准后做的低风险可读性修复（不改结构、不动交互）',
+      '空状态图标 opacity 0.4→0.55：深色底 #3F3F46 上原 0.4 太淡，图标圆里几乎看不清',
+      '功能入口页右侧箭头浅色下 #F4F4F5→#D4D4D8：原色与页面底同色，白卡片上箭头隐形',
+      '功能页深色下次要文字 #71717A→#A1A1AA：stats-lbl / entry-desc 在 #27272A 上偏淡，提到与浅色一致的次文层级',
+      '修 version-data.js 漏 import/展开 V414（4.14.0 段已建但未聚合，导致版本日志测试红灯）',
+    ],
+    categories: [
+      {
+        title: 'UI 可读性微调（4.14.1）',
+        items: [
+          'components/common/EmptyState.vue：.empty-icon opacity 0.4→0.55',
+          'pages/functions/functions.scss：.entry-arrow 浅色 #F4F4F5→#D4D4D8；深色双路径块内 .stats-lbl / .entry-desc #71717A→#A1A1AA',
+          'utils/storage/version-data.js：补 import V414 并在 getDefaultHistory 顶部展开',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.14.0',
     date: '2026-10-06',
     title: '4.14.0 UI 第二批（启动页深色/输入字号联动/心情上卡片/时间戳去重/触觉反馈）+ 修 App 端通知栏提醒排查盲区',
