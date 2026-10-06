@@ -37,6 +37,10 @@ const props = defineProps({
 
 const file = computed(() => (KNOWN.has(props.name) ? props.name : 'info'))
 
+/** v3 重画的图标（统一线性风格，与 calendar 不再重复） */
+const V3 = new Set(['plan', 'bill', 'diary', 'edit', 'calendar'])
+const ver = computed(() => (V3.has(file.value) ? 'v3' : 'v2'))
+
 const sizeRpx = computed(() => {
   if (typeof props.size === 'number') return props.size + 'rpx'
   return (SIZES[props.size] || 32) + 'rpx'
@@ -53,13 +57,13 @@ const tone = computed(() => {
 })
 
 const lightSrc = computed(() => {
-  if (tone.value === 'white') return `/static/icons/${file.value}-v2-dark.png`
+  if (tone.value === 'white') return `/static/icons/${file.value}-${ver.value}-dark.png`
   if (tone.value === 'amber') return '/static/icons/sun-amber.png'
-  return `/static/icons/${file.value}-v2.png`
+  return `/static/icons/${file.value}-${ver.value}.png`
 })
 const darkSrc = computed(() => {
   if (tone.value === 'amber') return '/static/icons/sun-amber-dark.png'
-  return `/static/icons/${file.value}-v2-dark.png`
+  return `/static/icons/${file.value}-${ver.value}-dark.png`
 })
 
 /** 当前主题下的实际 src：JS 驱动，不依赖 CSS 编译器行为（4.12.5） */

@@ -6,6 +6,25 @@
 
 export const V414 = [
   {
+    version: '4.14.3',
+    date: '2026-10-07',
+    title: '5 个功能图标统一重画（plan/bill/diary/edit/calendar），消除重复、贴合主题',
+    summary: [
+      'plan 旧版与 calendar 都是日历图形（一个多了个对勾），用户分不清"计划"和"日历"；bill 旧版用 $ 符号不贴合中文记账场景',
+      '统一重画为 2px 线性风格：plan→清单待办（带对勾复选框）、bill→钱包、diary→打开的书、edit→笔在方框上、calendar→日历格子',
+      'SijiIcon.vue 加 v3 映射，仅这 5 个换新版，其他图标不动；浅色黑线/深色白线双版已生成',
+    ],
+    categories: [
+      {
+        title: '图标优化（4.14.3）',
+        items: [
+          'static/icons/：新增 plan-v3 / bill-v3 / diary-v3 / edit-v3 / calendar-v3 及对应 -dark.png',
+          'components/common/SijiIcon.vue：V3 集合映射，这 5 个图标走 v3 版本路径',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.14.2',
     date: '2026-10-07',
     title: '计划总览卡右上图标按钮浅色底加深（#F4F4F5→#E4E4E7）',
