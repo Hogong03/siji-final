@@ -60,6 +60,7 @@ $spacing-lg: 32rpx;
   display: flex;
   align-items: center;
   gap: $spacing-sm;
+  &:active { opacity: 0.85; }
   padding: $spacing-md;
   background: #FFFFFF;
   border-radius: $radius-md;
@@ -291,7 +292,7 @@ html.theme-dark {
   .agent-page { background: #18181B; }
   .section-label { color: #71717A; }
   .section-add-btn { color: #FAFAFA; background: #3F3F46; }
-  .agent-card { background: #27272A; }
+  .agent-card { background: #27272A; &:active { background: #3F3F46; } }
   .agent-card.active { border-color: #FAFAFA; background: #3F3F46; }
   .agent-avatar { background: #3F3F46; }
   .agent-name { color: #FAFAFA; }
@@ -316,7 +317,7 @@ html.theme-dark {
   .agent-page { background: #18181B; }
   .section-label { color: #71717A; }
   .section-add-btn { color: #FAFAFA; background: #3F3F46; }
-  .agent-card { background: #27272A; }
+  .agent-card { background: #27272A; &:active { background: #3F3F46; } }
   .agent-card.active { border-color: #FAFAFA; background: #3F3F46; }
   .agent-avatar { background: #3F3F46; }
   .agent-name { color: #FAFAFA; }

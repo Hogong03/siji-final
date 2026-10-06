@@ -291,6 +291,7 @@
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   margin-bottom: 10rpx;
+  &:active { background: #F4F4F5; }
   &.pinned {
     border-left: 6rpx solid #18181B;
   }
@@ -614,7 +615,7 @@ html.theme-dark {
   .emo-低落 { background: #3F3F46; color: #A1A1AA; }
   .emo-愤怒 { background: #991B1B; color: #FEE2E2; }
   .fp-reset { color: #A1A1AA; border-color: #3F3F46; }
-  .diary-card { background: #27272A; &.pinned { border-left-color: #FAFAFA; } }
+  .diary-card { background: #27272A; &:active { background: #3F3F46; } &.pinned { border-left-color: #FAFAFA; } }
   .card-title { color: #FAFAFA; }
   .card-preview { color: #A1A1AA; }
   .card-photo-img { border-color: #3F3F46; }

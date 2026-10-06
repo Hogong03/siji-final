@@ -3,6 +3,7 @@
 		<!-- 问候行：时段池轮换 + 离开回来的语境 -->
 		<view class="briefing-greet">
 			<text class="briefing-greet-text" :style="{ fontSize: fontRpx(28) }">{{ greetLine }}</text>
+			<text class="briefing-greet-date" :style="{ fontSize: fontRpx(20) }">{{ dateLine }}</text>
 		</view>
 
 		<!-- 指标格：最多 3 格，无数据的格子不渲染 -->
@@ -25,6 +26,7 @@
 		<view v-if="briefing.primary" class="briefing-primary-wrap">
 			<view class="briefing-primary" @tap.stop="tap(briefing.primary)">
 				<text class="briefing-primary-text" :style="{ fontSize: fontRpx(26) }">{{ briefing.primary.label }}</text>
+					<text class="briefing-primary-arrow">→</text>
 			</view>
 		</view>
 		<view v-if="briefing.statusLines && briefing.statusLines.length > 0" class="briefing-status">
@@ -124,6 +126,11 @@ export default {
 	color: #18181B;
 	line-height: 1.5;
 }
+.briefing-greet-date {
+	font-size: 20rpx;
+	color: #A1A1AA;
+	margin-top: 2rpx;
+}
 
 /* 指标格 */
 .briefing-metrics {
@@ -132,15 +139,12 @@ export default {
 }
 
 .briefing-metric {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4rpx;
-	padding: 16rpx 8rpx;
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8rpx;
+	padding: 12rpx 22rpx;
 	background: #F4F4F5;
-	border-radius: 12rpx;
+	border-radius: 999rpx;
 }
 
 .briefing-metric-value {
@@ -191,12 +195,19 @@ export default {
 }
 
 .briefing-primary {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 16rpx 32rpx;
+	gap: 10rpx;
+	width: 100%;
+	padding: 20rpx 32rpx;
 	background: #000000;
-	border-radius: 12rpx;
+	border-radius: 14rpx;
+}
+.briefing-primary-arrow {
+	font-size: 26rpx;
+	color: #FFFFFF;
+	font-weight: 700;
 }
 
 .briefing-primary:active {
@@ -273,6 +284,15 @@ html.theme-dark {
 	.briefing-greet-text {
 		color: #FAFAFA;
 	}
+	.briefing-greet-date {
+		color: #71717A;
+	}
+	.briefing-metric {
+		background: #1E1E20;
+	}
+	.briefing-primary-arrow {
+		color: #18181B;
+	}
 
 	.briefing-metric {
 		background: #1E1E20;
@@ -334,6 +354,15 @@ html.theme-dark {
 @media (prefers-color-scheme: dark) {
 	.briefing-greet-text {
 		color: #FAFAFA;
+	}
+	.briefing-greet-date {
+		color: #71717A;
+	}
+	.briefing-metric {
+		background: #1E1E20;
+	}
+	.briefing-primary-arrow {
+		color: #18181B;
 	}
 
 	.briefing-metric {
