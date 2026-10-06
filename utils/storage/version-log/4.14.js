@@ -6,6 +6,24 @@
 
 export const V414 = [
   {
+    version: '4.14.2',
+    date: '2026-10-07',
+    title: '计划总览卡右上图标按钮浅色底加深（#F4F4F5→#E4E4E7）',
+    summary: [
+      'H5 实机巡检（localhost:5173）发现：总览卡右上统计/模板两个图标按钮浅色底 #F4F4F5 落在白卡 #FFFFFF 上几乎无对比，看着像两个裸图标/灰块，可点性弱',
+      '加深到 #E4E4E7（与边框同灰），按压态 #D4D4D8；深色 #3F3F46 不变',
+      '同轮巡检 5 个 Tab（聊天/记录/账单/计划/功能）浅色+深色：空态、统计卡、搜索栏、筛选、FAB、tabbar 全部正常，无破图无文字隐形',
+    ],
+    categories: [
+      {
+        title: 'UI 微调（4.14.2）',
+        items: [
+          'pages/plan/components/PlanOverview.vue：.ov-action 浅色 background #F4F4F5→#E4E4E7，:active #E4E4E7→#D4D4D8',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.14.1',
     date: '2026-10-07',
     title: 'UI 可读性微调：空状态图标提亮 / 功能页箭头修复 / 深色次要文字对比 + 补聚合 4.14 段',

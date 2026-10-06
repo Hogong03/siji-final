@@ -127,10 +127,10 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 	align-items: center;
 	justify-content: center;
 	border-radius: 12rpx;
-	background: #F4F4F5;
+	background: #E4E4E7;
 
 	&:active {
-		background: #E4E4E7;
+		background: #D4D4D8;
 		transform: scale(0.92);
 	}
 }
