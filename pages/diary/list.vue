@@ -6,6 +6,7 @@
 import { onMounted, ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { firstSentence } from '@/utils/diary-query.js'
+import { isSeedRecord, SEED_BADGE } from '@/utils/seed-records.js'
 
 // 心情小表情（4.14.0）：与 detail.vue 的 5 档一致，列表卡片标题行展示闲置的 mood 数据
 const MOOD_FACES = { 1: '😞', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' }
@@ -273,6 +274,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <text class="cal-day-label">{{ cell.day }}日 · {{ cell.count }}篇 · {{ cell.words }}字</text>
         <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r)">
           <text v-if="moodFace(r)" class="card-mood">{{ moodFace(r) }}</text>
+          <text v-if="isSeedRecord(r)" class="seed-badge">{{ SEED_BADGE }}</text>
           <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
           <text class="card-preview" v-if="r.content">{{ firstSentence(r.content) }}</text>
           <view v-if="getItemTags(r).length > 0" class="tag-row">
@@ -298,6 +300,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
           <text v-if="item.category" class="cat-badge">{{ item.category }}</text>
         </view>
         <text v-if="moodFace(item)" class="card-mood">{{ moodFace(item) }}</text>
+        <text v-if="isSeedRecord(item)" class="seed-badge">{{ SEED_BADGE }}</text>
         <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
         <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
         <view v-if="getItemTags(item).length > 0" class="tag-row">
@@ -331,6 +334,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
             <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
           </view>
           <text v-if="moodFace(item)" class="card-mood">{{ moodFace(item) }}</text>
+          <text v-if="isSeedRecord(item)" class="seed-badge">{{ SEED_BADGE }}</text>
           <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
           <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
           <view v-if="getItemTags(item).length > 0" class="tag-row">

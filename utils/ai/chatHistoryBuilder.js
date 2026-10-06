@@ -6,6 +6,21 @@
  */
 
 /**
+ * 4.15 P2-10：单条消息超长裁剪（窗口内最后一条保留全文，其余留头尾 + 省略标记）
+ * 防止一条超长回复/粘贴把上下文撑爆
+ */
+const MAX_MSG_CHARS = 2000
+
+function capContent(content, isLast) {
+  if (isLast || !content || content.length <= MAX_MSG_CHARS) return content
+  const headLen = Math.floor(MAX_MSG_CHARS * 0.7)
+  const tailLen = Math.floor(MAX_MSG_CHARS * 0.2)
+  return content.slice(0, headLen) +
+    `\n…[中间内容已省略，原文共 ${content.length} 字]…\n` +
+    content.slice(-tailLen)
+}
+
+/**
  * 构建聊天历史(含执行结果摘要)
  * @param {Array} messages - store.messages
  * @returns {Array|null} chatHistory - AI 请求格式的历史消息数组
@@ -51,6 +66,9 @@ export function buildChatHistory(messages) {
         }).filter(Boolean)
         if (summaries.length > 0) content += `\n[执行结果: ${summaries.join(';')}]`
       }
+
+      // 4.15：窗口内非最后一条超长裁剪
+      content = capContent(content, i === list.length - 1)
 
       return { role: m.role, content }
     })

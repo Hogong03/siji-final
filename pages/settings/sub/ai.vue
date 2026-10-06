@@ -15,6 +15,7 @@ import {
   listFeatureGroups, isFeatureOn, setFeatureOn
 } from '@/utils/api.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
+import { getUsageStats } from '@/utils/ai/rate-limiter.js'
 import {
   listDocBackends, getDocBackendId, setDocBackend, setOwnDocKey, hasOwnDocKey, docStatusText
 } from '@/utils/files/index.js'
@@ -22,6 +23,9 @@ import {
 import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 
 const store = useAppStore()
+
+/* ---- 4.15 AI 用量（本机统计，设置页展示） ---- */
+const usageStats = ref(getUsageStats())
 
 /* ---- 厂商 Logo 路径映射 ---- */
 const PROVIDER_LOGO_MAP = {
@@ -583,6 +587,19 @@ function goKeyGuide() {
       <view class="form-actions">
         <button class="btn-cancel" @tap="showCustomForm = false">取消</button>
         <button class="btn-save" @tap="saveCustomProvider">保存并切换</button>
+      </view>
+    </view>
+
+    <!-- 4.15 AI 用量（本机统计） -->
+    <view class="feature-card">
+      <view class="feature-group-head">
+        <text class="feature-group-name">AI 用量</text>
+      </view>
+      <view class="feature-row">
+        <view class="feature-text">
+          <text class="feature-name">本月 {{ usageStats.monthCount }} 次 · 累计 {{ usageStats.totalCount }} 次</text>
+          <text class="feature-desc">每分钟最多 {{ usageStats.perMinuteLimit }} 次；统计只保存在本机</text>
+        </view>
       </view>
     </view>
 

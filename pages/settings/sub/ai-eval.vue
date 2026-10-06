@@ -185,7 +185,8 @@ function gotText(row) {
 
 /** 跑一条：真请求 + 干跑；温度 0 让同一批语料可比 */
 function makeRunner() {
-  return async (message) => {
+  // 4.16.0：多轮用例支持 —— runCase 会把前几轮的 user/assistant 消息作为 history 传入
+  return async (message, caze, history = []) => {
     const cfg = {
       provider: store.aiProvider,
       model: store.aiModel,
@@ -195,7 +196,7 @@ function makeRunner() {
     }
     // store 传真的：查询类在干跑下照常执行（只读），写操作在 agent-loop 里被替换成占位。
     // 入口用 runAgentChat（聊天页走的就是它），这样自检测的是真实链路，含 _agentMode 判定
-    const result = await runAgentChat(store, message, 'eval', cfg, [])
+    const result = await runAgentChat(store, message, 'eval', cfg, history)
     return {
       // 幻觉出来的动作类型（实测出现过 batch / multi）不算数，与 autoExecutor 的闸门一致
       toolCalls: mergeExecutedTools(result, { isKnownType: (t) => store.isKnownActionType(t) }),
@@ -297,6 +298,7 @@ onShow(() => { copied.value = false })
       <text class="intro-text">把历史反馈里的真实语料跑一遍，看 AI 选了什么工具、顺序对不对。干跑：写操作不落库、不联网，查询类照常读你的真实数据。会真实调用你配置的模型（{{ progress.total }} 条约 {{ progress.total }} 次请求）。</text>
       <text class="intro-note">✓ 通过　~ 靠前端兜底（模型没调工具，结果仍会落库）　× 未通过　– 跳过（缺数据前置）　! 请求出错</text>
       <text class="intro-note">自检口径 {{ protocolLabel }}　·　应用 {{ reportMeta.appVersion }}</text>
+      <text class="intro-note">💡 改完提示词/工具定义后，先在这里跑一遍全部用例再发布，防止改 A 坏 B。</text>
     </view>
 
     <view class="env-row">

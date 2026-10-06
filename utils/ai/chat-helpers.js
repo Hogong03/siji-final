@@ -168,7 +168,11 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
  */
 export const HISTORY_MAX_CHARS = 6000
 export const HISTORY_MAX_PER_MESSAGE = 1200
-export const HISTORY_MIN_KEEP = 6
+// 4.15 修复 TC-004：保底 6 → 10（带执行卡的长会话里，6 条会被 AI 长回复吃满预算，
+// 「我叫测试员」这类 8 轮前的自报信息直接被挤出窗口）
+export const HISTORY_MIN_KEEP = 10
+// 4.15：AI 历史回复压到 600 字 —— 预算大头是 AI 长回复，用户消息（自报信息/追问）才最该保真
+export const HISTORY_MAX_AI_MESSAGE = 600
 
 /** 截断标记：让模型知道这段被截过，不要当作完整上下文 */
 export const HISTORY_TRUNCATED_MARK = '…（内容过长已截断）'
@@ -187,8 +191,12 @@ export function trimHistory(history, options = {}) {
 
   const normalized = arr.map(m => {
     const content = m && typeof m.content === 'string' ? m.content : ''
-    const clipped = content.length > maxPerMessage
-      ? content.slice(0, maxPerMessage) + HISTORY_TRUNCATED_MARK
+    // 4.15：AI 回复按更紧的上限截（历史里 AI 长文价值低于用户原话）
+    const cap = m && m.role === 'assistant'
+      ? Math.min(maxPerMessage, HISTORY_MAX_AI_MESSAGE)
+      : maxPerMessage
+    const clipped = content.length > cap
+      ? content.slice(0, cap) + HISTORY_TRUNCATED_MARK
       : content
     return { role: m && m.role, content: clipped }
   })
@@ -198,10 +206,14 @@ export function trimHistory(history, options = {}) {
   for (let i = normalized.length - 1; i >= 0; i--) {
     const item = normalized[i]
     const len = (item.content || '').length
-    // 保底条数之内不按预算砍（避免「刚说的那件事」突然从上下文里消失）
-    if (out.length >= minKeep && used + len > maxChars) break
+    // 4.15 修复 TC-004：用户消息一律保留 —— 自报信息（"我叫X"）不得被 AI 长回复
+    // 挤出窗口（用户消息很短，全留的代价可控；窗口本身由上游 15 条封顶）。
+    // AI 回复在保底条数之外按预算裁剪。
+    const isUser = item.role === 'user'
+    // 只跳过超预算的 AI 回复，继续往旧走 —— 用 break 会把更早的用户消息一并丢掉
+    if (!isUser && out.length >= minKeep && used + len > maxChars) continue
     out.unshift(item)
-    used += len
+    if (!isUser) used += len
   }
   return out
 }

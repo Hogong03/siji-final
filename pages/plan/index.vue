@@ -432,6 +432,7 @@
 
 	/* #ifndef MP-WEIXIN */
 	html.theme-dark {
+		.plan-page { background: #18181B; }
 		.view-switcher { background: #27272A; border-bottom-color: #3F3F46; }
 		.vs-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 		.bc-header { background: #27272A; border-bottom-color: #FAFAFA; }
@@ -472,6 +473,7 @@
 /* #endif */
 	/* #ifdef MP-WEIXIN */
 	@media (prefers-color-scheme: dark) {
+		.plan-page { background: #18181B; }
 		.view-switcher { background: #27272A; border-bottom-color: #3F3F46; }
 		.vs-item { background: #3F3F46; color: #A1A1AA; &.active { background: #FAFAFA; color: #18181B; } }
 		.bc-header { background: #27272A; border-bottom-color: #FAFAFA; }

@@ -42,6 +42,15 @@
   color: #71717A;
 }
 
+/* 内置种子记录徽标（tip_cet6_ / mat_cet6_） */
+.seed-badge {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  background: #F4F4F5;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+
 /* 当前章节：贴在右侧，滚动时跟着变（阅读时的方位感） */
 .meta-section {
   margin-left: auto;
@@ -300,6 +309,7 @@ html.theme-dark {
   .read-body { border-top-color: #18181B; }
   .meta-text, .read-empty-text { color: #71717A; }
   .meta-tag, .meta-section { color: #A1A1AA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .head-edit { color: #FAFAFA; border-color: #3F3F46; }
   .head-title { color: #FAFAFA; }
   .chapter-no { color: #71717A; }
@@ -324,6 +334,7 @@ html.theme-dark {
   .read-body { border-top-color: #18181B; }
   .meta-text, .read-empty-text { color: #71717A; }
   .meta-tag, .meta-section { color: #A1A1AA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .head-edit { color: #FAFAFA; border-color: #3F3F46; }
   .head-title { color: #FAFAFA; }
   .chapter-no { color: #71717A; }

@@ -273,17 +273,51 @@ export async function runCase(runner, caze, ctx) {
   }
   const caseForRun = Object.assign({}, caze, { message: resolved.message })
   try {
-    // 4.10.6：网络抖动重试一次 —— 4.10.5 实跑 29 连发时 long-form 一条撞上
-    // 「网络连接失败」，单条网络错误不该在整个批次里留一个假失败
-    let res
+    // 4.16.0 多轮用例：caze.turns = ['第一条','第二条',...] 时逐轮调用 runner 并把
+    // 前几轮的 user/assistant 消息作为 history 传入 —— 支持 TC-004「先自报再追问」型
+    // 回归。判定对象：全部轮次的工具序列合并 + 最后一轮回复。
+    const turns = (Array.isArray(caze.turns) && caze.turns.length > 1) ? caze.turns : [resolved.message]
+    let res = {}
+    let allToolCalls = []
+    let lastReply = ''
+    let anyConfirm = false
+    const runTurn = async (msg, history) => (await runner(msg, caseForRun, history)) || {}
     try {
-      res = (await runner(resolved.message, caseForRun)) || {}
+      let history = []
+      for (let i = 0; i < turns.length; i++) {
+        const msg = i === 0 ? resolved.message : turns[i]
+        res = await runTurn(msg, history)
+        allToolCalls = allToolCalls.concat(res.toolCalls || [])
+        if (res.reply) lastReply = res.reply
+        if (res.confirm) anyConfirm = true
+        history = history.concat([
+          { role: 'user', content: msg },
+          { role: 'assistant', content: res.reply || '' }
+        ])
+      }
     } catch (e) {
+      // 4.10.6：网络抖动重试一次（多轮时整段重跑，成本可接受）
       await new Promise((r) => setTimeout(r, 800))
-      res = (await runner(resolved.message, caseForRun)) || {}
+      let history = []
+      for (let i = 0; i < turns.length; i++) {
+        const msg = i === 0 ? resolved.message : turns[i]
+        res = await runTurn(msg, history)
+        allToolCalls = allToolCalls.concat(res.toolCalls || [])
+        if (res.reply) lastReply = res.reply
+        if (res.confirm) anyConfirm = true
+        history = history.concat([
+          { role: 'user', content: msg },
+          { role: 'assistant', content: res.reply || '' }
+        ])
+      }
     }
-    const judged = judgeCase(caseForRun, res)
-    const fallbackAction = judged.pass ? null : detectFallback(caseForRun, res, judged.failures)
+    const merged = Object.assign({}, res, {
+      toolCalls: allToolCalls,
+      reply: lastReply || res.reply || '',
+      confirm: anyConfirm || res.confirm
+    })
+    const judged = judgeCase(caseForRun, merged)
+    const fallbackAction = judged.pass ? null : detectFallback(caseForRun, merged, judged.failures)
     const failures = judged.failures.slice()
     if (fallbackAction) failures.push('模型没调工具，靠前端兜底执行（' + fallbackAction.type + '）——结果能落库，但不是 AI 会拆解')
     return {
@@ -293,9 +327,10 @@ export async function runCase(runner, caze, ctx) {
       status: judged.pass ? CASE_STATUS.PASS : (fallbackAction ? CASE_STATUS.FALLBACK : CASE_STATUS.FAIL),
       failures: failures,
       gotTools: judged.gotTools,
-      jsonTools: ((res.toolCalls || []).filter(t => t && t.source === 'json')).map(t => t.name),
+      jsonTools: ((merged.toolCalls || []).filter(t => t && t.source === 'json')).map(t => t.name),
       fallbackType: fallbackAction ? fallbackAction.type : '',
-      reply: res.reply || '',
+      reply: merged.reply,
+      turns: turns.length,
       ms: Date.now() - startedAt
     }
   } catch (e) {

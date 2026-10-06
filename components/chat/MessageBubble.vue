@@ -43,7 +43,7 @@ watch(imageSrc, () => { imageFailed.value = false })
 const emit = defineEmits([
   'confirm-action', 'confirm-pending', 'cancel-pending',
   'update-tags', 'edit-own', 'delete-message', 'regenerate', 'rephrase', 'read-long',
-  'continue-write', 'briefing-action'
+  'continue-write', 'briefing-action', 'extract-todos'
 ])
 
 /** 4.12.0：结构化简报卡（v2 进入消息）—— 整卡渲染替代文本正文，按钮在卡内 */
@@ -127,6 +127,9 @@ function showActions() {
   if (props.message.content) {
     items.push('复制内容')
     acts.push(copyContent)
+    // 4.15：任意消息一键提取待办转计划
+    items.push('提取待办转计划')
+    acts.push(onExtractTodos)
   }
   if (props.message.role === 'assistant') {
     if (props.message.content && props.operable) {
@@ -231,6 +234,9 @@ const isLongText = computed(() => {
 })
 
 function onReadLong() { emit('read-long', props.message) }
+
+/** 4.15：提取这条消息里的待办 → 确认后创建计划 */
+function onExtractTodos() { emit('extract-todos', props.message) }
 
 /** 被输出上限截断（4.3.1）：标记来自 finish_reason === 'length'，不是按字数猜的 */
 const isTruncated = computed(() => props.message.role === 'assistant' && props.message._truncated === true)

@@ -20,6 +20,7 @@ import {
   AUTO_BACKUP_SWITCH_KEY
 } from '@/utils/storage.js'
 import { saveBackupToFile, buildBackupFileName } from '@/utils/backup-file.js'
+import { collectDiagBundle, buildDiagText } from '@/utils/diag-bundle.js'
 import { getVersion } from '@/utils/version-check.js'
 
 const store = useAppStore()
@@ -308,6 +309,30 @@ function clearAll() {
     }
   })
 }
+
+/* ---- 导出诊断包（元数据 + 错误日志，不含 API Key / 对话正文 / 记录内容） ---- */
+function doExportDiag() {
+  let text
+  try {
+    text = buildDiagText(collectDiagBundle())
+  } catch (e) {
+    uni.showToast({ title: '收集失败: ' + (e.message || e), icon: 'none' })
+    return
+  }
+  // 三端统一走剪贴板：诊断包只有元数据与错误日志，体积小，不碰微信粘贴上限
+  uni.setClipboardData({
+    data: text,
+    success: () => {
+      uni.showModal({
+        title: '诊断包已复制',
+        content: '包含版本、平台、存储水位、会话规模（只数字量）、设置摘要与最近错误日志（最多 50 条）。\n不含 API Key、对话正文与记录内容。请粘贴发给开发者。',
+        showCancel: false,
+        confirmText: '知道了'
+      })
+    },
+    fail: () => uni.showToast({ title: '复制失败，请重试', icon: 'none' })
+  })
+}
 </script>
 
 <template>
@@ -318,6 +343,13 @@ function clearAll() {
       <text class="card-desc">全量备份：记录、账单、计划、记忆、画像、对话、关系等全部本地数据（不含 API Key 与应用锁）。微信粘贴超长文本会崩溃：优先「保存为文件」，跨微信发送请选「分份复制到剪贴板」</text>
       <view class="btn-primary" @tap="doBackup">备份全部数据</view>
       <view class="btn-outline btn-csv" @tap="doExportCsv">导出 CSV 报表（记录/账单/计划）</view>
+    </view>
+
+    <!-- 导出诊断包（元数据 + 错误日志，不含内容） -->
+    <view class="card">
+      <view class="card-title"><SijiIcon name="info" size="sm" class="title-icon" /><text>导出诊断包</text></view>
+      <text class="card-desc">排查问题用：版本、平台、存储水位、会话规模（只数字量）、设置摘要与最近错误日志。不含 API Key、对话正文与记录内容。</text>
+      <view class="btn-outline" @tap="doExportDiag">复制诊断包到剪贴板</view>
     </view>
 
     <!-- 从备份恢复 -->

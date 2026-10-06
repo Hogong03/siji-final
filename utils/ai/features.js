@@ -33,6 +33,7 @@ export const AI_FEATURES = [
   { id: 'glimmer', name: '微光本收集', desc: 'AI 主动收集「还行的小事」', group: 'channel', default: true },
   { id: 'relation', name: '人脉互动', desc: '认识人、记互动、查关系（有人脉数据时）', group: 'channel', default: true },
   { id: 'simulation', name: '情景演练', desc: '与 AI 预演社交/规划对话', group: 'channel', default: true },
+  { id: 'auto_profile', name: '自动补全画像', desc: '保存记录后 AI 提取个人信息，经确认更新画像', group: 'channel', default: false },
   { id: 'vision', name: '图片识别', desc: '发图片让 AI 看（需模型支持）', group: 'input', default: true },
   { id: 'voice', name: '语音转文字', desc: '输入区麦克风说话转文字（走智谱 ASR，需智谱 Key）', group: 'input', default: false }
 ]

@@ -156,28 +156,74 @@ export function createBillExecutors(ctx) {
     const now = new Date()
     const month = p.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-    if (p.category) {
-      const indexResults = searchByIndex('bill', p.category)
-      if (indexResults.length > 0) {
-        const matchedIds = new Set(indexResults.map(r => r.id))
-        let list = getBillList(month).filter(b => matchedIds.has(b.client_id))
-        const totalExpense = list.filter(b => b.type === 'expense').reduce((s, b) => s + b.amount, 0)
-        const totalIncome = list.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0)
-        return {
-          success: true,
-          message: `${month} ${p.category} 支出 ¥${totalExpense.toFixed(2)}，收入 ¥${totalIncome.toFixed(2)}，共 ${list.length} 笔`,
-          detail: { type: 'query_bill', month, count: list.length, totalExpense, totalIncome, items: list.slice(0, 5) }
-        }
+    // 4.15.1 修复 TC-028：分类查询逐层放宽，任何一层命中即返回 —— 不再"索引优先且交集为空直接报空"
+    // 旧逻辑三个缺陷：索引命中其它月份数据时与本月交集为空直接返回 0 笔（不走兜底）；
+    //   兜底又是 category === 严格相等（AI 传"吃饭/午饭"查"餐饮"必空）。
+    // 数据一直都在，是查询口径碎了。
+    let list = getBillList(month).filter(b => b.is_deleted !== 1)
+
+    // 4.16.0 修复 TC-028 的月份维度：start_date/end_date（跨月问题）→ 聚合范围内所有月份分片
+    let rangeNote = ''
+    if (p.start_date && p.end_date) {
+      const startS = String(p.start_date)
+      const endS = String(p.end_date)
+      const months = []
+      const cursor = new Date(Number(startS.slice(0, 4)), Number(startS.slice(5, 7)) - 1, 1)
+      const endBound = new Date(Number(endS.slice(0, 4)), Number(endS.slice(5, 7)) - 1, 1)
+      let guard = 0
+      while (cursor <= endBound && guard < 36) {
+        months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`)
+        cursor.setMonth(cursor.getMonth() + 1)
+        guard += 1
       }
+      if (months.indexOf(month) === -1) months.push(month)
+      let merged = []
+      const seen = new Set()
+      months.forEach((m) => {
+        getBillList(m).filter(b => b.is_deleted !== 1).forEach((b) => {
+          if (!seen.has(b.client_id)) { seen.add(b.client_id); merged.push(b) }
+        })
+      })
+      // 按范围收紧（含当天）
+      merged = merged.filter(b => {
+        const d = String(b.bill_date || '')
+        return d >= startS && d <= endS + 'T23:59:59'.slice(0, 10 + 1)
+      })
+      list = merged
+      rangeNote = `（${startS} ~ ${endS}，共 ${months.length} 个月）`
     }
 
-    let list = getBillList(month)
-    if (p.category) list = list.filter(b => b.category === p.category)
+    if (p.category) {
+      const cat = String(p.category).trim()
+      const lower = cat.toLowerCase()
+      // ① 分类精确
+      let matched = list.filter(b => b.category === cat)
+      // ② 分类互相包含（"吃饭"/"午饭" ↔ "餐饮"）
+      if (matched.length === 0) {
+        matched = list.filter(b => b.category && (b.category.includes(cat) || cat.includes(b.category)))
+      }
+      // ③ 备注包含关键词
+      if (matched.length === 0) {
+        matched = list.filter(b =>
+          (b.note || '').includes(cat) || (b.note || '').toLowerCase().includes(lower)
+        )
+      }
+      // ④ 索引兜底（分词同义/跨词），取命中 id 与本月交集
+      if (matched.length === 0) {
+        const ids = new Set(searchByIndex('bill', cat).map(r => r.id))
+        matched = list.filter(b => ids.has(b.client_id))
+      }
+      list = matched
+    }
+
     const totalExpense = list.filter(b => b.type === 'expense').reduce((s, b) => s + b.amount, 0)
     const totalIncome = list.filter(b => b.type === 'income').reduce((s, b) => s + b.amount, 0)
+    const message = list.length === 0
+      ? `${rangeNote || month}${p.category ? `「${p.category}」` : ''}没有找到账单。可以换个说法再问，或检查分类名是否一致。`
+      : `${rangeNote || month} ${p.category ? p.category + ' ' : ''}支出 ¥${totalExpense.toFixed(2)}，收入 ¥${totalIncome.toFixed(2)}，共 ${list.length} 笔`
     return {
       success: true,
-      message: `${month} 支出 ¥${totalExpense.toFixed(2)}，收入 ¥${totalIncome.toFixed(2)}，共 ${list.length} 笔`,
+      message,
       detail: { type: 'query_bill', month, count: list.length, totalExpense, totalIncome, items: list.slice(0, 5) }
     }
   }

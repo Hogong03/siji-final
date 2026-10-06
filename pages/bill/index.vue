@@ -208,7 +208,7 @@ function saveBudget() {
             </view>
             <view class="bill-item" :style="{ transform: 'translateX(' + getSwipeOffset(item) + ')' }"
               @touchstart="onTouchStart($event, item)" @touchmove="onTouchMove($event, item)" @touchend="onTouchEnd(item)" @tap="onBillTap(item)">
-              <view class="bill-icon-wrap" :style="{ background: (getCategoryInfo(item.category || '').color || '#9E9E9E') + '15' }">
+              <view class="bill-icon-wrap" :style="{ background: (getCategoryInfo(item.category || '').color || '#9E9E9E') + '26' }">
                 <text class="bill-icon">{{ getCategoryInfo(item.category || '').icon || '📌' }}</text>
               </view>
               <view class="bill-body">

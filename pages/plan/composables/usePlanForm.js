@@ -36,6 +36,13 @@ export function emptyPlanForm() {
     parent_id: '',
     childPlans: [],
     ai_advice: '',
+    // 4.15：AI 结果持久化（重跑覆盖，配 *_at 生成时间）
+    ai_schedule: '',
+    ai_review: '',
+    ai_next_step: '',
+    ai_schedule_at: 0,
+    ai_review_at: 0,
+    ai_next_step_at: 0,
     recur_type: '',
     recur_count: 1
   }
@@ -174,6 +181,12 @@ export function usePlanForm({ saveChildren } = {}) {
       frozen_at: item.frozen_at || null,
       childPlans: getChildPlans(item.client_id),
       ai_advice: item.ai_advice || '',
+      ai_schedule: item.ai_schedule || '',
+      ai_review: item.ai_review || '',
+      ai_next_step: item.ai_next_step || '',
+      ai_schedule_at: item.ai_schedule_at || 0,
+      ai_review_at: item.ai_review_at || 0,
+      ai_next_step_at: item.ai_next_step_at || 0,
       recur_type: item.recur_type || '',
       recur_count: item.recur_count || 1
     }
@@ -208,6 +221,12 @@ export function usePlanForm({ saveChildren } = {}) {
       recur_type: form.value.recur_type || '',
       recur_count: form.value.recur_type === 'weekly' ? (Number(form.value.recur_count) || 1) : 1,
       ai_advice: form.value.ai_advice,
+      ai_schedule: form.value.ai_schedule || '',
+      ai_review: form.value.ai_review || '',
+      ai_next_step: form.value.ai_next_step || '',
+      ai_schedule_at: form.value.ai_schedule_at || 0,
+      ai_review_at: form.value.ai_review_at || 0,
+      ai_next_step_at: form.value.ai_next_step_at || 0,
       created_at: isNew.value ? Date.now() : (originalCreatedAt.value || Date.now()),
       updated_at: Date.now(),
       is_deleted: 0

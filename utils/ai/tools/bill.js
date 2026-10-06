@@ -35,11 +35,13 @@ export const BILL_TOOLS = [
   },
   {
     name: 'query_bill',
-    description: '查询账单。可按月份、分类、关键词筛选。用户问"花了多少/查账/消费记录"时调用。',
+    description: '查询账单。可按月份、日期范围（start_date/end_date）、分类、关键词筛选。用户问"花了多少/查账/消费记录"时调用。',
     parameters: {
       type: 'object',
       properties: {
         month: { type: 'string', description: '月份 YYYY-MM，默认当月' },
+        start_date: { type: 'string', description: '起始日期 YYYY-MM-DD（跨月问题用，与 end_date 成对）' },
+        end_date: { type: 'string', description: '结束日期 YYYY-MM-DD（与 start_date 成对，含当天）' },
         category: { type: 'string', description: '分类' },
         keyword: { type: 'string', description: '备注关键词' }
       }

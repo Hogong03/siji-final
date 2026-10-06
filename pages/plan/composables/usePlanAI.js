@@ -15,6 +15,40 @@ export function usePlanAI(form, store, opts = {}) {
   const aiScheduleResult = ref('')
   const aiReviewResult = ref('')
   const aiNextStepResult = ref('')
+  // 4.15：错误态（非空即失败，进统一错误卡）+ 生成时间戳 + 结果落库
+  const aiScheduleError = ref('')
+  const aiReviewError = ref('')
+  const aiNextStepError = ref('')
+  const aiScheduleAt = ref(0)
+  const aiReviewAt = ref(0)
+  const aiNextStepAt = ref(0)
+
+  /** 统一错误文案（供 AiResultCard 失败态展示） */
+  function errText(e, fallback) {
+    const msg = (e && e.message) || ''
+    if (/API Key|未配置|apikey/i.test(msg)) return '未配置 API Key，请到 设置 → AI 配置 填写后重试'
+    if (/rate|频繁|429/i.test(msg)) return '调用太频繁，稍等片刻再试'
+    if (/network|timeout|超时|abort/i.test(msg)) return '网络超时，请重试'
+    if (/key|无效|invalid|401/i.test(msg)) return 'API Key 无效或已过期，请到 设置 → AI 配置 检查'
+    return fallback
+  }
+
+  /** 结果写回表单并立即落库（重跑覆盖；不带 persist 时由保存计划兜底） */
+  function commitResult(field, atField, value) {
+    form.value[field] = value
+    form.value[atField] = Date.now()
+    if (typeof opts.persist === 'function') opts.persist()
+  }
+
+  /** 初始化：把已存结果回填到页面状态（进详情时调用一次） */
+  function hydrateFromForm() {
+    aiScheduleResult.value = form.value.ai_schedule || ''
+    aiReviewResult.value = form.value.ai_review || ''
+    aiNextStepResult.value = form.value.ai_next_step || ''
+    aiScheduleAt.value = form.value.ai_schedule_at || 0
+    aiReviewAt.value = form.value.ai_review_at || 0
+    aiNextStepAt.value = form.value.ai_next_step_at || 0
+  }
 
   /** 子计划清单文本（新模型：子任务/阶段统一为子计划） */
   function childrenLines() {
@@ -60,7 +94,7 @@ export function usePlanAI(form, store, opts = {}) {
 
   async function generateSchedule() {
     if (!store.hasApiKey) {
-      uni.showToast({ title: '请先配置 API Key', icon: 'none' })
+      aiScheduleError.value = '未配置 API Key，请到 设置 → AI 配置 填写后重试'
       return
     }
     if (!form.value.due_date) {
@@ -68,7 +102,7 @@ export function usePlanAI(form, store, opts = {}) {
       return
     }
     aiScheduling.value = true
-    aiScheduleResult.value = ''
+    aiScheduleError.value = ''
     try {
       const prompt = '你是计划排期助手。请根据以下计划信息，生成一个合理的执行排期建议。\n\n' +
         '计划标题：' + form.value.title + '\n' +
@@ -81,9 +115,12 @@ export function usePlanAI(form, store, opts = {}) {
         '2. 每天最多 1-2 件，空一天也没关系，不排满\n' +
         '3. 简短用列表输出，不催促不评价'
       const result = await chatRequest(prompt, null, '', store.aiConfig.apiKey)
-      aiScheduleResult.value = result.reply || 'AI 生成失败'
+      const reply = result.reply || ''
+      aiScheduleResult.value = reply
+      commitResult('ai_schedule', 'ai_schedule_at', reply)
     } catch (e) {
-      uni.showToast({ title: 'AI 排期失败', icon: 'none' })
+      console.error('[AI排期] 失败:', e)
+      aiScheduleError.value = errText(e, '排期生成失败，请重试')
     } finally {
       aiScheduling.value = false
     }
@@ -91,11 +128,11 @@ export function usePlanAI(form, store, opts = {}) {
 
   async function generateReview() {
     if (!store.hasApiKey) {
-      uni.showToast({ title: '请先配置 API Key', icon: 'none' })
+      aiReviewError.value = '未配置 API Key，请到 设置 → AI 配置 填写后重试'
       return
     }
     aiReview.value = true
-    aiReviewResult.value = ''
+    aiReviewError.value = ''
     try {
       const prompt = '你是计划复盘助手。请对以下已完成的计划进行复盘分析。\n\n' +
         '计划标题：' + form.value.title + '\n' +
@@ -109,9 +146,12 @@ export function usePlanAI(form, store, opts = {}) {
         '3. 一句轻轻的收尾，用「已经很好了」结束\n\n' +
         '语气温和，不点评、不催促、不写改进建议。'
       const result = await chatRequest(prompt, null, '', store.aiConfig.apiKey)
-      aiReviewResult.value = result.reply || 'AI 复盘失败'
+      const reply = result.reply || ''
+      aiReviewResult.value = reply
+      commitResult('ai_review', 'ai_review_at', reply)
     } catch (e) {
-      uni.showToast({ title: 'AI 复盘失败', icon: 'none' })
+      console.error('[AI复盘] 失败:', e)
+      aiReviewError.value = errText(e, '复盘生成失败，请重试')
     } finally {
       aiReview.value = false
     }
@@ -119,11 +159,11 @@ export function usePlanAI(form, store, opts = {}) {
 
   async function generateNextStep() {
     if (!store.hasApiKey) {
-      uni.showToast({ title: '请先配置 API Key', icon: 'none' })
+      aiNextStepError.value = '未配置 API Key，请到 设置 → AI 配置 填写后重试'
       return
     }
     aiNextStep.value = true
-    aiNextStepResult.value = ''
+    aiNextStepError.value = ''
     try {
       const prompt = '你是计划执行顾问。用户有一个进行中的计划，请推荐下一步该做什么。\n\n' +
         '计划标题：' + form.value.title + '\n' +
@@ -136,9 +176,12 @@ export function usePlanAI(form, store, opts = {}) {
         '3. 如果最近一次打卡有描述，可以自然衔接「上次做了X」；若用户流露疲惫，允许「今天不做也行」\n\n' +
         '简短直接，3-5 句话，不催促不评判。'
       const result = await chatRequest(prompt, null, '', store.aiConfig.apiKey)
-      aiNextStepResult.value = result.reply || 'AI 建议失败'
+      const reply = result.reply || ''
+      aiNextStepResult.value = reply
+      commitResult('ai_next_step', 'ai_next_step_at', reply)
     } catch (e) {
-      uni.showToast({ title: 'AI 建议失败', icon: 'none' })
+      console.error('[AI建议] 失败:', e)
+      aiNextStepError.value = errText(e, '建议生成失败，请重试')
     } finally {
       aiNextStep.value = false
     }
@@ -147,6 +190,9 @@ export function usePlanAI(form, store, opts = {}) {
   return {
     aiScheduling, aiReview, aiNextStep,
     aiScheduleResult, aiReviewResult, aiNextStepResult,
+    aiScheduleError, aiReviewError, aiNextStepError,
+    aiScheduleAt, aiReviewAt, aiNextStepAt,
+    hydrateFromForm,
     generateSchedule, generateReview, generateNextStep
   }
 }

@@ -10,6 +10,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { globalSearch } from '@/utils/storage.js'
+import { isSeedRecord, SEED_BADGE } from '@/utils/seed-records.js'
 import { asyncSetStorageJSON } from '@/utils/store-helpers.js'
 import { searchConversations } from '@/utils/conversation-search.js'
 import { debounce } from '@/utils/debounce.js'
@@ -17,6 +18,16 @@ import { safeNavigateBack } from '@/utils/nav-helper.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAppStore } from '@/store/index.js'
+import { useDiaryAI } from '@/composables/useDiaryAI.js'
+import { ref as vueRef } from 'vue'
+
+// 4.15：长按结果「提取待办 → 创建计划」（复用记录 AI 的提取核心）
+const { extractTodosFromAnyText, extractingTodos } = useDiaryAI(vueRef({ content: '' }))
+
+function onResultLongPress(item) {
+  const text = [item.title, item.preview].filter(Boolean).join('\n')
+  extractTodosFromAnyText(text)
+}
 
 const keyword = ref('')
 const searchInput = ref('')
@@ -27,6 +38,11 @@ const loading = ref(false)
 // 筛选
 const timeRange = ref(0) // 0=全部, 7=近7天, 30=近30天
 const typeFilter = ref('all') // all | diary | bill | plan
+// 4.15：时间筛选默认收进「时间」开关（次要条件）；对话结果默认只露 3 条
+const showTimeFilter = ref(false)
+const showAllConv = ref(false)
+
+const timeLabel = computed(() => ({ 0: '时间', 7: '7天', 30: '30天' })[timeRange.value] || '时间')
 
 // 搜索历史
 const searchHistory = ref([])
@@ -93,6 +109,7 @@ function doSearch() {
   keyword.value = kw
   loading.value = true
   saveHistory(kw)
+  showAllConv.value = false // 新一次搜索，对话折叠复位
 
   const types = typeFilter.value === 'all'
     ? ['diary', 'bill', 'plan']
@@ -134,6 +151,11 @@ const groupedResults = computed(() => {
 
 const totalCount = computed(() => results.value.length + convResults.value.length)
 
+// 对话结果默认只露前 3 条（次要内容，展开看全部）
+const visibleConvResults = computed(() =>
+  showAllConv.value ? convResults.value : convResults.value.slice(0, 3)
+)
+
 const typeMeta = {
   diary: { label: '记录', iconName: 'diary', color: '#0EA5E9' },
   bill: { label: '账单', iconName: 'bill', color: '#F59E0B' },
@@ -149,6 +171,11 @@ function formatTime(ts) {
 
 function tapResult(item) {
   uni.navigateTo({ url: item.route })
+}
+
+/** 搜索结果里的记录项是否内置种子（globalSearch 的 diary 结果 id 即记录 client_id） */
+function isSeedResult(item) {
+  return !!item && item.type === 'diary' && isSeedRecord({ client_id: item.id })
 }
 
 /** 点击对话搜索结果的跳转 */
@@ -189,7 +216,7 @@ function switchTime(days) {
       <text class="cancel-btn" @tap="safeNavigateBack()">取消</text>
     </view>
 
-    <!-- 筛选栏（单行紧凑） -->
+    <!-- 筛选栏（4.15：类型常驻，时间收进「时间」开关） -->
     <view class="filter-bar" v-if="!showHistory">
       <view class="filter-group">
         <text
@@ -199,14 +226,19 @@ function switchTime(days) {
           @tap="switchType(t.v)"
         >{{ t.l }}</text>
       </view>
-      <view class="filter-divider" />
-      <view class="filter-group">
+      <view class="filter-group filter-group-right">
         <text
-          v-for="t in [{v:0,l:'全部'},{v:7,l:'7天'},{v:30,l:'30天'}]"
-          :key="t.v"
-          class="filter-chip" :class="{ active: timeRange === t.v }"
-          @tap="switchTime(t.v)"
-        >{{ t.l }}</text>
+          class="filter-chip filter-toggle" :class="{ active: timeRange !== 0 }"
+          @tap="showTimeFilter = !showTimeFilter"
+        >{{ timeRange !== 0 ? timeLabel : '时间' }} ▾</text>
+        <template v-if="showTimeFilter">
+          <text
+            v-for="t in [{v:0,l:'全部'},{v:7,l:'7天'},{v:30,l:'30天'}]"
+            :key="t.v"
+            class="filter-chip" :class="{ active: timeRange === t.v }"
+            @tap="switchTime(t.v)"
+          >{{ t.l }}</text>
+        </template>
       </view>
     </view>
 
@@ -241,31 +273,7 @@ function switchTime(days) {
       <!-- 无结果 -->
       <EmptyState v-if="!loading && totalCount === 0" icon="search" title="未找到相关内容" />
 
-      <!-- 对话搜索结果 -->
-      <view v-if="!loading && convResults.length > 0" class="result-group">
-        <view class="group-header">
-          <view class="group-dot" :style="{ background: typeMeta.conversation.color }" />
-          <text class="group-title">{{ typeMeta.conversation.label }}</text>
-          <text class="group-count">{{ convResults.length }}</text>
-        </view>
-        <view class="group-list">
-          <view
-            v-for="msg in convResults" :key="msg.convId + '-' + msg.messageIndex"
-            class="result-item"
-            @tap="tapConvResult(msg)"
-          >
-            <view class="item-main">
-              <view class="conv-item-top">
-                <text class="conv-role-tag" :class="msg.role">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
-                <text class="conv-source">{{ msg.convTitle }}</text>
-              </view>
-              <text class="item-preview">{{ msg.preview }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 按类型分组展示 -->
+      <!-- 按类型分组展示（4.15：记录/账单/计划优先，对话结果后置） -->
       <template v-if="!loading && totalCount > 0">
         <view
           v-for="group in groupedResults"
@@ -283,9 +291,13 @@ function switchTime(days) {
               v-for="item in group.items" :key="item.id"
               class="result-item"
               @tap="tapResult(item)"
+              @longpress="onResultLongPress(item)"
             >
               <view class="item-main">
-                <text class="item-title">{{ item.title }}</text>
+                <view class="item-title-row">
+                  <text v-if="isSeedResult(item)" class="seed-badge">{{ SEED_BADGE }}</text>
+                  <text class="item-title">{{ item.title }}</text>
+                </view>
                 <text class="item-preview" v-if="item.preview">{{ item.preview }}</text>
               </view>
               <view class="item-meta">
@@ -293,6 +305,37 @@ function switchTime(days) {
                 <text class="item-date">{{ formatTime(item.date) }}</text>
               </view>
             </view>
+          </view>
+        </view>
+
+        <!-- 对话搜索结果（次要内容，默认只露 3 条） -->
+        <view v-if="!loading && convResults.length > 0" class="result-group">
+          <view class="group-header">
+            <view class="group-dot" :style="{ background: typeMeta.conversation.color }" />
+            <text class="group-title">{{ typeMeta.conversation.label }}</text>
+            <text class="group-count">{{ convResults.length }}</text>
+          </view>
+          <view class="group-list">
+            <view
+              v-for="msg in visibleConvResults" :key="msg.convId + '-' + msg.messageIndex"
+              class="result-item"
+              @tap="tapConvResult(msg)"
+            >
+              <view class="item-main">
+                <view class="conv-item-top">
+                  <text class="conv-role-tag" :class="msg.role">{{ msg.role === 'user' ? '你' : 'AI' }}</text>
+                  <text class="conv-source">{{ msg.convTitle }}</text>
+                </view>
+                <text class="item-preview">{{ msg.preview }}</text>
+              </view>
+            </view>
+          </view>
+          <view
+            v-if="convResults.length > 3"
+            class="conv-expand"
+            @tap="showAllConv = !showAllConv"
+          >
+            <text class="conv-expand-text">{{ showAllConv ? '收起对话结果' : `展开全部对话（${convResults.length - 3} 条）` }}</text>
           </view>
         </view>
       </template>

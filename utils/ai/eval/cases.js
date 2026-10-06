@@ -14,6 +14,7 @@
  *   confirm     期望走「需用户确认」闸门
  *   replyIncludes / replyExcludes  最终回复必须 / 不许包含的子串
  *   needs       数据前置（3.7.2）：plan / bill。缺前置时该条判跳过，不算失败
+ *   turns       多轮用例（4.16.0）：字符串数组，逐轮调用并把前文作 history 传入，判定合并全部轮次的工具序列
  *
  * 日期一律现算（dayStr），不写死日期 —— 写死会让用例在特定日子里假失败。
  *
@@ -327,6 +328,26 @@ export const EVAL_CASES = [
     }
   },
   {
+    id: 'profile-recall-multiturn',
+    title: '自报姓名后追问（TC-004 多轮）',
+    message: '我叫测试员',
+    turns: ['我叫测试员', '我叫什么？'],
+    expect: {
+      tools: ['smart_update_profile', 'get_profile'],
+      order: [['smart_update_profile', 'get_profile']],
+      forbid: ['create_diary']
+    }
+  },
+  {
+    id: 'food-query-today',
+    title: '今天吃饭花了多少（TC-028 分类宽匹配，禁止误写）',
+    message: '今天吃饭花了多少',
+    expect: {
+      toolsAny: ['query_bill', 'query_stat'],
+      forbid: ['create_diary', 'create_plan']
+    }
+  },
+  {
     id: 'plan-freeze',
     title: '「先放一放」→ 冷藏（frozen），不许删除',
     needs: 'plan',
@@ -337,6 +358,26 @@ export const EVAL_CASES = [
         update_plan: (args) => args.frozen === true
       },
       forbid: ['delete_plan']
+    }
+  },
+  // ===== 4.15 TC-028 回归：查询空结果禁止自动写库（2026-10-07 真实故障）=====
+  {
+    id: 'query-empty-no-write',
+    title: '查不到就如实说没查到，禁止把提问原文写成记录',
+    message: '我买游艇花了多少钱',
+    expect: {
+      toolsAny: ['query_bill', 'query_stat'],
+      forbid: ['create_diary', 'create_bill', 'create_plan']
+    }
+  },
+  {
+    id: 'query-category-synonym',
+    title: '口语分类（吃饭/午饭）也要能查到餐饮账单',
+    needs: 'bill',
+    message: '今天吃饭花了多少',
+    expect: {
+      tools: ['query_bill'],
+      forbid: ['create_diary', 'create_bill', 'create_plan']
     }
   }
 ]

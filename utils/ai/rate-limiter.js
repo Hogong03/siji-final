@@ -52,6 +52,48 @@ export function recordRequest() {
   const now = Date.now()
   requestTimestamps.push(now)
   lastRequestTime = now
+  bumpUsageCounters(now)
+}
+
+// ==================== 4.15 用量统计（持久化，设置页展示） ====================
+const USAGE_KEY = 'siji_ai_usage'
+
+function bumpUsageCounters(now) {
+  try {
+    const d = new Date(now)
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const raw = uni.getStorageSync(USAGE_KEY)
+    const usage = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {}
+    if (usage.month !== month) {
+      usage.month = month
+      usage.monthCount = 0
+    }
+    usage.monthCount = (usage.monthCount || 0) + 1
+    usage.totalCount = (usage.totalCount || 0) + 1
+    usage.lastAt = now
+    uni.setStorageSync(USAGE_KEY, JSON.stringify(usage))
+  } catch (e) { /* 统计失败不影响主流程 */ }
+}
+
+/**
+ * 用量统计（设置页「AI 用量」展示用）
+ * @returns {{ month: string, monthCount: number, totalCount: number, perMinuteLimit: number, lastAt: number }}
+ */
+export function getUsageStats() {
+  let usage = {}
+  try {
+    const raw = uni.getStorageSync(USAGE_KEY)
+    usage = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {}
+  } catch { usage = {} }
+  const d = new Date()
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return {
+    month: usage.month || month,
+    monthCount: usage.month === month ? (usage.monthCount || 0) : 0,
+    totalCount: usage.totalCount || 0,
+    perMinuteLimit: MAX_REQUESTS,
+    lastAt: usage.lastAt || 0
+  }
 }
 
 /**

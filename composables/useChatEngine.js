@@ -30,6 +30,7 @@ import {
 } from '@/composables/useChatActions.js'
 import { recognizeImage } from '@/utils/ai/vision-bridge.js'
 import { buildFileContext, composeFileMessage } from '@/utils/files/file-text.js'
+import { extractSelfName, shouldAutoCapture } from '@/utils/profile-autocapture.js'
 
 export function useChatEngine() {
   const store = useAppStore()
@@ -418,6 +419,22 @@ export function useChatEngine() {
         }
       }
       if (result.conversation_id) store.setConversationId(result.conversation_id)
+
+      // TC-004 自报姓名确定性兜底：提示词写了「自报信息必须落库」但模型偶发不执行，
+      // AI 回复落定后静默补一次 smart_update_profile（模型已落过/已挂确认卡则不重复）
+      if (!simulationMode.value && shouldAutoCapture(message)) {
+        try {
+          const capturedName = extractSelfName(message)
+          const modelCaptured =
+            (Array.isArray(result.execResults) && result.execResults.some(r => r && r.name === 'smart_update_profile')) ||
+            result.action?.type === 'smart_update_profile' ||
+            (Array.isArray(result.actions) && result.actions.some(a => a && a.type === 'smart_update_profile'))
+          if (capturedName && !modelCaptured) {
+            store.executeAction({ type: 'smart_update_profile', payload: { updates: [{ card: 'basic', field: 'nickname', value: capturedName }] } })
+            logger.log('[ProfileCapture] 自报姓名兜底落库:', capturedName)
+          }
+        } catch (e) { logger.warn('[ProfileCapture] 兜底落库失败', e) }
+      }
 
       // 长期记忆
       if (isMemoryEnabled() && !needConfirm) {

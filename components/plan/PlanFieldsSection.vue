@@ -19,6 +19,8 @@ defineProps({
 	status: { type: Number, default: 0 },
 	title: { type: String, default: '' },
 	description: { type: String, default: '' },
+	// 4.14：描述已移到详情主页面，弹窗里的表单默认不再重复渲染描述
+	showDescription: { type: Boolean, default: true },
 	tags: { type: Array, default: () => [] },
 	showTimeEditor: { type: Boolean, default: false },
 	timeStrip: { type: Object, default: null },
@@ -108,8 +110,8 @@ function chipColor(t) {
 			/>
 		</view>
 
-		<!-- 描述 -->
-		<view class="section">
+		<!-- 描述（4.14：可关——详情主页面已有描述卡，弹窗里传 showDescription=false） -->
+		<view v-if="showDescription" class="section">
 			<text class="section-label">描述</text>
 			<textarea
 				class="textarea-field"

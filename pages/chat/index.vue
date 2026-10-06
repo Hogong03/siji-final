@@ -28,6 +28,9 @@ import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-sessio
 import { hasOpenerActions, isBriefingV2 } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
+import { buildDailyBrief, briefShownToday, markBriefShown } from '@/composables/useDailyBrief.js'
+import { useDiaryAI } from '@/composables/useDiaryAI.js'
+import { ref as vueRef } from 'vue'
 import { useChatRuler } from '@/composables/useChatRuler.js'
 
 const store = useAppStore()
@@ -299,6 +302,17 @@ let _pendingPrefill = ''
 const _prefillHandler = (text) => { if (text) _pendingPrefill = String(text) }
 uni.$on('prefill-input', _prefillHandler)
 
+// 4.15 每日小结卡（本地聚合：今日记录/支出/打卡/进行中计划）
+const dailyBrief = ref(null)
+const showDailyBrief = ref(false)
+function dismissDailyBrief() { showDailyBrief.value = false }
+
+// 4.15 消息长按「提取待办转计划」（复用记录 AI 提取核心）
+const { extractTodosFromAnyText } = useDiaryAI(vueRef({ content: '' }))
+function handleExtractTodos(msg) {
+  extractTodosFromAnyText(msg && (msg.aiReply || msg.content))
+}
+
 onShow(() => {
   if (_pendingSimParams) {
     const params = _pendingSimParams
@@ -312,6 +326,18 @@ onShow(() => {
   }
   syncAllMessageTags()
   resetVirtual()
+  // 4.15 每日小结：每天最多一次，有内容才出现
+  if (!briefShownToday()) {
+    const brief = buildDailyBrief()
+    if (brief) {
+      dailyBrief.value = brief
+      showDailyBrief.value = true
+      markBriefShown()
+    } else {
+      dailyBrief.value = null
+      showDailyBrief.value = false
+    }
+  }
   if (!isSending.value && store.messages.length > 0) {
     // 消息列表非空时才滚动，避免首次进入空列表滚动竞争
     nextTick(() => {
@@ -594,6 +620,14 @@ function handleWelcomeChip(text) {
           <text v-if="isLoadingMore">加载中...</text>
           <text v-else>上拉加载更多</text>
         </view>
+        <!-- 4.15 每日小结卡 -->
+        <view v-if="showDailyBrief && dailyBrief" class="daily-brief" @tap="dismissDailyBrief">
+          <view class="daily-brief-head">
+            <text class="daily-brief-title">今日小结</text>
+            <text class="daily-brief-close">✕</text>
+          </view>
+          <text class="daily-brief-line" v-for="(line, li) in dailyBrief.lines" :key="li">{{ line }}</text>
+        </view>
         <view class="messages-list">
           <view
             v-for="(msg, vi) in visibleMessages" :key="toGlobalIndex(vi)"
@@ -614,6 +648,7 @@ function handleWelcomeChip(text) {
             @regenerate="handleRegenerateReply"
             @rephrase="handleRephraseReply"
             @read-long="handleReadLong"
+            @extract-todos="handleExtractTodos"
             @continue-write="handleContinueWrite"
             @briefing-action="handleEnterButton"
           />
@@ -790,4 +825,54 @@ function handleWelcomeChip(text) {
 
 <style lang="scss" scoped>
 @import './chat.scss';
+</style>
+
+<style lang="scss" scoped>
+/* 4.15 每日小结卡（本地聚合，点卡关闭，每天最多一次） */
+.daily-brief {
+  margin: 8rpx 24rpx 16rpx;
+  padding: 20rpx 24rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  border: 1rpx solid #E4E4E7;
+}
+.daily-brief-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+.daily-brief-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #18181B;
+}
+.daily-brief-close {
+  font-size: 24rpx;
+  color: #A1A1AA;
+  padding: 4rpx 8rpx;
+}
+.daily-brief-line {
+  display: block;
+  font-size: 24rpx;
+  color: #52525B;
+  line-height: 1.8;
+}
+
+/* #ifndef MP-WEIXIN */
+html.theme-dark {
+  .daily-brief { background: #27272A; border-color: #3F3F46; }
+  .daily-brief-title { color: #FAFAFA; }
+  .daily-brief-close { color: #71717A; }
+  .daily-brief-line { color: #A1A1AA; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+@media (prefers-color-scheme: dark) {
+  .daily-brief { background: #27272A; border-color: #3F3F46; }
+  .daily-brief-title { color: #FAFAFA; }
+  .daily-brief-close { color: #71717A; }
+  .daily-brief-line { color: #A1A1AA; }
+}
+/* #endif */
 </style>

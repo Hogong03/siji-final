@@ -24,6 +24,7 @@ import { fontRpx } from '@/utils/font-scale.js'
 const readBodyStyle = computed(() => ({ fontSize: fontRpx(28) }))
 import { useOutlineRuler } from '@/composables/useOutlineRuler.js'
 import { splitSections, extractOutline, shouldShowOutline } from '@/utils/text-outline.js'
+import { isSeedRecord, SEED_BADGE } from '@/utils/seed-records.js'
 import { getDiaryList } from '@/utils/storage.js'
 
 const clientId = ref('')
@@ -34,6 +35,8 @@ const showTopBtn = ref(false)
 
 const title = computed(() => (record.value && record.value.title) || '未命名记录')
 const content = computed(() => (record.value && record.value.content) || '')
+// 内置种子记录徽标（六级技巧 / 复习资料等）
+const isSeed = computed(() => isSeedRecord(record.value))
 const tags = computed(() => {
 	const t = record.value && record.value.tags
 	return Array.isArray(t) ? t : []
@@ -125,6 +128,7 @@ onShow(() => {
 		<view class="read-head">
 			<view class="head-meta">
 				<text class="meta-text">{{ wordCount }} 字<text v-if="hasOutline"> · {{ outline.length }} 小节</text></text>
+				<text v-if="isSeed" class="seed-badge">{{ SEED_BADGE }}</text>
 				<text v-for="t in tags" :key="t" class="meta-tag">#{{ t }}</text>
 				<text v-if="activeSection" class="meta-section">{{ activeSection.index }}/{{ activeSection.total }} {{ activeSection.title }}</text>
 				<view class="head-edit" @tap="goEdit"><text>编辑</text></view>

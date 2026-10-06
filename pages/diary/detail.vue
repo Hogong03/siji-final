@@ -14,6 +14,9 @@ import { useTagPicker } from '@/composables/useTagPicker.js'
 import { useRelatedRecords, useRelatedBills } from '@/composables/useDiaryRelations.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { useTheme } from '@/composables/useTheme.js'
+import AiToolButton from '@/components/ai/AiToolButton.vue'
+import AiResultCard from '@/components/ai/AiResultCard.vue'
+import { feedProfileFromText } from '@/composables/useProfileFeed.js'
 
 // 深色模式检测（标签圆点兜底色等 JS 注入色需要）
 const { isDark } = useTheme()
@@ -81,6 +84,7 @@ const MOOD_OPTIONS = [
 function setMood(v) { form.value.mood = form.value.mood === v ? null : v }
 
 const { generating, Rewriting, extractingTodos, analyzingEmotion,
+  summaryError, emotionError,
   generateAISummary: _genSummary, rewriteContent, extractTodos, analyzeEmotion } = useDiaryAI(form)
 
 const hasRelated = computed(() => relatedRecords.value.length > 0 || relatedBills.value.length > 0)
@@ -232,6 +236,8 @@ async function handleSave() {
   })
   initialSnapshot.value = snapshotNow()
   uni.showToast({ title: '已保存', icon: 'success' })
+  // 4.15：开关开启时，保存后自动从记录提取个人信息喂画像（确认后写入，静默失败）
+  feedProfileFromText(text)
   setTimeout(() => { goBack() }, 800)
 }
 
@@ -344,12 +350,20 @@ const emotionLabel = computed(() => {
         </view>
       </view>
 
-      <!-- AI 菜单 -->
+      <!-- AI 菜单（4.15：统一 AI 按钮组件） -->
       <view class="ai-menu" v-if="showAIMenu && form.content.trim()">
-        <view class="ai-menu-item" @tap="doAI('summary')"><text>{{ generating ? '⏳ 生成中…' : '📋 生成摘要' }}</text></view>
-        <view class="ai-menu-item" @tap="doAI('rewrite')"><text>{{ Rewriting ? '⏳ 润色中…' : '✏️ 润色文本' }}</text></view>
-        <view class="ai-menu-item" @tap="doAI('todos')"><text>{{ extractingTodos ? '⏳ 提取中…' : '☑️ 提取待办' }}</text></view>
-        <view class="ai-menu-item" @tap="doAI('emotion')"><text>{{ analyzingEmotion ? '⏳ 分析中…' : '💭 情绪分析' }}</text></view>
+        <view class="ai-menu-item">
+          <AiToolButton label="📋 生成摘要" loading-label="⏳ 生成中…" :loading="generating" @tap="doAI('summary')" />
+        </view>
+        <view class="ai-menu-item">
+          <AiToolButton label="✏️ 润色文本" loading-label="⏳ 润色中…" :loading="Rewriting" @tap="doAI('rewrite')" />
+        </view>
+        <view class="ai-menu-item">
+          <AiToolButton label="☑️ 提取待办" loading-label="⏳ 提取中…" :loading="extractingTodos" @tap="doAI('todos')" />
+        </view>
+        <view class="ai-menu-item">
+          <AiToolButton label="💭 情绪分析" loading-label="⏳ 分析中…" :loading="analyzingEmotion" @tap="doAI('emotion')" />
+        </view>
       </view>
 
       <!-- 照片（4.11.0）：九宫格 + 添加格（添加格常驻，新建也要能加） -->
@@ -385,19 +399,32 @@ const emotionLabel = computed(() => {
       <!-- 情绪标签 -->
       <view class="emotion-badge" v-if="emotionLabel"><text>{{ emotionLabel }}</text></view>
 
-      <!-- AI 摘要 -->
-      <view v-if="form.ai_summary" class="ai-section">
-        <view class="ai-section-header">
-          <text class="ai-section-title">摘要</text>
-          <text class="ai-refresh" @tap="generateAISummary">{{ generating ? '⏳' : '↻' }}</text>
-        </view>
-        <text class="ai-text">{{ form.ai_summary }}</text>
-      </view>
+      <!-- 情绪分析失败（统一错误卡） -->
+      <AiResultCard
+        v-if="emotionError"
+        title="情绪分析"
+        :error="emotionError"
+        @retry="doAI('emotion')"
+      />
 
-      <view v-if="form.ai_advice" class="ai-section">
-        <text class="ai-section-title">建议</text>
-        <text class="ai-text">{{ form.ai_advice }}</text>
-      </view>
+      <!-- AI 摘要（统一结果卡：内容/骨架/错误三态） -->
+      <AiResultCard
+        v-if="form.ai_summary || generating || summaryError"
+        class="ai-summary-card"
+        title="摘要"
+        :content="form.ai_summary"
+        :loading="generating"
+        :error="summaryError"
+        @retry="doAI('summary')"
+      />
+
+      <AiResultCard
+        v-if="form.ai_advice"
+        class="ai-summary-card"
+        title="建议"
+        :content="form.ai_advice"
+        static-card
+      />
 
       <!-- 关联区域 -->
       <view class="related-section" v-if="!isNew && hasRelated">

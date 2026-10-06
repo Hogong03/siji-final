@@ -24,8 +24,8 @@ beforeEach(() => {
 })
 
 describe('注册表默认与持久化', () => {
-  it('清单完整：13 项能力、id 唯一、分组有效', () => {
-    expect(AI_FEATURES.length).toBe(13)
+  it('清单完整：14 项能力、id 唯一、分组有效', () => {
+    expect(AI_FEATURES.length).toBe(14)
     const ids = AI_FEATURES.map(f => f.id)
     expect(new Set(ids).size).toBe(AI_FEATURES.length)
     listFeatureGroups().forEach(g => {

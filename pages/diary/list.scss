@@ -328,6 +328,17 @@
   flex-shrink: 0;
   margin-right: 6rpx;
 }
+/* 内置种子记录徽标（tip_cet6_ / mat_cet6_） */
+.seed-badge {
+  display: inline-block;
+  font-size: 20rpx;
+  color: #A1A1AA;
+  background: #F4F4F5;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  margin-right: 8rpx;
+  vertical-align: middle;
+}
 .card-title {
   display: block;
   font-size: 28rpx;
@@ -622,6 +633,7 @@ html.theme-dark {
   .card-photo-count { background: #FAFAFA; color: #18181B; }
   .card-month-badge { background: #3F3F46; color: #A1A1AA; }
   .cat-badge { background: #3F3F46; color: #A1A1AA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .cal-weekday { background: #27272A; color: #A1A1AA; }
   .cal-cell { background: #27272A; &.empty { background: #18181B; } }
   .cal-day { color: #71717A; }
@@ -677,6 +689,7 @@ html.theme-dark {
   .card-photo-count { background: #FAFAFA; color: #18181B; }
   .card-month-badge { background: #3F3F46; color: #A1A1AA; }
   .cat-badge { background: #3F3F46; color: #A1A1AA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .cal-weekday { background: #27272A; color: #A1A1AA; }
   .cal-cell { background: #27272A; &.empty { background: #18181B; } }
   .cal-day { color: #71717A; }

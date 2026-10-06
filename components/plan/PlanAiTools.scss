@@ -37,10 +37,6 @@
 
 .ai-result {
   margin-top: 12rpx;
-  padding: 12rpx;
-  background: #FFFFFF;
-  border-radius: 8rpx;
-  border-left: 4rpx solid #18181B;
 }
 
 .ai-result-title {
@@ -75,7 +71,6 @@
 html.theme-dark {
   .ai-tools-section { background: #27272A; border-color: #3F3F46; }
   .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
-  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
   .ai-result-title { color: #FAFAFA; }
   .ai-result-text { color: #F4F4F5; }
   .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }
@@ -85,7 +80,6 @@ html.theme-dark {
 @media (prefers-color-scheme: dark) {
   .ai-tools-section { background: #27272A; border-color: #3F3F46; }
   .ai-tool-btn { background: #27272A; border-color: #3F3F46; color: #FAFAFA; &:active { background: #3F3F46; } }
-  .ai-result { background: #27272A; border-left-color: #FAFAFA; }
   .ai-result-title { color: #FAFAFA; }
   .ai-result-text { color: #F4F4F5; }
   .ai-section { background: #27272A; border-color: #3F3F46; .ai-text { color: #FAFAFA; } }

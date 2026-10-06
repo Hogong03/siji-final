@@ -164,7 +164,7 @@
   padding: 0 16rpx;
   height: 56rpx;
 
-  .search-icon { font-size: 22rpx; margin-right: 6rpx; color: #A1A1AA; }
+  .search-icon { font-size: 28rpx; margin-right: 8rpx; color: #A1A1AA; }
   .search-input { flex: 1; font-size: 24rpx; color: #18181B; }
   .search-clear { font-size: 22rpx; color: #A1A1AA; padding: 8rpx; }
 }
@@ -372,7 +372,7 @@
   flex-shrink: 0;
 }
 
-.bill-icon { font-size: 28rpx; }
+.bill-icon { font-size: 36rpx; line-height: 1; }
 
 .bill-body {
   flex: 1;

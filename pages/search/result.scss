@@ -79,6 +79,24 @@
   }
 }
 
+/* 4.15：右侧筛选组（时间开关）与对话展开行 */
+.filter-group-right {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.filter-toggle {
+  flex-shrink: 0;
+}
+.conv-expand {
+  display: flex;
+  justify-content: center;
+  padding: 12rpx 0 4rpx;
+}
+.conv-expand-text {
+  font-size: 24rpx;
+  color: $text-secondary;
+}
+
 /* 搜索历史 */
 .history-section {
   padding: 24rpx;
@@ -197,6 +215,23 @@
   min-width: 0;
 }
 
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+/* 内置种子记录徽标（tip_cet6_ / mat_cet6_） */
+.seed-badge {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  background: #F4F4F5;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+}
+
 .item-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -276,6 +311,7 @@ html.theme-dark {
   .filter-divider { background: #3F3F46; }
   .filter-chip { background: #3F3F46; color: #A1A1AA; }
   .filter-chip.active { background: #FAFAFA; color: #18181B; }
+  .conv-expand-text { color: #71717A; }
   .section-title { color: #A1A1AA; }
   .clear-link { color: #71717A; }
   .history-tag { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
@@ -287,6 +323,7 @@ html.theme-dark {
   .result-item { border-bottom-color: #3F3F46; }
   .result-item:active { background: #3F3F46; }
   .item-title { color: #FAFAFA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .item-preview { color: #A1A1AA; }
   .item-extra { color: #FAFAFA; }
   .item-date { color: #71717A; }
@@ -307,6 +344,7 @@ html.theme-dark {
   .filter-divider { background: #3F3F46; }
   .filter-chip { background: #3F3F46; color: #A1A1AA; }
   .filter-chip.active { background: #FAFAFA; color: #18181B; }
+  .conv-expand-text { color: #71717A; }
   .section-title { color: #A1A1AA; }
   .clear-link { color: #71717A; }
   .history-tag { background: #27272A; color: #A1A1AA; border-color: #3F3F46; }
@@ -318,6 +356,7 @@ html.theme-dark {
   .result-item { border-bottom-color: #3F3F46; }
   .result-item:active { background: #3F3F46; }
   .item-title { color: #FAFAFA; }
+  .seed-badge { background: #3F3F46; color: #A1A1AA; }
   .item-preview { color: #A1A1AA; }
   .item-extra { color: #FAFAFA; }
   .item-date { color: #71717A; }

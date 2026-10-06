@@ -88,10 +88,15 @@ const { showTagPicker, openTagPicker, toggleTag, handleAddTag, removeTagFromPlan
 const {
 	aiScheduling, aiReview, aiNextStep,
 	aiScheduleResult, aiReviewResult, aiNextStepResult,
+	aiScheduleError, aiReviewError, aiNextStepError,
+	aiScheduleAt, aiReviewAt, aiNextStepAt,
+	hydrateFromForm,
 	generateSchedule, generateReview, generateNextStep
 } = usePlanAI(form, store, {
 	getPlanId: () => planId.value,
-	getChildren: () => form.value.childPlans
+	getChildren: () => form.value.childPlans,
+	// 4.15：AI 结果生成后立即落库（重跑覆盖）
+	persist: () => persistForm()
 })
 
 const { aiChildrenLoading, aiBreakdownChildren } = usePlanChildAI(form, store)
@@ -102,6 +107,7 @@ function loadPlan() {
 	const item = plans.find(p => p.client_id === planId.value)
 	if (!item) return
 	applyStoredItem(item)
+	hydrateFromForm()
 	loadExecLogs(item)
 	syncFromPlan(item, plans)
 	// 子计划补充孙计划数量（仅展示用，保存时剔除）
@@ -180,6 +186,15 @@ function onSheetSave() {
 <template>
 	<view class="detail-page">
 		<scroll-view class="detail-scroll" scroll-y>
+			<!-- 4.14 标题行：标题在左，「设置与工具」弹窗入口在右 -->
+			<view class="detail-head">
+				<text class="detail-head-title">{{ form.title || '未命名计划' }}</text>
+				<view class="head-more" @tap="showSheet = true">
+					<text class="head-more-text">设置与工具</text>
+					<text class="head-more-arrow">›</text>
+				</view>
+			</view>
+
 			<!-- 行动区：下一步单卡 + 打卡 + 本月打卡日历 -->
 			<PlanActionSection
 				:next-step="nextStepItem"
@@ -220,6 +235,19 @@ function onSheetSave() {
 				@backfill-day="onCalBackfill"
 			/>
 
+			<!-- 4.14 描述：移回主页面，直接查看/编辑（弹窗表单里不再重复） -->
+			<view class="desc-card">
+				<text class="desc-label">描述</text>
+				<textarea
+					class="desc-field"
+					:value="form.description"
+					placeholder="详细描述你的计划..."
+					:maxlength="2000"
+					:auto-height="true"
+					@input="(e) => { form.description = e.detail.value }"
+				/>
+			</view>
+
 			<!-- 子计划（新模型：计划直接包含子计划，点击子计划查看完整情况） -->
 			<PlanChildPlans
 				:child-plans="form.childPlans"
@@ -237,13 +265,6 @@ function onSheetSave() {
 				@postpone-child="(clientId) => toggleChildSomeday(clientId, true)"
 				@activate-child="(clientId) => toggleChildSomeday(clientId, false)"
 			/>
-
-			<!-- 4.13 计划设置与工具（弹窗入口：点击弹出底部抽屉） -->
-			<view class="fold-head" @tap="showSheet = true">
-				<text class="fold-title">计划设置与工具</text>
-				<text class="fold-hint">标题 · 时间 · 循环 · 提醒 · AI 工具</text>
-				<text class="fold-arrow">›</text>
-			</view>
 		</scroll-view>
 
 		<!-- 标签选择弹窗 -->
@@ -270,8 +291,9 @@ function onSheetSave() {
 					<view class="sheet-close" @tap="closeSheet"><text class="sheet-close-x">✕</text></view>
 				</view>
 				<scroll-view class="sheet-body" scroll-y>
-					<!-- 字段区：父计划 / 优先级 / 状态 / 标题 / 描述 / 标签 / 时间 / 循环 / 提醒 -->
+					<!-- 字段区：父计划 / 优先级 / 状态 / 标题 / 标签 / 时间 / 循环 / 提醒（描述已移到主页面） -->
 					<PlanFieldsSection
+						:show-description="false"
 						:parent-plan="parentPlan"
 						v-model:priority="form.priority"
 						v-model:status="form.status"
@@ -309,6 +331,12 @@ function onSheetSave() {
 						:schedule-result="aiScheduleResult"
 						:review-result="aiReviewResult"
 						:next-step-result="aiNextStepResult"
+						:schedule-error="aiScheduleError"
+						:review-error="aiReviewError"
+						:next-step-error="aiNextStepError"
+						:schedule-at="aiScheduleAt"
+						:review-at="aiReviewAt"
+						:next-step-at="aiNextStepAt"
 						:ai-advice="form.ai_advice"
 						@schedule="generateSchedule"
 						@review="generateReview"
