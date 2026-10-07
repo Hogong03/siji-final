@@ -91,7 +91,7 @@ function hintDocKey(result) {
 	if (result && result.kind === 'document' && !isDocParseAvailable()) {
 		uni.showModal({
 			title: '读 Word/PDF 需要解析 Key',
-			content: '文档解析走 Moonshot 云端完成，Key 可与 Kimi 聊天共用一份（设置 → AI 配置 → 读文件）。现在去配置吗？',
+			content: '文档解析走云端完成（智谱 / Moonshot Key 均可，自动选用你已配置的那个）。现在去配置吗？',
 			confirmText: '去配置',
 			cancelText: '先不了',
 			success: (res) => {
@@ -285,7 +285,11 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 			<view class="img-preview-del" @tap="clearImage"><view class="del-dot"><text>×</text></view></view>
 		</view>
 
-		<!-- 文件预览 -->
+		<!-- 文件预览（4.17.0：解析中态 —— 大文档上传云端需要数秒） -->
+		<view v-if="fileLoading && !selectedFile" class="img-preview">
+			<text class="file-badge">文件</text>
+			<text class="img-preview-label">正在解析文件，请稍候…</text>
+		</view>
 		<view v-if="selectedFile" class="img-preview">
 			<text class="file-badge">文件</text>
 			<text class="img-preview-label">{{ fileLabel }}</text>

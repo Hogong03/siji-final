@@ -5,7 +5,7 @@
  * file-text（清洗 / 二进制拦截 / 截断 / 拼装）、picker（三端统一形状）、
  * index.readPickedFile（文本直读 / 文档解析 / 各拒绝分支）与聊天历史里的文件窗口。
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import './setup.js'
 import {
   TEXT_EXTS, DOC_EXTS, MAX_FILE_BYTES,
@@ -219,29 +219,54 @@ describe('选文件（三端统一形状）', () => {
     expect(p.name).toBe('笔记.txt')
   })
 
-  it('picker 成功：返回 pick；后缀过滤按官方示例带点', async () => {
-    let opts0 = null
-    global.uni.chooseFile = (opts) => {
-      opts0 = opts
-      opts.success({
-        tempFiles: [{ path: 'blob:1', name: 'a.txt', size: 5, type: 'text/plain' }],
-        tempFilePaths: ['blob:1']
-      })
+  // 4.16.1 起 H5 选文件改走原生 <input type=file>（uni.chooseFile 带 extension 抛 removeChild），不再读 uni.chooseFile
+  it('picker 成功：H5 原生 input change 后返回 pick', async () => {
+    const f = { name: 'a.txt', size: 5, type: 'text/plain' }
+    const listeners = {}
+    global.document = {
+      createElement: () => ({
+        type: '', style: {}, files: null,
+        addEventListener: (ev, fn) => { listeners[ev] = fn },
+        click() { this.files = [f]; listeners.change() }
+      }),
+      body: { appendChild() {}, removeChild() {} }
     }
-    const r = await pickOneFile()
-    expect(r.ok).toBe(true)
-    expect(r.pick.name).toBe('a.txt')
-    expect(opts0.type).toBe('all')
-    expect(opts0.extension).toContain('.txt')
-    expect(opts0.extension).toContain('.pdf')
-    expect(opts0.extension.every(e => e.charAt(0) === '.')).toBe(true)
+    global.window = { addEventListener: (ev, fn) => { listeners.focus = fn } }
+    try {
+      const r = await pickOneFile()
+      expect(r.ok).toBe(true)
+      expect(r.pick.name).toBe('a.txt')
+      expect(r.pick.mime).toBe('text/plain')
+    } finally {
+      delete global.document
+      delete global.window
+    }
   })
 
   it('用户取消：ok=false 且没有 reason（UI 不提示）', async () => {
-    global.uni.chooseFile = (opts) => opts.fail({ errMsg: 'cancel' })
-    const r = await pickOneFile()
-    expect(r.ok).toBe(false)
-    expect(r.reason).toBe('')
+    vi.useFakeTimers()
+    const listeners = {}
+    global.document = {
+      createElement: () => ({
+        type: '', style: {}, files: null,
+        addEventListener: (ev, fn) => { listeners[ev] = fn },
+        click() { /* 不触发 change：用户没选文件 */ }
+      }),
+      body: { appendChild() {}, removeChild() {} }
+    }
+    global.window = { addEventListener: (ev, fn) => { listeners.focus = fn } }
+    try {
+      const p = pickOneFile()
+      listeners.focus()
+      vi.advanceTimersByTime(300)
+      const r = await p
+      expect(r.ok).toBe(false)
+      expect(r.reason).toBe('')
+    } finally {
+      vi.useRealTimers()
+      delete global.document
+      delete global.window
+    }
   })
 
   it('没选到文件也给出 ok=false', async () => {

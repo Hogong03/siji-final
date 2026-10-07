@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 97 文件 / 1338 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.13.4（字号切换真机诊断日志 + 含 4.13.3 缩放链修复与 4.13.x） |
+| 测试 | 98 文件 / 1347 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.17.0（智谱文件解析接入 + 自动选用；含 4.16 缺陷收口 / 图标重画 / 4.16.1 H5 原生选文件） |
 
 ---
 
@@ -268,7 +268,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改 App 端选文件（plus.android 四条铁律） | ① Uri **当 Java 对象传**（`String(uri)` 不是可用 URI）；② **每个对象的方法都要导入才调得动**：`invokeSafe`（直接调 → `plus.android.invoke`）+ `importInstance`，**流对象与 channel 也不例外**（真机上 `input.read` / `input.getChannel` 就是这么挂的）；③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`）；④ 拷贝三级（字节数组 → `transferFrom`（`getChannel` 缺失退 `Channels.newChannel`）→ 文本直读），全败时文本类退 `plus.io` 直读 |
 | 改 App 端选文件（旧行，已被上面替换） | ① `data.getData()` 的 Uri **当 Java 对象传**，`String(uri)` 出来的不是可用 URI；② **没 importClass 的对象方法直接调用会抛** —— 每个调用走 `invokeSafe` 或先 `importClass`（类名 + 实例两种都试）；③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`），全败时文本类退 `plus.io` 直读 |
 | 改 App 端选文件（Uri 铁律，保留） | `data.getData()` 的 Uri **必须当 Java 对象一路传下去**，`String(uri)` 拿到的不是可用 URI（真机上这一步导致「拷贝失败 open-input」）；`getData` 为空时退 `ClipData.getItemAt(0).getUri`；开流三级见 `utils/files/android-picker.js` 的 `openContentStream` |
-| 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装）+ `doc-parse.js`（解析后端，上传优先 `absPath`）+ `picker.js`（选文件：H5 chooseFile / 小程序 chooseMessageFile / **Android 系统选择器**）+ `android-picker.js`（plus.android 选 + 拷贝三级兜底：字节数组 / FileChannel / 文本直读；`toNativePath` 去 `file://` 前缀）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
+| 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装）+ `doc-parse.js`（解析后端注册表 DOC_BACKENDS：**zhipu（4.17.0，复用智谱聊天 Key）** / moonshot；resolveDocConfig 自动选用 智谱→Moonshot；删除端点由后端 deleteUrl 声明；上传优先 `absPath`）+ `picker.js`（选文件：**H5 原生 input type=file（4.16.1 起，uni.chooseFile 带 extension 抛 removeChild）** / 小程序 chooseMessageFile / **Android 系统选择器**）+ `android-picker.js`（plus.android 选 + 拷贝三级兜底：字节数组 / FileChannel / 文本直读；`toNativePath` 去 `file://` 前缀）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
 | 改每周账单播报 | `utils/bill-weekly.js`（口径与文案）+ `composables/useEnterSummary.js`（接线）+ `pages/chat/index.vue` 卡片「账」行 |
 | 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
@@ -359,7 +359,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 89 文件 / 1239 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 98 文件 / 1347 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

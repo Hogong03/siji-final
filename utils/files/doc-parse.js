@@ -34,6 +34,7 @@ const moonshotBackend = {
   keyLabel: 'Moonshot API Key',
   keyPlaceholder: 'sk-xxxxxxxxxxxxxxxx',
   docs: 'https://platform.moonshot.cn/docs',
+  deleteUrl: MOONSHOT_CONTENT,
   buildUpload(fileRef, apiKey) {
     const header = { 'Authorization': 'Bearer ' + apiKey }
     // H5 走 files（File 对象），App/小程序走 filePath
@@ -79,8 +80,73 @@ const moonshotBackend = {
   }
 }
 
+/** 智谱（GLM）文件解析（4.17.0）：与 Moonshot 同构的 files 接口 —— 用户只需已有的智谱 Key */
+const zhipuBackend = {
+  id: 'zhipu',
+  name: '智谱文件解析',
+  desc: '支持 pdf / doc / docx / xls / xlsx / ppt / pptx / 图片文字提取，与智谱 GLM 聊天 Key 共用',
+  providerId: 'zhipu',
+  keyLabel: '智谱 API Key',
+  keyPlaceholder: 'xxxxxxxxxxxxxxxx.xxxxxxxx',
+  docs: 'https://open.bigmodel.cn/docs',
+  deleteUrl: 'https://open.bigmodel.cn/api/paas/v4/files/',
+  buildUpload(fileRef, apiKey) {
+    const header = { 'Authorization': 'Bearer ' + apiKey }
+    if (fileRef && fileRef.file) {
+      return {
+        url: 'https://open.bigmodel.cn/api/paas/v4/files',
+        files: [{ name: 'file', file: fileRef.file }],
+        formData: { purpose: 'file-extract' },
+        header: header,
+        timeout: 60000
+      }
+    }
+    return {
+      url: 'https://open.bigmodel.cn/api/paas/v4/files',
+      filePath: (fileRef && (fileRef.absPath || fileRef.path)) || '',
+      name: 'file',
+      formData: { purpose: 'file-extract' },
+      header: header,
+      timeout: 60000
+    }
+  },
+  parseUpload(res) {
+    let data = res && res.data
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data) } catch (e) { data = null }
+    }
+    if (!data || !data.id) {
+      const msg = (data && (data.error && data.error.message || data.message)) || ('HTTP ' + ((res && res.statusCode) || 0))
+      return { ok: false, reason: '上传失败：' + msg }
+    }
+    return { ok: true, fileId: data.id }
+  },
+  buildContentRequest(fileId, apiKey) {
+    return {
+      url: 'https://open.bigmodel.cn/api/paas/v4/files/' + fileId + '/content',
+      method: 'GET',
+      header: { 'Authorization': 'Bearer ' + apiKey },
+      dataType: 'text',
+      timeout: 30000
+    }
+  },
+  /** 智谱正文端点返回纯文本；若为 {content:...} JSON 则取 content */
+  normalizeContent(r) {
+    let data = r && r.data
+    if (typeof data === 'string') {
+      const trimmed = data.trim()
+      if (trimmed.charAt(0) === '{' && trimmed.indexOf('"content"') >= 0) {
+        try { data = JSON.parse(trimmed) } catch (e) { /* 保持字符串 */ }
+      }
+    }
+    if (data && typeof data === 'object' && typeof data.content === 'string') return data.content
+    if (typeof data === 'string') return data
+    return JSON.stringify(data || '')
+  }
+}
+
 /** 后端注册表 */
-export const DOC_BACKENDS = { moonshot: moonshotBackend }
+export const DOC_BACKENDS = { zhipu: zhipuBackend, moonshot: moonshotBackend }
 
 /** 后端列表（设置页渲染用） */
 export function listDocBackends() {
@@ -133,6 +199,13 @@ export function resolveDocConfig() {
     const reused = (getProviderKeys() || {})[backend.providerId] || ''
     if (reused) return { available: true, reason: 'ok', backendId, backend, key: reused, source: 'provider' }
   }
+  // 4.17.0：自动选用 —— 用户配了哪家 Key 就用哪家的文件解析（智谱优先，与免 Key 引导一致），
+  // 存储的默认后端没有 Key 时不再死守 Moonshot
+  for (const id of ['zhipu', 'moonshot']) {
+    const b = DOC_BACKENDS[id]
+    const pk = (getProviderKeys() || {})[b.providerId] || ''
+    if (pk) return { available: true, reason: 'ok', backendId: id, backend: b, key: pk, source: 'provider', autoPicked: true }
+  }
   return { available: false, reason: 'no_key', backendId, backend, key: '', source: 'none' }
 }
 
@@ -142,7 +215,7 @@ export function docStatusText() {
   if (cfg.available) {
     return cfg.source === 'own' ? '已配置（独立 Key）' : '已配置（复用 AI 厂商 Key）'
   }
-  return '未配置 Key，PDF / Word / Excel 暂时读不了'
+  return '未配置可用的解析 Key（智谱 / Moonshot 任配其一），PDF / Word / Excel 暂时读不了'
 }
 
 /** 是否可用（UI 判断要不要提示先配置） */
@@ -171,7 +244,7 @@ export function parseDocument(fileRef, overrideKey) {
         uni.request(Object.assign(backend.buildContentRequest(up.fileId, key), {
           success: (r) => {
             deleteRemote(backend, up.fileId, key)
-            const text = typeof r.data === 'string' ? r.data : JSON.stringify(r.data || '')
+            const text = backend.normalizeContent ? backend.normalizeContent(r) : (typeof r.data === 'string' ? r.data : JSON.stringify(r.data || ''))
             if (!text) { resolve({ ok: false, reason: '解析服务没有返回正文' }); return }
             resolve({ ok: true, text: text })
           },
@@ -185,10 +258,11 @@ export function parseDocument(fileRef, overrideKey) {
 
 /** 尽力删掉云端临时文件（失败不影响结果，只记不报） */
 function deleteRemote(backend, fileId, key) {
-  if (!fileId) return
+  // 4.17.0：删除端点由后端自己声明 —— 之前硬编码 Moonshot 端点，拿智谱 Key 去删 Moonshot 的文件必失败
+  if (!fileId || !backend || !backend.deleteUrl) return
   try {
     uni.request({
-      url: MOONSHOT_CONTENT + fileId,
+      url: backend.deleteUrl + fileId,
       method: 'DELETE',
       header: { 'Authorization': 'Bearer ' + key },
       success: () => {},

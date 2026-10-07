@@ -2,12 +2,13 @@
  * 版本历史默认数据（聚合入口）
  *
  * 数据按大版本分段存放于 utils/storage/version-log/，每段是纯数组（新版本在前）。
- * 新增版本记录：写对应段文件顶部（最新段为 version-log/4.10.js），本文件只需在 getDefaultHistory 顶部加一段。
+ * 新增版本记录：写对应段文件顶部（最新段为 version-log/4.17.js），本文件只需在 getDefaultHistory 顶部加一段。
  * 分段原因：原单文件 2065 行，超出项目 300 行红线。
  * 4.10.7 发布前整合：各小版本线（2.2/2.3/3.4/3.5/3.6/3.7/3.10/4.0/4.1/4.2/4.3/4.5/4.7/4.8/4.9/4.10）
  * 的补丁条目已各自合并为单条，原 2.2-early/late、2.3-early/late、3.5-early 分段文件已删。
  */
 
+import { V417 } from './version-log/4.17.js'
 import { V416 } from './version-log/4.16.js'
 import { V414 } from './version-log/4.14.js'
 import { V413 } from './version-log/4.13.js'
@@ -38,6 +39,7 @@ import { V1X } from './version-log/1.x.js'
 
 export function getDefaultHistory() {
   return [
+    ...V417,
     ...V416,
     ...V414,
     ...V413,
