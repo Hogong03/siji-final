@@ -73,11 +73,12 @@ const selectedFile = ref(null)
 const fileLoading = ref(false)
 const fileLabel = computed(() => (selectedFile.value ? fileCardText(selectedFile.value) : ''))
 
-/** 长文案走模态框，短文案走 toast（App 端 toast 会截断） */
-function hint(msg) {
+/** 长文案走模态框，短文案走 toast（App 端 toast 会截断）；detail 附加诊断信息（文件名 / 判定类型） */
+function hint(msg, detail) {
 	if (!msg) return
-	if (msg.length > 14) {
-		uni.showModal({ title: '这个文件读不了', content: msg, showCancel: false, confirmText: '知道了' })
+	const content = detail ? (msg + '\n\n' + detail) : msg
+	if (content.length > 14) {
+		uni.showModal({ title: '这个文件读不了', content: content, showCancel: false, confirmText: '知道了' })
 		return
 	}
 	uni.showToast({ title: msg, icon: 'none' })
@@ -85,7 +86,7 @@ function hint(msg) {
 
 /**
  * 文档类读取失败：缺解析 Key 的场景给「去配置」直达（4.12.2）——
- * Word/PDF 走 Moonshot 云端解析，无 Key 时其他提示都是死胡同
+ * Word/PDF 走云端解析（智谱 / Moonshot），无 Key 时其他提示都是死胡同
  */
 function hintDocKey(result) {
 	if (result && result.kind === 'document' && !isDocParseAvailable()) {
@@ -100,7 +101,8 @@ function hintDocKey(result) {
 		})
 		return
 	}
-	hint(result && result.reason)
+	// 4.17.1：拒绝弹窗带上文件名与判定结果 —— 真机「格式读不了」不再盲猜是哪个环节判的
+	hint(result && result.reason, result ? ('文件：' + (result.name || '未命名') + '（判定 ' + result.kind + '）') : '')
 }
 
 async function pickFile() {

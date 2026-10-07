@@ -9,7 +9,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import './setup.js'
 import {
   TEXT_EXTS, DOC_EXTS, MAX_FILE_BYTES,
-  extOf, baseNameOf, classifyFile, checkSize, formatBytes, pickerExtensions
+  extOf, baseNameOf, classifyFile, checkSize, formatBytes, pickerExtensions,
+  extFromMime, ensureExtName
 } from '../utils/files/file-types.js'
 import {
   MAX_FILE_CHARS, stripBom, looksBinary, cleanFileText, truncateFileText,
@@ -83,6 +84,36 @@ describe('文件类型判定', () => {
     expect(classifyFile('a.bin', 'text/plain')).toBe('text')
     expect(classifyFile('a.txt', 'image/png')).toBe('image')
     expect(classifyFile('a.dat', 'application/pdf')).toBe('document')
+  })
+
+  it('office 系 mime 兜底（4.17.1）：Android 显示名无后缀时靠 mime 判进解析通道', () => {
+    expect(classifyFile('文档', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBe('document')
+    expect(classifyFile('表格', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')).toBe('document')
+    expect(classifyFile('幻灯', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')).toBe('document')
+    expect(classifyFile('旧文档', 'application/msword')).toBe('document')
+    expect(classifyFile('旧表格', 'application/vnd.ms-excel')).toBe('document')
+    expect(classifyFile('旧幻灯', 'application/vnd.ms-powerpoint')).toBe('document')
+    expect(classifyFile('书', 'application/epub+zip')).toBe('document')
+    // octet-stream / 安装包 mime 判不出的仍看后缀，apk 明确拒
+    expect(classifyFile('未知', 'application/octet-stream')).toBe('unsupported')
+    expect(classifyFile('安装包', 'application/vnd.android.package-archive')).toBe('unsupported')
+  })
+
+  it('extFromMime / ensureExtName（4.17.1）：无后缀名按 mime 补全', () => {
+    expect(extFromMime('application/pdf')).toBe('pdf')
+    expect(extFromMime('application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBe('docx')
+    expect(extFromMime('application/vnd.ms-excel')).toBe('xlsx')
+    expect(extFromMime('application/octet-stream')).toBe('')
+    expect(extFromMime('')).toBe('')
+    // 名字有后缀不动
+    expect(ensureExtName('报告.docx', 'application/pdf')).toBe('报告.docx')
+    // 无后缀按 mime 补
+    expect(ensureExtName('报告', 'application/pdf')).toBe('报告.pdf')
+    expect(ensureExtName('文档', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBe('文档.docx')
+    // 完全没名字给 file 基名
+    expect(ensureExtName('', 'application/pdf')).toBe('file.pdf')
+    // mime 也判不出时不编造后缀
+    expect(ensureExtName('未知文件', 'application/octet-stream')).toBe('未知文件')
   })
 
   it('大小上限：5MB 以内放行，超了拒绝并说人话', () => {

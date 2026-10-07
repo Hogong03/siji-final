@@ -38,7 +38,7 @@
  *   Android 本文件
  *   iOS     无等价物（UIDocumentPickerViewController 需要 delegate，plus.ios 桥不动），走 picker.js 的提示
  */
-import { MAX_FILE_BYTES, baseNameOf, classifyFile } from './file-types.js'
+import { MAX_FILE_BYTES, baseNameOf, classifyFile, ensureExtName } from './file-types.js'
 import { logger } from '@/utils/logger.js'
 
 /** 请求码：与其它 onActivityResult 使用者区分（当前项目只有这一处） */
@@ -145,6 +145,15 @@ function describeUri(uri) {
       cursor.close()
     }
   } catch (e) { /* 描述信息是锦上添花，失败不拦 */ }
+  // 4.17.1：_display_name 查不到时退 uri 最后一段 —— 多数 provider（文件管理器 / 下载目录）
+  // 的 lastPathSegment 就是带后缀的真实文件名；纯数字段是内容 id，当名字会误导类型判定，不用
+  if (!out.name) {
+    try {
+      importInstance(uri)
+      const seg = String(invokeSafe(uri, 'getLastPathSegment') || '')
+      if (seg && !/^\d+$/.test(seg)) out.name = seg
+    } catch (e) { /* 兜底失败就留空，后面还有 mime 补后缀 */ }
+  }
   return out
 }
 
@@ -508,6 +517,10 @@ export function pickFileViaAndroid() {
           const uri = pickUriFrom(data)
           if (!uri) { done({ ok: false, reason: '没拿到选中的文件' }); return }
           const meta = describeUri(uri)
+          // 4.17.1：无后缀名按 mime 补全（「文档」→ 文档.docx），类型判定与云端解析都靠它；
+          // logger 留诊断行，真机再出「格式读不了」直接看 meta 三元组
+          meta.name = ensureExtName(meta.name, meta.mime)
+          logger.info('[FilePick] meta name=' + meta.name + ' mime=' + meta.mime + ' size=' + meta.size)
           if (meta.size > MAX_FILE_BYTES) {
             done({ ok: false, reason: '文件超过 ' + Math.round(MAX_FILE_BYTES / 1024 / 1024) + 'MB，请先截取需要的部分' })
             return

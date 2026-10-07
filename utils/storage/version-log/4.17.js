@@ -6,6 +6,28 @@
 
 export const V417 = [
   {
+    version: '4.17.1',
+    date: '2026-10-07',
+    title: '真机修复：Android 选文件「这个格式暂时读不了」—— 无后缀显示名 + office mime 双兜底',
+    summary: [
+      '真机实况：App 端能打开系统选择器了，但部分 provider 给的 _display_name 不带扩展名（「文档」/ 纯数字 id），且 office 系 mime 没有映射 —— classifyFile 落到 unsupported，弹「这个格式暂时读不了」',
+      'classifyFile 补 office 系 mime 兜底（msword / wordprocessingml / spreadsheetml / presentationml / ms-excel / ms-powerpoint / epub → document），且必须排在 json/xml/csv 判定之前（openxmlformats 含 "xml" 会被误判成 text）',
+      'describeUri 拿不到 _display_name 时退 uri.getLastPathSegment()（纯数字 id 段不用）；名字无后缀时按 mime 补全（ensureExtName，octet-stream 不编造后缀）',
+      '拒绝弹窗带诊断信息：文件名 + 判定类型（「文件：xxx（判定 unsupported）」），真机再出问题一眼定位；android-picker 加 meta 诊断日志行',
+    ],
+    categories: [
+      {
+        title: '文件类型判定（4.17.1）',
+        items: [
+          'utils/files/file-types.js：classifyFile office/epub mime 兜底 + 判定顺序修正；新增 extFromMime（mime → 扩展名映射）与 ensureExtName（无后缀名补全，纯函数）',
+          'utils/files/android-picker.js：describeUri 增加 lastPathSegment 兜底；pickFileViaAndroid 组装 pick 前统一 ensureExtName 补后缀 + logger.info meta 三元组诊断行',
+          'components/chat/InputArea.vue：hint 支持 detail 附加段，拒绝弹窗显示文件名与判定类型',
+          'tests/file-read.test.js：补 office mime 兜底 / extFromMime / ensureExtName 共 2 组用例（全量 98 文件 / 1349 用例全绿）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.17.0',
     date: '2026-10-07',
     title: '文件解析接入智谱后端：配了智谱 Key 就能读 PDF/Word/Excel，自动选用不再死守 Moonshot',
