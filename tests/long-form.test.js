@@ -48,7 +48,7 @@ describe('长文例外：提示词要求写全篇并存成记录', () => {
   it('行为准则里有长文规则：不受简洁约束 + 写完 create_diary + 告知查看入口', () => {
     const rules = BEHAVIOR_RULES.join('\n')
     expect(rules).toContain('写篇文章')
-    expect(rules).toContain('800-3000 字')
+    expect(rules).toContain('800-4500 字')
     expect(rules).toContain('create_diary')
     expect(rules).toContain('已存成记录')
     expect(rules).toContain('禁止只回复一段摘要')

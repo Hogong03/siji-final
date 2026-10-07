@@ -6,6 +6,27 @@
 
 export const V420 = [
   {
+    version: '4.20.1',
+    date: '2026-10-07',
+    title: '长文能力增强：正文上限 3000→4500 字，工具轮超时 120s→180s（防 GLM-5.3 强制思考下 12K tokens 超时）',
+    summary: [
+      '实测边界：GLM-5.3 强制思考模式下 tool_calls 一次写 12K tokens 会超时（JSON arguments 生成太慢），8192 tokens 是实测能跑通的上限 —— max_tokens 维持 8192 锁死',
+      '长文例外正文上限从 800-3000 字提到 800-4500 字（约 6500 tokens，给思考与 JSON 结构留足余量），写满不截断',
+      '工具轮超时 120s→180s：8192 tokens + 强制思考实测贴近 120s 边界，加 50% 余量；最终轮流式已有续期超时（首 token 60s / 每 chunk 续 30s / 硬上限 300s）不受影响',
+      '同步 tests/long-form.test.js 断言',
+    ],
+    categories: [
+      {
+        title: '长文与超时（4.20.1）',
+        items: [
+          'utils/ai/prompt-actions.js：BEHAVIOR_RULES 长文例外「正文 800-3000 字」→「正文 800-4500 字」',
+          'utils/ai/agent-transport.js：TOOL_CALL_TIMEOUT 120000→180000（长文 create_diary 的 JSON arguments 路径；超时不重试逻辑不变）',
+          'tests/long-form.test.js：断言同步 800-4500 字',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.20.0',
     date: '2026-10-07',
     title: 'AI 主动洞察：周播报从「三个数字」升级为归因分析 + 连续消费模式 + 可执行建议',

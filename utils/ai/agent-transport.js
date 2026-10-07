@@ -15,8 +15,10 @@ import { logger } from '../logger.js'
  * 调用带 tools 参数的 AI（非流式）
  * 当 isFinal=true 时用流式请求（最后一轮，AI 给最终回复）
  */
-/** 工具调用轮次超时（ms）——工具轮次 30s，最终回复 45s */
-const TOOL_CALL_TIMEOUT = 30000
+/** 工具调用轮次超时（ms）——工具轮 180s：长文走 create_diary 的 JSON arguments（4.20.1：上限提到 180s，
+ *  8192 tokens + GLM 强制思考实测贴近 120s 边界，留余量；12K 会超时所以 max_tokens 锁 8192），
+ *  最终回复 45s（最终轮走流式，另有续期超时） */
+const TOOL_CALL_TIMEOUT = 180000
 const FINAL_REPLY_TIMEOUT = 45000
 const MAX_API_RETRIES = 2
 
@@ -96,8 +98,9 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
       },
       fail(err) {
         logger.error('[AgentLoop] Network error:', err.errMsg)
-
-        if (retryCount < MAX_API_RETRIES) {
+        // 超时错误不重试：长文请求超时后重试同样的请求还是会超时，纯浪费时间
+        const isTimeout = String(err.errMsg || '').toLowerCase().includes('timeout')
+        if (!isTimeout && retryCount < MAX_API_RETRIES) {
           const delay = Math.pow(2, retryCount) * 1500
           logger.warn(`[AgentLoop] Network retry ${retryCount + 1}/${MAX_API_RETRIES} in ${delay}ms`)
           setTimeout(() => {
@@ -105,8 +108,7 @@ function callWithRetry(provider, cfg, body, apiKey, timeout, retryCount) {
           }, delay)
           return
         }
-
-        resolve({ error: '网络连接失败，请稍后再试' })
+        resolve({ error: isTimeout ? 'AI 响应超时，长文生成需要更久，请稍后重试或换更快的模型' : '网络连接失败，请稍后再试' })
       },
       complete() {
         if (stopCheckId) { clearInterval(stopCheckId); stopCheckId = null }
@@ -189,14 +191,30 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
     let fullContent = ''
     let finishReason = ''
     let resolved = false
-    const timer = setTimeout(() => {
+    // 4.20.1：流式续期超时 —— 首 token 等待 60s，流式期间每收到 chunk 续 30s，总硬上限 180s
+    // 原来固定 90s 一刀切，长文（2000+ tokens）流式输出到一半被掐
+    const IDLE_AFTER_FIRST = 30000
+    const TTFB_TIMEOUT = 60000
+    const HARD_TOTAL = 300000
+    let timer = setTimeout(onTimeout, TTFB_TIMEOUT)
+    const hardTimer = setTimeout(() => {
       if (!resolved) {
         resolved = true
-        // 4.5.1：90s 超时拿到的必然是半截内容 —— finishReason 为空时按截断标记，
-        // 让上层气泡出「继续写完」（原来空 finishReason 不标记，半截被当完整回复）
+        clearTimeout(timer)
         resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason || 'length'))
       }
-    }, 90000)
+    }, HARD_TOTAL)
+    function onTimeout() {
+      if (resolved) return
+      resolved = true
+      clearTimeout(hardTimer)
+      // 超时拿到的可能是半截内容 —— finishReason 为空时按截断标记，让上层气泡出「继续写完」
+      resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason || 'length'))
+    }
+    function bumpIdle() {
+      clearTimeout(timer)
+      timer = setTimeout(onTimeout, IDLE_AFTER_FIRST)
+    }
 
     fetch(provider.endpoint, {
       method: 'POST',
@@ -210,6 +228,7 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
       if (!reader) {
         const data = await resp.json()
         clearTimeout(timer)
+        clearTimeout(hardTimer)
         resolved = true
         resolve(markReplyTruncated({ message: data.choices?.[0]?.message || { content: '' }, id: data.id || '' }, data.choices?.[0]?.finish_reason))
         return
@@ -237,18 +256,21 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
             const delta = chunk.choices?.[0]?.delta?.content || ''
             if (delta) {
               fullContent += delta
+              bumpIdle()
               onChunk(delta)
             }
           } catch { /* skip */ }
         }
       }
       clearTimeout(timer)
+      clearTimeout(hardTimer)
       if (!resolved) {
         resolved = true
         resolve(markReplyTruncated({ message: { content: fullContent }, id: '' }, finishReason))
       }
     }).catch((err) => {
       clearTimeout(timer)
+      clearTimeout(hardTimer)
       if (!resolved) {
         resolved = true
         logger.error('[AgentLoop] SSE error:', err.message)

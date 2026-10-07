@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
 | 测试 | 99 文件 / 1356 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.20.0（AI 主动洞察：周播报升级归因+连续模式+建议；含 4.19 内置内容换血 / 4.18 UI 收口） |
+| 版本 | v4.20.1（AI 主动洞察 + 长文增强至 4500 字 / 工具轮超时 180s；含 4.19 内置内容换血 / 4.18 UI 收口） |
 
 ---
 
@@ -294,7 +294,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（30 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
 | 改 BKD 技术手册（内置记录） | `utils/storage/bkd-handbook.js`（4 篇，标签「技术手册」），`App.vue` 的 appReady 调 `ensureBkdHandbook()` 补发，改内容要 +`BKD_SEED_VERSION`；「内置」徽标前缀在 `utils/seed-records.js`（bkdh_） |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/bkd-handbook.js` 的 `ensureBkdHandbook`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates`；**下线种子内容**走 `utils/storage/seed-cleanup.js`（软删 + 幂等，参考 removeCet6Content） |
-| 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |
+| 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**上限铁律：max_tokens 锁 8192（4.20.1 实测：GLM-5.3 强制思考下 tool_calls 一次 12K tokens 必超时）；改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |
 | 改长按类手势（长按删除等） | `composables/usePressHold.js`（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别再用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」）；**4.12.6 盘点后已清零对话面板与 agent 卡片的残留 @longpress**（plan 组件的网格单元三处保留——无滑动误扰场景） |
 | 改聊天页入场动画 | 气泡内内容自动跟随 MessageBubble 的 bubbleIn；**气泡外的兄弟块**（开场按钮 .enter-actions / 无 Key 卡 .no-key-card / 恢复卡 .resume-card / 建议条 .suggestions-bar）各自在 `pages/chat/chat.scss` 挂 `chatRiseIn` —— 新增气泡外块时必须自查入场动画（4.11.1） |
 | 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
