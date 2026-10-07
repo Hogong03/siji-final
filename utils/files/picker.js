@@ -60,24 +60,43 @@ function extWithDot() {
   return pickerExtensions().map(e => (e.charAt(0) === '.' ? e : '.' + e))
 }
 
-/** H5：uni.chooseFile */
+/** H5：直接用原生 <input type=file>（uni.chooseFile 在 H5 下带 extension 会抛 removeChild 异常） */
 function pickH5() {
   return new Promise((resolve) => {
-    if (typeof uni === 'undefined' || typeof uni.chooseFile !== 'function') {
+    if (typeof document === 'undefined') {
       resolve({ ok: false, reason: '当前环境不支持选择文件' })
       return
     }
-    uni.chooseFile({
-      count: 1,
-      type: 'all',
-      extension: extWithDot(),
-      success(res) {
-        const f = (res && res.tempFiles && res.tempFiles[0]) || null
-        if (!f) { resolve({ ok: false, reason: '没有选中文件' }); return }
-        resolve({ ok: true, pick: toPick(f, res && res.tempFilePaths) })
-      },
-      fail() { resolve({ ok: false, reason: '' }) }
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.style.position = 'fixed'
+    input.style.top = '-9999px'
+    input.style.left = '-9999px'
+    document.body.appendChild(input)
+    input.addEventListener('change', () => {
+      const f = input.files && input.files[0]
+      document.body.removeChild(input)
+      if (!f) { resolve({ ok: false, reason: '' }); return }
+      resolve({
+        ok: true,
+        pick: { path: '', name: f.name, size: f.size, mime: f.type || '', file: f }
+      })
     })
+    // 用户取消（窗口失焦）时清理
+    window.addEventListener('focus', () => {
+      setTimeout(() => {
+        if (!input.files || input.files.length === 0) {
+          if (input.parentNode) document.body.removeChild(input)
+          resolve({ ok: false, reason: '' })
+        }
+      }, 300)
+    }, { once: true })
+    try {
+      input.click()
+    } catch (e) {
+      if (input.parentNode) document.body.removeChild(input)
+      resolve({ ok: false, reason: '调起文件选择器失败' })
+    }
   })
 }
 
