@@ -79,13 +79,9 @@ export {
   setPlanRecur
 } from './storage/plan.js'
 
-// 内置种子数据：六级技巧记录（3.8.0）
-export {
-  ensureCet6Tips,
-  CET6_TIPS,
-  CET6_TIP_IDS,
-  CET6_TIP_TAG
-} from './storage/cet6-tips.js'
+// 内置种子数据：BKD 项目技术学习手册（4.19.0）；六级种子已下线（清理逻辑见 seed-cleanup.js）
+export { ensureBkdHandbook, BKD_ARTICLES, BKD_ARTICLE_IDS, BKD_TAG } from './storage/bkd-handbook.js'
+export { removeCet6Content } from './storage/seed-cleanup.js'
 
 // 本地索引 & 全局搜索
 export {

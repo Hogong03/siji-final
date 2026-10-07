@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 98 文件 / 1349 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.18.1（UI 收口批次 + 总览优先级标签行内化；含 4.17 文件解析双版本） |
+| 测试 | 98 文件 / 1341 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.19.0（六级内容下线 + BKD 技术学习手册 4 篇内置；含 4.18 UI 收口 / 4.17 文件解析） |
 
 ---
 
@@ -292,8 +292,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL`（度量语义变了就 +1，报告与页面都会显示）+ `formatFailureReport(rows, meta)` |
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（30 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
-| 加六级内容（方法 / 资料） | 方法篇 `utils/storage/cet6-tips.js`（4 章，标签「技巧」）+ 资料篇 `utils/storage/cet6-material.js`（6 篇，标签「复习资料」）；都在 `App.vue` 的 appReady 调 `ensureCet6Tips()` 补发，改内容要 +`CET6_SEED_VERSION` |
-| 加内置种子数据（记录 / 模板） | 参考 `utils/storage/cet6-tips.js` 的 `ensureCet6Tips`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates` |
+| 改 BKD 技术手册（内置记录） | `utils/storage/bkd-handbook.js`（4 篇，标签「技术手册」），`App.vue` 的 appReady 调 `ensureBkdHandbook()` 补发，改内容要 +`BKD_SEED_VERSION`；「内置」徽标前缀在 `utils/seed-records.js`（bkdh_） |
+| 加内置种子数据（记录 / 模板） | 参考 `utils/storage/bkd-handbook.js` 的 `ensureBkdHandbook`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates`；**下线种子内容**走 `utils/storage/seed-cleanup.js`（软删 + 幂等，参考 removeCet6Content） |
 | 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |
 | 改长按类手势（长按删除等） | `composables/usePressHold.js`（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别再用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」）；**4.12.6 盘点后已清零对话面板与 agent 卡片的残留 @longpress**（plan 组件的网格单元三处保留——无滑动误扰场景） |
 | 改聊天页入场动画 | 气泡内内容自动跟随 MessageBubble 的 bubbleIn；**气泡外的兄弟块**（开场按钮 .enter-actions / 无 Key 卡 .no-key-card / 恢复卡 .resume-card / 建议条 .suggestions-bar）各自在 `pages/chat/chat.scss` 挂 `chatRiseIn` —— 新增气泡外块时必须自查入场动画（4.11.1） |
@@ -359,7 +359,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 98 文件 / 1349 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 98 文件 / 1341 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

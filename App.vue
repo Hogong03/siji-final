@@ -22,7 +22,8 @@
 	import {
 		rebuildIndex,
 		ensureDefaultTemplates,
-		ensureCet6Tips,
+		ensureBkdHandbook,
+		removeCet6Content,
 		migrateRecordTypes,
 		migrateDiaryCategories,
 		getPlanList,
@@ -82,8 +83,17 @@
 			store.restoreNonCriticalFromStorage()
 			try {
 				ensureDefaultTemplates()
-				// 六级技巧记录（3.8.0）：按 client_id 增量补发，用户删掉的不再补
-				ensureCet6Tips()
+				// BKD 项目技术学习手册（4.19.0）：按 client_id 增量补发，用户删掉的不再补
+				ensureBkdHandbook()
+				// 六级种子内容下线（4.19.0）：软删记录里的 cet6 种子与「六级备考」计划模板，幂等
+				try {
+					const c = removeCet6Content()
+					if (c.diaryRemoved > 0 || c.tplRemoved > 0) {
+						logger.log('[思迹] 六级内容下线：记录 ' + c.diaryRemoved + ' 条，模板 ' + c.tplRemoved + ' 个')
+					}
+				} catch (e) {
+					console.warn('[思迹] 六级内容清理失败：', e.message)
+				}
 				// 记录模块收敛（4.2.0）：类型 5→3（灵感/闪念并入记录）+ 分类并入标签
 				// 幂等：迁移过的记录不会二次改写；失败不影响启动
 				try {

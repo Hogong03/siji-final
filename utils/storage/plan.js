@@ -88,7 +88,7 @@ export function deletePlanTemplate(clientId) {
 
 /** 预置默认模板（首次启动时调用） */
 export function ensureDefaultTemplates() {
-  // 3.5.0：按 client_id 增量补发内置模板（老用户也能拿到新增的六级备考）
+  // 3.5.0：按 client_id 增量补发内置模板（4.19.0 起不再含六级备考，见 seed-cleanup.js 的下线清理）
   const existingIds = new Set(getPlanTemplates().map(t => t.client_id))
   const defaults = [
     {
@@ -126,92 +126,6 @@ export function ensureDefaultTemplates() {
         { title: '第一轮：通读教材' }, { title: '第二轮：专题练习' },
         { title: '第三轮：模拟考试' }, { title: '考前冲刺复习' }
       ]},
-      created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
-    },
-    {
-      client_id: 'tpl_cet6', name: '六级备考', icon: '🎓', color: '#D35D5D', category: 'study',
-      description: '三段式六级备考：唤醒 30 天 → 强化 40 天 → 冲刺 22 天（约 93 天）',
-      plan_data: {
-        priority: 2,
-        tags: ['备考', '六级'],
-        deadline_offset_days: 93,
-        subtasks: [
-          {
-            title: '唤醒期（约前 30 天）',
-            description: '目标：找回语感、扫清单词障碍。做法：每天 50 个高频词 + 精翻 1 篇仔细阅读 + 真题听力跟读 30 分钟。完成标准：听力跟得上脚本，阅读生词明显减少。',
-            start_offset_days: 0,
-            end_offset_days: 30,
-            children: [
-              {
-                title: '背高频词 50 个（只记意思）',
-                description: '用词表或 App 过 50 个高频词，只认意思不背拼写；不会的标出来，第二天先复习。',
-                est_minutes: 20, recur_type: 'daily'
-              },
-              {
-                title: '精翻 1 篇仔细阅读',
-                description: '做 1 篇仔细阅读后逐句精翻全文，把生词和长难句抄在旁边搞懂为止。',
-                est_minutes: 40, recur_type: 'daily'
-              },
-              {
-                title: '真题听力跟读 30 分钟',
-                description: '放真题音频，看着脚本跟读 30 分钟，不做题、不追求听懂，先练耳朵（铁律一：每天必听）。',
-                est_minutes: 30, recur_type: 'daily'
-              }
-            ]
-          },
-          {
-            title: '强化期（第 31-71 天）',
-            description: '目标：阅读冲 160、听力冲 170。做法：每天 30 词复习 + 2 篇仔细阅读 + 1 篇段落匹配 + 1 套真题听力分析；每周背 1 篇作文模板。完成标准：仔细阅读计时完成，听力错题能说清错因。',
-            start_offset_days: 31,
-            end_offset_days: 71,
-            children: [
-              {
-                title: '背高频词 30 个（复习为主）',
-                description: '新词 30 个 + 复习唤醒期标出的生词，只认意思；单词只欠每日小额，不整块时间。',
-                est_minutes: 20, recur_type: 'daily'
-              },
-              {
-                title: '2 篇仔细阅读 + 1 篇段落匹配',
-                description: '计时做完并分析错因；仔细阅读是提分大头，错题标注题型（细节/主旨/推断）。',
-                est_minutes: 60, recur_type: 'daily'
-              },
-              {
-                title: '1 套真题听力（对答案分析）',
-                description: '完整做 1 套听力并对答案，分析错因，错得多的 section 重听一遍。',
-                est_minutes: 40, recur_type: 'daily'
-              },
-              {
-                title: '背 1 篇作文模板',
-                description: '每周背 1 篇作文模板并默写一遍；宁写简单句不写错句（铁律三）。',
-                est_minutes: 30, recur_type: 'weekly', recur_count: 1
-              }
-            ]
-          },
-          {
-            title: '冲刺期（第 72-93 天）',
-            description: '目标：稳定心态、确保过线。做法：每周 3 次完整模考（严格计时）+ 每天复习错题生词 + 每周默写作文模板。完成标准：模考稳定过线，考前状态不慌。',
-            start_offset_days: 72,
-            end_offset_days: 93,
-            children: [
-              {
-                title: '完整模考（严格计时）',
-                description: '每周 3 次完整模考，严格计时；考后复盘错题。铁律二：选词填空直接蒙，时间留给仔细阅读。',
-                est_minutes: 120, recur_type: 'weekly', recur_count: 3
-              },
-              {
-                title: '复习错题与生词',
-                description: '过一遍所有模考错题与生词，只过不会的，不恋战。',
-                est_minutes: 30, recur_type: 'daily'
-              },
-              {
-                title: '默写作文模板',
-                description: '手写默写作文模板，练字迹与速度；考前一天再默一遍。',
-                est_minutes: 20, recur_type: 'weekly', recur_count: 1
-              }
-            ]
-          }
-        ]
-      },
       created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
     },
     {

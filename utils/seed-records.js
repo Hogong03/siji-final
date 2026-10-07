@@ -1,18 +1,19 @@
 /**
  * 内置种子记录判定
  *
- * 背景：3.8.0 起内置的六级技巧 / 复习资料等种子记录直接写进用户记录库，
- * 用户在记录列表 / 阅读页 / 搜索结果里分不清哪些是内置内容 —— 这里统一判定，各页面共用。
+ * 背景：内置的种子记录直接写进用户记录库，用户在记录列表 / 阅读页 / 搜索结果里
+ * 分不清哪些是内置内容 —— 这里统一判定，各页面共用。
  *
  * 前缀来源（实际 grep 自种子文件，勿凭记忆改）：
- *   - utils/storage/cet6-tips.js     → tip_cet6_（4 条：tip_cet6_ch_writing/listening/reading/translation）
- *   - utils/storage/cet6-material.js → mat_cet6_（6 条：mat_cet6_vocab/writing/translation/listening/reading/flow）
+ *   - utils/storage/bkd-handbook.js  → bkdh_（4 篇：bkdh_read_path/tech_stack/prereq/learning_path）
+ *   （4.19.0：六级种子 tip_cet6_ / mat_cet6_ 已下线，记录由 seed-cleanup.js 软删，
+ *     历史软删记录不再需要徽标）
  *
  * 纯函数、无副作用；新增种子来源时在 SEED_CLIENT_ID_PREFIXES 里扩前缀即可。
  */
 
 /** 内置种子记录的 client_id 前缀 */
-const SEED_CLIENT_ID_PREFIXES = ['tip_cet6_', 'mat_cet6_']
+const SEED_CLIENT_ID_PREFIXES = ['bkdh_']
 
 /** 徽标文案（记录列表 / 阅读页 / 搜索结果页共用） */
 export const SEED_BADGE = '内置'

@@ -186,21 +186,23 @@ describe('buildDiagText', () => {
 })
 
 describe('isSeedRecord（内置种子判定）', () => {
-  it('tip_cet6_ / mat_cet6_ 前缀命中', () => {
-    expect(isSeedRecord({ client_id: 'tip_cet6_ch_writing' })).toBe(true)
-    expect(isSeedRecord({ client_id: 'mat_cet6_vocab' })).toBe(true)
+  it('bkdh_ 前缀命中（4.19.0：六级种子已下线，改测 BKD 手册）', () => {
+    expect(isSeedRecord({ client_id: 'bkdh_read_path' })).toBe(true)
+    expect(isSeedRecord({ client_id: 'bkdh_learning_path' })).toBe(true)
   })
 
-  it('普通记录 / 邻近前缀 / 空值不命中', () => {
+  it('普通记录 / 邻近前缀 / 已下线的 cet6 前缀 / 空值不命中', () => {
     expect(isSeedRecord({ client_id: 'd1-abc-123' })).toBe(false)
-    expect(isSeedRecord({ client_id: 'tip_cet6' })).toBe(false)
-    expect(isSeedRecord({ client_id: 'xtip_cet6_x' })).toBe(false)
+    expect(isSeedRecord({ client_id: 'bkdh' })).toBe(false)
+    expect(isSeedRecord({ client_id: 'xbkdh_x' })).toBe(false)
+    expect(isSeedRecord({ client_id: 'tip_cet6_ch_writing' })).toBe(false)
+    expect(isSeedRecord({ client_id: 'mat_cet6_vocab' })).toBe(false)
     expect(isSeedRecord({})).toBe(false)
     expect(isSeedRecord(null)).toBe(false)
   })
 
   it('搜索结果形态（{ client_id: item.id }）可用，徽标文案为「内置」', () => {
-    expect(isSeedRecord({ client_id: 'tip_cet6_ch_reading' })).toBe(true)
+    expect(isSeedRecord({ client_id: 'bkdh_prereq' })).toBe(true)
     expect(SEED_BADGE).toBe('内置')
   })
 })
