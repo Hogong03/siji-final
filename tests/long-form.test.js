@@ -39,8 +39,8 @@ describe('输出上限：四家厂商都声明，请求体都带', () => {
     expect(chunked).toContain('max_tokens: getMaxTokens(cfg.provider)')
     const transport = read('utils/ai/agent-transport.js')
     expect(transport).toContain('max_tokens: getMaxTokens(provider.id)')
-    // 两处：工具轮 + 最终流式
-    expect(transport.split('max_tokens: getMaxTokens(provider.id)').length - 1).toBe(2)
+    // 三处（4.21.0 工具轮流式化）：非流式兜底 + 最终流式 + H5 工具轮 SSE
+    expect(transport.split('max_tokens: getMaxTokens(provider.id)').length - 1).toBe(3)
   })
 })
 

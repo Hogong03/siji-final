@@ -36,6 +36,27 @@ function normalizeActions(list) {
   return out
 }
 
+/**
+ * 修复式 JSON 解析（4.21.0）：转义裸控制字符后重试
+ * 合法 JSON 里不会出现裸 0x0A/0x0D/0x09（字符串内必须转义、字符串外不允许）——
+ * 能走到这个函数说明原文 JSON.parse 已经失败，全局转义是安全的：
+ * 换行统一转 \n、tab 转 \t，content 里的多行长文因此能被正常收下
+ * @param {string} text JSON.parse 失败的原文
+ * @returns {Object|null} 修复成功返回解析结果，仍失败返回 null
+ */
+export function tryParseWithControlCharFix(text) {
+  const fixed = String(text || '')
+    .replace(/\r\n/g, '\\n')
+    .replace(/\r/g, '\\n')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t')
+  try {
+    return JSON.parse(fixed)
+  } catch (e) {
+    return null
+  }
+}
+
 export function parseAiResponse(raw, conversationId) {
   // 空内容兜底
   if (!raw || !raw.trim()) {
@@ -72,16 +93,18 @@ export function parseAiResponse(raw, conversationId) {
   try {
     parsed = JSON.parse(cleaned)
   } catch {
-    // 尝试从文本中提取最后一个 JSON 对象（贪婪匹配 { ... }）
-    const jsonMatches = cleaned.match(/\{[\s\S]*\}/g)
-    if (jsonMatches) {
-      // 从后往前尝试，取第一个能解析成功的
-      for (let i = jsonMatches.length - 1; i >= 0; i--) {
-        try {
-          parsed = JSON.parse(jsonMatches[i])
-          break
-        } catch {
-          continue
+    // 4.21.0：修复式解析 —— 工具轮超时回退 JSON 路径时，长 content 里的真实换行符
+    // 没被转义成 \n（模型做不到可靠转义），JSON 直接不合法。先试控制字符修复，
+    // 再走贪婪匹配兜底；两条都失败才当纯文本。
+    parsed = tryParseWithControlCharFix(cleaned)
+    if (!parsed) {
+      // 尝试从文本中提取最后一个 JSON 对象（贪婪匹配 { ... }）
+      const jsonMatches = cleaned.match(/\{[\s\S]*\}/g)
+      if (jsonMatches) {
+        // 从后往前尝试，取第一个能解析成功的
+        for (let i = jsonMatches.length - 1; i >= 0; i--) {
+          parsed = tryParseWithControlCharFix(jsonMatches[i])
+          if (parsed) break
         }
       }
     }

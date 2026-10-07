@@ -60,6 +60,32 @@ export function computeChunkDelta(processed, data) {
   return { delta: data, processed: processed + data }
 }
 
+/**
+ * 流式 tool_calls 增量拼装（4.21.0，纯函数）
+ * SSE 里 delta.tool_calls 按 index 分片到达：首片带 id/type/name，后续片只有 arguments 的增量片段。
+ * 按聚合规则拼回完整调用数组 —— H5 SSE 与 App chunked 两个流式工具轮共用。
+ * @param {Array} deltas 流式收到的 tool_calls 分片
+ * @returns {Array<{ id, type, function: { name, arguments } }>} 按index升序
+ */
+export function assembleStreamToolCalls(deltas) {
+  const byIndex = new Map()
+  ;(Array.isArray(deltas) ? deltas : []).forEach(tc => {
+    if (!tc || typeof tc !== 'object') return
+    const i = Number.isFinite(Number(tc.index)) ? Number(tc.index) : 0
+    if (!byIndex.has(i)) {
+      byIndex.set(i, { id: '', type: 'function', function: { name: '', arguments: '' } })
+    }
+    const slot = byIndex.get(i)
+    if (tc.id) slot.id = tc.id
+    if (tc.type) slot.type = tc.type
+    if (tc.function) {
+      if (tc.function.name) slot.function.name += tc.function.name
+      if (tc.function.arguments) slot.function.arguments += tc.function.arguments
+    }
+  })
+  return Array.from(byIndex.keys()).sort((a, b) => a - b).map(i => byIndex.get(i))
+}
+
 
 // #ifdef APP-PLUS
 function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
@@ -74,14 +100,20 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
     const stopSignal = cfg.stopSignal || null
     const chatHistory = history || []
     const messages = opts.messages || buildChatMessages(message, chatHistory, cfg)
+    // 4.21.0：工具轮流式化 —— opts.tools 注入请求，delta.tool_calls 按 index 增量拼装
+    const isToolRound = !!opts.toolRound
     // D3: 结构化输出按模型能力路由（400 报错时去掉 response_format 降级重试）
     // 流式额外校验：DeepSeek V4 流式 + json_object 会返回空内容（实测硬约束），流式路径禁用
     const useFormat = supportsStreamStructuredOutput(cfg.provider, cfg.model)
-    // D4: 推理分级 — 日常对话 low
-    const reasoning = getReasoningConfig(cfg.provider, cfg.model, 'chat')
+    // D4: 推理分级 — 日常对话 low；工具轮由调用方按 complex 档传（opts.reasoning）
+    const reasoning = opts.reasoning || getReasoningConfig(cfg.provider, cfg.model, 'chat')
     const buildBody = (withFormat) => {
       // 4.3.0：带上输出上限（长文要写满，别被厂商默认值截断）
       const b = { model: cfg.model, messages, temperature: cfg.temperature ?? 0.7, stream: true, max_tokens: getMaxTokens(cfg.provider) }
+      if (opts.tools && opts.tools.length > 0) {
+        b.tools = opts.tools
+        b.tool_choice = 'auto'
+      }
       if (withFormat && useFormat) b.response_format = { type: 'json_object' }
       if (reasoning) Object.assign(b, reasoning)
       return b
@@ -92,6 +124,8 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
     let buffer = ''
     let processed = ''
     let fullContent = ''
+    let fullReasoning = ''
+    const toolCallDeltas = []
     let finishReason = ''
     let conversationIdResult = ''
     let firstChunkReceived = false
@@ -114,6 +148,13 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
     }
 
     let lastSseLine = ''
+    /** 首块判定：content / reasoning_content / tool_calls 任一到达都算模型开始输出（4.21.0 工具轮前两类都常用） */
+    const markFirstChunk = () => {
+      if (!firstChunkReceived) {
+        firstChunkReceived = true
+        if (staleTimer) { clearTimeout(staleTimer); staleTimer = null }
+      }
+    }
     const handleChunk = (chunkText) => {
       buffer += chunkText
       const lines = buffer.split('\n')
@@ -129,16 +170,22 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
         try {
           const json = JSON.parse(data)
           // 4.3.1：记录输出终止原因 —— 'length' 就是撞上输出上限被截断
-          const fr = json.choices?.[0]?.finish_reason
-          if (fr) finishReason = fr
-          const delta = json.choices?.[0]?.delta?.content || ''
-          if (delta) {
-            fullContent += delta
-            if (!firstChunkReceived) {
-              firstChunkReceived = true
-              if (staleTimer) { clearTimeout(staleTimer); staleTimer = null }
-            }
-            if (onChunk) onChunk(delta)
+          const choice = json.choices?.[0] || {}
+          if (choice.finish_reason) finishReason = choice.finish_reason
+          const delta = choice.delta || {}
+          if (delta.content) {
+            fullContent += delta.content
+            markFirstChunk()
+            if (onChunk) onChunk(delta.content)
+          }
+          // 4.21.0：工具轮流式 —— 思考内容与 tool_calls 分片都要收
+          if (delta.reasoning_content) {
+            fullReasoning += delta.reasoning_content
+            markFirstChunk()
+          }
+          if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
+            toolCallDeltas.push(...delta.tool_calls)
+            markFirstChunk()
           }
           if (json.error) {
             logger.warn('[ChunkedStream] API error in chunk: ' + (json.error.message || ''))
@@ -158,6 +205,19 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
         const base = { conversation_id: conversationIdResult || conversationId, _emptyReply: true, _failed: true, ...extra }
         if (opts.raw) return { content: '', ...base }
         return { reply: '', ...base }
+      }
+      if (opts.toolRound) {
+        // 4.21.0：工具轮流式的返回 —— 与 agent-transport 非流式形状对齐（message.tool_calls + reasoning_content）
+        const message = { content: fullContent }
+        const calls = assembleStreamToolCalls(toolCallDeltas)
+        if (calls.length > 0) message.tool_calls = calls
+        if (fullReasoning) message.reasoning_content = fullReasoning
+        return {
+          message: message,
+          id: conversationIdResult || conversationId,
+          truncated: finishReason === 'length',
+          ...extra
+        }
       }
       if (opts.raw) {
         // 4.3.1：Agent 路径靠这个字段判断「被输出上限截断」（原始 content 模式没有 parseAiResponse）
@@ -189,7 +249,9 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
         header: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         data: body,
         enableChunked: true,
-        timeout: 120000,
+        // 4.21.0：工具轮（长文 JSON arguments 可达 12K tokens）给 10 分钟总上限，
+        // 首 30s 无首块另有 staleTimer 防连接挂死；普通聊天维持 120s
+        timeout: isToolRound ? 600000 : 120000,
         success(res) {
           if (finished || seq !== requestSeq) return
           if (res.statusCode && res.statusCode !== 200) {
@@ -235,13 +297,18 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
           if (!fullContent && buffer.trim().startsWith('{')) {
             try {
               const parsed = JSON.parse(buffer.trim())
-              const fr = parsed.choices?.[0]?.finish_reason
-              if (fr) finishReason = fr
-              const content = parsed.choices?.[0]?.message?.content || ''
+              const msg = parsed.choices?.[0]?.message || {}
+              if (parsed.choices?.[0]?.finish_reason) finishReason = parsed.choices[0].finish_reason
+              const content = msg.content || ''
               if (content) {
                 fullContent = content
                 if (onChunk) onChunk(content)
               }
+              // 4.21.0：非流式形态的工具轮响应同样收下
+              if (Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
+                msg.tool_calls.forEach(tc => toolCallDeltas.push(tc))
+              }
+              if (msg.reasoning_content) fullReasoning = msg.reasoning_content
             } catch (e) { /* ignore */ }
           }
           finish(buildResult())

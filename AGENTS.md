@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 99 文件 / 1356 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.20.1（AI 主动洞察 + 长文增强至 4500 字 / 工具轮超时 180s；含 4.19 内置内容换血 / 4.18 UI 收口） |
+| 测试 | 100 文件 / 1366 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.21.0（工具轮流式化根治长文超时 + JSON 修复式解析；含 4.20 主动洞察/长文增强 / 4.19 内置换血） |
 
 ---
 
@@ -257,7 +257,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
 | 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
 | 改 Agent 入口判定 | `utils/ai/chat-stream.js` 的 `isClearlyCasual`（闲聊 / 工具循环分流） |
-| 改 Agent 请求传输 | `utils/ai/agent-transport.js`（超时 / 重试 / 流式三端分支） |
+| 改 Agent 请求传输 | `utils/ai/agent-transport.js`（超时 / 重试 / 流式三端分支；4.21.0 工具轮默认流式：H5 走 callWithToolsSSEToolRound、App 走 chat-chunked 带 tools、失败降级非流式 180s）+ `utils/ai/chat-chunked.js` 的 assembleStreamToolCalls（delta.tool_calls 按 index 增量拼装，两个流式端共用） |
 | 改进入总结（伪对话） | `composables/useEnterSummary.js`（两条基线 + 节流）+ `utils/enter-summary.js`（窗口裁决/聚合/低落扫描）+ `utils/enter-dialogue.js`（写成对话消息：开场白 / 正文行 / 签名去重）+ `pages/chat/index.vue` 的 `.enter-actions` + `utils/chat-session.js`（只带总结算空壳、空态入口让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `utils/enter-dialogue.js` 的 `buildEnterButtons`（消息里的预置按钮）+ `composables/useChatSession.js` 的 `resumeBack`（回去时销毁伪对话） |
 | 改 AI 动静摘要 | `utils/progress-digest.js`（组装）+ `utils/ai/chat-helpers.js`（buildChatMessages 注入点） |
 | 改冷启动新对话 | `utils/chat-session.js`（判定）+ `composables/useChatSession.js`（编排）+ `pages/chat/index.vue` onMounted 与 `.resume-*` 卡片 | `utils/next-step.js`（选取与每天一次）+ `composables/useChatEngine.js` offerNextStep + `pages/chat/index.vue` 卡片 |
@@ -294,7 +294,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改 AI 效果自检 | `utils/ai/eval/cases.js`（30 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
 | 改 BKD 技术手册（内置记录） | `utils/storage/bkd-handbook.js`（4 篇，标签「技术手册」），`App.vue` 的 appReady 调 `ensureBkdHandbook()` 补发，改内容要 +`BKD_SEED_VERSION`；「内置」徽标前缀在 `utils/seed-records.js`（bkdh_） |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/bkd-handbook.js` 的 `ensureBkdHandbook`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates`；**下线种子内容**走 `utils/storage/seed-cleanup.js`（软删 + 幂等，参考 removeCet6Content） |
-| 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**上限铁律：max_tokens 锁 8192（4.20.1 实测：GLM-5.3 强制思考下 tool_calls 一次 12K tokens 必超时）；改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`** |
+| 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**上限铁律：max_tokens 锁 8192 且工具轮必须走流式（4.20.1/4.21.0 实测：GLM-5.3 强制思考下 tool_calls 一次 12K tokens 非流式必超时，流式 idle 续期后不再受总时长限制）；改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`；JSON 路径的裸换行容错在 `response-parser.js` 的 tryParseWithControlCharFix** |
 | 改长按类手势（长按删除等） | `composables/usePressHold.js`（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别再用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」）；**4.12.6 盘点后已清零对话面板与 agent 卡片的残留 @longpress**（plan 组件的网格单元三处保留——无滑动误扰场景） |
 | 改聊天页入场动画 | 气泡内内容自动跟随 MessageBubble 的 bubbleIn；**气泡外的兄弟块**（开场按钮 .enter-actions / 无 Key 卡 .no-key-card / 恢复卡 .resume-card / 建议条 .suggestions-bar）各自在 `pages/chat/chat.scss` 挂 `chatRiseIn` —— 新增气泡外块时必须自查入场动画（4.11.1） |
 | 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
@@ -359,7 +359,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 99 文件 / 1356 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 100 文件 / 1366 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

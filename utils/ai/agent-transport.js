@@ -9,14 +9,14 @@ import { getReasoningConfig, getMaxTokens } from './providers.js'
 import { markReplyTruncated } from './response-parser.js'
 import { TOOL_DEFINITIONS } from './tools.js'
 import { TOOL_FEATURE_MAP, isFeatureActive } from './features.js'
-import { chatRequestChunkedStream } from './chat-chunked.js'
+import { chatRequestChunkedStream, assembleStreamToolCalls } from './chat-chunked.js'
 import { logger } from '../logger.js'
 /**
  * 调用带 tools 参数的 AI（非流式）
  * 当 isFinal=true 时用流式请求（最后一轮，AI 给最终回复）
  */
-/** 工具调用轮次超时（ms）——工具轮 180s：长文走 create_diary 的 JSON arguments（4.20.1：上限提到 180s，
- *  8192 tokens + GLM 强制思考实测贴近 120s 边界，留余量；12K 会超时所以 max_tokens 锁 8192），
+/** 工具调用轮次超时（ms）——非流式兜底 180s；4.21.0 起工具轮默认走流式（idle 续期，12K tokens 的
+ *  JSON arguments 也能在生成期间不被掐），非流式只在流式失败/测试 mock 时兜底。
  *  最终回复 45s（最终轮走流式，另有续期超时） */
 const TOOL_CALL_TIMEOUT = 180000
 const FINAL_REPLY_TIMEOUT = 45000
@@ -28,24 +28,194 @@ export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, 
   if (isFinal && onChunk) {
     return callWithToolsStream(provider, cfg, messages, apiKey, onChunk)
   }
+  // 测试钩子（3.2 M1 回归集）：mock 直连非流式路径，形状不变
+  if (cfg && typeof cfg._mockResponder === 'function') {
+    const body = buildStreamRoundBody(provider, cfg, messages)
+    return callWithRetry(provider, cfg, body, apiKey, TOOL_CALL_TIMEOUT, 0)
+  }
+  // 4.21.0：工具轮默认流式 —— 非流式一次性等完整 JSON arguments，长文（数千字 content 转义）
+  // 生成超 180s 必超时；流式按 chunk 续命，模型还在吐字就不掐。失败降级回非流式。
+  return callWithToolsStreamRound(provider, cfg, messages, apiKey).then(res => {
+    if (res && res._streamError) {
+      logger.warn('[AgentLoop] stream tool-round failed, falling back to non-stream')
+      return callWithRetry(provider, cfg, buildStreamRoundBody(provider, cfg, messages), apiKey, TOOL_CALL_TIMEOUT)
+    }
+    return res
+  })
+}
 
+/** 工具轮请求体（非流式兜底用，与流式字段一致） */
+function buildStreamRoundBody(provider, cfg, messages) {
   const body = {
     model: cfg.model,
     messages,
     temperature: cfg.temperature ?? 0.7,
-    // 4.3.0：工具轮也要给足输出上限 —— 长文常由 create_diary 一次性写进 content
     max_tokens: getMaxTokens(provider.id),
     tools: buildToolList(provider, cfg.model),
     tool_choice: 'auto'
   }
-
-  // D4 推理分级：工具轮视为复杂任务，支持思考的模型注入 thinking/reasoning_effort
   const reasoning = getReasoningConfig(provider.id, cfg.model, 'complex')
   if (reasoning) Object.assign(body, reasoning)
+  return body
+}
 
-  const timeout = isFinal ? FINAL_REPLY_TIMEOUT : TOOL_CALL_TIMEOUT
+/**
+ * 工具轮流式（4.21.0）：H5 走 fetch SSE；App 走 enableChunked；其余端降级非流式
+ * @returns {{ message: { content, tool_calls?, reasoning_content? }, id, truncated }|{_streamError:true}}
+ */
+function callWithToolsStreamRound(provider, cfg, messages, apiKey) {
+  const tools = buildToolList(provider, cfg.model)
+  if (!tools || tools.length === 0) return Promise.resolve({ _streamError: true })
+  const reasoning = getReasoningConfig(provider.id, cfg.model, 'complex')
+  // #ifdef H5
+  return callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning)
+  // #endif
+  // #ifndef H5
+  return chatRequestChunkedStream('', '', cfg, null, [], {
+    messages,
+    raw: true,
+    tools: tools,
+    toolRound: true,
+    reasoning: reasoning
+  }).then(res => {
+    if (res && (res._error || res._failed)) return { _streamError: true }
+    return res
+  }).catch(() => ({ _streamError: true }))
+  // #endif
+}
 
-  return callWithRetry(provider, cfg, body, apiKey, timeout, 0)
+/**
+ * H5 工具轮流式 SSE（4.21.0）：与最终轮 SSE 的差别 —— 带 tools，解析 delta.tool_calls
+ * 增量拼装；超时用 idle 续期（首 token 60s / 每 chunk 续 30s / 硬上限 600s），
+ * 12K tokens 的 JSON arguments 生成期间只要还在吐字就不会被掐
+ */
+function callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning) {
+  const body = {
+    model: cfg.model,
+    messages,
+    temperature: cfg.temperature ?? 0.7,
+    stream: true,
+    max_tokens: getMaxTokens(provider.id),
+    tools: tools,
+    tool_choice: 'auto'
+  }
+  if (reasoning) Object.assign(body, reasoning)
+
+  return new Promise((resolve) => {
+    let fullContent = ''
+    let fullReasoning = ''
+    const toolDeltas = []
+    let finishReason = ''
+    let resolved = false
+    const IDLE_AFTER_FIRST = 30000
+    const TTFB_TIMEOUT = 60000
+    const HARD_TOTAL = 600000
+    let timer = setTimeout(onTimeout, TTFB_TIMEOUT)
+    const hardTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        clearTimeout(timer)
+        resolve(buildRoundResult('length'))
+      }
+    }, HARD_TOTAL)
+    function buildRoundResult(forceReason) {
+      const message = { content: fullContent }
+      const calls = assembleStreamToolCalls(toolDeltas)
+      if (calls.length > 0) message.tool_calls = calls
+      if (fullReasoning) message.reasoning_content = fullReasoning
+      return markReplyTruncated({ message: message, id: '' }, finishReason || forceReason)
+    }
+    function onTimeout() {
+      if (resolved) return
+      resolved = true
+      clearTimeout(hardTimer)
+      // 半截 tool_calls 的 arguments 必然不是合法 JSON —— executeTool 会报错回传，
+      // 模型下一轮自愈（通常会把内容写短）。不做非流式重试：同样的生成只会再超时一次。
+      resolve(buildRoundResult('length'))
+    }
+    function bumpIdle() {
+      clearTimeout(timer)
+      timer = setTimeout(onTimeout, IDLE_AFTER_FIRST)
+    }
+
+    fetch(provider.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(body)
+    }).then(async (resp) => {
+      if (!resp.ok) {
+        clearTimeout(timer)
+        clearTimeout(hardTimer)
+        if (!resolved) {
+          resolved = true
+          resolve({ _streamError: true })
+        }
+        return
+      }
+      const reader = resp.body?.getReader()
+      if (!reader) {
+        const data = await resp.json()
+        clearTimeout(timer)
+        clearTimeout(hardTimer)
+        resolved = true
+        const msg = data.choices?.[0]?.message || { content: '' }
+        resolve(markReplyTruncated({ message: msg, id: data.id || '' }, data.choices?.[0]?.finish_reason))
+        return
+      }
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data:')) continue
+          const jsonStr = trimmed.slice(5).trim()
+          if (jsonStr === '[DONE]') continue
+          try {
+            const chunk = JSON.parse(jsonStr)
+            const choice = chunk.choices?.[0] || {}
+            if (choice.finish_reason) finishReason = choice.finish_reason
+            const delta = choice.delta || {}
+            if (delta.reasoning_content) {
+              fullReasoning += delta.reasoning_content
+              bumpIdle()
+            }
+            if (delta.content) {
+              fullContent += delta.content
+              bumpIdle()
+            }
+            if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
+              toolDeltas.push(...delta.tool_calls)
+              bumpIdle()
+            }
+          } catch { /* skip */ }
+        }
+      }
+      clearTimeout(timer)
+      clearTimeout(hardTimer)
+      if (!resolved) {
+        resolved = true
+        resolve(buildRoundResult())
+      }
+    }).catch((err) => {
+      clearTimeout(timer)
+      clearTimeout(hardTimer)
+      if (!resolved) {
+        resolved = true
+        logger.error('[AgentLoop] tool-round SSE error:', err.message)
+        resolve({ _streamError: true })
+      }
+    })
+  })
 }
 
 /** 带指数退避重试的 uni.request 封装 */
