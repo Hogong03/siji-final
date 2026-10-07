@@ -6,6 +6,24 @@
 
 export const V418 = [
   {
+    version: '4.18.1',
+    date: '2026-10-07',
+    title: '计划总览优先级标签收成行内紧凑小灰字（「紧急1 · 重要0 · 普通0」），不再整行三点分布',
+    summary: [
+      '真机复验反馈：优先级三计数仍以 space-between 分布占一整行 —— 收成一行紧凑标签（间隔点分隔、20rpx 灰字）',
+      '顺带说明：标签字色 4.18.0 起已统一灰阶（代码中无红色渲染路径），真机若仍见红字「紧急1」是编译产物未更新，删 unpackage/dist 重编译覆盖安装',
+    ],
+    categories: [
+      {
+        title: '计划总览（4.18.1）',
+        items: [
+          'pages/plan/components/PlanOverview.vue：pb-labels 去 space-between 改 gap 8rpx 紧凑排列，标签间加 pb-label-sep 间隔点（#D4D4D8）',
+          '优先级颜色仅保留在 6rpx 色条（pb-segment），标签文字浅色 #71717A / 深色 #A1A1AA 不变',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.18.0',
     date: '2026-10-07',
     title: 'UI 收口批次：功能页去重操作、计划总览降噪、账单卡合并行、记录 chip 选中态回归灰阶、聊天按钮胶囊统一',

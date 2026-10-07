@@ -50,10 +50,12 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 				:style="{ width: p.pct + '%', background: p.color }" />
 		</view>
 		<view v-if="priorityBar.length > 0" class="pb-labels">
-			<!-- 4.18.0：标签行统一灰阶 —— 色条已表达优先级颜色，红字「紧急」在浅灰底上视觉权重过跳 -->
-			<text v-for="p in priorityBar" :key="p.label" class="pb-label">
-				{{ p.label }} {{ p.count }}
-			</text>
+			<!-- 4.18.1：收成行内紧凑小灰字（「紧急1 · 重要0 · 普通0」），不再 space-between 占一整行；
+			     优先级颜色只由上方色条表达，标签一律灰阶 -->
+			<template v-for="(p, i) in priorityBar" :key="p.label">
+				<text v-if="i > 0" class="pb-label-sep">·</text>
+				<text class="pb-label">{{ p.label }} {{ p.count }}</text>
+			</template>
 		</view>
 	</view>
 </template>
@@ -179,12 +181,18 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 
 .pb-labels {
 	display: flex;
-	justify-content: space-between;
+	align-items: center;
+	gap: 8rpx;
 }
 
 .pb-label {
 	font-size: 20rpx;
 	color: #71717A;
+}
+
+.pb-label-sep {
+	font-size: 20rpx;
+	color: #D4D4D8;
 }
 
 /* #ifndef MP-WEIXIN */
