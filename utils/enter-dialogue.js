@@ -148,6 +148,9 @@ export function buildBriefingMetrics(summary) {
   const out = []
   const expense = Number(summary.yesterdayExpense) || 0
   if (expense > 0) out.push({ key: 'expense', value: `¥${expense}`, label: '昨日支出' })
+  // 4.20.0：周一洞察 —— 上周支出格（只有周播报在场时给，与文本行同源）
+  const weekTotal = summary.weekBill && Number(summary.weekBill.total) || 0
+  if (weekTotal > 0) out.push({ key: 'weekSpend', value: `¥${weekTotal % 1 === 0 ? weekTotal : weekTotal.toFixed(2)}`, label: '上周支出' })
   if ((summary.streak || 0) >= 2) out.push({ key: 'streak', value: `${summary.streak} 天`, label: '连续打卡' })
   if ((summary.diaryCount || 0) > 0) out.push({ key: 'diary', value: String(summary.diaryCount), label: '新记录' })
   if ((summary.eventsTotal || 0) > 0) out.push({ key: 'events', value: String(summary.eventsTotal), label: '新进展' })
@@ -255,6 +258,10 @@ export function buildEnterButtons(summary, extras = null) {
     }
     if ((summary.diaryCount || 0) > 0) add('diary', '看新记录', 'navigate', '/pages/diary/list')
     if (summary.weekBill && summary.weekBill.text) add('bill', '看账单', 'navigate', '/pages/bill/index')
+    // 4.20.0：周洞察的建议按钮 —— 预填追问「看看上周XX都花在哪了」，AI 有 query_bill 接得住
+    if (summary.weekBill && summary.weekBill.suggestion && summary.weekBill.suggestion.prefill) {
+      add('insight', '看看花在哪', 'prefill', summary.weekBill.suggestion.prefill)
+    }
     if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
   }
 

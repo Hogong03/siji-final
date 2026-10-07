@@ -18,7 +18,8 @@ import { getBillList } from '@/utils/storage/bill.js'
 import {
   buildEnterSummary, resolveSummaryWindow, scanMoodDip, CONFIRM_KEY, LEAVE_KEY
 } from '@/utils/enter-summary.js'
-import { buildWeeklyBillAnnouncement, markWeeklyBillAnnounced } from '@/utils/bill-weekly.js'
+import { markWeeklyBillAnnounced } from '@/utils/bill-weekly.js'
+import { buildWeeklyInsightAnnouncement } from '@/utils/weekly-insights.js'
 import { collectPlanAlerts } from '@/utils/plan-alerts.js'
 import { satisfiedToday, isRecurring } from '@/utils/plan-recur.js'
 import { pickNextStep, shouldOfferNextStep } from '@/utils/next-step.js'
@@ -142,12 +143,13 @@ function computeSummary(since, now, source) {
   })
   // 3.5.13：连续两天低落时给一句休息提示（不诊断、不评分、不催）
   const moodDip = scanMoodDip({ since, now, diaryReader: getDiaryList })
-  // 3.5.14：每周账单播报（三个数字，一周只出一次；生成即标记，不重复打扰）
-  // 4.10.0：「周账单播报」能力开关
+  // 3.5.14：每周账单播报（一周只出一次；生成即标记，不重复打扰）
+  // 4.20.0：升级为主动洞察 —— 分类环比归因 + 连续消费模式 + 打卡/记录维度 + 可执行建议
+  // 4.10.0：「周账单播报」能力开关沿用
   let weekBill = null
   try {
     if (isFeatureOn('week_bill')) {
-      weekBill = buildWeeklyBillAnnouncement({ now })
+      weekBill = buildWeeklyInsightAnnouncement({ now })
       if (weekBill) markWeeklyBillAnnounced(now)
     }
   } catch (e) {
