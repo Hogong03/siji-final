@@ -8,6 +8,27 @@
 
 export const V416 = [
   {
+    version: '4.16.1',
+    date: '2026-10-07',
+    title: '功能图标统一重画（plan/bill/diary/edit/calendar）+ 版本历史图标去重 + 功能页图标调大',
+    summary: [
+      'plan 旧版与 calendar 都是日历图形几乎重复；bill 用 $ 符号不贴合中文场景；diary 与 edit 笔形重复',
+      '统一重画为 2px 线性风格：plan→清单待办、bill→钱包、diary→打开的书、edit→笔在方框上、calendar→日历格子；SijiIcon 加 v3 映射，PIL 紧裁剪去四周留白',
+      '设置页版本历史图标从 info 改为 clock（与关于思迹的 info 区分）；功能页入口图标 size 从 md 提到 xl',
+    ],
+    categories: [
+      {
+        title: '图标优化（4.16.1）',
+        items: [
+          'static/icons/：新增 plan-v3 / bill-v3 / diary-v3 / edit-v3 / calendar-v3 及对应 -dark.png',
+          'components/common/SijiIcon.vue：V3 集合映射，这 5 个图标走 v3 版本路径',
+          'pages/settings/index.vue：版本历史图标 info→clock',
+          'pages/functions/index.vue：入口卡片图标 size md→xl',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.16.0',
     date: '2026-10-07',
     title: '4.16.0 测试缺陷收口（TC-004/TC-028）+ UI 第二轮批次：自报信息实时落库、eval 多轮用例、跨月查询、内置徽标、诊断包、简报卡分层升级',
