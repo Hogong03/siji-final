@@ -65,24 +65,21 @@
 			iconName: 'diary',
 			title: '记录',
 			desc: `${dashboard.value.diaryCount} 篇本月`,
-			listPage: '/pages/diary/list',
-			newPage: '/pages/diary/detail?id=new'
+			listPage: '/pages/diary/list'
 		},
 		{
 			id: 'bill',
 			iconName: 'bill',
 			title: '记账',
 			desc: `¥${formatAmount(dashboard.value.monthExpense)} 本月`,
-			listPage: '/pages/bill/index',
-			newPage: '/pages/bill/edit?type=expense'
+			listPage: '/pages/bill/index'
 		},
 		{
 			id: 'plan',
 			iconName: 'plan',
 			title: '计划',
 			desc: `${dashboard.value.planActive} 个进行中`,
-			listPage: '/pages/plan/index',
-			newPage: '/pages/plan/templates'
+			listPage: '/pages/plan/index'
 		},
 	])
 
@@ -221,9 +218,7 @@
 							</view>
 						</view>
 						<view class="entry-right">
-							<view class="entry-new-btn btn-tactile" @tap.stop="goPage(card.newPage)">
-								<text class="entry-new-text">+</text>
-							</view>
+							<!-- 4.18.0：去掉黑圆+号 —— 新建入口各页 FAB 已有（记录/计划/账单），一行只留跳转语义 -->
 							<text class="entry-arrow">›</text>
 						</view>
 					</view>

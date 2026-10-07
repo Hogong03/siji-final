@@ -116,11 +116,31 @@
   margin-top: 8rpx;
   padding-top: 8rpx;
   border-top: 1rpx solid #E4E4E7;
-  text-align: center;
+  /* 4.18.0：两端对齐 —— 左预算入口、右收支统计，原来两行淡字撑高卡片 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   .budget-hint-text {
     font-size: 22rpx;
     color: #A1A1AA;
+  }
+
+  .stats-link-inline {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    padding: 8rpx 0 8rpx 16rpx;
+  }
+
+  .stats-link-text {
+    font-size: 24rpx;
+    color: #52525B;
+  }
+
+  .stats-link-arrow {
+    font-size: 24rpx;
+    color: #52525B;
   }
 }
 

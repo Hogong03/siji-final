@@ -50,7 +50,8 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 				:style="{ width: p.pct + '%', background: p.color }" />
 		</view>
 		<view v-if="priorityBar.length > 0" class="pb-labels">
-			<text v-for="p in priorityBar" :key="p.label" class="pb-label" :style="{ color: p.color }">
+			<!-- 4.18.0：标签行统一灰阶 —— 色条已表达优先级颜色，红字「紧急」在浅灰底上视觉权重过跳 -->
+			<text v-for="p in priorityBar" :key="p.label" class="pb-label">
 				{{ p.label }} {{ p.count }}
 			</text>
 		</view>
@@ -183,6 +184,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 
 .pb-label {
 	font-size: 20rpx;
+	color: #71717A;
 }
 
 /* #ifndef MP-WEIXIN */
@@ -197,6 +199,7 @@ html.theme-dark {
 	.os-num { color: #FAFAFA; }
 	.os-sub { color: #71717A; }
 	.os-sep { color: #3F3F46; }
+	.pb-label { color: #A1A1AA; }
 	.priority-bar { background: #3F3F46; }
 }
 /* #endif */
@@ -212,6 +215,7 @@ html.theme-dark {
 	.os-num { color: #FAFAFA; }
 	.os-sub { color: #71717A; }
 	.os-sep { color: #3F3F46; }
+	.pb-label { color: #A1A1AA; }
 	.priority-bar { background: #3F3F46; }
 }
 /* #endif */

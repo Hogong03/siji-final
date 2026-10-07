@@ -1513,8 +1513,9 @@ html.theme-dark {
 
 .enter-btn {
   max-width: 100%;
-  padding: 10rpx 22rpx;
-  border-radius: 10rpx;
+  /* 4.18.0：与底部建议条 suggestion-chip 统一胶囊视觉（圆角/内距对齐），字重字号本就一致 */
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
   background: #F4F4F5;
   border: 1rpx solid #E4E4E7;
   // 入场跟随所在气泡（bubbleIn 0.3s），逐钮延迟形成弹出节奏（4.11.1）

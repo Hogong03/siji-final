@@ -123,10 +123,15 @@ function saveBudget() {
         </view>
       </view>
       <view class="budget-set-hint" v-else-if="currentMonth !== 'all'" @tap="openBudgetSet">
+        <!-- 4.18.0：无预算时与收支统计合并一行，卡片下半不再空出一行淡字 -->
         <text class="budget-hint-text">点击设置月度预算</text>
+        <view class="stats-link-inline" @tap.stop="goStats">
+          <text class="stats-link-text">收支统计</text>
+          <text class="stats-link-arrow">→</text>
+        </view>
       </view>
-      <!-- 统计入口 -->
-      <view class="stats-link" @tap="goStats">
+      <!-- 统计入口（有预算时预算进度占一行，收支统计另起一行；全部视图始终显示） -->
+      <view class="stats-link" v-if="currentMonth === 'all' || budget > 0" @tap="goStats">
         <text class="stats-link-text">收支统计</text>
         <text class="stats-link-arrow">→</text>
       </view>
