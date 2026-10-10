@@ -34,6 +34,7 @@
 		startReminderChecker,
 		checkAllReminders
 	} from '@/utils/reminder.js'
+	import { registerPlanPushes } from '@/utils/reminder/push-schedule.js'
 	import {
 		checkVersionUpdate,
 		primeAppVersion
@@ -108,6 +109,15 @@
 				rebuildIndex()
 				initReminder(getPlanList)
 				startReminderChecker()
+				// 4.22.0：不等轮询计时器，启动立即查一次（计划到期进 App 马上见到提醒 message，
+				// 而不是等「正在启动」5 秒后才由定时器查）
+				try {
+					checkAllReminders()
+				} catch (e) { /* ignore */ }
+				// 4.22.0：本地推送预注册（未来 7 天滚动窗口）—— App 被杀/退后台也能收到系统通知
+				try {
+					registerPlanPushes()
+				} catch (e) { /* ignore */ }
 				// 3.4.5 / 3.5.12：进入总结（冷启动 + 回前台两条路径，回前台结算见 onShow）
 				initEnterSummary()
 				// 自动本地备份（App 端专属）：开关开（siji_auto_backup 默认开）且距上次超过 24h
@@ -186,6 +196,12 @@
 		// 检查计划提醒（从后台回到前台时立即检查）
 		try {
 			checkAllReminders()
+		} catch (e) {
+			/* ignore */
+		}
+		// 4.22.0：回前台重注册本地推送（60s 节流）—— 提醒配置或计划变更后滚动窗口自动对齐
+		try {
+			registerPlanPushes()
 		} catch (e) {
 			/* ignore */
 		}

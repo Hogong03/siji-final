@@ -8,6 +8,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { onShow, onLoad, onHide } from '@dcloudio/uni-app'
 import { useAppStore } from '@/store/index.js'
+import { getPlanList } from '@/utils/storage.js'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import InputArea from '@/components/chat/InputArea.vue'
@@ -455,6 +456,68 @@ function showGuideModal() { showGuide.value = true }
 function toggleUnifiedSwitch() { showUnifiedSwitch.value = !showUnifiedSwitch.value }
 function toggleModelSwitch() { showModelSwitch.value = !showModelSwitch.value }
 
+// ===== 顶部计划速览面板（4.22.0：聊天页不离开就能看有哪些计划）=====
+const showPlanSheet = ref(false)
+const chatPlans = ref([])
+
+function togglePlanSheet() {
+	showPlanSheet.value = !showPlanSheet.value
+	if (showPlanSheet.value) loadChatPlans()
+}
+
+const PLAN_STATUS_TEXT = { 0: '待开始', 1: '进行中' }
+
+function planDueText(p) {
+	const raw = String(p.deadline || p.due_date || '')
+	const m = raw.match(/^(\d{4}-\d{1,2}-\d{1,2})/)
+	if (!m) return ''
+	const d = new Date(m[1].replace(/-/g, '/'))
+	return `${d.getMonth() + 1}月${d.getDate()}日`
+}
+
+function planDueSoon(p) {
+	const raw = String(p.deadline || p.due_date || '')
+	const m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+	if (!m) return false
+	const endTs = new Date(+m[1], +m[2] - 1, +m[3], 23, 59, 59).getTime()
+	return Date.now() > endTs
+}
+
+function planCheckedToday(p) {
+	const checkins = Array.isArray(p.checkins) ? p.checkins : []
+	const d = new Date()
+	const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+	return checkins.some(c => Number(c && c.at) >= dayStart)
+}
+
+function loadChatPlans() {
+	try {
+		chatPlans.value = getPlanList()
+			.filter(p => p && p.is_deleted !== 1 && p.status !== 2)
+			.slice(0, 20)
+			.map(p => ({
+				clientId: p.client_id,
+				title: p.title || '未命名计划',
+				statusText: PLAN_STATUS_TEXT[Number(p.status)] || '进行中',
+				dueText: planDueText(p),
+				dueSoon: planDueSoon(p),
+				checkedToday: planCheckedToday(p)
+			}))
+	} catch (e) {
+		chatPlans.value = []
+	}
+}
+
+function goPlanDetail(clientId) {
+	togglePlanSheet()
+	uni.navigateTo({ url: `/pages/plan/detail?clientId=${clientId}` })
+}
+
+function goPlanPage() {
+	togglePlanSheet()
+	uni.switchTab({ url: '/pages/plan/index' })
+}
+
 // 顶部厂商 logo 映射
 const PROVIDER_LOGO_MAP = {
   deepseek: 'ds', zhipu: 'zg', qwen: 'qw', moonshot: 'ms', openai: 'oa'
@@ -570,9 +633,39 @@ function handleWelcomeChip(text) {
             <text class="nav-badge-text">{{ store.currentProviderName }} ▾</text>
           </view>
         </view>
+        <view class="nav-plan-btn" @tap="togglePlanSheet">
+          <SijiIcon name="plan" size="md" />
+        </view>
         <view class="nav-guide-btn" @tap="showGuideModal">
           <text class="guide-icon">?</text>
         </view>
+      </view>
+    </view>
+
+    <!-- 计划速览面板（4.22.0：底部弹出，聊天页不离开就能看有哪些计划） -->
+    <view v-if="showPlanSheet" class="plan-sheet-mask" @tap="togglePlanSheet" />
+    <view v-if="showPlanSheet" class="plan-sheet">
+      <view class="plan-sheet-head">
+        <text class="plan-sheet-title">我的计划</text>
+        <text class="plan-sheet-count">{{ chatPlans.length }} 个进行中</text>
+      </view>
+      <scroll-view scroll-y class="plan-sheet-list">
+        <view v-if="chatPlans.length === 0" class="plan-sheet-empty">
+          <text class="plan-sheet-empty-text">没有进行中的计划，去定一个吧</text>
+        </view>
+        <view v-for="p in chatPlans" :key="p.clientId" class="plan-sheet-item" @tap="goPlanDetail(p.clientId)">
+          <view class="plan-item-main">
+            <text class="plan-item-title">{{ p.title }}</text>
+            <view class="plan-item-meta">
+              <text class="plan-item-status">{{ p.statusText }}</text>
+              <text v-if="p.dueText" class="plan-item-due" :class="{ over: p.dueSoon }">{{ p.dueSoon ? '已到期：' : '截止：' }}{{ p.dueText }}</text>
+            </view>
+          </view>
+          <text v-if="p.checkedToday" class="plan-item-checkin">今日已打卡</text>
+        </view>
+      </scroll-view>
+      <view class="plan-sheet-footer" @tap="goPlanPage">
+        <text class="plan-sheet-footer-text">打开计划页</text>
       </view>
     </view>
 

@@ -183,6 +183,18 @@
   }
 }
 
+.nav-plan-btn {
+  @include circular-btn;
+  margin-left: 12rpx;
+  margin-right: 12rpx;
+  background: #F4F4F5;
+
+  &:active {
+    background: #F4F4F5;
+    transform: scale(0.9);
+  }
+}
+
 .nav-guide-btn {
   @include circular-btn;
   margin-left: auto;
@@ -198,6 +210,135 @@
     background: #F4F4F5;
     transform: scale(0.9);
   }
+}
+
+/* ─── 计划速览面板（4.22.0）：底部弹出，与全站弹出面板同一套规矩 ─── */
+.plan-sheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+}
+
+.plan-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: #FFFFFF;
+  border-radius: 24rpx 24rpx 0 0;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  animation: chatRiseIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.plan-sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 28rpx 32rpx 8rpx;
+}
+
+.plan-sheet-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #18181B;
+}
+
+.plan-sheet-count {
+  font-size: 22rpx;
+  color: #71717A;
+}
+
+.plan-sheet-list {
+  max-height: 52vh;
+  padding: 8rpx 0;
+}
+
+.plan-sheet-empty {
+  padding: 60rpx 32rpx;
+  text-align: center;
+}
+
+.plan-sheet-empty-text {
+  font-size: 26rpx;
+  color: #A1A1AA;
+}
+
+.plan-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 22rpx 32rpx;
+
+  &:active {
+    background: #F4F4F5;
+  }
+}
+
+.plan-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-item-title {
+  display: block;
+  font-size: 28rpx;
+  color: #18181B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 4rpx;
+}
+
+.plan-item-status {
+  font-size: 22rpx;
+  color: #71717A;
+}
+
+.plan-item-due {
+  font-size: 22rpx;
+  color: #A1A1AA;
+
+  &.over {
+    color: #D35D5D;
+  }
+}
+
+.plan-item-checkin {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  color: #71717A;
+  padding: 6rpx 16rpx;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 20rpx;
+}
+
+.plan-sheet-footer {
+  margin: 8rpx 32rpx 0;
+  padding: 20rpx 0;
+  text-align: center;
+  border-top: 1rpx solid #E4E4E7;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.plan-sheet-footer-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #18181B;
 }
 
 .chat-scroll {
@@ -1830,3 +1971,38 @@ html.theme-dark {
 
 }
 /* #endif */
+
+/* ─── 计划速览面板 深色（4.22.0）─── */
+/* #ifndef MP-WEIXIN */
+html.theme-dark {
+  .plan-sheet { background: #27272A; }
+  .plan-sheet-title { color: #FAFAFA; }
+  .plan-sheet-count { color: #71717A; }
+  .plan-sheet-empty-text { color: #71717A; }
+  .plan-sheet-item:active { background: #3F3F46; }
+  .plan-item-title { color: #FAFAFA; }
+  .plan-item-status { color: #71717A; }
+  .plan-item-due { color: #71717A; &.over { color: #F87171; } }
+  .plan-item-checkin { color: #A1A1AA; border-color: #3F3F46; }
+  .plan-sheet-footer { border-top-color: #3F3F46; }
+  .plan-sheet-footer-text { color: #FAFAFA; }
+  .nav-plan-btn { background: #3F3F46; }
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+@media (prefers-color-scheme: dark) {
+  .plan-sheet { background: #27272A; }
+  .plan-sheet-title { color: #FAFAFA; }
+  .plan-sheet-count { color: #71717A; }
+  .plan-sheet-empty-text { color: #71717A; }
+  .plan-sheet-item:active { background: #3F3F46; }
+  .plan-item-title { color: #FAFAFA; }
+  .plan-item-status { color: #71717A; }
+  .plan-item-due { color: #71717A; &.over { color: #F87171; } }
+  .plan-item-checkin { color: #A1A1AA; border-color: #3F3F46; }
+  .plan-sheet-footer { border-top-color: #3F3F46; }
+  .plan-sheet-footer-text { color: #FAFAFA; }
+  .nav-plan-btn { background: #3F3F46; }
+}
+/* #endif */
+

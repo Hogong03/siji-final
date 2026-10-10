@@ -104,6 +104,44 @@ export function computeReminderFire(plan, cfg, now = Date.now()) {
   return null
 }
 
+/**
+ * 未来 N 天内的所有命中时刻（4.22.0，纯函数）：供本地推送注册扫描「应用外可达」的提醒点
+ * 与 computeReminderFire 的差别：不要求 fireTs <= now（要注册的是未来的通知），
+ * 返回全部 [{ ts, dateKey }]（已过时刻剔除，超出窗口剔除，超过计划截止剔除）
+ */
+export function computeUpcomingFires(plan, cfg, now = Date.now(), days = 7) {
+  if (!cfg || !cfg.enabled) return []
+  const repeat = cfg.repeatType || 'none'
+  const customTime = cfg.customTime || ''
+  const horizon = now + days * DAY_MS
+  const out = []
+  if (repeat === 'none') {
+    const ts = calcReminderTime(plan, cfg)
+    if (ts && ts > now && ts <= horizon) out.push({ ts, dateKey: ymdOf(ts) })
+    return out
+  }
+  const baseTs = customTime ? parseDateTimeToTs(customTime) : null
+  if (baseTs == null) return []
+  const base = new Date(baseTs)
+  const nowD = new Date(now)
+  const todayStart = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate()).getTime()
+  const endTs = planEndTsOf(plan)
+  const cursor = new Date(todayStart)
+  for (let i = 0; i <= days + 1 && cursor.getTime() <= horizon; i += 1) {
+    const dayStart = cursor.getTime()
+    if (endTs != null && dayStart > endTs) break
+    if (repeatMatchesOn(repeat, cursor, base)) {
+      const fireTs = new Date(
+        cursor.getFullYear(), cursor.getMonth(), cursor.getDate(),
+        base.getHours(), base.getMinutes()
+      ).getTime()
+      if (fireTs > now && fireTs <= horizon) out.push({ ts: fireTs, dateKey: ymdOf(dayStart) })
+    }
+    cursor.setTime(cursor.getTime() + DAY_MS)
+  }
+  return out
+}
+
 /** 计划里的时间是否带具体时刻（HH:MM） */
 function hasClockTime(s) {
   return /(\d{1,2}):(\d{2})/.test(String(s || ''))
