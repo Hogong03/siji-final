@@ -113,7 +113,7 @@ export const AI_PROVIDERS = {
  */
 export const PROVIDER_MAX_TOKENS = {
   deepseek: 8192,
-  zhipu: 4096,
+  zhipu: 8192,
   qwen: 8192,
   moonshot: 8192
 }

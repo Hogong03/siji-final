@@ -87,6 +87,7 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   const execResults = []      // 记录所有执行结果
   let rounds = 0
   let nudged = false          // 4.10.5 纠偏轮只发一次
+  let writeTruncated = false  // 4.20.1：写记录/写计划被输出上限截断时标记，最终回复追加提示
 
   while (rounds < MAX_ROUNDS) {
     rounds++
@@ -109,6 +110,12 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
 
     const assistantMsg = response.message || {}
     const callList = assistantMsg.tool_calls || []
+
+    // 4.20.1：写记录/写计划被输出上限截断 → 标记，最终回复追加「内容不完整」提示
+    if (response.truncated && callList.length > 0) {
+      const hasWrite = callList.some(c => ['create_diary', 'update_diary', 'create_plan', 'update_plan'].includes(c.function?.name))
+      if (hasWrite) writeTruncated = true
+    }
 
     // AI 没有请求工具 → 给出最终回复
     if (callList.length === 0) {
@@ -140,8 +147,13 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
           await new Promise(r => setTimeout(r, delay))
         }
       }
+      // 4.20.1：写记录被截断 → 在最终回复末尾追加提示
+      let finalReply = result.reply
+      if (writeTruncated) {
+        finalReply = (finalReply ? finalReply + '\n\n' : '') + '⚠️ 内容较长被输出上限截断，可继续发「补全」让我接着写。'
+      }
       return {
-        reply: result.reply,
+        reply: finalReply,
         action: result.action,
         actions: result.actions,
         suggestions: result.suggestions,

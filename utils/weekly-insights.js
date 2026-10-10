@@ -192,7 +192,9 @@ export function buildWeeklyInsightText(insight) {
     }
     parts.push(head)
   }
-  if (insight.streak) parts.push(insight.streak.line)
+  // streak 本身不含 line 字段（只有 category/days/avgAmount），连续模式与分类暴涨的
+  // 描述文案统一由 buildWeeklySuggestion 产出在 suggestion.line；这里只 push 一次
+  if (insight.suggestion && insight.suggestion.line) parts.push(insight.suggestion.line)
   const plan = insight.planStat
   if (plan && plan.checkinCount > 0) parts.push('打了 ' + plan.checkinCount + ' 次卡')
   if ((insight.diaryCount || 0) > 0) parts.push('写了 ' + insight.diaryCount + ' 篇记录')

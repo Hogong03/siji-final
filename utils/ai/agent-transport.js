@@ -107,7 +107,7 @@ function callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reaso
     const toolDeltas = []
     let finishReason = ''
     let resolved = false
-    const IDLE_AFTER_FIRST = 30000
+    const IDLE_AFTER_FIRST = 120000
     const TTFB_TIMEOUT = 60000
     const HARD_TOTAL = 600000
     let timer = setTimeout(onTimeout, TTFB_TIMEOUT)
@@ -361,9 +361,9 @@ function callWithToolsSSE(provider, cfg, messages, apiKey, onChunk) {
     let fullContent = ''
     let finishReason = ''
     let resolved = false
-    // 4.20.1：流式续期超时 —— 首 token 等待 60s，流式期间每收到 chunk 续 30s，总硬上限 180s
-    // 原来固定 90s 一刀切，长文（2000+ tokens）流式输出到一半被掐
-    const IDLE_AFTER_FIRST = 30000
+    // 4.20.1：流式续期超时 —— 首 token 等待 60s，流式期间每收到 chunk 续 120s，总硬上限 300s
+    // 4.21.1：IDLE 30s→120s —— GLM 强制思考模式下 reasoning 输出后有不吐 delta 的内部规划期（长上下文可达 60s+），30s 会误判超时
+    const IDLE_AFTER_FIRST = 120000
     const TTFB_TIMEOUT = 60000
     const HARD_TOTAL = 300000
     let timer = setTimeout(onTimeout, TTFB_TIMEOUT)

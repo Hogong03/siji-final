@@ -6,6 +6,33 @@
 
 export const V422 = [
   {
+    version: '4.22.1',
+    date: '2026-10-11',
+    title: '修复长文生成「走神 + 已达输出上限被截断」：GLM 强制思考下流式 idle 30s 误判超时，放宽至 120s',
+    summary: [
+      '根治长文（数千字）生成反复「抱歉我走神了 + 已达输出上限回复被截断 + 继续写完」：实测定位根因是 GLM-5.3/5.3-flash 强制思考模式下，reasoning_content 输出后有一段不吐任何 delta 的内部规划期（38 工具 + 长 system prompt 下可达 60s+），流式续期阈值 30s 被误判为断流，触发 onTimeout 生成空内容 + length 截断标记',
+      '修复：utils/ai/agent-transport.js 两处 IDLE_AFTER_FIRST 30s→120s（工具轮流式 callWithToolsSSEToolRound + 最终回复流式 callWithToolsSSE），TTFB 60s / 硬上限 600s（工具轮）/ 300s（最终回复）不变',
+      'H5 实测验证：同参数长文请求（高数学习手册极限+导数两章）完整返回 create_diary 工具调用，记录完整落库（含知识点详解/例题/复习建议收尾，无截断），全程无走神、无「继续写完」提示',
+      '直连 API 对照：GLM 流式在 38 工具 / 3 工具 / 无工具三种载荷下均正常（finish_reason=tool_calls/stop），证实问题在项目侧 idle 阈值而非模型',
+    ],
+    categories: [
+      {
+        title: '长文生成修复（4.22.1）',
+        items: [
+          'utils/ai/agent-transport.js：callWithToolsSSEToolRound 与 callWithToolsSSE 的 IDLE_AFTER_FIRST 由 30000 改为 120000，注释说明 GLM 思考期特性',
+          '不改请求参数（max_tokens 8192 / thinking.enabled / reasoning_effort high / 38 工具）——直连实测模型侧无超时无截断',
+        ],
+      },
+      {
+        title: '测试',
+        items: [
+          'H5 浏览器实测：长文请求完整保存记录（diary_2026-10，2182 字，标题「高等数学学习手册：极限与导数」），无走神无截断',
+          '全量 101 文件 / 1373 用例全绿（exit 0）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.22.0',
     date: '2026-10-08',
     title: '计划提醒应用外可达（本地推送预注册）+ 聊天页顶部计划速览面板 + 启动即查提醒',
