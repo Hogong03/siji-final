@@ -319,12 +319,16 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
   <view class="bubble-wrapper" :class="[message.role, { streaming: message.loading && message.content, 'is-continuation': isContinuation, 'is-short': isShort }]">
     <!-- 加载动画 — 仅在无内容时显示（等待 AI 响应） -->
     <view v-if="message.loading && !message.content" class="bubble assistant loading-bubble">
+      <!-- 4.23.0：思考流折叠块 —— 工具轮 reasoning_content 实时上屏，内容底部对齐跟随，生成完即隐 -->
+      <view v-if="message._thinking" class="thinking-box">
+        <text class="thinking-text">{{ message._thinking }}</text>
+      </view>
       <view class="loading-bar">
         <view class="bar-segment" />
         <view class="bar-segment" />
         <view class="bar-segment" />
       </view>
-      <!-- 阶段文案（P2-4）：正在思考 / 正在调用工具 -->
+      <!-- 阶段文案（P2-4）：正在思考 / 正在调用工具（4.23.0 升级为工具级文案） -->
       <text v-if="message._stageText" class="bubble-stage">{{ message._stageText }}</text>
     </view>
 
@@ -449,17 +453,42 @@ function onUpdateTags(payload) { emit('update-tags', payload) }
   line-height: 1.5;
 }
 
+/* ─── 思考流折叠块（4.23.0）：工具轮 reasoning_content 实时上屏 ─── */
+/* 固定高度 + 内容底部对齐：新思考把旧的自然顶出去，纯 CSS 跟随滚动，不用 scroll-view */
+.thinking-box {
+  max-height: 200rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 12rpx 16rpx;
+  margin-bottom: 12rpx;
+  background: #F4F4F5;
+  border-radius: 10rpx;
+}
+
+.thinking-text {
+  font-size: 20rpx;
+  color: #A1A1AA;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
   .bubble-image-fallback { background: #3F3F46; }
   .bubble-image-fallback-text { color: #71717A; }
+  .thinking-box { background: #3F3F46; }
+  .thinking-text { color: #71717A; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
   .bubble-image-fallback { background: #3F3F46; }
   .bubble-image-fallback-text { color: #71717A; }
+  .thinking-box { background: #3F3F46; }
+  .thinking-text { color: #71717A; }
 }
 /* #endif */
 </style>

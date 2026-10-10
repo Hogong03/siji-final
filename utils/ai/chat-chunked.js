@@ -182,6 +182,8 @@ function chunkedImpl(message, conversationId, cfg, onChunk, history, opts) {
           if (delta.reasoning_content) {
             fullReasoning += delta.reasoning_content
             markFirstChunk()
+            // 4.23.0：思考流实时上屏
+            if (opts.onThinking) opts.onThinking(delta.reasoning_content)
           }
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
             toolCallDeltas.push(...delta.tool_calls)

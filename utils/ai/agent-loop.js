@@ -97,7 +97,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       logger.warn('[AgentLoop] Stopped by user, exiting loop')
       return { reply: '', action: null, actions: [], toolCalls, execResults, conversation_id: conversationId, _agentMode: true, _stopped: true }
     }
-    const response = await callWithTools(provider, cfg, messages, apiKey)
+    // 4.23.0：工具轮思考流透传（cfg.onThinking 由聊天页注入，思考内容实时上屏）
+    const response = await callWithTools(provider, cfg, messages, apiKey, false, null, cfg.onThinking || null)
     if (response.stopped || cfg.stopSignal?.stopped) {
       logger.warn('[AgentLoop] Stopped by user, exiting loop')
       return { reply: '', action: null, actions: [], toolCalls, execResults, conversation_id: conversationId, _agentMode: true, _stopped: true }

@@ -134,4 +134,32 @@ describe('callWithTools 流式工具轮（H5 SSE 分支，vitest 跑原始源码
     const res = await callWithTools(PROVIDER, CFG, MESSAGES, 'test-key')
     expect(res.error).toContain('超时')
   })
+
+  it('工具轮请求体用 low 思考档（4.23.0：确定性任务不再 high 档深思）', async () => {
+    let capturedBody = null
+    global.fetch.mockImplementation((url, opts) => {
+      capturedBody = JSON.parse(opts.body)
+      return Promise.resolve(sseResponse([
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n\n',
+        'data: [DONE]\n\n'
+      ]))
+    })
+    await callWithTools(PROVIDER, CFG, MESSAGES, 'test-key')
+    // GLM-5.3 是 forced 思考模型：thinking 仍开（厂商强制），但 effort 降到 low
+    expect(capturedBody.thinking).toEqual({ type: 'enabled' })
+    expect(capturedBody.reasoning_effort).toBe('low')
+    expect(capturedBody.tools.length).toBeGreaterThan(0)
+  })
+
+  it('onThinking 回调收到 reasoning_content 分片（4.23.0 思考流上屏）', async () => {
+    const seen = []
+    global.fetch.mockImplementation(() => Promise.resolve(sseResponse([
+      'data: {"choices":[{"delta":{"reasoning_content":"用户想查"}}]}\n\n',
+      'data: {"choices":[{"delta":{"reasoning_content":"账单，先调工具"}}]}\n\n',
+      'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n\n',
+      'data: [DONE]\n\n'
+    ])))
+    await callWithTools(PROVIDER, CFG, MESSAGES, 'test-key', false, null, (t) => seen.push(t))
+    expect(seen.join('')).toBe('用户想查账单，先调工具')
+  })
 })

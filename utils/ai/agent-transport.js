@@ -23,7 +23,7 @@ const FINAL_REPLY_TIMEOUT = 45000
 const MAX_API_RETRIES = 2
 
 /** 带重试的非流式工具调用 */
-export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk = null) {
+export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, onChunk = null, onThinking = null) {
   // 最后一轮且非工具调用 → 流式输出（4.5.1：删掉 supportsStream 死条件，没有任何厂商定义它）
   if (isFinal && onChunk) {
     return callWithToolsStream(provider, cfg, messages, apiKey, onChunk)
@@ -35,7 +35,8 @@ export function callWithTools(provider, cfg, messages, apiKey, isFinal = false, 
   }
   // 4.21.0：工具轮默认流式 —— 非流式一次性等完整 JSON arguments，长文（数千字 content 转义）
   // 生成超 180s 必超时；流式按 chunk 续命，模型还在吐字就不掐。失败降级回非流式。
-  return callWithToolsStreamRound(provider, cfg, messages, apiKey).then(res => {
+  // 4.23.0：onThinking 透传 —— 流回来的思考内容实时上屏，等待不再黑盒
+  return callWithToolsStreamRound(provider, cfg, messages, apiKey, onThinking).then(res => {
     if (res && res._streamError) {
       logger.warn('[AgentLoop] stream tool-round failed, falling back to non-stream')
       return callWithRetry(provider, cfg, buildStreamRoundBody(provider, cfg, messages), apiKey, TOOL_CALL_TIMEOUT)
@@ -54,7 +55,9 @@ function buildStreamRoundBody(provider, cfg, messages) {
     tools: buildToolList(provider, cfg.model),
     tool_choice: 'auto'
   }
-  const reasoning = getReasoningConfig(provider.id, cfg.model, 'complex')
+  // 4.23.0：工具轮是确定性任务（按 schema 调工具），思考档从 complex(high) 降到 chat(low) ——
+  // 强制思考模型每轮先深思数秒是响应慢的主因；最终回复仍按各自档位不受影响
+  const reasoning = getReasoningConfig(provider.id, cfg.model, 'chat')
   if (reasoning) Object.assign(body, reasoning)
   return body
 }
@@ -63,12 +66,12 @@ function buildStreamRoundBody(provider, cfg, messages) {
  * 工具轮流式（4.21.0）：H5 走 fetch SSE；App 走 enableChunked；其余端降级非流式
  * @returns {{ message: { content, tool_calls?, reasoning_content? }, id, truncated }|{_streamError:true}}
  */
-function callWithToolsStreamRound(provider, cfg, messages, apiKey) {
+function callWithToolsStreamRound(provider, cfg, messages, apiKey, onThinking = null) {
   const tools = buildToolList(provider, cfg.model)
   if (!tools || tools.length === 0) return Promise.resolve({ _streamError: true })
-  const reasoning = getReasoningConfig(provider.id, cfg.model, 'complex')
+  const reasoning = getReasoningConfig(provider.id, cfg.model, 'chat')
   // #ifdef H5
-  return callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning)
+  return callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning, onThinking)
   // #endif
   // #ifndef H5
   return chatRequestChunkedStream('', '', cfg, null, [], {
@@ -76,7 +79,8 @@ function callWithToolsStreamRound(provider, cfg, messages, apiKey) {
     raw: true,
     tools: tools,
     toolRound: true,
-    reasoning: reasoning
+    reasoning: reasoning,
+    onThinking: onThinking
   }).then(res => {
     if (res && (res._error || res._failed)) return { _streamError: true }
     return res
@@ -89,7 +93,7 @@ function callWithToolsStreamRound(provider, cfg, messages, apiKey) {
  * 增量拼装；超时用 idle 续期（首 token 60s / 每 chunk 续 30s / 硬上限 600s），
  * 12K tokens 的 JSON arguments 生成期间只要还在吐字就不会被掐
  */
-function callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning) {
+function callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reasoning, onThinking = null) {
   const body = {
     model: cfg.model,
     messages,
@@ -187,6 +191,8 @@ function callWithToolsSSEToolRound(provider, cfg, messages, apiKey, tools, reaso
             const delta = choice.delta || {}
             if (delta.reasoning_content) {
               fullReasoning += delta.reasoning_content
+              // 4.23.0：思考流实时上屏（等待从黑盒变成可看的思考过程）
+              if (onThinking) onThinking(delta.reasoning_content)
               bumpIdle()
             }
             if (delta.content) {

@@ -7,7 +7,7 @@
 export const V422 = [
   {
     version: '4.22.1',
-    date: '2026-10-11',
+    date: '2026-10-08',
     title: '修复长文生成「走神 + 已达输出上限被截断」：GLM 强制思考下流式 idle 30s 误判超时，放宽至 120s',
     summary: [
       '根治长文（数千字）生成反复「抱歉我走神了 + 已达输出上限回复被截断 + 继续写完」：实测定位根因是 GLM-5.3/5.3-flash 强制思考模式下，reasoning_content 输出后有一段不吐任何 delta 的内部规划期（38 工具 + 长 system prompt 下可达 60s+），流式续期阈值 30s 被误判为断流，触发 onTimeout 生成空内容 + length 截断标记',

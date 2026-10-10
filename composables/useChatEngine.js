@@ -29,6 +29,7 @@ import {
   handleCancelAction as _handleCancelAction
 } from '@/composables/useChatActions.js'
 import { recognizeImage } from '@/utils/ai/vision-bridge.js'
+import { TOOL_LABELS } from '@/utils/ai/tools.js'
 import { buildFileContext, composeFileMessage } from '@/utils/files/file-text.js'
 import { extractSelfName, shouldAutoCapture } from '@/utils/profile-autocapture.js'
 
@@ -131,6 +132,15 @@ export function useChatEngine() {
       store.updateLastMessage(partial)
     }
 
+    // 4.23.0：思考流上屏 —— 工具轮流回来的 reasoning_content 实时写进气泡折叠块，
+    // 等待从黑盒转圈变成可看的思考过程；不落盘（persist 白名单不含 _thinking）
+    let thinkingBuf = ''
+    const onThinking = (text) => {
+      if (!text) return
+      thinkingBuf += text
+      safeUpdate({ _thinking: thinkingBuf })
+    }
+
     const startStream = scrollHelpers?.startStreamScroll
     const stopStream = scrollHelpers?.stopStreamScroll
     const chatHistory = buildChatHistory(store.messages)
@@ -184,11 +194,17 @@ export function useChatEngine() {
         image: imageData || null,
         store: store,
         onStatus: (toolNames) => {
-          // 工具执行阶段反馈（P2-4）：loading 气泡的阶段小字切换，不列工具名保持简短
+          // 4.23.0：工具级阶段文案 —— TOOL_LABELS 映射（"正在查账单…"），比通用"正在调用工具"更有信息量；
+          // 查询类常并行调用，多个时只显示第一个 + 计数
           if (toolNames && toolNames.length > 0) {
-            safeUpdate({ loading: true, _stageText: '正在调用工具…' })
+            const labels = toolNames.map(n => TOOL_LABELS[n]).filter(Boolean)
+            const text = labels.length > 0
+              ? `正在${labels[0]}${labels.length > 1 ? ` 等 ${labels.length} 项` : ''}…`
+              : '正在调用工具…'
+            safeUpdate({ loading: true, _stageText: text })
           }
-        }
+        },
+        onThinking: onThinking
       }
 
       validateModel(cfg, store)
