@@ -355,6 +355,29 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ---
 
+## 插件自动使用（任务 → 工具映射，必须遵守）
+
+> ZCode 会话里有现成插件能力，按任务特征自动选用，不等用户点名。原则：**能实测的不推断**——改了 UI 就在 H5 复验，App 产物落地就走模拟器/真机自动化，不写「应该没问题」。
+
+| 任务特征 | 自动使用 | 用法要点 |
+|---|---|---|
+| 改任何页面视觉 / 交互（.vue / .scss） | browser-use（control-browser） | 打开 `http://localhost:5173/#/对应路由` 截图复验；uni-app 自定义元素点不动时换 cua 坐标点击；量化断言用 playwright.evaluate 取 computedStyle/尺寸 |
+| UI 交互回归（点击 / 滚动 / 弹窗 / 深浅色） | browser-use | 深浅色切换可临时 add/remove `html.theme-dark` 验证（收尾恢复）；视口用 setViewportSize 模拟 390×844 与桌面宽 |
+| App 端验证（真机清单 / Smoke / 排查 plus.runtime 报错） | android-emulator 插件 | HBuilder X 出 APK 后：`android_install_app` → `android_launch_app` → `android_screenshot` / `android_ui_describe` / `android_ui_tap` 自动走清单；`android_logs` 抓 logcat；插着 USB 真机时 `android_list_devices` 直接列真机 serial 走同一套 |
+| 编译前环境确认 | `android_preflight` / `browser list()` | 不确定模拟器 / adb / 浏览器是否可用时先探测，不裸跑 |
+| 用户明确要求深度/完整安全审计 | mimosa（security_scan_start） | 只在用户点名「深度审计/安全扫描」时跑；平时提交钩子已够 |
+| 生成文档 / 表格 / 报告 | documents / pdf / spreadsheets skills | 真机验证清单报告、AI 自检基线表导出等 |
+| 提交 / 发布 | bash git（既有流程） | 不为提交而用 github skills；需要 PR / Release 页时才用 gh 系 |
+
+**不可用 / 无关，别浪费时间试**：ios-simulator（本机 Windows 无 Xcode）、cloudbase（项目无 CloudBase 依赖）、video2code、wecom-cli、computer-use（HBuilder X 编译走人工或其自带 CLI，不模拟点 IDE）。
+
+**升级级雷区（实测教训）**：
+- 面板类组件用 playwright 定位点不动 → 直接 cua 坐标（先截图定坐标），别反复重试同一 locator
+- H5 实测通过的 App/MP 行为仍属推断，App/MP 差异必须真机确认后才算数（`docs/真机验证清单.md` 登记）
+- `git add -A` 前先 `git status --short` 认文件，并行会话的在途改动不要顺手卷进来（4.24.0 教训）
+
+---
+
 ## 注意事项
 
 - HBuilder X 版本需 3.8.7+
