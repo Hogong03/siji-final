@@ -6,6 +6,26 @@
 
 export const V423 = [
   {
+    version: '4.23.2',
+    date: '2026-10-11',
+    title: '免责声明条款更新至与当前功能一致',
+    summary: [
+      '「最后更新」日期 2026-07-14 → 2026-10-11，条款正文与 4.23.x 功能现状对齐',
+      'AI 服务说明补全可选能力的数据流向：联网搜索（搜索词→智谱/Tavily）、读网址（直连或 Tavily 抓取）、图片识别（图片→所选模型）、语音转文字（录音→智谱 ASR）、文档解析（文件→智谱/Moonshot），并注明均可在设置中关闭',
+      '修正失实陈述：数据同步功能已移除，删除「错误信息会在网络恢复后批量上传至思迹服务器」一句，改为如实描述（仅本地暂存、手动导出诊断包、可清除）',
+      '数据隐私补充：API Key 加密仅存本机、自动备份仅写设备本地目录、导出均为手动触发',
+    ],
+    categories: [
+      {
+        title: '条款内容（4.23.2）',
+        items: [
+          'pages/disclaimer/index.vue：二/三/五三章重写，一/四/六/七保持不变',
+          '事实核对依据：utils/ai/features.js 能力注册表（web_search/read_url/vision/voice 均可开关）、utils/ai/search-adapters.js（智谱 web_search + Tavily 端点）、utils/ai/read-adapters.js（Tavily extract）、utils/files/doc-parse.js（智谱/Moonshot 文件上传端点）、utils/storage/backup.js（_doc/siji-backup 本地 3 份）、utils/error-reporter.js（仅 setStorageSync 本地队列，无网络请求）、pages/settings/sub/data.vue（同步已移除，仅导出/索引/清除）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.23.1',
     date: '2026-10-11',
     title: '免责声明页 UI 修缮：修 H5 双滚动 + 视觉规范对齐',

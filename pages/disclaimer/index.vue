@@ -50,7 +50,7 @@ function handleDecline() {
     <view class="disclaimer-header">
       <text class="disclaimer-brand">思迹</text>
       <text class="disclaimer-brand-sub">SIJI</text>
-      <text class="disclaimer-date">最后更新：2026 年 7 月 14 日</text>
+      <text class="disclaimer-date">最后更新：2026 年 10 月 11 日</text>
     </view>
 
     <!-- 声明正文 -->
@@ -62,14 +62,17 @@ function handleDecline() {
 
       <view class="disclaimer-section">
         <text class="disclaimer-section-title">二、AI 服务说明</text>
-        <text class="disclaimer-text">思迹调用第三方 AI 大模型接口（如 DeepSeek、通义千问、智谱 GLM、Moonshot 等）来处理您的自然语言输入。AI 生成的内容仅供参考，不构成任何专业建议（包括但不限于医疗、法律、财务建议）。</text>
+        <text class="disclaimer-text">1. 思迹调用第三方 AI 大模型接口（如 DeepSeek、通义千问、智谱 GLM、Moonshot 等）来处理您的自然语言输入。AI 生成的内容仅供参考，不构成任何专业建议（包括但不限于医疗、法律、财务建议）。</text>
+        <text class="disclaimer-text">2. 开启可选能力后，相应数据会发送至对应服务商：联网搜索将搜索词发送至智谱或 Tavily；读网址由您的设备直接访问目标网页，或由 Tavily 代为抓取网页正文；图片识别将图片发送给您所选的模型服务商；语音转文字将录音发送至智谱；文档解析将文件内容上传至智谱或 Moonshot。以上能力均可在设置中开启或关闭，关闭后对应数据不再发送。</text>
       </view>
 
       <view class="disclaimer-section">
         <text class="disclaimer-section-title">三、数据隐私</text>
         <text class="disclaimer-text">1. 您的记录、账单、计划等个人数据仅存储在您设备的本地存储中，思迹不会主动上传或收集这些数据。</text>
-        <text class="disclaimer-text">2. 与 AI 的对话会通过加密通道发送至您选择的第三方 AI 服务商，对话内容受该服务商的隐私政策约束。请勿在对话中透露高度敏感的个人信息（如身份证号、银行卡密码等）。</text>
-        <text class="disclaimer-text">3. 如您使用可选的数据同步/备份功能，数据传输遵循相应的安全协议。建议定期本地备份重要数据。</text>
+        <text class="disclaimer-text">2. 与 AI 的对话会通过加密通道（HTTPS）发送至您配置的第三方 AI 服务商，对话内容受该服务商的隐私政策约束。请勿在对话中透露高度敏感的个人信息（如身份证号、银行卡密码等）。</text>
+        <text class="disclaimer-text">3. API Key 经加密后仅存储在您的设备本地，只用于直接调用您选择的服务商，不会随对话或其他数据上传。</text>
+        <text class="disclaimer-text">4. 自动备份（App 端）仅写入您设备本机的应用目录，不经过网络；CSV 报表导出与诊断包导出由您手动触发，保存到您指定的位置。</text>
+        <text class="disclaimer-text">5. 建议定期备份重要数据。</text>
       </view>
 
       <view class="disclaimer-section">
@@ -82,7 +85,7 @@ function handleDecline() {
 
       <view class="disclaimer-section">
         <text class="disclaimer-section-title">五、错误信息收集</text>
-        <text class="disclaimer-text">应用在运行过程中遇到错误时，会自动收集错误信息（包括错误类型、堆栈、设备型号、系统版本、应用版本）并暂存在您的设备本地。这些信息不包含任何个人隐私数据（如记录内容、账单记录、API Key 等）。如您启用数据同步功能，错误信息会在网络恢复后批量上传至思迹服务器用于问题排查。您可在设置中随时清除本地错误记录。</text>
+        <text class="disclaimer-text">应用在运行过程中遇到错误时，会自动收集错误信息（包括错误类型、堆栈、设备型号、系统版本、应用版本）并仅暂存在您的设备本地。这些信息不包含任何个人隐私数据（如记录内容、账单记录、API Key 等）。错误信息不会自动上传：只有当您在设置中主动使用「导出诊断包」时，才会将其中的元数据与错误日志导出到您指定的位置。您可在设置中随时清除本地错误记录。</text>
       </view>
 
       <view class="disclaimer-section">
