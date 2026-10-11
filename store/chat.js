@@ -192,6 +192,11 @@ export const useChatStore = defineStore('chat', () => {
     if (!conv) return null
     const msg = { ...message, time: formatTime(new Date()) }
     conv.messages.push(msg)
+    // 默认标题自动取首条用户消息前 20 字（4.24.0）；手动重命名/自定义标题不覆盖
+    if (msg.role === 'user' && /^(对话|新对话\d+)$/.test(conv.title)) {
+      const auto = String(msg.content || '').replace(/\s+/g, ' ').trim().slice(0, 20)
+      if (auto) conv.title = auto
+    }
     conv.updatedAt = Date.now()
     conv._slimCache = null
     debouncedPersistConversations()

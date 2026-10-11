@@ -5,6 +5,8 @@
  * 长按 = 删除对话（4.12.6）：不用原生 @longpress —— 它只看「按住 350ms」不看滑动，
  * 对话编辑面板里滑动列表时总是误触删除弹窗（4.4.0 反馈列表同款坑）。改用
  * usePressHold（按住 550ms + 位移容差 10px + 触发后忽略随后的 tap）。
+ * 4.24.0：操作收敛为单个「⋯」菜单（重命名/标签/删除）—— 长按在桌面 H5 无 touch 事件，
+ * 独立的 ✎ 图标语义不明；新增最后一条消息摘要行 + scroll-into-view 锚点 id。
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import { usePressHold } from '@/composables/usePressHold.js'
@@ -14,7 +16,7 @@ const props = defineProps({
   active: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['switch', 'delete', 'add-tag', 'rename'])
+const emit = defineEmits(['switch', 'delete', 'more'])
 
 const hold = usePressHold()
 function onTouchStart(e) {
@@ -46,11 +48,28 @@ function formatConvTime(ts) {
 function getConvTags(conv) {
   return (conv && conv.tags) ? conv.tags : []
 }
+
+/** 最后一条消息摘要（4.24.0）：取倒序第一条有内容的消息，40 字截断 */
+function lastPreview(conv) {
+  const msgs = (conv && conv.messages) || []
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]
+    if (!m || m.loading) continue
+    if (m.image && !m.content) return '[图片]'
+    if (m.file && !m.content) return '[文件]'
+    const text = String(m.role === 'user' ? (m.content || '') : (m.aiReply || m.content || ''))
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (text) return text.length > 40 ? text.slice(0, 40) + '…' : text
+    if (m.execResult || m.execResults) return '执行结果'
+  }
+  return ''
+}
 </script>
 
 <template>
       <view
-        :key="conv.id"
+        :id="'conv-' + conv.id"
         class="conv-item"
         :class="{ active: active }"
         @tap="onItemTap"
@@ -70,14 +89,12 @@ function getConvTags(conv) {
               >{{ t }}</text>
             </view>
           </view>
+          <text v-if="lastPreview(conv)" class="conv-item-preview">{{ lastPreview(conv) }}</text>
           <text class="conv-item-time">{{ formatConvTime(conv.updatedAt) }}</text>
         </view>
         <view class="conv-item-actions">
-          <view class="conv-item-tag-btn" @tap.stop="$emit('add-tag', conv)">
+          <view class="conv-item-more" @tap.stop="$emit('more', conv)">
             <SijiIcon name="more" size="sm" />
-          </view>
-          <view class="conv-item-rename" @tap.stop="$emit('rename', conv)">
-            <SijiIcon name="edit" size="sm" />
           </view>
           <text class="conv-item-msgs">{{ conv.messages.length }} 条</text>
         </view>
@@ -126,8 +143,7 @@ function getConvTags(conv) {
   flex-shrink: 0;
 }
 
-.conv-item-tag-btn,
-.conv-item-rename {
+.conv-item-more {
   font-size: 32rpx;
   color: #A1A1AA;
   /* 热区垫高（4.13.0）：视觉尺寸不变，触区扩到 ~56rpx，小图标不再难点/误点 */
@@ -163,6 +179,14 @@ function getConvTags(conv) {
   flex-shrink: 0;
 }
 
+.conv-item-preview {
+  font-size: $font-xs;
+  color: #71717A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .conv-item-time {
   font-size: $font-xs;
   color: #A1A1AA;
@@ -186,11 +210,7 @@ html.theme-dark {
       border-left-color: #FAFAFA;
     }
   }
-  .conv-item-tag-btn {
-    color: #71717A;
-    &:active { color: #FAFAFA; }
-  }
-  .conv-item-rename {
+  .conv-item-more {
     color: #71717A;
     &:active { color: #FAFAFA; }
   }
@@ -200,6 +220,9 @@ html.theme-dark {
   .conv-item-tag {
     color: #A1A1AA;
     background: #27272A;
+  }
+  .conv-item-preview {
+    color: #A1A1AA;
   }
 }
 /* #endif */
@@ -213,11 +236,7 @@ html.theme-dark {
       border-left-color: #FAFAFA;
     }
   }
-  .conv-item-tag-btn {
-    color: #71717A;
-    &:active { color: #FAFAFA; }
-  }
-  .conv-item-rename {
+  .conv-item-more {
     color: #71717A;
     &:active { color: #FAFAFA; }
   }
@@ -227,6 +246,9 @@ html.theme-dark {
   .conv-item-tag {
     color: #A1A1AA;
     background: #27272A;
+  }
+  .conv-item-preview {
+    color: #A1A1AA;
   }
 }
 /* #endif */

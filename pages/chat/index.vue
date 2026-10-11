@@ -157,11 +157,11 @@ const { resumeTarget, resumeVisible, resumeAge, resumeCount, dismissResume, resu
 
 // ===== 会话管理 =====
 const {
-  showConvList, activeFilter, activeTag, allTags,
+  showConvList, activeFilter, activeTag, allTags, keyword,
   sortedConversations, filteredConversations, groupedConversations, hasTags,
   toggleConvList, setFilter, selectTag, refreshTags,
   handleNewConversation: _handleNewConversation, handleSwitchConversation: _handleSwitchConversation, handleDeleteConversation: _handleDeleteConversation,
-  handleRenameConversation, handleAddTag
+  handleMoreConversation
 } = useConversationManager(store, getWelcomeMessage, resetScrollState, buildOpenerMessage)
 
 function handleResumeBack() {
@@ -903,14 +903,15 @@ function handleWelcomeChip(text) {
       :active-tag="activeTag"
       :all-tags="allTags"
       :has-tags="hasTags"
+      :keyword="keyword"
       @close="toggleConvList"
       @switch="handleSwitchConversation"
       @delete="handleDeleteConversation"
-      @rename="handleRenameConversation"
+      @more="handleMoreConversation"
       @new="handleNewConversation"
       @set-filter="setFilter"
       @select-tag="selectTag"
-      @add-tag="handleAddTag"
+      @search="val => keyword = val"
       @navigate="(url) => { toggleConvList(); uni.navigateTo({ url }) }"
     />
   </view>

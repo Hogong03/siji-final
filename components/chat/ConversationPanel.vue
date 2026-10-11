@@ -3,7 +3,9 @@
  * ConversationPanel - conversation list drawer shell (split from v4)
  * responsibility: pure display + event reporting, no direct store access
  * split: ConversationPanelHeader / ConversationFilterPanel / ConversationListItem
+ * 4.24.0：新增搜索行（标题 + 消息内容）、行操作收敛为 more、打开时 scroll-into-view 定位当前会话
  */
+import { ref, watch, nextTick } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import ConversationPanelHeader from './ConversationPanelHeader.vue'
 import ConversationFilterPanel from './ConversationFilterPanel.vue'
@@ -17,16 +19,25 @@ const props = defineProps({
   activeFilter: { type: String, default: 'all' },
   activeTag: { type: String, default: null },
   allTags: { type: Array, default: () => [] },
-  hasTags: { type: Boolean, default: false }
+  hasTags: { type: Boolean, default: false },
+  keyword: { type: String, default: '' }
 })
 
 const emit = defineEmits([
-  'close', 'switch', 'delete', 'rename', 'new',
-  'set-filter', 'select-tag', 'add-tag'
+  'close', 'switch', 'delete', 'more', 'new',
+  'set-filter', 'select-tag', 'search'
 ])
 
-import { ref } from 'vue'
 const filterExpanded = ref(false)
+const scrollInto = ref('')
+
+watch(() => props.show, (v) => {
+  if (v) {
+    nextTick(() => { scrollInto.value = props.activeId ? 'conv-' + props.activeId : '' })
+  } else {
+    scrollInto.value = ''
+  }
+})
 
 function toggleFilter() {
   filterExpanded.value = !filterExpanded.value
@@ -43,6 +54,10 @@ function handleSelectTag(tag) {
   emit('select-tag', tag)
   filterExpanded.value = false
 }
+
+function handleSearchInput(e) {
+  emit('search', e.detail.value)
+}
 </script>
 
 <template>
@@ -53,7 +68,20 @@ function handleSelectTag(tag) {
         :active-tag="activeTag"
         :filter-expanded="filterExpanded"
         @toggle-filter="toggleFilter"
+        @new="$emit('new')"
       />
+      <view class="conv-search-row">
+        <SijiIcon name="search" size="sm" class="conv-search-icon" />
+        <input
+          class="conv-search-input"
+          :value="keyword"
+          placeholder="搜索对话标题或内容"
+          placeholder-class="conv-search-placeholder"
+          confirm-type="search"
+          @input="handleSearchInput"
+        />
+        <text v-if="keyword" class="conv-search-clear" @tap="$emit('search', '')">×</text>
+      </view>
       <ConversationFilterPanel
         v-if="filterExpanded"
         :active-filter="activeFilter"
@@ -62,7 +90,7 @@ function handleSelectTag(tag) {
         @set-filter="handleSelectFilter"
         @select-tag="handleSelectTag"
       />
-      <scroll-view class="conv-list-scroll" scroll-y>
+      <scroll-view class="conv-list-scroll" scroll-y :scroll-into-view="scrollInto">
         <template v-if="activeFilter === 'time'">
           <view v-for="group in groupedConversations" :key="group.label" class="conv-group">
             <view class="conv-group-header">
@@ -76,8 +104,7 @@ function handleSelectTag(tag) {
               :active="conv.id === activeId"
               @switch="$emit('switch', $event)"
               @delete="$emit('delete', $event)"
-              @add-tag="$emit('add-tag', $event)"
-              @rename="$emit('rename', $event)"
+              @more="$emit('more', $event)"
             />
           </view>
         </template>
@@ -89,12 +116,11 @@ function handleSelectTag(tag) {
             :active="conv.id === activeId"
             @switch="$emit('switch', $event)"
             @delete="$emit('delete', $event)"
-            @add-tag="$emit('add-tag', $event)"
-            @rename="$emit('rename', $event)"
+            @more="$emit('more', $event)"
           />
         </template>
         <view v-if="conversations.length === 0" class="conv-empty">
-          <text class="conv-empty-text">{{ activeFilter === 'tag' && activeTag ? '该标签下暂无对话' : '暂无对话' }}</text>
+          <text class="conv-empty-text">{{ keyword.trim() ? '没有匹配的对话' : (activeFilter === 'tag' && activeTag ? '该标签下暂无对话' : '暂无对话') }}</text>
         </view>
         <view class="conv-new-divider" @tap="$emit('new')">
           <view class="conv-divider-line" />
@@ -179,6 +205,42 @@ function handleSelectTag(tag) {
   overflow: hidden;
 }
 
+/* 搜索行（4.24.0） */
+.conv-search-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin: $spacing-sm $spacing-md 0;
+  padding: 10rpx 20rpx;
+  background: #F4F4F5;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.conv-search-icon {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.conv-search-input {
+  flex: 1;
+  font-size: $font-sm;
+  color: #18181B;
+  height: 48rpx;
+  line-height: 48rpx;
+}
+.conv-search-placeholder {
+  color: #A1A1AA;
+  font-size: $font-sm;
+}
+.conv-search-clear {
+  font-size: 32rpx;
+  color: #A1A1AA;
+  padding: 0 8rpx;
+  line-height: 1;
+
+  &:active { color: #18181B; }
+}
+
 .conv-empty {
   display: flex;
   align-items: center;
@@ -259,6 +321,19 @@ html.theme-dark {
   .conv-drawer {
     background: #18181B;
   }
+  .conv-search-row {
+    background: #27272A;
+  }
+  .conv-search-input {
+    color: #FAFAFA;
+  }
+  .conv-search-placeholder {
+    color: #71717A;
+  }
+  .conv-search-clear {
+    color: #71717A;
+    &:active { color: #FAFAFA; }
+  }
   .conv-group-header {
     .conv-group-label { color: #71717A; }
     .conv-group-count {
@@ -286,6 +361,19 @@ html.theme-dark {
 @media (prefers-color-scheme: dark) {
   .conv-drawer {
     background: #18181B;
+  }
+  .conv-search-row {
+    background: #27272A;
+  }
+  .conv-search-input {
+    color: #FAFAFA;
+  }
+  .conv-search-placeholder {
+    color: #71717A;
+  }
+  .conv-search-clear {
+    color: #71717A;
+    &:active { color: #FAFAFA; }
   }
   .conv-group-header {
     .conv-group-label { color: #71717A; }

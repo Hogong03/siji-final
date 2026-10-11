@@ -16,6 +16,7 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
   const showConvList = ref(false)
   const activeFilter = ref('all') // 'all' | 'time' | 'tag'
   const activeTag = ref(null) // null = 全部
+  const keyword = ref('') // 搜索关键词（标题 + 消息内容）
 
   // 全部标签列表（从全局标签库读取）
   const allTags = ref([])
@@ -29,12 +30,24 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
     [...store.conversations].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
   )
 
-  // 按标签筛选后的会话列表
+  /** 搜索匹配：标题或任一条消息正文命中 */
+  function matchKeyword(conv, k) {
+    if ((conv.title || '').includes(k)) return true
+    return (conv.messages || []).some(m => {
+      if (!m) return false
+      return String(m.content || '').includes(k) || String(m.aiReply || '').includes(k)
+    })
+  }
+
+  // 搜索 + 标签筛选后的会话列表
   const filteredConversations = computed(() => {
+    let list = sortedConversations.value
+    const k = keyword.value.trim()
+    if (k) list = list.filter(conv => matchKeyword(conv, k))
     if (activeFilter.value === 'tag' && activeTag.value) {
-      return filterByTag(sortedConversations.value, activeTag.value)
+      list = filterByTag(list, activeTag.value)
     }
-    return sortedConversations.value
+    return list
   })
 
   // 时间分组结果（用于 'all' 和 'time' 模式）
@@ -71,8 +84,22 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
       showConvList.value = false
       return
     }
+    // 先清掉历史遗留的空壳会话（保留当前），再新建 —— 避免列表里堆「0 条」
+    store.pruneEmptyConversations(current ? current.id : '')
     store.createConversation()
     showConvList.value = false
+  }
+
+  /** 行操作菜单（4.24.0）：重命名 / 标签 / 删除 —— 桌面 H5 鼠标没有 touch 事件，长按删除在桌面端完全不可用，收敛为显式菜单 */
+  function handleMoreConversation(conv) {
+    uni.showActionSheet({
+      itemList: ['重命名', '编辑标签', '删除对话'],
+      success: (res) => {
+        if (res.tapIndex === 0) handleRenameConversation(conv)
+        else if (res.tapIndex === 1) handleAddTag(conv)
+        else if (res.tapIndex === 2) handleDeleteConversation(conv)
+      }
+    })
   }
 
   function handleSwitchConversation(id) {
@@ -97,6 +124,8 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
     uni.showModal({
       title: '删除对话',
       content: `确定删除「${conv.title || '未命名对话'}」吗?`,
+      confirmText: '删除',
+      confirmColor: '#EF4444',
       success(res) {
         if (res.confirm) {
           store.deleteConversation(conv.id)
@@ -120,6 +149,7 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
       editable: true,
       placeholderText: '输入新名称',
       content: conv.title || '',
+      confirmColor: '#000000',
       success(res) {
         if (res.confirm && res.content) {
           store.renameConversation(conv.id, res.content.trim())
@@ -172,6 +202,7 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
       editable: true,
       placeholderText: '输入标签名称（如：工作、生活）',
       content: '',
+      confirmColor: '#000000',
       success(res) {
         if (res.confirm && res.content && res.content.trim()) {
           const tag = res.content.trim()
@@ -184,10 +215,10 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
   }
 
   return {
-    showConvList, activeFilter, activeTag, allTags,
+    showConvList, activeFilter, activeTag, allTags, keyword,
     sortedConversations, filteredConversations, groupedConversations, hasTags,
     toggleConvList, setFilter, selectTag, refreshTags,
     handleNewConversation, handleSwitchConversation, handleDeleteConversation,
-    handleRenameConversation, handleAddTag
+    handleRenameConversation, handleAddTag, handleMoreConversation
   }
 }

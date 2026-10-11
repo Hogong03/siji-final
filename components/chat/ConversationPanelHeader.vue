@@ -1,14 +1,17 @@
 <script setup>
 /**
  * ConversationPanelHeader - drawer header + filter toggle (split from ConversationPanel)
+ * 4.24.0：右上角加「新建对话」按钮 —— 原来新建入口压在列表最底部，会话一多要滚到底才能新建
  */
+import SijiIcon from '@/components/common/SijiIcon.vue'
+
 const props = defineProps({
   activeFilter: { type: String, default: 'all' },
   activeTag: { type: String, default: null },
   filterExpanded: { type: Boolean, default: false }
 })
 
-defineEmits(['toggle-filter'])
+defineEmits(['toggle-filter', 'new'])
 
 function getFilterLabel() {
   if (props.activeFilter === 'time') return '按时间'
@@ -22,13 +25,19 @@ function getFilterLabel() {
 <template>
   <view class="conv-drawer-header">
     <text class="conv-drawer-title">对话列表</text>
-    <view
-      class="conv-filter-btn"
-      :class="{ active: activeFilter !== 'all', expanded: filterExpanded }"
-      @tap="$emit('toggle-filter')"
-    >
-      <text class="conv-filter-label">{{ getFilterLabel() }}</text>
-      <text class="conv-filter-arrow">{{ filterExpanded ? '▴' : '▾' }}</text>
+    <view class="conv-header-right">
+      <view class="conv-new-btn" @tap="$emit('new')">
+        <SijiIcon name="add" size="sm" />
+        <text class="conv-new-btn-text">新对话</text>
+      </view>
+      <view
+        class="conv-filter-btn"
+        :class="{ active: activeFilter !== 'all', expanded: filterExpanded }"
+        @tap="$emit('toggle-filter')"
+      >
+        <text class="conv-filter-label">{{ getFilterLabel() }}</text>
+        <text class="conv-filter-arrow">{{ filterExpanded ? '▴' : '▾' }}</text>
+      </view>
     </view>
   </view>
 </template>
@@ -49,6 +58,29 @@ function getFilterLabel() {
     font-weight: 700;
     color: #18181B;
   }
+}
+
+.conv-header-right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+/* 新建对话按钮（4.24.0） */
+.conv-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 32rpx;
+  background: #18181B;
+
+  &:active { opacity: 0.7; }
+}
+.conv-new-btn-text {
+  font-size: $font-sm;
+  color: #FFFFFF;
+  font-weight: 500;
 }
 
 .conv-drawer-header::before {
@@ -119,6 +151,12 @@ html.theme-dark {
       .conv-filter-arrow { color: #18181B; }
     }
   }
+  .conv-new-btn {
+    background: #FAFAFA;
+  }
+  .conv-new-btn-text {
+    color: #18181B;
+  }
   .conv-filter-label {
     color: #A1A1AA;
   }
@@ -145,6 +183,12 @@ html.theme-dark {
       .conv-filter-label { color: #18181B; }
       .conv-filter-arrow { color: #18181B; }
     }
+  }
+  .conv-new-btn {
+    background: #FAFAFA;
+  }
+  .conv-new-btn-text {
+    color: #18181B;
   }
   .conv-filter-label {
     color: #A1A1AA;

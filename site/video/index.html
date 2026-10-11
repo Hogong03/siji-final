@@ -55,7 +55,7 @@
         <h2 class="h2" id="s2-title">说一句话，<br>就记好了</h2>
         <p class="lead" id="s2-lead">不用挑模块、不用填字段。AI 判断你要记什么，整理成条目等你确认。</p>
         <ul class="bullets">
-          <li id="s2-b1">记录、账单、计划、人脉、决策 —— 同一个入口</li>
+          <li id="s2-b1">记录、账单、计划、人脉、决策、微光 —— 同一个入口</li>
           <li id="s2-b2">说错了直接改：「等等，是 198」</li>
           <li id="s2-b3">落库前可预览，落库后可撤销</li>
         </ul>
@@ -63,20 +63,78 @@
     </div>
   </section>
 
-  <!-- S3 计划只给小步 -->
+  <!-- S3 记录能读，也能回看（4.x 新增能力） -->
   <section class="scene" id="s3">
     <div class="grid2 grid2--flip">
       <div class="copy">
-        <p class="eyebrow" id="s3-eyebrow">计划只给小步</p>
-        <h2 class="h2" id="s3-title">计划必须小到能开始</h2>
+        <p class="eyebrow" id="s3-eyebrow">记录能被重新读到</p>
+        <h2 class="h2" id="s3-title">写完不是终点，<br>能读才算</h2>
         <ul class="bullets">
-          <li id="s3-r1">大计划要拆到第一步才能存在</li>
-          <li id="s3-r2">断更不惩罚，停几天也不会归零</li>
-          <li id="s3-r3">跑不动就先放一放，随时原样恢复</li>
+          <li id="s3-r1">长记录自动分章节，左侧一条目录尺</li>
+          <li id="s3-r2">拖尺子跳到任意一节，刻度跟手</li>
+          <li id="s3-r3">每天「翻一翻」：7 天前 / 30 天前 / 去年今日</li>
+          <li id="s3-r4">标签按内容自动打，不用自己分类</li>
         </ul>
+        <p class="lead" id="s3-lead">筛选用一句话就行：「上周的工作记录」。</p>
       </div>
 
-      <div class="plancard" id="s3-card">
+      <div class="reader" id="s3-reader">
+        <div class="reader__head">
+          <div class="reader__meta">2140 字 · 6 小节 · #复习资料</div>
+          <div class="reader__title">六级阅读：时间花在划算的题上</div>
+        </div>
+        <div class="reader__body">
+          <div class="ruler" id="s3-ruler">
+            <span class="ruler__spine"></span>
+            <span class="ruler__viewport" id="s3-viewport"></span>
+            <span class="ruler__tick" id="s3-tk0" style="top:4%"></span>
+            <span class="ruler__tick" id="s3-tk1" style="top:22%"></span>
+            <span class="ruler__tick" id="s3-tk2" style="top:40%"></span>
+            <span class="ruler__tick" id="s3-tk3" style="top:58%"></span>
+            <span class="ruler__tick" id="s3-tk4" style="top:76%"></span>
+            <span class="ruler__tick" id="s3-tk5" style="top:94%"></span>
+          </div>
+          <div class="reader__viewport">
+            <div class="reader__content" id="s3-content">
+              <div class="chap"><span class="chap__no">01</span><span class="chap__title">先做一次取舍</span></div>
+              <p class="para">选词填空 10 题，每题约 3.5 分，正确率最低；仔细阅读每题 14 分，是它的四倍。</p>
+              <p class="para">做法：选词填空限时 5 分钟，做不完就全选同一个选项，省下的时间全给仔细阅读。</p>
+              <div class="chap"><span class="chap__no">02</span><span class="chap__title">题干定位，不读全文</span></div>
+              <p class="para">先圈题干里的定位词：数字、大写、专有名词。回原文找同义替换，而不是找原词。</p>
+              <div class="chap"><span class="chap__no">03</span><span class="chap__title">段落匹配先扫题干</span></div>
+              <p class="para">十个题干各圈一个关键词，再逐段只扫首尾句，配上一个就划掉一个。</p>
+              <div class="chap"><span class="chap__no">04</span><span class="chap__title">常见坑</span></div>
+              <p class="para">选项里出现原文原词，多半是干扰项；出现 must / never / all / only，先怀疑它。</p>
+              <div class="chap"><span class="chap__no">05</span><span class="chap__title">今天怎么练</span></div>
+              <p class="para">计时 15 分钟做两篇仔细阅读，把每道错题的定位词和同义替换写在旁边。</p>
+              <div class="chap"><span class="chap__no">06</span><span class="chap__title">留一句话</span></div>
+              <p class="para">错题不是因为读不懂，是因为没找到那句同义替换。</p>
+            </div>
+          </div>
+        </div>
+        <div class="reader__foot" id="s3-foot">
+          <span id="s3-foot-chap">01 / 06 先做一次取舍</span>
+          <span class="reader__prog"><span class="reader__progfill" id="s3-progfill"></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S4 计划只给小步 + 提醒外送达 -->
+  <section class="scene" id="s4">
+    <div class="grid2 grid2--flip">
+      <div class="copy">
+        <p class="eyebrow" id="s4-eyebrow">计划只给小步</p>
+        <h2 class="h2" id="s4-title">计划必须小到能开始</h2>
+        <ul class="bullets">
+          <li id="s4-r1">大计划要拆到第一步才能存在</li>
+          <li id="s4-r2">断更不惩罚，停几天也不会归零</li>
+          <li id="s4-r3">跑不动就先放一放，随时原样恢复</li>
+        </ul>
+        <p class="lead" id="s4-lead">到点会提醒 —— 应用没开着也收得到。</p>
+      </div>
+
+      <div class="plancard" id="s4-card">
         <div class="plancard__head">
           <div>
             <div class="plancard__title">重新开始跑步</div>
@@ -84,87 +142,87 @@
           </div>
           <span class="tag">进行中</span>
         </div>
-        <div class="steprow" id="s3-step1">
-          <span class="check" id="s3-check1"></span>
+        <div class="steprow" id="s4-step1">
+          <span class="check" id="s4-check1"></span>
           <div class="steprow__body">
-            <div class="steprow__title" id="s3-t1">走 20 分钟</div>
-            <div class="steprow__note" id="s3-note1">完成于 9 月 16 日 · 比想象轻松</div>
+            <div class="steprow__title" id="s4-t1">走 20 分钟</div>
+            <div class="steprow__note" id="s4-note1">完成于 9 月 16 日 · 比想象轻松</div>
           </div>
           <span class="steprow__day">周二</span>
         </div>
-        <div class="steprow" id="s3-step2">
-          <span class="check" id="s3-check2"></span>
+        <div class="steprow" id="s4-step2">
+          <span class="check" id="s4-check2"></span>
           <div class="steprow__body">
-            <div class="steprow__title" id="s3-t2">慢跑 15 分钟</div>
-            <div class="steprow__note" id="s3-note2">跑了 12 分钟 · 也算完成</div>
+            <div class="steprow__title" id="s4-t2">慢跑 15 分钟</div>
+            <div class="steprow__note" id="s4-note2">跑了 12 分钟 · 也算完成</div>
           </div>
           <span class="steprow__day">周四</span>
         </div>
-        <div class="steprow" id="s3-step3">
+        <div class="steprow" id="s4-step3">
           <span class="check"></span>
           <div class="steprow__body">
             <div class="steprow__title">慢跑 20 分钟</div>
           </div>
           <span class="steprow__day">周日</span>
         </div>
-        <div class="plancard__foot" id="s3-foot">每次打卡都能写一句话，记录当天真实的情况</div>
+        <div class="plancard__foot" id="s4-foot">每次打卡都能写一句话，记录当天真实的情况</div>
       </div>
     </div>
   </section>
 
-  <!-- S4 一个入口，五件事 -->
-  <section class="scene" id="s4">
+  <!-- S5 一个入口，五件事 -->
+  <section class="scene" id="s5">
     <div class="wrap">
-      <p class="eyebrow eyebrow--center" id="s4-eyebrow">能做什么</p>
-      <h2 class="h2 h2--center" id="s4-title">一个入口，五件事</h2>
+      <p class="eyebrow eyebrow--center" id="s5-eyebrow">能做什么</p>
+      <h2 class="h2 h2--center" id="s5-title">一个入口，五件事</h2>
       <div class="cards">
-        <div class="card" id="s4-c1">
+        <div class="card" id="s5-c1">
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8 8 0 0 1-8 8H8l-4 3v-6.6A8 8 0 0 1 12 4h1a8 8 0 0 1 8 7.5Z"/></svg>
           <div class="card__title">记录</div>
           <div class="card__desc">心情与想法，说完就存好</div>
         </div>
-        <div class="card" id="s4-c2">
+        <div class="card" id="s5-c2">
           <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18M7 15h3"/></svg>
           <div class="card__title">账单</div>
           <div class="card__desc">花钱随手记，按月自己汇总</div>
         </div>
-        <div class="card" id="s4-c3">
+        <div class="card" id="s5-c3">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"/></svg>
           <div class="card__title">计划</div>
           <div class="card__desc">从想法拆成能开始的小步</div>
         </div>
-        <div class="card" id="s4-c4">
+        <div class="card" id="s5-c4">
           <svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M3.5 20c0-3 2.5-5.5 5.5-5.5s5.5 2.5 5.5 5.5"/><path d="M16 5.5a3 3 0 0 1 0 6M17.5 14.6c2 .6 3.5 2.4 3.5 4.4"/></svg>
           <div class="card__title">人脉</div>
           <div class="card__desc">见过谁、聊过什么，有据可查</div>
         </div>
-        <div class="card" id="s4-c5">
+        <div class="card" id="s5-c5">
           <svg viewBox="0 0 24 24"><path d="M4.5 19.5 9.5 14.5"/><path d="M14.5 4.5 19.5 9.5"/><path d="M6 6h6M6 6v6M18 18h-6M18 18v-6"/></svg>
           <div class="card__title">决策</div>
           <div class="card__desc">纠结的事写下来，过段时间回看</div>
         </div>
       </div>
-      <p class="footline" id="s4-foot">数据保存在你自己的设备上 · 支持自带 API Key</p>
+      <p class="footline" id="s5-foot">数据保存在你自己的设备上 · 支持自带 API Key</p>
     </div>
   </section>
 
-  <!-- S5 设计原则 -->
-  <section class="scene" id="s5">
-    <div class="stack stack--tight">
-      <p class="bigline" id="s5-l1">只做两件事：说话、点确认</p>
-      <p class="bigline" id="s5-l2">不打卡、不连击、不评分</p>
-      <p class="bigline" id="s5-l3">静止是合法状态</p>
-      <p class="smallprint" id="s5-foot">数据存在本机 · API Key 加密 · 没有自建服务器</p>
-    </div>
-  </section>
-
-  <!-- S6 收尾 -->
+  <!-- S6 设计原则 -->
   <section class="scene" id="s6">
+    <div class="stack stack--tight">
+      <p class="bigline" id="s6-l1">只做两件事：说话、点确认</p>
+      <p class="bigline" id="s6-l2">不打卡、不连击、不评分</p>
+      <p class="bigline" id="s6-l3">静止是合法状态</p>
+      <p class="smallprint" id="s6-foot">数据存在本机 · API Key 加密 · 没有自建服务器</p>
+    </div>
+  </section>
+
+  <!-- S7 收尾 -->
+  <section class="scene" id="s7">
     <div class="stack">
-      <img class="logo" id="s6-logo" src="../assets/app-icon.png" alt="">
-      <h1 class="brand" id="s6-name">思迹</h1>
-      <p class="tagline" id="s6-tag">把想变成做</p>
-      <p class="brand-sub" id="s6-sub">记录 · 账单 · 计划 · 人脉 · 决策</p>
+      <img class="logo" id="s7-logo" src="../assets/app-icon.png" alt="">
+      <h1 class="brand" id="s7-name">思迹</h1>
+      <p class="tagline" id="s7-tag">把想变成做</p>
+      <p class="brand-sub" id="s7-sub">记录 · 账单 · 计划 · 人脉 · 决策</p>
     </div>
   </section>
 

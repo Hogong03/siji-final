@@ -52,6 +52,24 @@ describe('会话落盘：语义标记不能丢（3.6.1）', () => {
     expect(saved.messages[0]._isWelcome).toBe(true)
   })
 
+  it('首条用户消息自动替换默认标题，手动命名不覆盖（4.24.0）', () => {
+    const conv = store.createConversation()
+    expect(conv.title).toBe('对话')
+    store.addMessage({ role: 'user', content: '帮我规划一下周末的出行安排，包括交通和住宿' })
+    expect(conv.title).toBe('帮我规划一下周末的出行安排，包括交通和住')
+    // 助手消息不触发
+    store.addMessage({ role: 'assistant', content: '好的' })
+    expect(conv.title).toBe('帮我规划一下周末的出行安排，包括交通和住')
+    // 手动重命名后不再覆盖
+    store.renameConversation(conv.id, '我的旅行')
+    store.addMessage({ role: 'user', content: '再补一句' })
+    expect(conv.title).toBe('我的旅行')
+    // 自定义标题建会话同样不覆盖
+    const custom = store.createConversation('聊两句')
+    store.addMessage({ role: 'user', content: '在吗' })
+    expect(custom.title).toBe('聊两句')
+  })
+
   it('进入总结的标记与预置按钮跟着落盘', () => {
     const conv = store.createConversation()
     store.addMessage(buildEnterSummaryMessage(summaryData(), NOW))
