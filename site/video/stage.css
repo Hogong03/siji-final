@@ -223,3 +223,27 @@ html, body { margin: 0; padding: 0; background: var(--bg); }
 }
 .reader__prog { width: 280px; height: 4px; border-radius: 2px; background: var(--muted); }
 .reader__progfill { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--ink); }
+
+/* 真机演示：手机外框 + 屏内滚动（素材来自 site/video/app-shots，由 capture-app.mjs 抓真实 H5 界面） */
+.device {
+  width: 470px;
+  height: 980px;
+  padding: 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 54px;
+  background: var(--card);
+}
+.device__screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 42px;
+  background: var(--bg);
+}
+.device__shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  will-change: transform;
+}

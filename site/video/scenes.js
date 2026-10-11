@@ -35,12 +35,6 @@
       'translate(' + (dx || 0) * k + 'px,' + (dy || 0) * k + 'px) scale(' + (1 + (scale || 0) * k) + ')';
   }
 
-  /* 逐字打字：把整句按进度截断 */
-  function type(el, text, t, at, dur) {
-    if (!el) return;
-    el.textContent = text.slice(0, Math.round(raw(t, at, dur) * text.length));
-  }
-
   /* 分段折线：按时间在若干停靠点之间平滑插值，用于列表滚动这类连续量 */
   function ramp(t, stops) {
     if (t <= stops[0][0]) return stops[0][1];
@@ -56,22 +50,18 @@
   var E = {
     s1: { logo: $('s1-logo'), name: $('s1-name'), sub: $('s1-sub'), rule: $('s1-rule'), tag: $('s1-tag') },
     s2: {
-      phone: $('s2-phone'), chat: $('s2-chat'), eyebrow: $('s2-eyebrow'), title: $('s2-title'), lead: $('s2-lead'),
+      device: $('s2-device'), shot: $('s2-shot'), eyebrow: $('s2-eyebrow'), title: $('s2-title'), lead: $('s2-lead'),
       b1: $('s2-b1'), b2: $('s2-b2'), b3: $('s2-b3'),
-      m1: $('s2-m1'), m2: $('s2-m2'), m3: $('s2-m3'), m4: $('s2-m4'), m5: $('s2-m5'), m6: $('s2-m6'),
-      c1: $('s2-c1'), c1v: $('s2-c1-v'), c1tag: $('s2-c1-tag'), c2: $('s2-c2'),
     },
     s3: {
-      eyebrow: $('s3-eyebrow'), title: $('s3-title'), lead: $('s3-lead'), reader: $('s3-reader'),
+      eyebrow: $('s3-eyebrow'), title: $('s3-title'), lead: $('s3-lead'),
+      device: $('s3-device'), shot: $('s3-shot'),
       r1: $('s3-r1'), r2: $('s3-r2'), r3: $('s3-r3'), r4: $('s3-r4'),
-      content: $('s3-content'), viewport: $('s3-viewport'), footChap: $('s3-foot-chap'), progfill: $('s3-progfill'),
-      ticks: [$('s3-tk0'), $('s3-tk1'), $('s3-tk2'), $('s3-tk3'), $('s3-tk4'), $('s3-tk5')],
     },
     s4: {
-      card: $('s4-card'), eyebrow: $('s4-eyebrow'), title: $('s4-title'), lead: $('s4-lead'),
+      device: $('s4-device'), shot: $('s4-shot'),
+      eyebrow: $('s4-eyebrow'), title: $('s4-title'), lead: $('s4-lead'),
       r1: $('s4-r1'), r2: $('s4-r2'), r3: $('s4-r3'),
-      check1: $('s4-check1'), t1: $('s4-t1'), note1: $('s4-note1'),
-      check2: $('s4-check2'), t2: $('s4-t2'), note2: $('s4-note2'), foot: $('s4-foot'),
     },
     s5: {
       eyebrow: $('s5-eyebrow'), title: $('s5-title'), foot: $('s5-foot'),
@@ -81,27 +71,20 @@
     s7: { logo: $('s7-logo'), name: $('s7-name'), tag: $('s7-tag'), sub: $('s7-sub') },
   };
 
-  var AI_1 = '记下了：餐饮 · 168 元。';
-  var AI_2 = '拆成三小步，先动起来。';
-  var AI_3 = '已改成 ¥198 · 分类不变。';
+  /* 屏内可滚动距离 = 长图高度 − 手机屏窗口高度（真机截图比屏幕高，正好用来做滚动） */
+  var chatScroll = 0;
+  var readScroll = 0;
+  var planScroll = 0;
 
-  /* 阅读页：章节名（与 DOM 里的 6 个小节一一对应） */
-  var CHAPTERS = ['先做一次取舍', '题干定位，不读全文', '段落匹配先扫题干', '常见坑', '今天怎么练', '留一句话'];
+  function shotScroll(img) {
+    if (!img || !img.parentElement) return 0;
+    return Math.max(0, Math.round(img.offsetHeight - img.parentElement.clientHeight));
+  }
 
-  var chatScrollMax = 0;
-  var readScrollMax = 0;
-
-  /* 量一次聊天区 / 阅读区的溢出高度，用来驱动内部滚动 */
   function measure() {
-    var screen = document.querySelector('#s2 .phone__screen');
-    if (screen && E.s2.chat) {
-      var avail = screen.clientHeight - 52;
-      chatScrollMax = Math.max(0, Math.round(E.s2.chat.scrollHeight - avail + 16));
-    }
-    var viewport = document.querySelector('#s3 .reader__viewport');
-    if (viewport && E.s3.content) {
-      readScrollMax = Math.max(0, Math.round(E.s3.content.scrollHeight - viewport.clientHeight + 24));
-    }
+    chatScroll = shotScroll(E.s2.shot);
+    readScroll = shotScroll(E.s3.shot);
+    planScroll = shotScroll(E.s4.shot);
   }
 
   /* ---------- 分镜 ---------- */
@@ -118,84 +101,40 @@
   }
 
   function drawS2(t) {
-    enter(E.s2.phone, prog(t, -0.20, 0.90), 40);
+    enter(E.s2.device, prog(t, -0.20, 0.90), 40);
     enter(E.s2.eyebrow, prog(t, 0.35, 0.50), 12);
     enter(E.s2.title, prog(t, 0.50, 0.60), 18);
     enter(E.s2.lead, prog(t, 0.75, 0.60), 16);
     enter(E.s2.b1, prog(t, 3.00, 0.50), 14);
     enter(E.s2.b2, prog(t, 7.10, 0.50), 14);
     enter(E.s2.b3, prog(t, 5.80, 0.50), 14);
-
-    enter(E.s2.m1, prog(t, 0.90, 0.35), 14);
-    enter(E.s2.m2, prog(t, 1.80, 0.30), 10);
-    type(E.s2.m2, AI_1, t, 1.85, 0.80);
-    enter(E.s2.c1, prog(t, 2.70, 0.45), 16);
-    enter(E.s2.m3, prog(t, 4.10, 0.35), 14);
-    enter(E.s2.m4, prog(t, 4.80, 0.30), 10);
-    type(E.s2.m4, AI_2, t, 4.85, 0.60);
-    enter(E.s2.c2, prog(t, 5.60, 0.50), 18);
-    enter(E.s2.m5, prog(t, 7.30, 0.35), 14);
-    enter(E.s2.m6, prog(t, 8.10, 0.30), 10);
-    type(E.s2.m6, AI_3, t, 8.15, 0.70);
-
-    /* 数字就地改：不改记录结构，只改金额 */
-    var fixed = t >= 9.30;
-    E.s2.c1v.textContent = fixed ? '-¥198' : '-¥168';
-    E.s2.c1tag.textContent = fixed ? '已更新' : '已保存';
-    var bump = pulse(t, 9.30, 0.70);
-    E.s2.c1.style.borderColor = bump > 0.4 ? '#FFFFFF' : '';
-    E.s2.c1.style.background = bump > 0.4 ? '#27272A' : '';
-
-    E.s2.chat.style.transform = 'translateY(' + (-chatScrollMax * ramp(t, [[8.10, 0], [9.60, 1]])) + 'px)';
+    /* 真机界面在屏内缓缓下滚：账单卡 → 计划卡 → 改错后的金额 */
+    E.s2.shot.style.transform = 'translateY(' + (-chatScroll * ramp(t, [[1.00, 0], [10.20, 1]])) + 'px)';
   }
 
   function drawS3(t) {
     enter(E.s3.eyebrow, prog(t, 0.20, 0.50), 12);
     enter(E.s3.title, prog(t, 0.35, 0.60), 18);
-    enter(E.s3.reader, prog(t, 0.25, 0.75), 30);
+    enter(E.s3.device, prog(t, 0.25, 0.75), 30);
     enter(E.s3.r1, prog(t, 1.70, 0.50), 14);
     enter(E.s3.r2, prog(t, 2.70, 0.50), 14);
     enter(E.s3.r3, prog(t, 3.70, 0.50), 14);
     enter(E.s3.r4, prog(t, 4.60, 0.50), 14);
     enter(E.s3.lead, prog(t, 5.40, 0.55), 12);
-
-    /* 目录尺：视口带与正文同步下行，刻度依次点亮 */
-    var p = ramp(t, [[2.10, 0], [7.60, 1]]);
-    E.s3.content.style.transform = 'translateY(' + (-readScrollMax * p) + 'px)';
-    E.s3.viewport.style.top = lerp(4, 94, p).toFixed(2) + '%';
-    E.s3.progfill.style.width = (p * 100).toFixed(1) + '%';
-
-    var idx = t < 2.10 ? 0 : Math.min(CHAPTERS.length - 1, Math.floor((t - 2.10) / 0.92));
-    for (var i = 0; i < E.s3.ticks.length; i++) {
-      var on = i === idx;
-      E.s3.ticks[i].className = on ? 'ruler__tick ruler__tick--on' : 'ruler__tick';
-    }
-    E.s3.footChap.textContent = '0' + (idx + 1) + ' / 06 ' + CHAPTERS[idx];
+    /* 真机阅读页：六个章节一路读下去，左侧目录尺跟着走 */
+    E.s3.shot.style.transform = 'translateY(' + (-readScroll * ramp(t, [[1.40, 0], [10.40, 1]])) + 'px)';
   }
 
   function drawS4(t) {
     enter(E.s4.eyebrow, prog(t, 0.20, 0.50), 12);
     enter(E.s4.title, prog(t, 0.35, 0.60), 18);
-    enter(E.s4.card, prog(t, 0.25, 0.70), 28);
+    enter(E.s4.device, prog(t, 0.25, 0.70), 28);
     enter(E.s4.r1, prog(t, 1.50, 0.50), 14);
     enter(E.s4.r2, prog(t, 2.50, 0.50), 14);
     enter(E.s4.r3, prog(t, 3.50, 0.50), 14);
     enter(E.s4.lead, prog(t, 4.30, 0.55), 12);
-    enter(E.s4.foot, prog(t, 4.80, 0.50), 12);
-
-    var p1 = pulse(t, 2.20, 0.45);
-    E.s4.check1.textContent = '✓';
-    E.s4.check1.className = t >= 2.20 ? 'check check--on' : 'check';
-    E.s4.check1.style.transform = 'scale(' + (1 + 0.22 * p1) + ')';
-    E.s4.t1.className = t >= 2.20 ? 'steprow__title steprow__title--done' : 'steprow__title';
-    enter(E.s4.note1, prog(t, 2.60, 0.40), 8);
-
-    var p2 = pulse(t, 5.60, 0.45);
-    E.s4.check2.textContent = '✓';
-    E.s4.check2.className = t >= 5.60 ? 'check check--on' : 'check';
-    E.s4.check2.style.transform = 'scale(' + (1 + 0.22 * p2) + ')';
-    E.s4.t2.className = t >= 5.60 ? 'steprow__title steprow__title--done' : 'steprow__title';
-    enter(E.s4.note2, prog(t, 6.00, 0.40), 8);
+    /* 真机计划页：滚到三小步，最后停住 */
+    E.s4.shot.style.transform = 'translateY(' + (-planScroll * ramp(t, [[1.20, 0], [6.60, 1]])) + 'px)';
   }
 
   function drawS5(t) {

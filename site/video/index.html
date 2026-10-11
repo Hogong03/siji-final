@@ -19,35 +19,13 @@
     </div>
   </section>
 
-  <!-- S2 对话即记录 -->
+  <!-- S2 对话即记录（真机界面：截屏来自 site/video/device，屏内在滚） -->
   <section class="scene" id="s2">
     <div class="grid2">
-      <div class="phone" id="s2-phone">
-        <div class="phone__bar"><span>思迹</span><span>9:41</span></div>
-        <div class="phone__screen">
-          <div class="chat" id="s2-chat">
-            <div class="msg msg--user" id="s2-m1">昨天和阿伟吃饭花了 168</div>
-            <div class="msg msg--ai" id="s2-m2"></div>
-            <div class="rec" id="s2-c1">
-              <div class="rec__row"><span class="rec__k">账单</span><span class="rec__v" id="s2-c1-v">-&#165;168</span></div>
-              <div class="rec__row"><span class="rec__k">分类</span><span class="rec__v">餐饮</span></div>
-              <div class="rec__tags"><span class="tag" id="s2-c1-tag">已保存</span><span class="tag">9 月 12 日</span></div>
-            </div>
-            <div class="msg msg--user" id="s2-m3">我这周想把跑步捡起来</div>
-            <div class="msg msg--ai" id="s2-m4"></div>
-            <div class="rec" id="s2-c2">
-              <div class="rec__title">重新开始跑步</div>
-              <div class="rec__list">
-                <div class="rec__li"><span class="dot"></span>周二 · 走 20 分钟</div>
-                <div class="rec__li"><span class="dot"></span>周四 · 慢跑 15 分钟</div>
-                <div class="rec__li"><span class="dot"></span>周日 · 慢跑 20 分钟</div>
-              </div>
-            </div>
-            <div class="msg msg--user" id="s2-m5">等等，是 198</div>
-            <div class="msg msg--ai" id="s2-m6"></div>
-          </div>
+      <div class="device" id="s2-device">
+        <div class="device__screen">
+          <img class="device__shot" id="s2-shot" src="device/chat_screen.png" alt="">
         </div>
-        <div class="phone__compose"><span>说点什么…</span><span class="phone__send">记一下</span></div>
       </div>
 
       <div class="copy">
@@ -63,7 +41,7 @@
     </div>
   </section>
 
-  <!-- S3 记录能读，也能回看（4.x 新增能力） -->
+  <!-- S3 记录能读（真机阅读页：六个章节 + 左侧目录尺） -->
   <section class="scene" id="s3">
     <div class="grid2 grid2--flip">
       <div class="copy">
@@ -78,49 +56,15 @@
         <p class="lead" id="s3-lead">筛选用一句话就行：「上周的工作记录」。</p>
       </div>
 
-      <div class="reader" id="s3-reader">
-        <div class="reader__head">
-          <div class="reader__meta">2140 字 · 6 小节 · #复习资料</div>
-          <div class="reader__title">六级阅读：时间花在划算的题上</div>
-        </div>
-        <div class="reader__body">
-          <div class="ruler" id="s3-ruler">
-            <span class="ruler__spine"></span>
-            <span class="ruler__viewport" id="s3-viewport"></span>
-            <span class="ruler__tick" id="s3-tk0" style="top:4%"></span>
-            <span class="ruler__tick" id="s3-tk1" style="top:22%"></span>
-            <span class="ruler__tick" id="s3-tk2" style="top:40%"></span>
-            <span class="ruler__tick" id="s3-tk3" style="top:58%"></span>
-            <span class="ruler__tick" id="s3-tk4" style="top:76%"></span>
-            <span class="ruler__tick" id="s3-tk5" style="top:94%"></span>
-          </div>
-          <div class="reader__viewport">
-            <div class="reader__content" id="s3-content">
-              <div class="chap"><span class="chap__no">01</span><span class="chap__title">先做一次取舍</span></div>
-              <p class="para">选词填空 10 题，每题约 3.5 分，正确率最低；仔细阅读每题 14 分，是它的四倍。</p>
-              <p class="para">做法：选词填空限时 5 分钟，做不完就全选同一个选项，省下的时间全给仔细阅读。</p>
-              <div class="chap"><span class="chap__no">02</span><span class="chap__title">题干定位，不读全文</span></div>
-              <p class="para">先圈题干里的定位词：数字、大写、专有名词。回原文找同义替换，而不是找原词。</p>
-              <div class="chap"><span class="chap__no">03</span><span class="chap__title">段落匹配先扫题干</span></div>
-              <p class="para">十个题干各圈一个关键词，再逐段只扫首尾句，配上一个就划掉一个。</p>
-              <div class="chap"><span class="chap__no">04</span><span class="chap__title">常见坑</span></div>
-              <p class="para">选项里出现原文原词，多半是干扰项；出现 must / never / all / only，先怀疑它。</p>
-              <div class="chap"><span class="chap__no">05</span><span class="chap__title">今天怎么练</span></div>
-              <p class="para">计时 15 分钟做两篇仔细阅读，把每道错题的定位词和同义替换写在旁边。</p>
-              <div class="chap"><span class="chap__no">06</span><span class="chap__title">留一句话</span></div>
-              <p class="para">错题不是因为读不懂，是因为没找到那句同义替换。</p>
-            </div>
-          </div>
-        </div>
-        <div class="reader__foot" id="s3-foot">
-          <span id="s3-foot-chap">01 / 06 先做一次取舍</span>
-          <span class="reader__prog"><span class="reader__progfill" id="s3-progfill"></span></span>
+      <div class="device" id="s3-device">
+        <div class="device__screen">
+          <img class="device__shot" id="s3-shot" src="device/read_screen.png" alt="">
         </div>
       </div>
     </div>
   </section>
 
-  <!-- S4 计划只给小步 + 提醒外送达 -->
+  <!-- S4 计划只给小步（真机计划详情：三小步 + 打卡 + 提醒） -->
   <section class="scene" id="s4">
     <div class="grid2 grid2--flip">
       <div class="copy">
@@ -134,38 +78,10 @@
         <p class="lead" id="s4-lead">到点会提醒 —— 应用没开着也收得到。</p>
       </div>
 
-      <div class="plancard" id="s4-card">
-        <div class="plancard__head">
-          <div>
-            <div class="plancard__title">重新开始跑步</div>
-            <div class="plancard__meta">9 月 15 日 → 10 月 15 日 · 每周三次</div>
-          </div>
-          <span class="tag">进行中</span>
+      <div class="device" id="s4-device">
+        <div class="device__screen">
+          <img class="device__shot" id="s4-shot" src="device/plan_screen.png" alt="">
         </div>
-        <div class="steprow" id="s4-step1">
-          <span class="check" id="s4-check1"></span>
-          <div class="steprow__body">
-            <div class="steprow__title" id="s4-t1">走 20 分钟</div>
-            <div class="steprow__note" id="s4-note1">完成于 9 月 16 日 · 比想象轻松</div>
-          </div>
-          <span class="steprow__day">周二</span>
-        </div>
-        <div class="steprow" id="s4-step2">
-          <span class="check" id="s4-check2"></span>
-          <div class="steprow__body">
-            <div class="steprow__title" id="s4-t2">慢跑 15 分钟</div>
-            <div class="steprow__note" id="s4-note2">跑了 12 分钟 · 也算完成</div>
-          </div>
-          <span class="steprow__day">周四</span>
-        </div>
-        <div class="steprow" id="s4-step3">
-          <span class="check"></span>
-          <div class="steprow__body">
-            <div class="steprow__title">慢跑 20 分钟</div>
-          </div>
-          <span class="steprow__day">周日</span>
-        </div>
-        <div class="plancard__foot" id="s4-foot">每次打卡都能写一句话，记录当天真实的情况</div>
       </div>
     </div>
   </section>

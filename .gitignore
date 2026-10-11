@@ -14,6 +14,9 @@ unpackage/release/
 # 介绍片音轨中间产物（site/video/make-audio.mjs 每次重算即可；成片里已带音轨）
 site/video/audio/
 
+# 介绍片截图中间产物（真正进成片的只有 site/video/device/ 下三张）
+site/video/app-shots/
+
 # 依赖
 node_modules/
 
