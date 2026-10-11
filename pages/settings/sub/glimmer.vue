@@ -14,7 +14,7 @@ const totalText = ref('')
 function load() {
   items.value = getGlimmers()
   totalText.value = items.value.length > 0
-    ? '共收着 ' + items.value.length + ' 件小事'
+    ? '共收着 ' + items.value.length + ' 条记录'
     : '微光本是空的，允许空着'
 }
 
@@ -26,13 +26,14 @@ function fmtDate(d) {
 
 function removeOne(g) {
   uni.showModal({
-    title: '删掉这一天？',
-    content: '只删这条微光，不影响其他数据',
+    title: '删掉这一条？',
+    content: '只删这条记录，不影响其他数据',
     confirmText: '删除',
     cancelText: '留着',
     success(res) {
       if (!res.confirm) return
-      removeGlimmer(g.date)
+      // 4.25.1：同日成果与小事并存，按 kind 只删这一条
+      removeGlimmer(g.date, g.kind)
       uni.showToast({ title: '已删除', icon: 'none' })
       load()
     }
@@ -49,7 +50,7 @@ onShow(load)
         <SijiIcon name="sun" size="lg" color="#B45309" />
         <text class="head-title">微光本</text>
       </view>
-      <text class="head-desc">AI 会在你分享「今天有件还行的小事」时轻轻收进来，只记录、不追问</text>
+      <text class="head-desc">AI 会在你分享「还行的小事」或报告「今日成果」时轻轻收进来，只记录、不追问</text>
       <text class="head-total">{{ totalText }}</text>
     </view>
 
@@ -60,9 +61,12 @@ onShow(load)
       </view>
 
       <view v-else class="list">
-        <view v-for="g in items" :key="g.date" class="row">
+        <view v-for="g in items" :key="g.id || (g.date + ':' + (g.kind || 'moment'))" class="row">
           <view class="row-head">
-            <text class="row-date">{{ fmtDate(g.date) }}</text>
+            <view class="row-head-left">
+              <text class="row-date">{{ fmtDate(g.date) }}</text>
+              <text class="row-kind" :class="{ win: g.kind === 'win' }">{{ g.kind === 'win' ? '成果' : '微光' }}</text>
+            </view>
             <view class="row-del" @tap="removeOne(g)">
               <SijiIcon name="trash" size="sm" color="#A1A1AA" />
             </view>
@@ -164,9 +168,30 @@ onShow(load)
   justify-content: space-between;
 }
 
+.row-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .row-date {
   font-size: 22rpx;
   color: #A1A1AA;
+}
+
+/* 4.25.1：成果/微光类型小标签 */
+.row-kind {
+  font-size: 18rpx;
+  color: #71717A;
+  padding: 2rpx 12rpx;
+  border: 1rpx solid #E4E4E7;
+  border-radius: 16rpx;
+
+  &.win {
+    color: #18181B;
+    border-color: #18181B;
+    font-weight: 600;
+  }
 }
 
 .row-del {
@@ -187,6 +212,7 @@ html.theme-dark {
   .row { background: #27272A; }
   .row-content { color: #E4E4E7; }
   .head-desc, .row-date, .head-total, .empty-title { color: #A1A1AA; }
+  .row-kind { color: #71717A; border-color: #3F3F46; &.win { color: #FAFAFA; border-color: #FAFAFA; } }
   .empty-hint { color: #71717A; }
 }
 /* #endif */
@@ -198,6 +224,7 @@ html.theme-dark {
   .row { background: #27272A; }
   .row-content { color: #E4E4E7; }
   .head-desc, .row-date, .head-total, .empty-title { color: #A1A1AA; }
+  .row-kind { color: #71717A; border-color: #3F3F46; &.win { color: #FAFAFA; border-color: #FAFAFA; } }
   .empty-hint { color: #71717A; }
 }
 /* #endif */

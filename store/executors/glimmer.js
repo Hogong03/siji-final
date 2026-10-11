@@ -35,8 +35,9 @@ export function createGlimmerExecutors() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
       return { success: false, message: '缺少日期', detail: null }
     }
-    removeGlimmer(date)
-    return { success: true, message: '已删除', detail: { type: 'glimmer', date, deleted: true } }
+    // 4.25.1：kind 可选 —— 带了只删该日该条（win/moment 并存后同日可能两条），不带删该日全部
+    removeGlimmer(date, p && p.kind)
+    return { success: true, message: '已删除', detail: { type: 'glimmer', date: date, deleted: true } }
   }
 
   return { execCreateGlimmer, execQueryGlimmers, execDeleteGlimmer }

@@ -14,7 +14,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useDataStore } from '../store/data.js'
 import { resetStorage } from './setup.js'
 import {
-  saveGlimmer, getGlimmers, getGlimmerStats
+  saveGlimmer, getGlimmers, getGlimmerStats, removeGlimmer
 } from '../utils/storage/glimmer.js'
 import { buildBriefingMetrics, buildEnterButtons, buildEnterLines } from '../utils/enter-dialogue.js'
 import { ensureDefaultTemplates, getPlanTemplates, getPlanList } from '../utils/storage/plan.js'
@@ -34,17 +34,34 @@ function dayStr(ts) {
 describe('存储层：kind 与统计', () => {
   beforeEach(() => { uni.clearStorageSync() })
 
-  it('kind=win 落库；同日覆盖保留 kind；老数据（无 kind）读出归一 moment', () => {
+  it('kind=win 落库；同日同 kind 覆盖；老数据（无 kind）读出归一 moment', () => {
     saveGlimmer('看懂了一条完整调用链', { kind: 'win' })
-    saveGlimmer('晚饭后散步', { kind: 'moment' })
-    const all = getGlimmers()
-    expect(all[0].kind).toBe('moment')
-    // 同日覆盖：后写覆盖先写（每日一条语义）
     saveGlimmer('独立写了一个后端接口', { kind: 'win' })
+    const all = getGlimmers()
+    // 同日同 kind 覆盖（每日每类一条语义）
+    expect(all).toHaveLength(1)
+    expect(all[0].kind).toBe('win')
+    expect(all[0].content).toBe('独立写了一个后端接口')
+  })
+
+  it('同日 win 与 moment 并存（4.25.1）：白天记的成果不被晚上记的小事顶掉', () => {
+    saveGlimmer('看懂了链式法则', { kind: 'win' })
+    saveGlimmer('晚饭后散了会儿步', { kind: 'moment' })
+    const all = getGlimmers()
+    expect(all).toHaveLength(2)
+    expect(all.find(g => g.kind === 'win').content).toBe('看懂了链式法则')
+    expect(all.find(g => g.kind === 'moment').content).toBe('晚饭后散了会儿步')
+    // 再记一次 moment 仍只覆盖 moment 那条
+    saveGlimmer('睡前拉伸', { kind: 'moment' })
     const after = getGlimmers()
-    expect(after).toHaveLength(1)
-    expect(after[0].kind).toBe('win')
-    expect(after[0].content).toBe('独立写了一个后端接口')
+    expect(after).toHaveLength(2)
+    expect(after.find(g => g.kind === 'win').content).toBe('看懂了链式法则')
+    expect(after.find(g => g.kind === 'moment').content).toBe('睡前拉伸')
+    // 删除带 kind 只删那条；不带删该日全部
+    removeGlimmer(dayStr(Date.now()), 'moment')
+    expect(getGlimmers().some(g => g.kind === 'win')).toBe(true)
+    removeGlimmer(dayStr(Date.now()))
+    expect(getGlimmers()).toHaveLength(0)
   })
 
   it('streak：连续 N 天都有记录则 N；今天没记不算断档，从昨天往回数', () => {

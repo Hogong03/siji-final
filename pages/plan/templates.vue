@@ -12,7 +12,7 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateForm from './components/TemplateForm.vue'
 import { ref, computed, onMounted } from 'vue'
-import { getPlanTemplates, savePlanTemplate, deletePlanTemplate } from '@/utils/storage.js'
+import { getPlanTemplates, savePlanTemplate, deletePlanTemplate, ensureDefaultTemplates } from '@/utils/storage.js'
 import { useAppStore } from '@/store/index.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { useTemplateAI } from './composables/useTemplateAI.js'
@@ -36,7 +36,12 @@ const categories = [
   { label: '自定义', value: 'custom' }
 ]
 
-onMounted(() => { loadTemplates() })
+onMounted(() => {
+  // 4.25.1：兜底补发内置模板 —— H5 直达 hash 路由（分享链接/深链）不经 splash 的 appReady，
+  // 内置模板（含 tpl_learning）会缺席；ensureDefaultTemplates 幂等，正常启动时零副作用
+  try { ensureDefaultTemplates() } catch (e) { /* 补发失败不影响页面打开 */ }
+  loadTemplates()
+})
 
 function loadTemplates() {
   templates.value = getPlanTemplates()

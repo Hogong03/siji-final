@@ -25,30 +25,39 @@ export function todayStr(offsetDays = 0) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
 }
 
-/** 获取全部微光，按日期倒序 */
+/** kind 归一：老数据无 kind 字段视为 moment（4.25.1） */
+function kindOf(g) {
+  return (g && g.kind === 'win') ? 'win' : 'moment'
+}
+
+/** 获取全部微光/成果，按日期倒序；读侧统一补 kind（老数据归一 moment） */
 export function getGlimmers() {
   return readAll()
     .filter(g => g && g.date)
+    .map(g => (g.kind === 'win' || g.kind === 'moment') ? g : Object.assign({}, g, { kind: 'moment' }))
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
 }
 
-/** 获取某天的微光 */
+/** 获取某天的微光（同日可能 win+moment 两条，返回第一条） */
 export function getGlimmerByDate(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return null
   return getGlimmers().find(g => g.date === date) || null
 }
 
-/** 保存一条微光（同日覆盖），返回记录；内容为空返回 null
- *  4.24.0：opts.kind —— 'win'（今日成果："完成了/看懂了/写完了 X"）| 'moment'（还行的小事，默认）；
- *  老数据无 kind 字段，读侧归一为 moment */
+/**
+ * 保存一条微光/成果；内容为空返回 null
+ * 4.25.0：opts.kind —— 'win'（今日成果："完成了/看懂了/写完了 X"）| 'moment'（还行的小事，默认）
+ * 4.25.1：主键从 date 改为 date+kind —— 成果和小事同日并存（白天记的成果不会被晚上记的小事顶掉），
+ * 同日同 kind 仍覆盖；老数据（无 kind）读侧归一 moment，自然迁移
+ */
 export function saveGlimmer(content, opts = {}) {
   const text = String(content || '').trim().slice(0, 300)
   if (!text) return null
   const date = /^\d{4}-\d{2}-\d{2}$/.test((opts && opts.date) || '') ? opts.date : todayStr()
   const kind = (opts && opts.kind === 'win') ? 'win' : 'moment'
   const list = readAll()
-  const idx = list.findIndex(g => g.date === date)
-  const rec = { id: date, date, content: text, kind: kind, created_at: Date.now() }
+  const idx = list.findIndex(g => g.date === date && kindOf(g) === kind)
+  const rec = { id: date + ':' + kind, date, kind: kind, content: text, created_at: Date.now() }
   if (idx >= 0) list[idx] = rec
   else list.push(rec)
   asyncSetStorageJSON(GLIMMER_KEY, list)
@@ -92,10 +101,15 @@ export function getGlimmerStats(now = Date.now()) {
   return { todayCount: todayCount, streakDays: streakDays, weekCount: weekCount, needWinPrompt: needWinPrompt }
 }
 
-/** 删除某天的微光（物理删除，数据量小无需软删/撤销） */
-export function removeGlimmer(date) {
+/** 删除：带 kind 只删该日该条；不带删该日全部（兼容 AI delete_glimmer {date} 旧调用） */
+export function removeGlimmer(date, kind) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return
-  asyncSetStorageJSON(GLIMMER_KEY, readAll().filter(g => g.date !== date))
+  const byKind = (kind === 'win' || kind === 'moment')
+  asyncSetStorageJSON(GLIMMER_KEY, readAll().filter(g => {
+    if (g.date !== date) return true
+    if (!byKind) return false
+    return kindOf(g) !== kind
+  }))
 }
 
 /** 微光条数（可限近 N 天） */

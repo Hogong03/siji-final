@@ -6,6 +6,28 @@
 
 export const V425 = [
   {
+    version: '4.25.1',
+    date: '2026-10-12',
+    title: '成果引擎口径修正：同日成果与小事并存（date+kind 双主键）+ 模板页兜底补发',
+    summary: [
+      '实测反馈修复：同日先记成果（win）再记小事（moment）会把成果顶掉 —— 主键从 date 改为 date+kind，两类同日并存，同日同 kind 仍覆盖；老数据（无 kind）读侧归一 moment 自然迁移',
+      '删除口径：removeGlimmer/delete_glimmer 支持 kind 可选参数（带 kind 只删该日那一条，不带删该日全部）；微光本页面列表加「成果/微光」类型标签，删除按钮按条生效',
+      'H5 直达 hash 路由（分享链接/深链不经 splash）模板缺席 —— 模板页 onMounted 兜底调 ensureDefaultTemplates（幂等，正常启动零副作用）',
+    ],
+    categories: [
+      {
+        title: '修正（4.25.1）',
+        items: [
+          'utils/storage/glimmer.js：saveGlimmer 按 date+kind 匹配覆盖，id 升级为 date:kind；removeGlimmer(date, kind?)；getGlimmers 读侧统一补 kind',
+          'store/executors/glimmer.js + utils/ai/prompt-actions.js：delete_glimmer 透传可选 kind',
+          'pages/settings/sub/glimmer.vue：列表 :key 用 id、删除传 kind、加「成果/微光」类型标签（含深色两套块）、文案补成果语义',
+          'pages/plan/templates.vue：onMounted 兜底 ensureDefaultTemplates',
+          'tests/glimmer-wins.test.js：改写覆盖语义用例 + 新增并存/按条删除用例（9 例）；全量 102 文件 / 1385 用例全绿',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.25.0',
     date: '2026-10-12',
     title: '成果引擎 + 学习路线模板：把「以成果为单位」产品化（个人成长执行系统的第一批落地）',

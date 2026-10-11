@@ -63,7 +63,7 @@ Agent:
 
 微光本/成果本:
 - create_glimmer: {content,kind?,date?}  // 每日一条同日覆盖，只记录不评价不追问。两种入口：还行的小事（散步/晒太阳/按时吃饭等）→ kind=moment；今日成果（"完成了/看懂了/写完了/搞定了 X"或回答晚间记成果问询）→ kind=win
-- delete_glimmer: {date} needConfirm=true
+- delete_glimmer: {date,kind?} needConfirm=true  // kind=win/moment 可选：同日成果与小事并存后，带了只删那一条
 - query_glimmers: {days?}  // 查看微光本与成果记录（默认近 30 天）
 
 联动:
