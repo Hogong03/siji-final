@@ -6,6 +6,40 @@
 
 export const V423 = [
   {
+    version: '4.23.1',
+    date: '2026-10-11',
+    title: '免责声明页 UI 修缮：修 H5 双滚动 + 视觉规范对齐',
+    summary: [
+      '修 H5 端双滚动：页面高度 100vh 未扣除模拟导航栏 44px，整页可滚出品牌区与按钮区；改 calc(100vh - var(--window-top, 0px)) 并把外层 overflow: scroll 收为 hidden（App/MP 端变量回落 0px，行为不变）',
+      '去标题三重堆叠：删页内与导航栏同名的大标题，「最后更新」日期上移进品牌区；品牌字对齐 splash 规格（72rpx/8rpx 字距 + 22rpx/12rpx 副标）',
+      '按钮规范对齐：主按钮 #3F3F46 升为纯黑 #000000（对齐锁屏页先例），深色反白 #FAFAFA/#000000；次按钮补 1rpx 边框不再靠圆角猜边界；拒绝弹窗补 confirmColor 黑色',
+      '阅读性提升：正文 24→26rpx、行高 1.75，小节标题 26→30rpx，序号条目间距 8→12rpx；桌面 H5 正文与按钮收窄至 640px 居中',
+      '细节：show-scrollbar 改真绑定（:show-scrollbar="false"，修微信端 enhanced 滚动条）、品牌/正文/按钮区加 disclaimerIn 入场动画、删 agreed 死变量',
+    ],
+    categories: [
+      {
+        title: '布局修复（4.23.1）',
+        items: [
+          'pages/disclaimer/index.vue：.disclaimer-wrap 高度改 calc(100vh - var(--window-top, 0px))，H5 端扣除模拟导航栏；App-vue/微信小程序端该变量为 0px，计算结果与原先一致',
+          '外层 overflow: scroll 改 overflow: hidden，滚轮不再滚走品牌区与底部按钮（对齐 DESIGN_SYSTEM 10.1 页面骨架）',
+          'scroll-view 的 show-scrollbar 由字符串字面量 "false" 改真绑定 :show-scrollbar="false"（字符串 truthy 会令微信端 enhanced 模式滚动条常显）',
+        ],
+      },
+      {
+        title: '视觉规范（4.23.1）',
+        items: [
+          '删页内 .disclaimer-title（与原生导航栏标题重复），.disclaimer-date 移入品牌区',
+          '品牌区对齐 splash 规格：72rpx/700/字距 8rpx + 副标 22rpx/字距 12rpx',
+          '主按钮 #000000（浅色）/ #FAFAFA 底黑字（深色，对齐用户气泡反白逻辑）；次按钮加 1rpx #E4E4E7 边框（深色 #3F3F46）；按钮容器补 box-sizing: border-box',
+          '正文 26rpx/1.75、小节标题 30rpx、条目间距 12rpx、节间距 32rpx',
+          '桌面 H5（≥768px）正文与按钮区 max-width 640px 居中（rpx 高视口封顶无法表达，H5 条件编译内用 px）',
+          '新增 disclaimerIn 入场动画（品牌 0s / 正文 0.08s / 底栏 0.16s 递进，fadeInUp 0.4s）',
+          'handleDecline 弹窗补 confirmColor: #000000，不再吃平台默认蓝绿色',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.23.0',
     date: '2026-10-08',
     title: 'AI 响应提速三件套：工具轮思考档降级 + 思考流实时上屏 + 工具级阶段文案',

@@ -3,16 +3,13 @@
  * 免责声明页 — 首次启动必须同意才能进入
  * 纯黑白极简风格，与整体设计语言一致
  */
-import { ref } from 'vue'
 import { getDisclaimerAccepted, setDisclaimerAccepted } from '@/utils/disclaimer.js'
 import { hasPin } from '@/utils/pin.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 
-const agreed = ref(false)
 const isFirstLaunch = !getDisclaimerAccepted()
 
 function handleAgree() {
-  agreed.value = true
   setDisclaimerAccepted()
   // 跳转逻辑与 splash 一致
   const target = hasPin() ? '/pages/lock/index' : '/pages/chat/index'
@@ -26,6 +23,7 @@ function handleDecline() {
     content: '思迹需要您同意免责声明才能使用。\n\n不同意将无法使用本应用。',
     confirmText: '同意并继续',
     cancelText: '退出应用',
+    confirmColor: '#000000',
     success(res) {
       if (res.confirm) {
         handleAgree()
@@ -52,13 +50,11 @@ function handleDecline() {
     <view class="disclaimer-header">
       <text class="disclaimer-brand">思迹</text>
       <text class="disclaimer-brand-sub">SIJI</text>
+      <text class="disclaimer-date">最后更新：2026 年 7 月 14 日</text>
     </view>
 
     <!-- 声明正文 -->
-    <scroll-view class="disclaimer-body" scroll-y enhanced show-scrollbar="false">
-      <text class="disclaimer-title">用户协议与免责声明</text>
-      <text class="disclaimer-date">最后更新：2026 年 7 月 14 日</text>
-
+    <scroll-view class="disclaimer-body" scroll-y enhanced :show-scrollbar="false">
       <view class="disclaimer-section">
         <text class="disclaimer-section-title">一、关于思迹</text>
         <text class="disclaimer-text">思迹（Siji）是一款纯本地 AI 对话式生活助手应用，提供记录、账单管理、计划追踪等功能。所有数据默认存储在您的设备本地，不上传至任何服务器。</text>
@@ -125,72 +121,72 @@ function handleDecline() {
 
 <style scoped lang="scss">
 .disclaimer-wrap {
-  height: 100vh;
+  /* H5 端扣除模拟导航栏高度（App/MP 端变量缺省回落 0px，行为不变）；overflow hidden 防双滚动 */
+  height: calc(100vh - var(--window-top, 0px));
   display: flex;
   flex-direction: column;
   background: #FAFAFA;
-  overflow: scroll;
+  overflow: hidden;
 }
 
-/* 顶部品牌 */
+@keyframes disclaimerIn {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 顶部品牌（规格与 splash 一致：72rpx/8rpx + 22rpx/12rpx） */
 .disclaimer-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 48rpx 0 0;
   gap: 6rpx;
+  animation: disclaimerIn 0.4s ease both;
 }
 .disclaimer-brand {
-  font-size: 52rpx;
+  font-size: 72rpx;
   font-weight: 700;
   color: #3F3F46;
-  letter-spacing: 6rpx;
+  letter-spacing: 8rpx;
 }
 .disclaimer-brand-sub {
-  font-size: 18rpx;
+  font-size: 22rpx;
   font-weight: 500;
   color: #A1A1AA;
-  letter-spacing: 10rpx;
+  letter-spacing: 12rpx;
   text-transform: uppercase;
+}
+.disclaimer-date {
+  font-size: 22rpx;
+  color: #A1A1AA;
+  margin-top: 10rpx;
 }
 
 /* 正文区域 */
 .disclaimer-body {
   flex: 1;
-  padding: 32rpx 40rpx 0;
+  padding: 24rpx 40rpx 0;
   overflow-x: hidden;
   box-sizing: border-box;
-}
-.disclaimer-title {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #3F3F46;
-  margin-bottom: 8rpx;
-}
-.disclaimer-date {
-  display: block;
-  font-size: 22rpx;
-  color: #A1A1AA;
-  margin-bottom: 32rpx;
+  animation: disclaimerIn 0.4s ease 0.08s both;
 }
 
 .disclaimer-section {
-  margin-bottom: 28rpx;
+  margin-bottom: 32rpx;
 }
 .disclaimer-section-title {
   display: block;
-  font-size: 26rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: #18181B;
   margin-bottom: 12rpx;
 }
 .disclaimer-text {
   display: block;
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #71717A;
-  line-height: 1.7;
-  margin-bottom: 8rpx;
+  line-height: 1.75;
+  margin-bottom: 12rpx;
   word-wrap: break-word;
   word-break: break-word;
   white-space: normal;
@@ -207,6 +203,7 @@ function handleDecline() {
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid #E4E4E7;
   background: #FAFAFA;
+  animation: disclaimerIn 0.4s ease 0.16s both;
 }
 .disclaimer-footer-inner {
   display: flex;
@@ -222,19 +219,33 @@ function handleDecline() {
   border-radius: 16rpx;
   font-size: 28rpx;
   font-weight: 500;
+  box-sizing: border-box;
   transition: opacity 0.15s;
   &:active {
     opacity: 0.7;
   }
 }
 .disclaimer-btn-primary {
-  background: #3F3F46;
+  background: #000000;
   color: #FFFFFF;
 }
 .disclaimer-btn-secondary {
   background: #FFFFFF;
   color: #71717A;
+  border: 1rpx solid #E4E4E7;
 }
+
+/* 桌面 H5 收窄阅读宽度（rpx 在 960px 以上视口封顶缩放，表达不了桌面宽度上限） */
+/* #ifdef H5 */
+@media (min-width: 768px) {
+  .disclaimer-body,
+  .disclaimer-footer-inner {
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+/* #endif */
 
 /* ─── 深色模式 ─── */
 /* #ifndef MP-WEIXIN */
@@ -242,7 +253,6 @@ html.theme-dark {
   .disclaimer-wrap { background: #18181B; }
   .disclaimer-brand { color: #FAFAFA; }
   .disclaimer-brand-sub { color: #71717A; }
-  .disclaimer-title { color: #FAFAFA; }
   .disclaimer-date { color: #71717A; }
   .disclaimer-section-title { color: #FAFAFA; }
   .disclaimer-text { color: #A1A1AA; }
@@ -251,12 +261,13 @@ html.theme-dark {
     background: #18181B;
   }
   .disclaimer-btn-primary {
-    background: #52525B;
-    color: #FFFFFF;
+    background: #FAFAFA;
+    color: #000000;
   }
   .disclaimer-btn-secondary {
     background: #27272A;
     color: #A1A1AA;
+    border-color: #3F3F46;
   }
 }
 /* #endif */
@@ -265,7 +276,6 @@ html.theme-dark {
   .disclaimer-wrap { background: #18181B; }
   .disclaimer-brand { color: #FAFAFA; }
   .disclaimer-brand-sub { color: #71717A; }
-  .disclaimer-title { color: #FAFAFA; }
   .disclaimer-date { color: #71717A; }
   .disclaimer-section-title { color: #FAFAFA; }
   .disclaimer-text { color: #A1A1AA; }
@@ -274,12 +284,13 @@ html.theme-dark {
     background: #18181B;
   }
   .disclaimer-btn-primary {
-    background: #52525B;
-    color: #FFFFFF;
+    background: #FAFAFA;
+    color: #000000;
   }
   .disclaimer-btn-secondary {
     background: #27272A;
     color: #A1A1AA;
+    border-color: #3F3F46;
   }
 }
 /* #endif */
