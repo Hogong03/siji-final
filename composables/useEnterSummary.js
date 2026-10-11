@@ -12,7 +12,7 @@
  * 后台不轮询、不设定时器，只在切回前台时结算一次（60s 节流）。
  */
 import { ref } from 'vue'
-import { getPlanList } from '@/utils/storage.js'
+import { getPlanList, getGlimmerStats } from '@/utils/storage.js'
 import { getDiaryList } from '@/utils/storage/diary.js'
 import { getBillList } from '@/utils/storage/bill.js'
 import {
@@ -110,7 +110,12 @@ function buildPlanExtras(plans, now) {
   // 4.13.0：今日打卡进度（简报卡进度行；无可打卡计划为 null）
   let checkinToday = null
   try { checkinToday = collectCheckinToday(plans, now) } catch (e) { checkinToday = null }
-  return { alerts: alerts, workStatus: workStatus, nextStep: nextStep, checkinToday: checkinToday }
+  return { alerts: alerts, workStatus: workStatus, nextStep: nextStep, checkinToday: checkinToday, glimmerStat: glimmerStatSafe(now) }
+}
+
+/** 4.24.0：成果引擎统计（成果连续天数 / 晚间收尾问询条件），异常吞掉返回 null */
+function glimmerStatSafe(now) {
+  try { return getGlimmerStats(now) } catch (e) { return null }
 }
 
 /**
@@ -128,7 +133,8 @@ export function snapshotEnterContext(now = Date.now()) {
     source: 'cold',
     awayMs: 0,
     moodDip: false,
-    weekBill: null
+    weekBill: null,
+    glimmerStat: glimmerStatSafe(now)
   }, buildPlanExtras(plans, now))
 }
 
@@ -165,7 +171,8 @@ function computeSummary(since, now, source) {
     awayMs: Math.max(0, now - since),
     moodDip: moodDip,
     weekBill: weekBill,
-    yesterdayExpense: yesterdayExpense
+    yesterdayExpense: yesterdayExpense,
+    glimmerStat: glimmerStatSafe(now)
   }, extras)
 }
 

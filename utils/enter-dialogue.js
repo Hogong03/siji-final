@@ -70,6 +70,13 @@ export function buildEnterLines(summary) {
   if (summary.diaryCount > 0) out.push(`新增记录 ${summary.diaryCount} 条`)
   if ((summary.streak || 0) >= 2) out.push(`已连续打卡 ${summary.streak} 天`)
   if (summary.weekBill && summary.weekBill.text) out.push(summary.weekBill.text)
+  // 4.24.0：晚间收尾问询行 —— 21 点后今天还没记成果，轻轻问一句（不评价，不制造失败感）
+  const gs = summary.glimmerStat || null
+  if (gs && gs.needWinPrompt) {
+    out.push(gs.streakDays >= 2
+      ? `成果连续 ${gs.streakDays} 天了，今天还没记——哪怕一句「看懂了一个接口」也算`
+      : '今天还没记成果——哪怕一句「看懂了一个接口」也算')
+  }
   if (summary.moodDip) out.push('这两天记录里写着低落，今天慢一点也算数')
   return out
 }
@@ -146,6 +153,9 @@ export function buildBriefingGreeting(now = Date.now()) {
 export function buildBriefingMetrics(summary) {
   if (!summary) return []
   const out = []
+  const gs = summary.glimmerStat || null
+  // 4.24.0：成果连续格（≥2 天才亮，断档不清零不打扰）——画像药方的可见反馈
+  if (gs && (gs.streakDays || 0) >= 2) out.push({ key: 'winStreak', value: `${gs.streakDays} 天`, label: '成果连续' })
   const expense = Number(summary.yesterdayExpense) || 0
   if (expense > 0) out.push({ key: 'expense', value: `¥${expense}`, label: '昨日支出' })
   // 4.20.0：周一洞察 —— 上周支出格（只有周播报在场时给，与文本行同源）
@@ -261,6 +271,10 @@ export function buildEnterButtons(summary, extras = null) {
     // 4.20.0：周洞察的建议按钮 —— 预填追问「看看上周XX都花在哪了」，AI 有 query_bill 接得住
     if (summary.weekBill && summary.weekBill.suggestion && summary.weekBill.suggestion.prefill) {
       add('insight', '看看花在哪', 'prefill', summary.weekBill.suggestion.prefill)
+    }
+    // 4.24.0：晚间收尾问询 —— 21 点后今天还没记成果，给一颗「记成果」按钮（对抗"不着急"的机制）
+    if (summary.glimmerStat && summary.glimmerStat.needWinPrompt) {
+      add('glimmer', '记成果', 'prefill', '记一条今天的成果：')
     }
     if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
   }

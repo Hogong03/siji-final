@@ -146,13 +146,14 @@ export {
   TAG_CATEGORIES
 } from './storage/tags.js'
 
-// 微光本（3.4 M2）
+// 微光本（3.4 M2；4.24.0 升级成果引擎：kind win/moment + streak 统计）
 export {
   getGlimmers,
   getGlimmerByDate,
   saveGlimmer,
   removeGlimmer,
   countGlimmers,
+  getGlimmerStats,
   todayStr
 } from './storage/glimmer.js'
 

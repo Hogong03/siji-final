@@ -3,7 +3,9 @@
  *
  * 存储策略：不分片 → storage key: siji_glimmers
  * 数据模型：每日至多一条，date（YYYY-MM-DD）即主键，同日覆盖；允许空（空 = 无记录）
- * 行为口径：AI 主动捡拾（create_glimmer）只收集不评判；本模块不做打卡/连击/统计激励
+ * 4.24.0 升级成果引擎：kind 字段（win=今日成果 / moment=还行的小事，老数据归一 moment）+
+ * getGlimmerStats（连续天数 / 今日是否已记 / 晚间收尾问询条件）——
+ * 行为口径不变：AI 收集不评判；统计只做可见反馈，不做打卡轰炸
  */
 import { asyncSetStorageJSON } from '../store-helpers.js'
 
@@ -36,18 +38,58 @@ export function getGlimmerByDate(date) {
   return getGlimmers().find(g => g.date === date) || null
 }
 
-/** 保存一条微光（同日覆盖），返回记录；内容为空返回 null */
+/** 保存一条微光（同日覆盖），返回记录；内容为空返回 null
+ *  4.24.0：opts.kind —— 'win'（今日成果："完成了/看懂了/写完了 X"）| 'moment'（还行的小事，默认）；
+ *  老数据无 kind 字段，读侧归一为 moment */
 export function saveGlimmer(content, opts = {}) {
   const text = String(content || '').trim().slice(0, 300)
   if (!text) return null
   const date = /^\d{4}-\d{2}-\d{2}$/.test((opts && opts.date) || '') ? opts.date : todayStr()
+  const kind = (opts && opts.kind === 'win') ? 'win' : 'moment'
   const list = readAll()
   const idx = list.findIndex(g => g.date === date)
-  const rec = { id: date, date, content: text, created_at: Date.now() }
+  const rec = { id: date, date, content: text, kind: kind, created_at: Date.now() }
   if (idx >= 0) list[idx] = rec
   else list.push(rec)
   asyncSetStorageJSON(GLIMMER_KEY, list)
   return rec
+}
+
+/**
+ * 成果/微光统计（4.24.0，纯函数）：成果引擎的反馈数字
+ *  - streakDays：连续记录天数（微光或成果都算）——今天没记时从昨天往回数，
+ *    不把今天算断档（一天没结束就不算失败，防失败感铁律）
+ *  - needWinPrompt：晚间收尾问询条件 —— 21 点后今天还没记，进入消息里该问了
+ * @param {number} [now] 注入时间（测试用）
+ * @returns {{ todayCount, streakDays, weekCount, needWinPrompt }}
+ */
+export function getGlimmerStats(now = Date.now()) {
+  const list = getGlimmers()
+  const dayMs = 86400000
+  const dayKeyOf = (ts) => {
+    const d = new Date(ts)
+    const pad = n => String(n).padStart(2, '0')
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+  }
+  const dates = new Set(list.map(g => g.date))
+  const today = dayKeyOf(now)
+  const todayCount = dates.has(today) ? 1 : 0
+
+  let streakDays = 0
+  let cursor = dates.has(today) ? today : dayKeyOf(now - dayMs)
+  while (dates.has(cursor)) {
+    streakDays++
+    const d = new Date(cursor.replace(/-/g, '/'))
+    cursor = dayKeyOf(d.getTime() - dayMs)
+  }
+
+  const min = dayKeyOf(now - 6 * dayMs)
+  const weekCount = list.filter(g => g.date >= min).length
+
+  const hour = new Date(now).getHours()
+  const needWinPrompt = hour >= 21 && todayCount === 0
+
+  return { todayCount: todayCount, streakDays: streakDays, weekCount: weekCount, needWinPrompt: needWinPrompt }
 }
 
 /** 删除某天的微光（物理删除，数据量小无需软删/撤销） */

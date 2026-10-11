@@ -8,12 +8,13 @@ export function createGlimmerExecutors() {
   function execCreateGlimmer(p) {
     const content = String((p && p.content) || '').trim().slice(0, 300)
     if (!content) return { success: false, message: '微光内容为空', detail: null }
-    const rec = saveGlimmer(content, { date: p && p.date })
+    const kind = (p && p.kind === 'win') ? 'win' : 'moment'
+    const rec = saveGlimmer(content, { date: p && p.date, kind: kind })
     if (!rec) return { success: false, message: '保存失败', detail: null }
     return {
       success: true,
-      message: '已收进微光本',
-      detail: { type: 'glimmer', date: rec.date, content: rec.content }
+      message: kind === 'win' ? '已记进成果本' : '已收进微光本',
+      detail: { type: 'glimmer', date: rec.date, content: rec.content, kind: rec.kind }
     }
   }
 

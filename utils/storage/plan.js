@@ -159,6 +159,57 @@ export function ensureDefaultTemplates() {
         ]
       },
       created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
+    },
+    {
+      // 4.24.0 学习模板：四阶段成长计划（画像药方的结构化落地）——
+      // 阶段用 start/end_offset_days 排期，每阶段挂周检查点（weekly recur），
+      // 对齐「以成果为单位」：每周三产出 = 调用链/接口/成果简记
+      client_id: 'tpl_learning', name: '全栈转AI工程师（6个月）', icon: '🧭', color: '#18181B', category: 'study',
+      description: '四阶段成长路线：前端调用链 → Java 后端 → 全栈项目 → AI 应用，每周三个可验证产出',
+      plan_data: {
+        priority: 2,
+        tags: ['学习'],
+        deadline_offset_days: 180,
+        subtasks: [
+          {
+            title: '阶段一：前端巩固与项目理解',
+            description: '目标：能独立追踪一条完整前端调用链并讲清数据流。重点：JS/TS 核心、接口调用与异步、组件依赖、开发者工具排错。',
+            start_offset_days: 0, end_offset_days: 30,
+            children: [
+              { title: '每周产出：弄懂一条完整调用链', description: '从用户操作到接口返回，画出数据流并记录', est_minutes: 60, recur_type: 'weekly', recur_count: 1 },
+              { title: '每周产出：一份学习简记', description: '记下遇到的问题、解决思路和还不懂的地方', est_minutes: 15, recur_type: 'weekly', recur_count: 1 }
+            ]
+          },
+          {
+            title: '阶段二：Java 后端与数据库',
+            description: '目标：能解释一个接口从请求进来到数据库查询再返回的全流程，并独立写简单接口。重点：Java 基础 → Spring → Spring Boot → SQL → Mapper/DTO → 事务与异常。',
+            start_offset_days: 31, end_offset_days: 60,
+            children: [
+              { title: '每周产出：独立完成一个后端接口', description: '参数校验 → Service → 数据库 → 返回约定结构', est_minutes: 60, recur_type: 'weekly', recur_count: 1 },
+              { title: '每周产出：一次代码理解', description: '用自己的话解释关键实现，能复述数据流', est_minutes: 20, recur_type: 'weekly', recur_count: 1 }
+            ]
+          },
+          {
+            title: '阶段三：完整全栈项目',
+            description: '目标：独立完成一个端到端业务系统。登录权限 + 列表搜索分页 + CRUD + 联调 + 校验异常日志 + 部署文档。先做完整单系统，不上来就拆微服务。',
+            start_offset_days: 61, end_offset_days: 120,
+            children: [
+              { title: '每周产出：一个可演示的业务功能', description: '端到端跑通并能演示', est_minutes: 90, recur_type: 'weekly', recur_count: 1 },
+              { title: '每周产出：更新项目文档', description: '架构、选型与关键实现，面试能讲', est_minutes: 20, recur_type: 'weekly', recur_count: 1 }
+            ]
+          },
+          {
+            title: '阶段四：AI 应用集成',
+            description: '目标：完成一个能运行、有业务用途、能解释架构的 AI 功能。顺序：LLM API 与结构化输出 → 流式/超时/重试 → 工具调用与 Agent → RAG → 评估与成本控制。',
+            start_offset_days: 121, end_offset_days: 180,
+            children: [
+              { title: '每周产出：AI 功能迭代一步', description: '给项目加 AI 能力，每周推进一小块', est_minutes: 90, recur_type: 'weekly', recur_count: 1 },
+              { title: '每周产出：一次架构复盘', description: '能解释这条 AI 链路的关键设计与失败兜底', est_minutes: 20, recur_type: 'weekly', recur_count: 1 }
+            ]
+          }
+        ]
+      },
+      created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
     }
   ]
   defaults.forEach(t => { if (!existingIds.has(t.client_id)) savePlanTemplate(t) })
