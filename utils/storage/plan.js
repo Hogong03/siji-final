@@ -6,6 +6,7 @@
 
 import { getRawList } from './helpers.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
+import { writePlanMilestoneIfNeeded, writePlanStartIfNeeded } from './plan-milestone.js'
 import {
   buildPlanIndex,
   recurTypeOf,
@@ -249,6 +250,9 @@ export function savePlan(plan) {
     if (next.status === 2 && old.status !== 2) {
       next.done_at = Date.now()
       next.executions = pushExecLog(next.executions, 'done')
+      // 4.26.0：完成即沉淀 —— 阶段/根计划完成自动写一条里程碑记录（幂等，只对阶段与根；
+      // 检查点等更深层完成不写防刷屏；失败不影响计划保存）
+      try { writePlanMilestoneIfNeeded(list, next) } catch (e) { /* ignore */ }
     }
     list[idx] = next
   } else {
@@ -282,8 +286,13 @@ export function logPlanCheckIn(clientId, note, dateStr) {
   const noteText = typeof note === 'string' ? note.trim() : ''
   checkins.push({ date: date, at: now.getTime(), note: noteText })
   checkins.sort((a, b) => (a.at || 0) - (b.at || 0))
+  // 4.26.0：根计划体系下的第一次打卡 → 记录流自动出现「开始行动」（幂等，失败不影响打卡）
+  const wasFirstCheckin = checkins.length === 1
   record.checkins = checkins.slice(-500)
   asyncSetStorageJSON(PLAN_KEY, list)
+  if (wasFirstCheckin) {
+    try { writePlanStartIfNeeded(list, record) } catch (e) { /* ignore */ }
+  }
   return record
 }
 

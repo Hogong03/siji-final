@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 102 文件 / 1385 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.25.1（成果/小事同日并存 date+kind 双主键 + 模板页兜底补发；含 4.25.0 成果引擎/学习模板 / 4.24.x 并行线） |
+| 测试 | 103 文件 / 1390 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.26.0（长效计划记录沉淀：首次打卡/阶段完成自动进记录流；含 4.25 成果引擎 / 4.24.x 并行线） |
 
 ---
 
@@ -283,6 +283,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记录阅读页版式 | `pages/diary/read.vue` + `read.scss`（**版式基线**：封面头部 → 章节编号 01 + 加粗标题 → 正文 28rpx/1.85；底部进度条 + 顶部当前章节 + 回到顶部）+ `utils/text-outline.js` 的 `readingProgress` / `sectionAtProgress` + `composables/useOutlineRuler.js` 的 `readProgress` / `activeSection` |
 | 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
+| 改计划记录沉淀（里程碑） | `utils/storage/plan-milestone.js`（buildStartRecord/buildMilestoneRecord + claimMilestoneKey 幂等登记 siji_plan_milestones + 阶段与根才写/检查点不写/单发计划不写），收口在 `utils/storage/plan.js` 的 savePlan 完成分支与 logPlanCheckIn 首次打卡，**新增完成入口无需改** |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
 | 判断「跑的是不是旧构建」 | 版本历史页顶部横幅（`pages/settings/sub/version-history.vue`）+ `utils/version-check.js` 的 `isRunningOlderThan(latest)`；**排查更新不生效时先看这里**：运行版本 ≠ 日志最新 → 编译产物没装上去（删 `unpackage/dist` 重编译 + 覆盖安装） |
@@ -383,7 +384,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 102 文件 / 1385 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 103 文件 / 1390 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

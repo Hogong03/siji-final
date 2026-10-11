@@ -8,6 +8,7 @@
  * 的补丁条目已各自合并为单条，原 2.2-early/late、2.3-early/late、3.5-early 分段文件已删。
  */
 
+import { V426 } from './version-log/4.26.js'
 import { V425 } from './version-log/4.25.js'
 import { V424 } from './version-log/4.24.js'
 import { V423 } from './version-log/4.23.js'
@@ -47,6 +48,7 @@ import { V1X } from './version-log/1.x.js'
 
 export function getDefaultHistory() {
   return [
+    ...V426,
     ...V425,
     ...V424,
     ...V423,
