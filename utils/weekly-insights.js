@@ -15,7 +15,8 @@ import {
 } from './bill-weekly.js'
 import { weekRangeTsOf } from './plan-recur.js'
 import { monthsBetween, monthKeyOf } from './enter-summary.js'
-import { getBillList, getDiaryList } from './storage.js'
+import { getBillList, getDiaryList, getGlimmerStats } from './storage.js'
+import { getWeekFocus } from './week-focus.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -25,6 +26,9 @@ const TREND_SHARE = 0.4
 /** 连续模式识别参数：连续天数下限 / 单日金额下限 */
 const STREAK_MIN_DAYS = 3
 const STREAK_MIN_DAILY = 20
+
+/** 运动记录的标签口径（记录自动打标「健康」+ 常见手打标签，4.27.0 人生周报身体维度） */
+const SPORT_TAGS = ['健康', '运动', '篮球', '健身', '跑步', '锻炼']
 
 function round2(n) {
   return Math.round((Number(n) || 0) * 100) / 100
@@ -147,6 +151,30 @@ export function countDiariesInRange(fromTs, toTs) {
 }
 
 /**
+ * 上周运动记录次数（4.27.0 人生周报身体维度）：记录 tags 命中运动口径的篇数
+ */
+export function countSportDiaries(fromTs, toTs) {
+  try {
+    const months = monthsBetween(fromTs, toTs)
+    if (months.length === 0) return 0
+    let count = 0
+    months.forEach(m => {
+      const list = getDiaryList(m)
+      ;(Array.isArray(list) ? list : []).forEach(d => {
+        if (!d || d.is_deleted === 1) return
+        const ts = Number(d.created_at) || 0
+        if (ts < fromTs || ts >= toTs) return
+        const tags = Array.isArray(d.tags) ? d.tags : []
+        if (tags.some(t => SPORT_TAGS.indexOf(String(t)) >= 0)) count++
+      })
+    })
+    return count
+  } catch (e) {
+    return 0
+  }
+}
+
+/**
  * 生成一条可执行建议（纯函数）：连续模式优先（更具体），其次分类暴涨
  * @returns {{ line, ask, prefill }|null} line 拼进播报正文，prefill 给预置按钮
  */
@@ -197,7 +225,23 @@ export function buildWeeklyInsightText(insight) {
   if (insight.suggestion && insight.suggestion.line) parts.push(insight.suggestion.line)
   const plan = insight.planStat
   if (plan && plan.checkinCount > 0) parts.push('打了 ' + plan.checkinCount + ' 次卡')
+  // 4.27.0：成果维度（微光/成果本周条数 + 连续天数）
+  const gs = insight.glimmerStat || null
+  if (gs) {
+    if ((gs.weekCount || 0) > 0) {
+      let seg = '记了 ' + gs.weekCount + ' 条成果/微光'
+      if ((gs.streakDays || 0) >= 2) seg += '，已连续 ' + gs.streakDays + ' 天'
+      parts.push(seg)
+    } else if ((gs.streakDays || 0) >= 2) {
+      parts.push('成果已连续 ' + gs.streakDays + ' 天')
+    }
+  }
+  // 4.27.0：身体维度（运动记录篇数，价值排序第一位）
+  if ((insight.sportCount || 0) > 0) parts.push('运动了 ' + insight.sportCount + ' 次')
   if ((insight.diaryCount || 0) > 0) parts.push('写了 ' + insight.diaryCount + ' 篇记录')
+  // 4.27.0：上周焦点对照（承诺的可见性）
+  const wf = insight.weekFocus || null
+  if (wf && wf.text) parts.push('上周焦点「' + wf.text + '」' + (wf.done ? '收官了' : '推进得怎么样'))
   if (insight.suggestion && insight.suggestion.ask) parts.push(insight.suggestion.ask)
   return parts.join('；')
 }
@@ -217,6 +261,15 @@ export function buildWeeklyInsightAnnouncement({ now = Date.now(), bills = null,
   const weekStart = weekRangeTsOf(now).weekStart
   const planStat = collectPlanWeeklyStat(plans, now)
   const diaryCount = countDiariesInRange(weekStart - 7 * DAY_MS, weekStart)
+  // 4.27.0：成果/身体/焦点三维（人生周报）
+  const glimmerStat = getGlimmerStats(now)
+  const sportCount = countSportDiaries(weekStart - 7 * DAY_MS, weekStart)
+  const rawFocus = getWeekFocus(now)
+  // 对照的是「上周」定的焦点：weekKey 落在上周区间才算
+  const lastWeekKey = weekKeyOf(weekStart - DAY_MS)
+  const weekFocus = (rawFocus && rawFocus.weekKey === lastWeekKey)
+    ? { text: rawFocus.text, done: false }
+    : null
   const insight = {
     total: round2(sumExpenseIn(source, weekStart - 7 * DAY_MS, weekStart).total),
     top: top,
@@ -224,13 +277,17 @@ export function buildWeeklyInsightAnnouncement({ now = Date.now(), bills = null,
     suggestion: suggestion,
     planStat: planStat,
     diaryCount: diaryCount,
+    glimmerStat: glimmerStat,
+    sportCount: sportCount,
+    weekFocus: weekFocus,
     weekKey: weekKeyOf(now)
   }
   // 顶部环比：统计周（上周）vs 对比周（上上周）；没有分类可对比时用总支出环比兜底
   const lastTotal = round2(sumExpenseIn(source, weekStart - 14 * DAY_MS, weekStart - 7 * DAY_MS).total)
   insight.diffPct = lastTotal > 0 ? Math.round((insight.total - lastTotal) / lastTotal * 100) : null
   insight.text = buildWeeklyInsightText(insight)
-  const hasAnything = insight.total > 0 || planStat.checkinCount > 0 || insight.diaryCount > 0
+  const hasAnything = insight.total > 0 || planStat.checkinCount > 0 || insight.diaryCount > 0 ||
+    (glimmerStat && glimmerStat.weekCount > 0) || sportCount > 0
   if (!hasAnything) return null
   return insight
 }

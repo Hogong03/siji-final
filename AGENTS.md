@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 103 文件 / 1390 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.26.0（长效计划记录沉淀：首次打卡/阶段完成自动进记录流；含 4.25 成果引擎 / 4.24.x 并行线） |
+| 测试 | 104 文件 / 1396 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
+| 版本 | v4.27.0（人生周报多维度 + 本周焦点契约 + 画像/教练模式；含 4.26 记录沉淀 / 4.25 成果引擎） |
 
 ---
 
@@ -269,7 +269,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改 App 端选文件（旧行，已被上面替换） | ① `data.getData()` 的 Uri **当 Java 对象传**，`String(uri)` 出来的不是可用 URI；② **没 importClass 的对象方法直接调用会抛** —— 每个调用走 `invokeSafe` 或先 `importClass`（类名 + 实例两种都试）；③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`），全败时文本类退 `plus.io` 直读 |
 | 改 App 端选文件（Uri 铁律，保留） | `data.getData()` 的 Uri **必须当 Java 对象一路传下去**，`String(uri)` 拿到的不是可用 URI（真机上这一步导致「拷贝失败 open-input」）；`getData` 为空时退 `ClipData.getItemAt(0).getUri`；开流三级见 `utils/files/android-picker.js` 的 `openContentStream` |
 | 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装；**无后缀名按 mime 补全 ensureExtName / extFromMime，office 系 mime 兜底必须排在 json/xml/csv 之前——openxmlformats 含 xml 会被误判 text，4.17.1**）+ `doc-parse.js`（解析后端注册表 DOC_BACKENDS：**zhipu（4.17.0，复用智谱聊天 Key）** / moonshot；resolveDocConfig 自动选用 智谱→Moonshot；删除端点由后端 deleteUrl 声明；上传优先 `absPath`）+ `picker.js`（选文件：**H5 原生 input type=file（4.16.1 起，uni.chooseFile 带 extension 抛 removeChild）** / 小程序 chooseMessageFile / **Android 系统选择器**）+ `android-picker.js`（plus.android 选 + 拷贝三级兜底：字节数组 / FileChannel / 文本直读；`toNativePath` 去 `file://` 前缀）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
-| 改每周账单播报 / 周洞察 | `utils/weekly-insights.js`（4.20.0 洞察层：分类环比 / 连续消费模式 / 打卡记录维度 / 建议，统计周=刚结束的完整周）+ `utils/bill-weekly.js`（基础口径与周门控 key）+ `composables/useEnterSummary.js`（接线，markWeeklyBillAnnounced 仍由调用方负责）+ `utils/enter-dialogue.js`（「看看花在哪」预置按钮 / 上周支出指标格） |
+| 改每周账单播报 / 周洞察 | `utils/weekly-insights.js`（4.20.0 洞察层：分类环比 / 连续消费模式 / 打卡记录维度 / 建议，统计周=刚结束的完整周；**4.27.0 人生周报：成果 streak / 运动标签记录 / 上周焦点对照三维度**）+ `utils/bill-weekly.js`（基础口径与周门控 key）+ `composables/useEnterSummary.js`（接线，markWeeklyBillAnnounced 仍由调用方负责）+ `utils/enter-dialogue.js`（「看看花在哪」预置按钮 / 上周支出指标格） |
 | 改微光本 / 成果本 | `utils/storage/glimmer.js`（kind win=成果/moment=小事，**date+kind 双主键同日并存、removeGlimmer 支持 kind 按条删，4.25.1**；getGlimmerStats streak 统计，4.25.0）+ `utils/ai/tools/glimmer.js` schema + `store/executors/glimmer.js` + 进入消息的晚间收尾问询（enter-dialogue needWinPrompt 消费） |
 | 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
 | 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
@@ -284,6 +284,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
 | 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
 | 改计划记录沉淀（里程碑） | `utils/storage/plan-milestone.js`（buildStartRecord/buildMilestoneRecord + claimMilestoneKey 幂等登记 siji_plan_milestones + 阶段与根才写/检查点不写/单发计划不写），收口在 `utils/storage/plan.js` 的 savePlan 完成分支与 logPlanCheckIn 首次打卡，**新增完成入口无需改** |
+| 改本周焦点契约 | `utils/week-focus.js`（siji_week_focus 单条周级覆盖，weekKey 与提醒/周报同口径）+ `store/executors/week-focus.js`（set/get）+ briefing 按钮/正文行（enter-dialogue 消费 summary.weekFocus.isCurrent）+ 周报对照（weekly-insights weekFocus，weekKey 落上周才对照） |
 | 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
 | 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
 | 判断「跑的是不是旧构建」 | 版本历史页顶部横幅（`pages/settings/sub/version-history.vue`）+ `utils/version-check.js` 的 `isRunningOlderThan(latest)`；**排查更新不生效时先看这里**：运行版本 ≠ 日志最新 → 编译产物没装上去（删 `unpackage/dist` 重编译 + 覆盖安装） |
@@ -384,7 +385,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 103 文件 / 1390 用例全绿（exit 0）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 104 文件 / 1396 用例全绿（exit 0）
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收

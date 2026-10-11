@@ -77,6 +77,9 @@ export function buildEnterLines(summary) {
       ? `成果连续 ${gs.streakDays} 天了，今天还没记——哪怕一句「看懂了一个接口」也算`
       : '今天还没记成果——哪怕一句「看懂了一个接口」也算')
   }
+  // 4.27.0：本周焦点行 —— 定了焦点时每天可见（承诺的可见性就是约束力）
+  const wf = summary.weekFocus || null
+  if (wf && wf.isCurrent && wf.text) out.push('本周焦点：' + wf.text)
   if (summary.moodDip) out.push('这两天记录里写着低落，今天慢一点也算数')
   return out
 }
@@ -275,6 +278,10 @@ export function buildEnterButtons(summary, extras = null) {
     // 4.24.0：晚间收尾问询 —— 21 点后今天还没记成果，给一颗「记成果」按钮（对抗"不着急"的机制）
     if (summary.glimmerStat && summary.glimmerStat.needWinPrompt) {
       add('glimmer', '记成果', 'prefill', '记一条今天的成果：')
+    }
+    // 4.27.0：本周焦点契约 —— 本周还没定焦点时给按钮（一周一个，对抗摊大饼）
+    if (summary.weekFocus && !summary.weekFocus.isCurrent) {
+      add('focus', '定本周焦点', 'prefill', '本周焦点：')
     }
     if (summary.moodDip) add('mood', '聊聊现在的状态', 'prefill', '我想聊聊最近的状态')
   }

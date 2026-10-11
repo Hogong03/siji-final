@@ -13,6 +13,7 @@
  */
 import { ref } from 'vue'
 import { getPlanList, getGlimmerStats } from '@/utils/storage.js'
+import { getWeekFocus } from '@/utils/week-focus.js'
 import { getDiaryList } from '@/utils/storage/diary.js'
 import { getBillList } from '@/utils/storage/bill.js'
 import {
@@ -118,6 +119,11 @@ function glimmerStatSafe(now) {
   try { return getGlimmerStats(now) } catch (e) { return null }
 }
 
+/** 4.27.0：本周焦点（isCurrent=false 表示本周还没定 → 简报给「定本周焦点」按钮） */
+function weekFocusSafe(now) {
+  try { return getWeekFocus(now) } catch (e) { return null }
+}
+
 /**
  * 当下状态快照（无窗口语义，4.5.0）：中对话新建 / 兜底开场的消息来源
  * 问候 + 计划状态 + 上班卡 + 下一步；没有进展行（events 全空）
@@ -134,7 +140,8 @@ export function snapshotEnterContext(now = Date.now()) {
     awayMs: 0,
     moodDip: false,
     weekBill: null,
-    glimmerStat: glimmerStatSafe(now)
+    glimmerStat: glimmerStatSafe(now),
+    weekFocus: weekFocusSafe(now)
   }, buildPlanExtras(plans, now))
 }
 
@@ -172,7 +179,8 @@ function computeSummary(since, now, source) {
     moodDip: moodDip,
     weekBill: weekBill,
     yesterdayExpense: yesterdayExpense,
-    glimmerStat: glimmerStatSafe(now)
+    glimmerStat: glimmerStatSafe(now),
+    weekFocus: weekFocusSafe(now)
   }, extras)
 }
 
