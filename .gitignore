@@ -11,6 +11,9 @@ unpackage/release/
 .mimosa/
 .zcode/
 
+# 介绍片音轨中间产物（site/video/make-audio.mjs 每次重算即可；成片里已带音轨）
+site/video/audio/
+
 # 依赖
 node_modules/
 
