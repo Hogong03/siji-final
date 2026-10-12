@@ -9,6 +9,7 @@
  * v13：所有按钮触控热区扩到 ≥44px（88rpx），视觉圆点保持原尺寸
  */
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import AiToolPanel from '@/components/chat/AiToolPanel.vue'
 import { ref, computed, onUnmounted } from 'vue'
 import { chooseAndCompress, compressFileObject, compressImagePath } from '@/utils/image.js'
 import { pickOneFile, readPickedFile, fileCardText, classifyFile, isDocParseAvailable } from '@/utils/files/index.js'
@@ -32,6 +33,16 @@ onUnmounted(() => {
 	// 离开页面时若还在录音，直接丢弃（不转写）
 	if (recording.value) cancelRecording()
 })
+
+// ──── AI 功能面板（4.29.0：图片/文件/语音收进「+」面板）────
+const showAiTool = ref(false)
+function onToolPick(action) {
+	showAiTool.value = false
+	if (action === 'image') { pickImage(); return }
+	if (action === 'file') { pickFile(); return }
+	if (action === 'voice') { toggleVoice(); return }
+	if (action === 'more') { uni.navigateTo({ url: '/pages/settings/sub/ai' }) }
+}
 
 const props = defineProps({
 	modelValue: { type: String, default: '' },
@@ -300,24 +311,10 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 
 		<!-- 输入行 -->
 		<view class="input-row">
-			<view v-if="visionOn" class="side-btn" @tap="pickImage">
+			<!-- AI 功能入口：图片/文件/语音收进底部面板（4.29.0） -->
+			<view class="side-btn" @tap="showAiTool = true">
 				<view class="side-dot">
-					<SijiIcon name="image" size="sm" color="#71717A" :style="{ opacity: imageLoading ? 0.4 : 1 }" />
-				</view>
-			</view>
-			<!-- 语音转文字：能力开关默认关；录音中切实心停止态，转写中半透明 -->
-			<view v-if="voiceOn" class="side-btn" @tap="toggleVoice">
-				<view class="side-dot" :class="{ recording: recording }">
-					<view v-if="!recording" class="mic-glyph" :style="{ opacity: transcribing ? 0.4 : 1 }">
-						<view class="mic-body" />
-						<view class="mic-arc" />
-					</view>
-					<text v-else class="mic-stop">■</text>
-				</view>
-			</view>
-			<view class="side-btn" @tap="pickFile">
-				<view class="side-dot">
-					<SijiIcon name="file" size="sm" color="#71717A" :style="{ opacity: fileLoading ? 0.4 : 1 }" />
+					<SijiIcon name="add" size="sm" color="#71717A" />
 				</view>
 			</view>
 
@@ -347,6 +344,15 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 				<view class="stop-dot" :style="stopDotStyle"><text class="stop-icon" :style="stopIconStyle">■</text></view>
 			</view>
 		</view>
+
+		<!-- AI 功能面板（底部弹出） -->
+		<AiToolPanel
+			:show="showAiTool"
+			:vision-on="visionOn"
+			:voice-on="voiceOn"
+			@close="showAiTool = false"
+			@pick="onToolPick"
+		/>
 	</view>
 </template>
 
@@ -398,27 +404,6 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 }
 .side-btn:active .side-dot { transform: scale(0.9); background: #E4E4E7; }
 
-/* 麦克风：static/icons 无 mic 图标，用 CSS 画线框麦克风；录音中切实心停止态 */
-.mic-glyph {
-	display: flex; flex-direction: column; align-items: center;
-}
-.mic-body {
-	width: 14rpx; height: 24rpx; border-radius: 7rpx; background: #18181B;
-}
-.mic-arc {
-	width: 26rpx; height: 12rpx;
-	border: 3rpx solid #18181B; border-top: none;
-	border-radius: 0 0 14rpx 14rpx;
-	margin-top: 4rpx; box-sizing: border-box;
-}
-.side-dot.recording {
-	background: #18181B; border-color: #18181B;
-}
-.side-dot.recording:active { background: #18181B; }
-.mic-stop {
-	color: #FFFFFF; font-size: 24rpx; line-height: 1;
-}
-
 .input-wrap {
 	flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
 	background: #F4F4F5; border-radius: 36rpx; border: 1rpx solid #E4E4E7;
@@ -461,12 +446,6 @@ html.theme-dark {
 	.side-dot {
 		background: #27272A; border-color: #3F3F46;
 	}
-	.mic-body { background: #F4F4F5; }
-	.mic-arc { border-color: #F4F4F5; }
-	.side-dot.recording {
-		background: #FAFAFA; border-color: #FAFAFA;
-	}
-	.mic-stop { color: #18181B; }
 	.side-btn:active .side-dot { background: #3F3F46; }
 	.del-dot { background: rgba(255,255,255,.12); }
 	.img-preview { background: #27272A; border-color: #3F3F46; }
@@ -498,12 +477,6 @@ html.theme-dark {
 	.side-dot {
 		background: #27272A; border-color: #3F3F46;
 	}
-	.mic-body { background: #F4F4F5; }
-	.mic-arc { border-color: #F4F4F5; }
-	.side-dot.recording {
-		background: #FAFAFA; border-color: #FAFAFA;
-	}
-	.mic-stop { color: #18181B; }
 	.side-btn:active .side-dot { background: #3F3F46; }
 	.del-dot { background: rgba(255,255,255,.12); }
 	.img-preview { background: #27272A; border-color: #3F3F46; }
