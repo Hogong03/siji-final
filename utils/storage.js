@@ -81,6 +81,8 @@ export {
 
 // 内置种子数据：BKD 项目技术学习手册（4.19.0）；六级种子已下线（清理逻辑见 seed-cleanup.js）
 export { ensureBkdHandbook, BKD_ARTICLES, BKD_ARTICLE_IDS, BKD_TAG } from './storage/bkd-handbook.js'
+// 内置个人画像（4.28.0）：经历 / 23 岁画像 / 学习计划 / MBTI 四篇 + 「我的画像」画像卡
+export { ensureProfileSeed, PROFILE_ARTICLES, PROFILE_ARTICLE_IDS, PROFILE_TAG } from './storage/profile-seed.js'
 export { removeCet6Content } from './storage/seed-cleanup.js'
 
 // 本地索引 & 全局搜索

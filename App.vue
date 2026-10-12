@@ -23,6 +23,7 @@
 		rebuildIndex,
 		ensureDefaultTemplates,
 		ensureBkdHandbook,
+		ensureProfileSeed,
 		removeCet6Content,
 		migrateRecordTypes,
 		migrateDiaryCategories,
@@ -86,6 +87,12 @@
 				ensureDefaultTemplates()
 				// BKD 项目技术学习手册（4.19.0）：按 client_id 增量补发，用户删掉的不再补
 				ensureBkdHandbook()
+				// 个人画像内置（4.28.0）：经历/23 岁画像/学习计划/MBTI 四篇 + 「我的画像」画像卡，幂等补发
+				try {
+					ensureProfileSeed()
+				} catch (e) {
+					console.warn('[思迹] 个人画像补发失败：', e.message)
+				}
 				// 六级种子内容下线（4.19.0）：软删记录里的 cet6 种子与「六级备考」计划模板，幂等
 				try {
 					const c = removeCet6Content()

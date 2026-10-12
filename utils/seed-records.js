@@ -6,6 +6,7 @@
  *
  * 前缀来源（实际 grep 自种子文件，勿凭记忆改）：
  *   - utils/storage/bkd-handbook.js  → bkdh_（4 篇：bkdh_read_path/tech_stack/prereq/learning_path）
+ *   - utils/storage/profile-seed.js  → prof_（4 篇：prof_journey/portrait/learning/mbti，4.28.0 个人画像）
  *   （4.19.0：六级种子 tip_cet6_ / mat_cet6_ 已下线，记录由 seed-cleanup.js 软删，
  *     历史软删记录不再需要徽标）
  *
@@ -13,7 +14,7 @@
  */
 
 /** 内置种子记录的 client_id 前缀 */
-const SEED_CLIENT_ID_PREFIXES = ['bkdh_']
+const SEED_CLIENT_ID_PREFIXES = ['bkdh_', 'prof_']
 
 /** 徽标文案（记录列表 / 阅读页 / 搜索结果页共用） */
 export const SEED_BADGE = '内置'
