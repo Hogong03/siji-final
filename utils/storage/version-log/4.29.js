@@ -6,6 +6,27 @@
 
 export const V429 = [
   {
+    version: '4.29.1',
+    date: '2026-10-15',
+    title: '真机修复「打包时未添加 push 模块」弹窗：manifest 补 Push 声明 + 运行时探测守卫',
+    summary: [
+      '真机实测：4.22.0 起本地推送预注册每次启动/回前台调 plus.push，打包时 manifest 未声明 Push 模块 → 基座弹「打包时未添加 push 模块」系统弹窗（同步 alert，JS try-catch 拦不住），必现',
+      '根治：manifest.json 的 app-plus.modules 补声明 "Push": {} —— 重新云打包后本地推送（4.22.0 预注册）与提醒即时通知真正可用',
+      '旧包立即不弹：运行时用 plus.runtime.getProperty 读包内 manifest 探测是否声明 Push（manifestHasPush 纯函数 + probePushModule 结果缓存），未声明则完全跳过 plus.push 调用；注册（push-schedule）与即时通知（notifier）两处共用探测',
+    ],
+    categories: [
+      {
+        title: 'push 模块修复（4.29.1）',
+        items: [
+          'manifest.json：app-plus.modules 补 "Push": {}（需重新云打包生效）',
+          'utils/reminder/push-schedule.js：manifestHasPush + probePushModule 探测守卫；registerPlanPushes 改为探测通过才执行（返回 Promise，调用方零改动）',
+          'utils/reminder/notifier.js：triggerReminder 的即时通知走同一探测（动态 import）',
+          'tests/reminder-push-schedule.test.js：补 manifestHasPush 断言 + registerPlanPushes 异步化（8 例）；全量 106 文件 / 1412 用例全绿',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.29.0',
     date: '2026-10-12',
     title: '输入区功能按钮收纳进「+」AI 功能面板（图片/文件/语音/更多，底部弹出）',

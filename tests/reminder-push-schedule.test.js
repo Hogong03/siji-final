@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import './setup.js'
 import { computeUpcomingFires } from '../utils/reminder/scheduler.js'
-import { registerPlanPushes } from '../utils/reminder/push-schedule.js'
+import { registerPlanPushes, manifestHasPush } from '../utils/reminder/push-schedule.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -82,15 +82,23 @@ describe('registerPlanPushes（本地推送预注册）', () => {
     uni.clearStorageSync()
   })
 
-  it('非 App 环境（vitest 无 plus）安全返回 0，不抛错', () => {
-    const r = registerPlanPushes(NOW)
+  it('非 App 环境（vitest 无 plus）安全返回 0，不抛错', async () => {
+    const r = await registerPlanPushes(NOW)
     expect(r.registered).toBe(0)
   })
 
-  it('60s 内重复调用被节流', () => {
-    expect(registerPlanPushes(NOW).registered).toBe(0)
-    expect(registerPlanPushes(NOW + 10 * 1000).registered).toBe(0)
-    // 节流时间戳已写入（60s 后才会真正重注册）
-    expect(Number(uni.getStorageSync('siji_plan_push_reg_at'))).toBe(NOW)
+  it('manifestHasPush：声明了 Push 才算可用（4.27.1 探测守卫的纯函数部分）', () => {
+    expect(manifestHasPush(JSON.stringify({ 'app-plus': { modules: { Push: {} } } }))).toBe(true)
+    expect(manifestHasPush(JSON.stringify({ 'app-plus': { modules: {} } }))).toBe(false)
+    expect(manifestHasPush(JSON.stringify({ 'app-plus': {} }))).toBe(false)
+    expect(manifestHasPush('not json')).toBe(false)
+    expect(manifestHasPush('')).toBe(false)
+  })
+
+  it('60s 内重复调用被节流', async () => {
+    expect((await registerPlanPushes(NOW)).registered).toBe(0)
+    expect((await registerPlanPushes(NOW + 10 * 1000)).registered).toBe(0)
+    // 非 App 环境（探测失败）不触碰节流时间戳 —— 节流只属于真实注册路径
+    expect(Number(uni.getStorageSync('siji_plan_push_reg_at')) || 0).toBe(0)
   })
 })

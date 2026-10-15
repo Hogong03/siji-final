@@ -135,18 +135,24 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
 
   // 后台通知（App 端）
   // #ifdef APP-PLUS
-  try {
-    const pushMsg = plus.push.createPushMessage(body, {
-      title,
-      sound: 'system',
-      cover: false
+  // 4.27.1：先探测 manifest 是否声明 Push 模块 —— 未声明的包调 plus.push 会弹基座级系统弹窗且 catch 不住
+  import('@/utils/reminder/push-schedule.js').then(m => {
+    m.probePushModule((ok) => {
+      if (!ok) return
+      try {
+        const pushMsg = plus.push.createPushMessage(body, {
+          title,
+          sound: 'system',
+          cover: false
+        })
+        // 4.14.0：失败不再静默 —— 通知权限被拒（Android 13+）时这里是排查的第一现场
+        if (pushMsg) logger.log('[reminder] Push message created')
+        else logger.warn('[reminder] Push message rejected (check POST_NOTIFICATIONS permission)')
+      } catch (e) {
+        logger.warn('[reminder] push create failed:', e && e.message)
+      }
     })
-    // 4.14.0：失败不再静默 —— 通知权限被拒（Android 13+）时这里是排查的第一现场
-    if (pushMsg) logger.log('[reminder] Push message created')
-    else logger.warn('[reminder] Push message rejected (check POST_NOTIFICATIONS permission)')
-  } catch (e) {
-    logger.warn('[reminder] push create failed:', e && e.message)
-  }
+  }).catch(() => { /* 探测失败不弹 */ })
   // #endif
 
   // H5 通知

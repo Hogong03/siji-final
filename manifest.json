@@ -2,8 +2,8 @@
     "name" : "思迹",
     "appid" : "__UNI__128A9A5",
     "description" : "AI个人生活助手 — 对话式记录/记账/计划",
-    "versionName" : "4.29.0",
-    "versionCode" : "4290",
+    "versionName" : "4.29.1",
+    "versionCode" : "4291",
     "transformPx" : false,
     "app-plus" : {
         "themeLocation" : "theme.json",
@@ -16,7 +16,9 @@
             "autoclose" : true,
             "delay" : 0
         },
-        "modules" : {},
+        "modules" : {
+            "Push" : {}
+        },
         "distribute" : {
             "android" : {
                 "permissions" : [
