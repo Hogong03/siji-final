@@ -152,7 +152,30 @@ onBackPress(() => {
 })
 
 // ===== 跳转 =====
+/**
+ * 加子计划（4.29.3：新建态也能加）
+ *
+ * 子计划必须挂在已落库的父计划上，所以新建态要先把父计划存下来拿 client_id，
+ * 再带着它进子计划页。旧行为是新建时直接把按钮藏掉（can-add="!isNew"），
+ * 用户填完主计划才发现加不了子计划。
+ */
 function goAddChildPlan() {
+	if (isNew.value) {
+		if (!form.value.title.trim()) {
+			uni.showToast({ title: '请先填写计划标题', icon: 'none' })
+			return
+		}
+		const plan = persistForm()
+		if (!plan || !plan.client_id) {
+			uni.showToast({ title: '保存失败，请重试', icon: 'none' })
+			return
+		}
+		// 父计划已落库：切到「已有计划」态，否则返回后再点保存会再生成一条父计划
+		isNew.value = false
+		planId.value = plan.client_id
+		uni.navigateTo({ url: `/pages/plan/detail?id=new&parentId=${plan.client_id}` })
+		return
+	}
 	uni.navigateTo({ url: `/pages/plan/detail?id=new&parentId=${planId.value}` })
 }
 
@@ -256,7 +279,7 @@ function onSheetSave() {
 				:progress="childProgress"
 				:recur-summary="recurSummary"
 				:ai-loading="aiChildrenLoading"
-				:can-add="!isNew"
+				:can-add="true"
 				@go-child-plan="goChildPlan"
 				@add-child-plan="goAddChildPlan"
 				@ai-breakdown="aiBreakdownChildren"

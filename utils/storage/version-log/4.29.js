@@ -6,6 +6,50 @@
 
 export const V429 = [
   {
+    version: '4.29.3',
+    date: '2026-10-17',
+    title: '三处实测修复：应用外通知全哑（推送 API 误用）+ 应用内提醒改 toast + 新建计划可加子计划',
+    summary: [
+      '应用外通知一直收不到的两个真因：① `plus.runtime.getProperty` 回调给的是 WidgetInfo，官方字段只有 appid/version/name/description/author/email/features，**没有 manifest** —— probePushModule 读 info.manifest 恒 undefined → 判定「未声明 Push」→ 本地推送被整体跳过（4.27.1 的探测守卫本身写错了）；② notifier 调的 `plus.push.createPushMessage` 这个 API 根本不存在（官方只有 createMessage），调用即抛错被 catch 吞掉',
+      '定时推送没生效：`createMessage(content, payload, option)` 三参数签名被写错 —— options 塞进了第 2 个 payload 槽、且 delay 用毫秒（官方单位是**秒**）→ 通知正文显示一坨 JSON 且 delay 落空（等于注册时立即弹，到点反而不提醒）',
+      'Android 13+ 通知权限从来没申请过：`Build.VERSION` 是嵌套类，`importClass("android.os.Build")` 取不到 SDK_INT → sdk=0 提前 return；改用 `android.os.Build$VERSION` + `plus.os.version` 兜底，读不到时按「需要」处理',
+      '应用内提醒从 ActionSheet 弹窗改 toast 轻提示（不打断当前操作）；随之取消「立即打卡 / 推迟 / 查看」三个选择动作，触发即按当天已处理落账 —— 否则同一提醒会按轮询周期反复弹 toast',
+      '开场简报卡在用户说出第一句话后消失（原来只清欢迎语，简报卡永远赖在消息列表第一条）；新建计划时也能加子计划（原来 `can-add="!isNew"` 把按钮藏了，现在先把父计划落库拿到 client_id 再挂子计划）',
+    ],
+    categories: [
+      {
+        title: '应用外通知修复（4.29.3，真机根因）',
+        items: [
+          'utils/reminder/push-schedule.js：`manifestHasPush(manifestText)` → `widgetHasPush(info)` —— 改读 WidgetInfo.features（manifest 里 5+ 模块声明的键名列表）；features 缺失时不拦（宁可多发一次也不静默不发，旧写法就是恒判「未声明」导致推送全哑）',
+          'push-schedule.js：`probePushModule` 先看 plus.push.createMessage 是否为函数（模块没打进包直接停用，不碰就不会弹基座提示），再用 widgetHasPush 判定',
+          'push-schedule.js：`plus.push.createMessage(内容, payloadJSON, { title, delay: 秒, sound, cover })` —— 修正参数错位与 delay 单位（旧代码 delay 传毫秒，1000ms 会被当 1000 秒）',
+          'utils/reminder/notifier.js：`plus.push.createPushMessage`（不存在的 API）→ `plus.push.createMessage(body, payload, { title, sound, cover })`',
+          'utils/reminder/notifier.js：新增纯函数 `needsNotifyPermission(sdkInt, osVersion)`；`ensureNotifyPermission` 改用 `plus.android.importClass("android.os.Build$VERSION")` 读 SDK_INT，失败回落 plus.os.version，都读不到按需要申请（低版本申请是空操作）',
+          'tests/reminder-push-schedule.test.js：manifestHasPush 用例改为 widgetHasPush（含 features 缺失不拦）+ 新增 needsNotifyPermission 三例（SDK_INT / 版本字符串 / 都读不到）',
+        ],
+      },
+      {
+        title: '应用内提醒改 toast（4.29.3）',
+        items: [
+          'utils/reminder/notifier.js：`showReminderActions`（uni.showActionSheet 五项）→ `showReminderToast`（uni.showToast，3 秒自动消失，文案「计划提醒：{标题}」/「计划已过期：{标题}」）',
+          'triggerReminder：toast 后直接调 handlers.onDone()（markTriggered + clearSnooze）—— toast 没有可选项，弹完即已告知，当天不再响；震动保留',
+          'snooze 机制保留（scheduler 的到期重响分支与触发异常兜底仍会写推迟表），但应用内不再有「推迟」入口',
+          'tests/reminder-snooze.test.js：集成段按新语义重写（触发即 toast + 当天落账 / 到期推迟条目走 snooze 分支重响 / 免打扰时段不弹且不落账 / 计划删除后清条目），并同步文件头语义说明',
+          'tests/chat-opener-plan-time.test.js：三处提醒触发计数从 mock showActionSheet 改为 mock showToast',
+        ],
+      },
+      {
+        title: '开场简报卡让位 + 新建计划加子计划（4.29.3）',
+        items: [
+          'utils/enter-dialogue.js：新增纯函数 `isOpenerMessage(message)`（欢迎语 /_isEnterSummary /_isOpener 三者任一即开场占位）',
+          'composables/useChatEngine.js：用户发消息前清掉**全部开场占位**（原来只清 _isWelcome，简报卡会永远留在消息列表第一条）',
+          'pages/plan/detail.vue：`goAddChildPlan` 在新建态先 `persistForm()` 落库父计划拿到 client_id，再切 `isNew=false` + 写 `planId`（避免返回后再保存生成第二条父计划）后跳子计划页；`PlanChildPlans` 的 `can-add` 由 `!isNew` 改恒 true',
+          'tests/enter-dialogue.test.js：新增 isOpenerMessage 两例（三种标记 + 真实简报卡产物判定为开场；普通对话消息与脏值不误判）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.29.2',
     date: '2026-10-17',
     title: '文档与验收基线对齐实测：AGENTS 概况/速查表补齐，真机清单补 4.13~4.29 覆盖缺口',

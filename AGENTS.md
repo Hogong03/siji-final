@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
-| 测试 | 106 文件 / 1412 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
-| 版本 | v4.29.2（文档与验收基线对齐实测：AGENTS 概况/速查表补齐 + 真机清单补 4.13~4.29 覆盖缺口；含 4.29.1 push 弹窗修复 / 4.28.0 个人画像 / 4.27.0 人生周报 + 焦点契约 / 4.26 记录沉淀 / 4.25 成果引擎） |
+| 测试 | 106 文件 / 1417 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
+| 版本 | v4.29.3（三处实测修复：应用外通知全哑的真因 + 应用内提醒改 toast + 新建计划可加子计划；含 4.29.2 文档基线对齐 / 4.28.0 个人画像 / 4.27.0 人生周报 + 焦点契约） |
 
 ---
 
@@ -152,7 +152,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 106 文件 1412 用例
+├── tests/              # 106 文件 1417 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -304,7 +304,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
 | 改聊天历史窗口 | `utils/ai/chat-helpers.js` 的 `trimHistory()`（单条 1200 字 / 总量 6000 字 / 保底 6 条）+ `getRecentHistory()`。**长文能力上线后历史必须按预算裁**，否则一篇两三千字的回复会被每条消息重发一遍 |
 | 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
-| 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `notifier.js` 的 `showReminderActions`（ActionSheet：直达打卡/三档推迟/查看，关掉=默认档推迟）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI |
+| 改应用外通知（本地推送 / 通知权限） | `utils/reminder/push-schedule.js`（`registerPlanPushes` 启动/回前台预注册未来 7 天）+ `utils/reminder/notifier.js`（即时通知 + `ensureNotifyPermission`）。**四条铁律（4.29.3 全是真机踩出来的，别再写错）**：① 官方 API 是 `plus.push.createMessage(content, payload, option)` —— **没有 `createPushMessage`**；② options 必须放**第 3 个**参数（放第 2 个会被当 payload：通知正文显示一坨 JSON）；③ `delay` 单位是**秒**（旧代码传毫秒 → 1000ms 被当 1000 秒；且 delay 落空 = 注册时立即弹、到点不提醒）；④ `plus.runtime.getProperty` 回调是 **WidgetInfo**，字段只有 appid/version/versionCode/name/description/author/email/**features** —— **没有 manifest**，判模块可用性只能看 `features` 含不含 `Push`（features 拿不到时不拦，宁可多发也不静默不发） |
+| 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI。**4.29.3：应用内提醒已从 ActionSheet 弹窗改 toast（`showReminderToast`），触发即 `onDone()` 落账 —— 应用内不再有「立即打卡 / 推迟 / 查看」入口**；snooze 机制只剩到期重响与触发异常兜底两条写入口 |
 | 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：4.12.0 起同时产出文本 content 与 `_briefing` v2 结构化 payload；`buildBriefing` 组装指标格/主按钮/问候池）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `components/chat/EnterBriefing.vue`（v2 简报卡渲染，样式在组件 scoped）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext`/`readYesterdayExpense` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**页级按钮行只服务旧消息**（index.vue 按 `isBriefingV2` 组合判定）；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
 | App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
 | 改 AI 能力开关 | `utils/ai/features.js`（注册表 + TOOL_FEATURE_MAP）+ `pages/settings/sub/ai.vue` 的「AI 能力」分组卡 + 各注入点（agent-transport 过滤 / executor 拦截 / chat-helpers 段 / prompt-builder extSection / useEnterSummary / InputArea） |
@@ -392,7 +393,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1412 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1417 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
 - **同一时段只跑一个 vitest 进程**（4.29.2 实证）：并发两个会报 `Errors 2 errors`、只跑 104/106 文件 / 1381/1412 用例，看着像回归其实是资源争抢。看到这个数字先确认没有并行进程，再谈问题
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期

@@ -8,7 +8,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import './setup.js'
 import { computeUpcomingFires } from '../utils/reminder/scheduler.js'
-import { registerPlanPushes, manifestHasPush } from '../utils/reminder/push-schedule.js'
+import { registerPlanPushes, widgetHasPush } from '../utils/reminder/push-schedule.js'
+import { needsNotifyPermission } from '../utils/reminder/notifier.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -87,12 +88,14 @@ describe('registerPlanPushes（本地推送预注册）', () => {
     expect(r.registered).toBe(0)
   })
 
-  it('manifestHasPush：声明了 Push 才算可用（4.27.1 探测守卫的纯函数部分）', () => {
-    expect(manifestHasPush(JSON.stringify({ 'app-plus': { modules: { Push: {} } } }))).toBe(true)
-    expect(manifestHasPush(JSON.stringify({ 'app-plus': { modules: {} } }))).toBe(false)
-    expect(manifestHasPush(JSON.stringify({ 'app-plus': {} }))).toBe(false)
-    expect(manifestHasPush('not json')).toBe(false)
-    expect(manifestHasPush('')).toBe(false)
+  it('widgetHasPush：features 含 Push 才可用；字段拿不到时不拦（4.29.3 修 info.manifest 误读）', () => {
+    expect(widgetHasPush({ features: ['Push', 'Runtime'] })).toBe(true)
+    expect(widgetHasPush({ features: ['Runtime'] })).toBe(false)
+    expect(widgetHasPush({ features: ['push'] })).toBe(true) // 大小写不敏感
+    // features 缺失/空：不拦（宁可多发一次，也不静默不发 —— 这正是旧版推送全哑的成因）
+    expect(widgetHasPush({ features: [] })).toBe(true)
+    expect(widgetHasPush({})).toBe(true)
+    expect(widgetHasPush(null)).toBe(true)
   })
 
   it('60s 内重复调用被节流', async () => {
@@ -100,5 +103,26 @@ describe('registerPlanPushes（本地推送预注册）', () => {
     expect((await registerPlanPushes(NOW + 10 * 1000)).registered).toBe(0)
     // 非 App 环境（探测失败）不触碰节流时间戳 —— 节流只属于真实注册路径
     expect(Number(uni.getStorageSync('siji_plan_push_reg_at')) || 0).toBe(0)
+  })
+})
+
+describe('needsNotifyPermission（Android 13+ 运行时通知权限，4.29.3）', () => {
+  it('按 SDK_INT 判定：33 及以上才需要申请', () => {
+    expect(needsNotifyPermission(33)).toBe(true)
+    expect(needsNotifyPermission(34)).toBe(true)
+    expect(needsNotifyPermission(32)).toBe(false)
+    expect(needsNotifyPermission(29)).toBe(false)
+  })
+
+  it('SDK_INT 读不到时回落系统版本字符串（13 及以上需要）', () => {
+    expect(needsNotifyPermission(0, '13')).toBe(true)
+    expect(needsNotifyPermission(0, '14')).toBe(true)
+    expect(needsNotifyPermission(0, '12')).toBe(false)
+    expect(needsNotifyPermission(0, '9')).toBe(false)
+  })
+
+  it('两者都读不到时按需要处理（多问一次好过通知收不到）', () => {
+    expect(needsNotifyPermission(undefined, undefined)).toBe(true)
+    expect(needsNotifyPermission(0, '')).toBe(true)
   })
 })

@@ -1,11 +1,31 @@
 /**
  * 提醒通知触发模块 — 多端通知（App/H5/小程序）
+ *
+ * 4.29.3 两处真机根治（此前「应用内弹窗烦人 + 应用外完全收不到通知」）：
+ *  1. 应用内：ActionSheet 弹窗改 toast 轻提示（不打断当前操作）。随之取消
+ *     「立即打卡 / 推迟 / 查看」三个选择动作，触发后直接按当天已处理落账，
+ *     否则同一提醒会按轮询周期反复弹 toast。
+ *  2. 应用外：plus.push.createPushMessage 这个 API 不存在（官方只有 createMessage），
+ *     调用即抛错被 try/catch 吞掉 —— 应用外通知一直没发出去。
  */
 
 import { logger } from '../logger.js'
-import { formatDisplayTime, formatDuration, getSnoozeMin, SNOOZE_OPTIONS } from './settings.js'
-import { logPlanCheckIn } from '../storage/plan.js'
-import { streakOfPlanRecord, streakKindOf, checkinFeedback } from '../checkin-feedback.js'
+import { formatDisplayTime, formatDuration } from './settings.js'
+
+/**
+ * 该设备是否需要运行时申请通知权限（纯函数，便于单测）
+ *
+ * Android 13（API 33）起 plus.push / 本地推送需要 POST_NOTIFICATIONS，
+ * 不申请则通知被系统静默丢弃。读不到版本时按「需要」处理 ——
+ * 低版本上 requestPermissions 是空操作，多问一次的代价远小于通知收不到。
+ */
+export function needsNotifyPermission(sdkInt, osVersion) {
+  const n = Number(sdkInt)
+  if (Number.isFinite(n) && n > 0) return n >= 33
+  const major = parseInt(String(osVersion || '').split('.')[0], 10)
+  if (Number.isFinite(major) && major > 0) return major >= 13
+  return true
+}
 
 /**
  * Android 13+（API 33）需要运行时通知权限，否则 plus.push 建了消息也不会显示。
@@ -15,14 +35,19 @@ export function ensureNotifyPermission() {
   // #ifdef APP-PLUS
   try {
     if (!plus || !plus.android || plus.os.name !== 'Android') return
-    const Build = plus.android.importClass('android.os.Build')
-    const sdk = Build && Build.VERSION ? Number(Build.VERSION.SDK_INT) : 0
-    if (!(sdk >= 33)) return
+    // Build.VERSION 是嵌套类：importClass('android.os.Build') 拿不到 SDK_INT（4.29.3 实证，
+    // 旧写法 Build.VERSION 恒 undefined → sdk=0 → 提前 return，权限从来没申请过）
+    let sdkInt = 0
+    try {
+      const VERSION = plus.android.importClass('android.os.Build$VERSION')
+      sdkInt = Number(VERSION && VERSION.SDK_INT) || 0
+    } catch (e) { /* 走 os.version 兜底 */ }
+    if (!needsNotifyPermission(sdkInt, plus.os.version)) return
     if (typeof plus.android.requestPermissions !== 'function') return
     plus.android.requestPermissions(
       ['android.permission.POST_NOTIFICATIONS'],
       function () { logger.log('[reminder] POST_NOTIFICATIONS granted') },
-      function () { logger.log('[reminder] POST_NOTIFICATIONS denied') }
+      function () { logger.warn('[reminder] POST_NOTIFICATIONS denied（通知不会显示，需去系统设置手动开）') }
     )
   } catch (e) {
     logger.warn('[reminder] request notify permission failed:', e && e.message)
@@ -31,63 +56,16 @@ export function ensureNotifyPermission() {
 }
 
 /**
- * 前台动作面板的选择处理（4.5.0）
- *
- * 弹窗从「查看/关闭」两键升级为 ActionSheet 五项：直达打卡 + 三档推迟 + 查看计划。
- * 选择经 handlers 回调由调度器落账（onDone=今天不再响 / onSnooze=到点重响）；
- * 没传 handlers（旧调用方/异常兜底）时退化为旧行为：查看跳详情，其他选择当关闭。
+ * 前台提醒用 toast 轻提示（4.29.3 取代 ActionSheet 弹窗）
+ * 只提示不阻塞：用户知道到点了，处理去计划页，不在当前操作上插一层弹窗。
  */
-function showReminderActions(plan, handlers) {
-  const onDone = () => { if (handlers && handlers.onDone) handlers.onDone() }
-  const onSnooze = (min) => {
-    if (handlers && handlers.onSnooze) handlers.onSnooze(min)
-  }
-
-  const defaultMin = getSnoozeMin()
-  const snoozeItems = SNOOZE_OPTIONS.map(min => ({ type: 'snooze', minutes: min, label: `推迟 ${min} 分钟` }))
-  // 默认档排最前，和固定两档去重
-  const ordered = [{ type: 'snooze', minutes: defaultMin, label: `推迟 ${defaultMin} 分钟` }]
-    .concat(snoozeItems.filter(it => it.minutes !== defaultMin))
-
-  const items = [{ type: 'checkin', label: '立即打卡' }]
-    .concat(ordered)
-    .concat([{ type: 'view', label: '查看计划' }])
-
-  uni.showActionSheet({
-    itemList: items.map(it => it.label),
-    success(res) {
-      const it = items[res.tapIndex]
-      if (!it) { onSnooze(defaultMin); return }
-      if (it.type === 'checkin') {
-        doDirectCheckIn(plan)
-        onDone()
-      } else if (it.type === 'snooze') {
-        onSnooze(it.minutes)
-      } else {
-        uni.navigateTo({ url: `/pages/plan/detail?clientId=${plan.client_id}` })
-        onDone()
-      }
-    },
-    fail() {
-      // 直接关掉/点蒙层 = 按默认档推迟：该打没打继续催，但不 60 秒一轮地轰炸
-      onSnooze(defaultMin)
-    }
-  })
-}
-
-/** 弹窗直达打卡：写打卡记录 + 里程碑回执（4.5.0） */
-function doDirectCheckIn(plan) {
+function showReminderToast(plan, isOverdue) {
+  const prefix = isOverdue ? '计划已过期' : '计划提醒'
+  const title = plan && plan.title ? plan.title : '未命名计划'
   try {
-    const before = streakOfPlanRecord(plan)
-    const rec = logPlanCheckIn(plan.client_id, '')
-    if (!rec) {
-      uni.showToast({ title: '这个计划现在打不了卡', icon: 'none' })
-      return
-    }
-    checkinFeedback(streakOfPlanRecord(rec), before, `已打卡「${plan.title}」`, streakKindOf(plan))
+    uni.showToast({ title: `${prefix}：${title}`, icon: 'none', duration: 3000 })
   } catch (e) {
-    logger.warn('[reminder] direct checkin failed:', e && e.message)
-    uni.showToast({ title: '打卡没成功，去计划页试试', icon: 'none' })
+    logger.warn('[reminder] toast failed:', e && e.message)
   }
 }
 
@@ -96,10 +74,10 @@ function doDirectCheckIn(plan) {
  * @param {Object} plan 计划
  * @param {Object} reminderCfg 提醒配置
  * @param {boolean} isOverdue 是否已过截止
- * @param {{ onDone?: Function, onSnooze?: Function }} [handlers] 选择回调（4.5.0，见 scheduler.reminderHandlers）
+ * @param {{ onDone?: Function, onSnooze?: Function }} [handlers] 落账回调（4.5.0，见 scheduler.reminderHandlers）
  */
 export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
-  const title = isOverdue ? '⏰ 计划已过期' : '📋 计划提醒'
+  const title = isOverdue ? '计划已过期' : '计划提醒'
   let body = plan.title
   if (plan.deadline) {
     body += `\n截止时间：${formatDisplayTime(plan.deadline)}`
@@ -107,7 +85,7 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
   if (isOverdue) {
     body += '\n请尽快处理或更新计划状态'
   } else {
-    const advanceMin = reminderCfg.advanceMin ?? 30
+    const advanceMin = (reminderCfg && reminderCfg.advanceMin != null) ? reminderCfg.advanceMin : 30
     if (advanceMin > 0) {
       body += `\n还有约${formatDuration(advanceMin)}到达截止时间`
     }
@@ -115,8 +93,8 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
 
   logger.log(`[reminder] Triggering: ${plan.title}`)
 
-  // 前台：动作面板（直达打卡 / 推迟 / 查看）+ 震动
-  // 3.10.0：震动单独兜住 —— 没震动权限 / 机型不支持时抛错，会把下面的弹窗与推送一起带走
+  // 前台：toast 轻提示 + 震动
+  // 3.10.0：震动单独兜住 —— 没震动权限 / 机型不支持时抛错，会把提示与推送一起带走
   // #ifdef APP-PLUS
   try {
     uni.vibrate({ type: 'medium' })
@@ -125,29 +103,22 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
   }
   // #endif
 
-  try {
-    showReminderActions(plan, handlers)
-  } catch (e) {
-    // ActionSheet 都弹不出来（极端环境）：退回最朴素的处理 —— 有回调按默认档推迟，没有就当看过
-    logger.warn('[reminder] action sheet failed:', e && e.message)
-    if (handlers && handlers.onSnooze) handlers.onSnooze(getSnoozeMin())
-  }
+  showReminderToast(plan, isOverdue)
+  // 4.29.3：toast 没有可选项 = 弹完即已告知，直接按当天已处理落账（不再按轮询周期反复弹）
+  if (handlers && handlers.onDone) handlers.onDone()
 
   // 后台通知（App 端）
   // #ifdef APP-PLUS
-  // 4.27.1：先探测 manifest 是否声明 Push 模块 —— 未声明的包调 plus.push 会弹基座级系统弹窗且 catch 不住
+  // 4.27.1：先探测 cond 模块是否可用 —— 未声明的包调 plus.push 会弹基座级系统弹窗且 catch 不住
   import('@/utils/reminder/push-schedule.js').then(m => {
     m.probePushModule((ok) => {
       if (!ok) return
       try {
-        const pushMsg = plus.push.createPushMessage(body, {
-          title,
-          sound: 'system',
-          cover: false
-        })
-        // 4.14.0：失败不再静默 —— 通知权限被拒（Android 13+）时这里是排查的第一现场
-        if (pushMsg) logger.log('[reminder] Push message created')
-        else logger.warn('[reminder] Push message rejected (check POST_NOTIFICATIONS permission)')
+        // 4.29.3：官方 API 是 createMessage(content, payload, options) ——
+        // 旧代码写的 createPushMessage 不存在，调用即抛错被 catch 吞掉，应用外通知从未发出
+        const payload = JSON.stringify({ type: 'plan_reminder', planId: plan.client_id })
+        plus.push.createMessage(body, payload, { title, sound: 'system', cover: false })
+        logger.log('[reminder] push message created')
       } catch (e) {
         logger.warn('[reminder] push create failed:', e && e.message)
       }

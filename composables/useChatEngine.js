@@ -16,6 +16,7 @@ import { pendingConfirmations } from '@/utils/ai/confirm-gate.js'
 import { extractReplyFromStream, resetStreamParser } from '@/utils/ai/stream-parser.js'
 import { saveReport as saveSimulationReport } from '@/utils/simulation.js'
 import { useWelcomeMessage } from '@/composables/useWelcomeMessage.js'
+import { isOpenerMessage } from '@/utils/enter-dialogue.js'
 import {
   autoGenerateTitle,
   triggerSummaryIfNeeded as _triggerSummary,
@@ -97,10 +98,12 @@ export function useChatEngine() {
       return
     }
 
-    // 首次发送时自动清除欢迎语
+    // 用户开口即清掉开场占位：欢迎语 + 开场简报卡（4.29.3 起含简报卡）
+    // 简报卡是「进入时的开场白」不是对话历史，用户说了第一句就该让位 ——
+    // 否则它永远赖在消息列表顶部当第一条
     const conv = store.activeConversation
-    if (conv && conv.messages.some(m => m._isWelcome)) {
-      conv.messages = conv.messages.filter(m => !m._isWelcome)
+    if (conv && conv.messages.some(isOpenerMessage)) {
+      conv.messages = conv.messages.filter(m => !isOpenerMessage(m))
     }
 
     // 4.5.1：新消息发出前清掉上一轮的确认挂起 —— 引擎 refs 只保留最新一份，

@@ -28,15 +28,20 @@ const DAY_MS = 24 * 60 * 60 * 1000
  * 旧包（未声明）自动跳过不再弹窗，新包（4.27.1 起声明）自动启用。 */
 let pushModuleAvail = null // null = 未探测；true/false = 已探测
 
-/** 解析 manifest 文本判断是否声明了 Push 模块（纯函数，可测） */
-export function manifestHasPush(manifestText) {
-  try {
-    const m = typeof manifestText === 'string' ? JSON.parse(manifestText) : manifestText
-    const mods = m && m['app-plus'] && m['app-plus'].modules
-    return !!(mods && mods.Push)
-  } catch (e) {
-    return false
-  }
+/**
+ * WidgetInfo 是否声明了 Push 模块（纯函数，可测）
+ *
+ * 4.29.3 修正：plus.runtime.getProperty 的回调参数是 WidgetInfo，官方字段只有
+ * appid / version / versionCode / name / description / author / email / features，
+ * **没有 manifest**。旧写法读 info.manifest 恒为 undefined → 判定恒为「未声明」
+ * → probePushModule 恒 false → 本地推送全部被跳过（这才是「应用外收不到通知」的直接原因）。
+ * features = manifest 里 5+ 模块声明的键名列表，含 Push 即模块可用。
+ */
+export function widgetHasPush(info) {
+  const feats = info && info.features
+  // features 拿不到（字段缺失 / 非预期基座）时不拦：宁可多发一次，也不静默不发
+  if (!Array.isArray(feats) || feats.length === 0) return true
+  return feats.some(f => String(f).toLowerCase() === 'push')
 }
 
 /**
@@ -50,14 +55,15 @@ export function probePushModule(cb) {
     return
   }
   try {
-    if (typeof plus === 'undefined' || !plus.runtime || !plus.push) {
+    // plus.push 本体缺失 = 模块没打进包，直接停用（不碰就不会弹基座提示）
+    if (typeof plus === 'undefined' || !plus.runtime || !plus.push || typeof plus.push.createMessage !== 'function') {
       pushModuleAvail = false
       cb(false)
       return
     }
     plus.runtime.getProperty(plus.runtime.appid, (info) => {
-      pushModuleAvail = manifestHasPush(info && info.manifest)
-      if (!pushModuleAvail) logger.warn('[push-schedule] manifest 未声明 Push 模块，本地推送停用（重新云打包后自动启用）')
+      pushModuleAvail = widgetHasPush(info)
+      if (!pushModuleAvail) logger.warn('[push-schedule] 包内未声明 Push 模块，本地推送停用（重新云打包后自动启用）')
       cb(pushModuleAvail)
     })
   } catch (e) {
@@ -140,17 +146,25 @@ function registerPlanPushesInner(now = Date.now()) {
             })()
         fires.forEach(f => {
           try {
-            plus.push.createMessage(JSON.stringify({
-              type: 'plan_reminder',
-              planId: plan.client_id,
-              fireKey: plan.client_id + '|' + f.dateKey
-            }), {
-              title: '📋 计划提醒',
-              content: plan.title + '（到点打开思迹可直达打卡）',
-              delay: Math.max(1000, f.ts - now),
-              sound: 'system',
-              cover: false
-            })
+            // 4.29.3 修正官方签名 createMessage(content, payload, option)：
+            // 旧代码把 options 塞进第 2 个参数（payload 槽）、且 delay 用毫秒传 ——
+            // 结果是通知正文显示一坨 JSON、delay 落空（默认 0 = 注册时立即弹），
+            // 「到点才提醒」从来没生效过。delay 单位为秒。
+            const delaySec = Math.max(1, Math.round((f.ts - now) / 1000))
+            plus.push.createMessage(
+              plan.title + '（到点打开思迹可直达打卡）',
+              JSON.stringify({
+                type: 'plan_reminder',
+                planId: plan.client_id,
+                fireKey: plan.client_id + '|' + f.dateKey
+              }),
+              {
+                title: '📋 计划提醒',
+                delay: delaySec,
+                sound: 'system',
+                cover: false
+              }
+            )
             registered++
           } catch (e) { /* 单条失败不拖垮 */ }
         })

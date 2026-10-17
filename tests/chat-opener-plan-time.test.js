@@ -176,10 +176,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     const plan = { client_id: 'p4', title: '早就该交的报告', status: 0, deadline: '2026-01-01' }
     initReminder(() => [plan])
     let triggered = 0
-    const origModal = uni.showActionSheet
-    uni.showActionSheet = () => { triggered++ }
+    const origToast = uni.showToast
+    uni.showToast = () => { triggered++ }
     checkAllReminders()
-    uni.showActionSheet = origModal
+    uni.showToast = origToast
     expect(triggered).toBeGreaterThan(0)
     expect(past.getTime()).toBeLessThan(Date.now())
   })
@@ -189,10 +189,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     setPlanReminder('p5', { enabled: false, advanceMin: 30 })
     initReminder(() => [plan])
     let triggered = 0
-    const origModal = uni.showActionSheet
-    uni.showActionSheet = () => { triggered++ }
+    const origToast = uni.showToast
+    uni.showToast = () => { triggered++ }
     checkAllReminders()
-    uni.showActionSheet = origModal
+    uni.showToast = origToast
     expect(triggered).toBe(0)
     expect(getReminderSettings().plans.p5.enabled).toBe(false)
   })
@@ -205,10 +205,10 @@ describe('计划提醒：没设过提醒也会到点提醒', () => {
     ]
     initReminder(() => plans)
     let triggered = 0
-    const origModal = uni.showActionSheet
-    uni.showActionSheet = () => { triggered++ }
+    const origToast = uni.showToast
+    uni.showToast = () => { triggered++ }
     checkAllReminders()
-    uni.showActionSheet = origModal
+    uni.showToast = origToast
     expect(triggered).toBe(0)
   })
 })

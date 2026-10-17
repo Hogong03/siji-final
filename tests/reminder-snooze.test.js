@@ -1,11 +1,12 @@
 /**
- * 提醒推迟（snooze）测试（4.5.0）
+ * 提醒推迟（snooze）测试（4.5.0；4.29.3 改弹窗为 toast 后重写集成段）
  *
  * 锁死的语义：
  *  - 推迟 = 写 siji_reminder_snoozed，不写 triggered：到点重响，处理完才当天免打扰
  *  - onSnooze 可连续推（同 fireKey 覆写）；onDone = markTriggered + clearSnooze
  *  - 被推迟接管的 fireKey，常规分支不再重复弹（getActiveSnoozeKeys 跳过）
- *  - 弹窗直达打卡：ActionSheet 选「立即打卡」→ logPlanCheckIn 落库 + onDone
+ *  - 4.29.3：应用内提醒从 ActionSheet 弹窗改为 toast —— 无可选项，触发即 onDone
+ *    （当天不再响）；snooze 分支仍在（到期重响 / 触发异常兜底都走它）
  *  - setPlanReminder 的 repeatType 落盘（4.5.0 修的缺口：UI 采集了但存储丢掉）
  */
 import { describe, it, expect, beforeEach } from 'vitest'
@@ -117,95 +118,82 @@ describe('setPlanReminder：repeatType 落盘（4.5.0 修复）', () => {
   })
 })
 
-describe('checkAllReminders 集成：触发 → 推迟 → 重响 → 打卡收口', () => {
+describe('checkAllReminders 集成：触发 → toast 提示 → 当天落账（4.29.3 弹窗改 toast）', () => {
   // 注意：asyncSetStorageJSON 在非 APP 端是 setTimeout(0) 异步落盘 —— 每次写入后要 flush 再同步读
   const flush = () => new Promise(r => setTimeout(r, 30))
 
-  it('触发后不立即标记（用户还没选），推迟后常规分支不再重复弹', async () => {
-    const { plan } = workReminderPlan('w1')
+  it('触发后弹 toast 并当天落账，不再按轮询周期重复弹', async () => {
+    workReminderPlan('w1')
     initReminder(() => getPlanList())
     await flush()
-    const calls = []
-    const orig = uni.showActionSheet
-    uni.showActionSheet = (opts) => { calls.push(opts) }
+    const toasts = []
+    const orig = uni.showToast
+    uni.showToast = (opts) => { toasts.push(opts) }
     try {
-      checkAllReminders()
-      expect(calls).toHaveLength(1)
       const fireKey = 'w1|' + ymdOf(Date.now())
-      await flush()
-      expect(isTriggered(fireKey)).toBe(false)          // 不再立即标记
-      expect(getActiveSnoozeKeys()).not.toContain(fireKey)
-
-      // 用户选「推迟 5 分钟」（itemList[1] = 默认档推迟）
-      calls[0].success({ tapIndex: 1 })
-      await flush()
-      expect(getActiveSnoozeKeys()).toContain(fireKey)
-      expect(isTriggered(fireKey)).toBe(false)
-
-      // 推迟期间再查：常规分支被 snooze 接管，不重复弹
       checkAllReminders()
-      expect(calls).toHaveLength(1)
-
-      // 把推迟条目改成已到期 → 重响
-      snoozeReminder(fireKey, 'w1', 5, Date.now() - 10 * 60 * 1000)
+      expect(toasts).toHaveLength(1)
+      expect(String(toasts[0].title)).toContain('计划提醒')
       await flush()
-      checkAllReminders()
-      expect(calls).toHaveLength(2)
-    } finally {
-      uni.showActionSheet = orig
-    }
-  })
-
-  it('弹窗选「立即打卡」→ 落库 + onDone（当天不再响，推迟清掉）', async () => {
-    const { plan } = workReminderPlan('w2')
-    initReminder(() => getPlanList())
-    await flush()
-    const orig = uni.showActionSheet
-    let captured = null
-    uni.showActionSheet = (opts) => { captured = opts }
-    try {
-      checkAllReminders()
-      expect(captured).toBeTruthy()
-      // itemList[0] = 立即打卡
-      captured.success({ tapIndex: 0 })
-      await flush()
-      const fireKey = 'w2|' + ymdOf(Date.now())
+      // 4.29.3：toast 没有可选项 = 弹完即已告知，直接按当天已处理落账
       expect(isTriggered(fireKey)).toBe(true)
       expect(getActiveSnoozeKeys()).not.toContain(fireKey)
-      // 打卡真的落库了（今天有 checkin）
-      const stored = getPlanList().find(p => p.client_id === 'w2')
-      expect(stored.checkins).toHaveLength(1)
+
       // 再查一轮：当天已处理，不再弹
-      const callsAfter = []
-      uni.showActionSheet = (opts) => { callsAfter.push(opts) }
       checkAllReminders()
-      expect(callsAfter).toHaveLength(0)
+      expect(toasts).toHaveLength(1)
     } finally {
-      uni.showActionSheet = orig
+      uni.showToast = orig
     }
   })
 
-  it('关掉弹窗（fail）= 默认档推迟，继续催但不轰炸', async () => {
-    const { plan } = workReminderPlan('w3')
+  it('到期的推迟条目走 snooze 分支重响一次，随后落账', async () => {
+    workReminderPlan('w2')
     initReminder(() => getPlanList())
     await flush()
-    const orig = uni.showActionSheet
-    let captured = null
-    uni.showActionSheet = (opts) => { captured = opts }
+    const fireKey = 'w2|' + ymdOf(Date.now())
+    // 塞一条已到期的推迟（复刻「程序化推迟 / 触发异常兜底」写下的条目）
+    snoozeReminder(fireKey, 'w2', 5, Date.now() - 10 * 60 * 1000)
+    await flush()
+    const toasts = []
+    const orig = uni.showToast
+    uni.showToast = (opts) => { toasts.push(opts) }
     try {
       checkAllReminders()
-      captured.fail()
+      expect(toasts).toHaveLength(1)
       await flush()
-      const fireKey = 'w3|' + ymdOf(Date.now())
-      expect(getActiveSnoozeKeys()).toContain(fireKey)
-      expect(isTriggered(fireKey)).toBe(false)
+      expect(isTriggered(fireKey)).toBe(true)
+      expect(getActiveSnoozeKeys()).not.toContain(fireKey)
     } finally {
-      uni.showActionSheet = orig
+      uni.showToast = orig
+    }
+  })
+
+  it('免打扰时段内不弹 toast，也不落账（等静默期过去再说）', async () => {
+    workReminderPlan('w3')
+    // 把免打扰设成覆盖「现在」的一小时窗口（workReminderPlan 内部先清空了，这里覆盖）
+    const now = new Date()
+    const pad = n => String(n).padStart(2, '0')
+    saveReminderSettings(Object.assign({}, getReminderSettings(), {
+      quietHoursStart: `${pad(now.getHours())}:00`,
+      quietHoursEnd: `${pad((now.getHours() + 1) % 24)}:00`
+    }))
+    initReminder(() => getPlanList())
+    await flush()
+    const toasts = []
+    const orig = uni.showToast
+    uni.showToast = (opts) => { toasts.push(opts) }
+    try {
+      checkAllReminders()
+      expect(toasts).toHaveLength(0)
+      expect(isTriggered('w3|' + ymdOf(Date.now()))).toBe(false)
+    } finally {
+      uni.showToast = orig
     }
   })
 
   it('计划被删除后，到期的推迟条目被清掉、不再弹', async () => {
-    const { plan } = workReminderPlan('w4')
+    workReminderPlan('w4')
     initReminder(() => getPlanList())
     await flush()
     const fireKey = 'w4|' + ymdOf(Date.now())
@@ -214,15 +202,15 @@ describe('checkAllReminders 集成：触发 → 推迟 → 重响 → 打卡收�
     await flush()
     deletePlan('w4')
     await flush()
-    const orig = uni.showActionSheet
+    const orig = uni.showToast
     let calls = 0
-    uni.showActionSheet = () => { calls++ }
+    uni.showToast = () => { calls++ }
     try {
       checkAllReminders()
       expect(calls).toBe(0)
       expect(getActiveSnoozeKeys()).not.toContain(fireKey)
     } finally {
-      uni.showActionSheet = orig
+      uni.showToast = orig
     }
   })
 })

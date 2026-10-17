@@ -22,6 +22,16 @@ export const WELCOME_FLAG = '_isWelcome'
 /** 开场消息标记（3.10.0）：欢迎语与进入总结都算「开场」，页面按它渲染操作行 */
 export const OPENER_FLAG = '_isOpener'
 
+/**
+ * 是否「开场占位消息」（4.29.3）
+ *
+ * 开场简报卡 / 欢迎语都是给用户看的开场白，不是对话历史 ——
+ * 用户一开口就该让位，否则它永远挂在消息列表顶部当第一条。
+ */
+export function isOpenerMessage(message) {
+  return !!(message && (message[WELCOME_FLAG] || message[ENTER_SUMMARY_FLAG] || message[OPENER_FLAG]))
+}
+
 /** 摘要消息最多念几条计划事件（其余归入「还有 N 项」） */
 export const ENTER_LINE_LIMIT = 3
 

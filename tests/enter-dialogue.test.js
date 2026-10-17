@@ -10,7 +10,8 @@ import {
   buildEnterSummaryMessage, enterSummaryRoute, enterSummarySignature,
   shouldAppendEnterSummary, isEnterSummaryMessage, buildEnterButtons,
   buildPlanAlertLines, buildNextStepLine, buildWorkLine, buildGreeting,
-  buildBriefing, buildBriefingPrimary, isBriefingV2, buildBriefingGreeting, BRIEFING_VERSION
+  buildBriefing, buildBriefingPrimary, isBriefingV2, buildBriefingGreeting, BRIEFING_VERSION,
+  isOpenerMessage, WELCOME_FLAG, OPENER_FLAG
 } from '../utils/enter-dialogue.js'
 
 const NOW = new Date(2026, 8, 15, 15, 30, 0).getTime()
@@ -418,5 +419,22 @@ describe('buildBriefing：简报卡 payload', () => {
     expect(buildBriefing(summary({ checkinToday: null }), null, at(15)).checkin).toBe(null)
     expect(buildBriefing(summary(), null, at(15)).checkin).toBe(null)
     expect(buildBriefing(null, null, at(15)).checkin).toBe(null)
+  })
+})
+
+describe('isOpenerMessage：开场占位消息判定（4.29.3）', () => {
+  it('欢迎语 / 进入简报 / 旧开场标记都算开场', () => {
+    expect(isOpenerMessage({ [WELCOME_FLAG]: true })).toBe(true)
+    expect(isOpenerMessage({ [ENTER_SUMMARY_FLAG]: true })).toBe(true)
+    expect(isOpenerMessage({ [OPENER_FLAG]: true })).toBe(true)
+    // 真实产物：简报卡消息带 _isEnterSummary
+    expect(isOpenerMessage(buildEnterSummaryMessage(null))).toBe(true)
+  })
+
+  it('普通对话消息不算，脏值不误判', () => {
+    expect(isOpenerMessage({ role: 'assistant', content: '好的' })).toBe(false)
+    expect(isOpenerMessage({ role: 'user', content: '记一笔' })).toBe(false)
+    expect(isOpenerMessage(null)).toBe(false)
+    expect(isOpenerMessage(undefined)).toBe(false)
   })
 })
