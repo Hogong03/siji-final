@@ -358,8 +358,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `7e80cae`（fix: 4.29.1 push 模块弹窗真机修复），与 `origin/main` 已同步
-- 远端：`origin/main`，2026-10-15 推送成功（`708bc02..7e80cae`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
+- 当前 HEAD: `9d243a1`（docs: 4.29.2 文档基线对齐实测），与 `origin/main` 已同步
+- 远端：`origin/main`，2026-10-17 推送成功（`7e80cae..9d243a1`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送（push 成功也会因这条 stderr 提示让 PowerShell 报 exit 1，以 `rev-list --count origin/main...HEAD` = `0 0` 为准）
 - Mimosa 提交钩子会拦「高危」：4.5.0 那轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
 - `http.sslVerify` 保持 true
 
@@ -393,6 +393,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
 - 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1412 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- **同一时段只跑一个 vitest 进程**（4.29.2 实证）：并发两个会报 `Errors 2 errors`、只跑 104/106 文件 / 1381/1412 用例，看着像回归其实是资源争抢。看到这个数字先确认没有并行进程，再谈问题
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
