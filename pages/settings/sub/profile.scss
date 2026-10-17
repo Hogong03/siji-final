@@ -149,7 +149,7 @@
 .rel-link {
   display: flex;
   align-items: center;
-  gap: 4rpx;
+  gap: 2rpx;
   font-size: 22rpx;
   color: #71717A;
   padding: 4rpx 12rpx;
@@ -218,30 +218,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48rpx;
-  min-height: 48rpx;
-  padding: 10rpx;
-  opacity: 0.45;
+  min-width: 40rpx;
+  min-height: 40rpx;
+  padding: 6rpx;
+  color: #52525B;
 }
 
 .card-edit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48rpx;
-  min-height: 48rpx;
-  padding: 10rpx;
-  opacity: 0.4;
+  min-width: 40rpx;
+  min-height: 40rpx;
+  padding: 6rpx;
+  color: #52525B;
 }
 
 .card-collapse {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48rpx;
-  min-height: 48rpx;
-  padding: 10rpx;
-  opacity: 0.55;
+  min-width: 40rpx;
+  min-height: 40rpx;
+  padding: 6rpx;
+  color: #52525B;
   margin-left: 8rpx;
 }
 
@@ -372,7 +372,7 @@
 .field-actions {
   display: flex;
   align-items: center;
-  gap: 4rpx;
+  gap: 2rpx;
 }
 
 .field-edit {
@@ -591,7 +591,7 @@
 .re-info {
   display: flex;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2rpx;
 }
 
 .re-title {

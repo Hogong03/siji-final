@@ -6,6 +6,25 @@
 
 export const V430 = [
   {
+    version: '4.33.4',
+    date: '2026-10-18',
+    title: '画像按钮颜色加深、图标放大、间距收紧',
+    summary: [
+      '按钮图标从低 opacity 灰改为固定深灰 #52525B/#71717A，颜色更清晰',
+      '字段行图标 16→20、卡片头 18→22，视觉尺寸再放大',
+      '按钮热区从 48rpx 收到 40rpx、padding 10→6rpx、按钮间距 gap 4→2rpx，整体更紧凑',
+    ],
+    categories: [
+      {
+        title: 'UI 调整',
+        items: [
+          'pages/settings/sub/profile.scss：.field-edit/.field-clear/.card-edit-btn/.card-delete/.card-collapse 去掉 opacity 改 color: #52525B/#71717A；min 48rpx→40rpx；padding 10rpx→6rpx；.field-actions gap 4rpx→2rpx',
+          'pages/settings/sub/profile.vue：SijiIcon size 16→20（字段行）、18→22（卡片头），加 color 属性固定色',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.33.3',
     date: '2026-10-18',
     title: '画像页小按钮热区扩大到 48rpx，图标同步放大',
