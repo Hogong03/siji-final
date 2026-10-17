@@ -6,6 +6,29 @@
 
 export const V429 = [
   {
+    version: '4.29.5',
+    date: '2026-10-17',
+    title: '每天首次进聊天页自动弹「计划汇总表」：统计头 + 全部计划明细一张表',
+    summary: [
+      '每次打开应用进聊天页自动弹一张计划汇总表（底部面板）：统计头（总计 / 完成 / 完成率 / 过期 + 本周打卡 + 子计划进度）→ 优先级色条 → 按状态分组的**全部计划明细**（已过期 / 进行中 / 待开始 / 已完成），点任一条直达该计划详情，底部「去计划页」入口',
+      '新增纯数据层 utils/plan-summary.js 的 buildPlanSummary(plans, now)：**统计口径与计划 Tab 的「计划总览」严格一致**（只计顶层计划、子计划进度归并为 subTotal/subDone、本周打卡复用 weekCheckinSummary）—— 同一件事两处数字对不上比不给还糟',
+      '已完成分组最多列 30 条（其余记入 doneHidden 并在面板底部说明），**在办计划不截断**：计划多时一次渲染几百行会拖垮 App 端',
+      '每天首次弹出的门控（siji_plan_summary_at 存当天日期 YYYY-MM-DD，与提醒/周报同口径）；**首启那一轮让位给引导向导** —— 引导要教用户配 API Key，两张浮层叠一起没法用；弹出延迟 600ms，避开开场消息与滚动的动画',
+      '新增 tests/plan-summary.test.js 12 例：统计口径（顶层/子计划归并/完成率/过期/本周打卡/优先级色条）、分组顺序与组内排序、逾期天数、元信息行合并、截断与 doneHidden、日期门控、脏数据不炸；全量 107 文件 / 1431 用例全绿',
+    ],
+    categories: [
+      {
+        title: '计划汇总表（4.29.5）',
+        items: [
+          '新增 utils/plan-summary.js：`buildPlanSummary(plans, now)` 返回 `{ stats, priorityBar, groups, doneHidden }`；`summaryDayKey` / `shouldShowPlanSummary` / `markPlanSummaryShown` 三个门控函数；`DONE_LIMIT = 30`',
+          '新增 components/plan/PlanSummarySheet.vue：底部弹出面板（固定底部 + translateY 入场 + 圆角 24rpx + safe-area，对齐项目面板规矩），统计格 / 本周打卡行 / 优先级色条 / 分组明细 / 空状态 / 底部「去计划页」；深色双路径（H5/App 走 scoped `html.theme-dark`，小程序走 `#ifdef MP-WEIXIN` 内 @media）',
+          'pages/chat/index.vue：`maybeShowPlanSummary()` 挂进 onMounted（引导优先 + 每天门控 + 600ms 延迟）；新增 `openPlanSummary` / `closePlanSummary` / `goPlanFromSummary` / `goPlanListFromSummary`；模板挂 `<PlanSummarySheet>`',
+          '数据来源复用现有：`getPlanList()`（chat 页已有 import）、`utils/plan-heatmap.js` 的 `weekCheckinSummary`、`utils/plan-recur.js` 的 `recurTypeOf`、`utils/datetime.js` 的 `toPlanTs`',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.29.4',
     date: '2026-10-17',
     title: '修简报卡 dateLine 空实现（Vue 每渲染一次告警）+ 补上守卫测试的 options API 盲区',

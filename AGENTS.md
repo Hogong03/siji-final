@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
-| 测试 | 106 文件 / 1419 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
-| 版本 | v4.29.4（修简报卡 dateLine 空实现 + 补守卫测试 options API 盲区；含 4.29.3 三处实测修复 / 4.29.2 文档对齐 / 4.28.0 个人画像） |
+| 测试 | 107 文件 / 1431 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
+| 版本 | v4.29.5（每天首次进聊天页自动弹计划汇总表；含 4.29.4 简报卡 dateLine + 守卫补盲区 / 4.29.3 通知三处修复） |
 
 ---
 
@@ -152,7 +152,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 106 文件 1419 用例
+├── tests/              # 107 文件 1431 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -322,6 +322,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改对话管理（列表 / 搜索 / 摘要） | `components/chat/ConversationPanel.vue` + `ConversationPanelHeader.vue` + `ConversationListItem.vue` + `ConversationFilterPanel.vue`（4.24.0：搜索 / 行尾「⋯」菜单重命名-编辑标签-删除 / 摘要行 / 自动标题）+ `composables/useConversationManager.js` + `utils/conversation-search.js` / `utils/chat-search.js` / `utils/conv-tags.js`；删除走红色确认键，长按一律用 `usePressHold` |
 | 改聊天页消息操作（重试 / 编辑 / 虚拟列表） | `composables/useRetryBar.js`（重试条）+ `useMessageEdit.js`（就地编辑）+ `useVirtualMessages.js`（长会话窗口化）+ `useStreamRenderer.js`（流式上屏）+ `useScrollControl.js`；消息操作收纳到长按呼出（4.13.0） |
 | 改计划速览面板 / 热力图 | 聊天页顶部计划按钮与底部速览面板（4.22.0）：`pages/chat/index.vue` + `components/plan/PlanDailyStrip.vue` / `PlanWeekStrip.vue` / `PlanTimeStrip.vue`；热力图 `utils/plan-heatmap.js` + `components/plan/PlanHeatmap.vue`（`pages/plan/stats.vue` 使用，跑 `tests/plan-heatmap.test.js`） |
+| 改计划汇总表（每天首次弹出） | `utils/plan-summary.js`（`buildPlanSummary(plans, now)` 纯函数 + `shouldShowPlanSummary`/`markPlanSummaryShown` 日期门控 + `DONE_LIMIT=30`）+ `components/plan/PlanSummarySheet.vue`（底部面板，只渲染与 emit，不读存储）+ `pages/chat/index.vue` 的 `maybeShowPlanSummary()`（onMounted 里，引导优先 + 600ms 延迟）。**统计口径必须与 `pages/plan/composables/usePlanList.js` 的 stats 一致**（只计顶层、子计划归并、本周打卡复用 `weekCheckinSummary`）—— 改一处要同步另一处，否则聊天页与计划页数字对不上；跑 `tests/plan-summary.test.js` |
 | 改回收站（软删除恢复） | 三个 `trash.vue` 页面：`pages/diary/trash.vue` / `pages/bill/trash.vue` / `pages/plan/trash.vue`；软删除口径 `is_deleted`（0 正常 / 1 已删），恢复与彻底删除都必须只动对应领域存储层 |
 | 改周报卡片渲染（AI 结果卡） | `components/ai/AiResultCard.vue` + `AiToolButton.vue`：AI 生成结果的分段展示与「应用到数据」入口，与 `ExecResultCard`（工具执行卡）职责不同，别混用 |
 | 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；**SijiIcon 图标换色是 JS 驱动（消费 theme.js 的 isDark 响应式换 src）—— 跨端样式编译器差异优先 JS 方案（4.12.5）**；**关键主题视觉（图标/用户气泡反白/发送停止键）一律 JS/内联驱动（4.12.5/4.12.7/4.12.9 三轮实证：App 上 scss 深色块不可赌，真机复报直接改 JS/内联，别再调 scss）**；守卫 tests/theme-mode.test.js + tests/theme-runtime.test.js |
@@ -394,7 +395,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1419 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 107 文件 / 1431 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
 - **模板标识符漏实现由 `tests/sfc-bindings.test.js` 双通道看守**（4.29.4 补齐）：`<script setup>` 走 compileScript(inlineTemplate) 的 `_ctx.x` 扫描；**options API 走 @babel/parser 解析 `export default {}` 收集 props/computed/methods/data/inject/setup 键名**再比对（旧版只查 script setup，EnterBriefing 的 `{{ dateLine }}` 因此漏网成 Vue warn）。**别用「名字在 script 里出现过」这类文本启发式** —— 注释里提一句就被骗过，实测抓不到 bug
 - **同一时段只跑一个 vitest 进程**（4.29.2 实证）：并发两个会报 `Errors 2 errors`、只跑 104/106 文件 / 1381/1412 用例，看着像回归其实是资源争抢。看到这个数字先确认没有并行进程，再谈问题
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出

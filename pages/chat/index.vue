@@ -17,6 +17,7 @@ import GuideModal from '@/components/chat/GuideModal.vue'
 import ModelSwitcher from '@/components/chat/ModelSwitcher.vue'
 import UnifiedSwitcher from '@/components/chat/UnifiedSwitcher.vue'
 import OnboardingGuide from '@/components/chat/OnboardingGuide.vue'
+import PlanSummarySheet from '@/components/plan/PlanSummarySheet.vue'
 import { useChatEngine } from '@/composables/useChatEngine.js'
 import { useScrollControl } from '@/composables/useScrollControl.js'
 import { useConversationManager } from '@/composables/useConversationManager.js'
@@ -28,6 +29,7 @@ import { useEnterSummary } from '@/composables/useEnterSummary.js'
 import { hasEnterSummaryMessage, isEmptyConversation } from '@/utils/chat-session.js'
 import { hasOpenerActions, isBriefingV2 } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
+import { buildPlanSummary, shouldShowPlanSummary, markPlanSummaryShown } from '@/utils/plan-summary.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { buildDailyBrief, briefShownToday, markBriefShown } from '@/composables/useDailyBrief.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
@@ -513,6 +515,50 @@ function goPlanDetail(clientId) {
 	uni.navigateTo({ url: `/pages/plan/detail?clientId=${clientId}` })
 }
 
+// ===== 计划汇总表（4.29.5：每次打开应用 / 每天第一次进聊天页自动弹）=====
+// 数据来自 utils/plan-summary.js（纯函数，统计口径与计划 Tab 的「计划总览」一致）
+const showPlanSummary = ref(false)
+const planSummaryData = ref({ stats: {}, priorityBar: [], groups: [], doneHidden: 0 })
+
+function openPlanSummary() {
+	try {
+		planSummaryData.value = buildPlanSummary(getPlanList())
+	} catch (e) {
+		planSummaryData.value = { stats: {}, priorityBar: [], groups: [], doneHidden: 0 }
+	}
+	showPlanSummary.value = true
+	// 开了就记当天 —— 否则每次回前台 / 切 Tab 都会再弹一次
+	markPlanSummaryShown()
+}
+
+function closePlanSummary() {
+	showPlanSummary.value = false
+}
+
+function goPlanFromSummary(clientId) {
+	showPlanSummary.value = false
+	if (clientId) uni.navigateTo({ url: `/pages/plan/detail?clientId=${clientId}` })
+}
+
+function goPlanListFromSummary() {
+	showPlanSummary.value = false
+	uni.navigateTo({ url: '/pages/plan/index' })
+}
+
+/**
+ * 每天第一次进聊天页弹一次汇总表
+ * 首启那次不弹（引导向导优先，它要教用户配 API Key；两张浮层叠一起没法用）；
+ * 延迟 600ms 让开场消息与滚动先落位，避免打开瞬间两处动画打架。
+ */
+function maybeShowPlanSummary() {
+	if (showOnboarding.value) return
+	if (!shouldShowPlanSummary()) return
+	setTimeout(() => {
+		if (showOnboarding.value || showPlanSummary.value) return
+		openPlanSummary()
+	}, 600)
+}
+
 function goPlanPage() {
 	togglePlanSheet()
 	uni.switchTab({ url: '/pages/plan/index' })
@@ -599,6 +645,8 @@ onMounted(() => {
   uni.$on('welcome-chip-tap', handleWelcomeChip)
   // 首次使用引导
   checkOnboarding()
+  // 4.29.5：每天第一次进聊天页弹计划汇总表（首启引导那轮让位）
+  maybeShowPlanSummary()
 })
 
 onUnmounted(() => {
@@ -886,6 +934,14 @@ function handleWelcomeChip(text) {
     <!-- AI 使用说明 Modal -->
     <GuideModal :show="showGuide" @close="showGuide = false" />
   <OnboardingGuide :show="showOnboarding" @finish="showOnboarding = false" />
+  <!-- 4.29.5：计划汇总表（每天第一次进聊天页自动弹；也可由引导走完后手动打开） -->
+  <PlanSummarySheet
+    :show="showPlanSummary"
+    :summary="planSummaryData"
+    @close="closePlanSummary"
+    @go-plan="goPlanFromSummary"
+    @go-plan-list="goPlanListFromSummary"
+  />
 
     <!-- 模型快速切换 Modal -->
     <ModelSwitcher :show="showModelSwitch" @close="showModelSwitch = false" />
