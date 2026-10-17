@@ -350,6 +350,17 @@
   font-size: 28rpx;
 }
 
+.field-actions {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.field-edit {
+  padding: 8rpx;
+  opacity: 0.4;
+}
+
 .field-clear {
   padding: 8rpx;
   opacity: 0.3;

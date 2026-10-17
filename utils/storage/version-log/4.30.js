@@ -6,6 +6,25 @@
 
 export const V430 = [
   {
+    version: '4.33.1',
+    date: '2026-10-18',
+    title: '画像字段防误触：已填值默认只读，点正文不弹编辑框',
+    summary: [
+      '已填值字段点击正文不再触发编辑，避免阅读画像时误触弹输入框',
+      '右侧新增小铅笔按钮才触发编辑，删除按钮保留在铅笔旁',
+      '空字段（"点击填写"）保持原交互，点击直接进入填写',
+    ],
+    categories: [
+      {
+        title: '交互调整',
+        items: [
+          'pages/settings/sub/profile.vue：三处 field-display 的 @tap 从"整行触发"改为"仅空值触发"（!value && startEditField），有值字段右侧包一层 field-actions，内含 field-edit 铅笔按钮与 field-clear 删除按钮',
+          'pages/settings/sub/profile.scss：新增 .field-actions（flex+gap 4rpx）与 .field-edit（padding 8rpx、opacity 0.4），与 .field-clear 同尺寸小图标',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.33.0',
     date: '2026-10-18',
     title: '删除"基本信息/生活方式"两张固定卡，字段并入"我的画像"',

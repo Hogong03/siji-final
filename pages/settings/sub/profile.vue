@@ -509,11 +509,16 @@ function handleExport() {
                 <view
                   v-if="!editingField || editingField.cardId !== card.id || editingField.field !== key"
                   class="field-display"
-                  @tap="enabled && startEditField(card.id, key)"
+                  @tap="enabled && !value && startEditField(card.id, key)"
                 >
                   <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
-                  <view v-if="enabled && value" class="field-clear" @tap.stop="clearField(card.id, key)">
+                  <view v-if="enabled && value" class="field-actions">
+                    <view class="field-edit" @tap.stop="startEditField(card.id, key)">
+                    <SijiIcon name="edit" :size="12" />
+                    </view>
+                    <view class="field-clear" @tap.stop="clearField(card.id, key)">
                     <SijiIcon name="close" :size="12" />
+                    </view>
                   </view>
                 </view>
                 <input
@@ -542,11 +547,16 @@ function handleExport() {
               <view
                 v-if="!editingField || editingField.cardId !== card.id || editingField.field !== key"
                 class="field-display"
-                @tap="enabled && startEditField(card.id, key)"
+                @tap="enabled && !value && startEditField(card.id, key)"
               >
                 <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
-                <view v-if="enabled && value" class="field-clear" @tap.stop="clearField(card.id, key)">
+                <view v-if="enabled && value" class="field-actions">
+                  <view class="field-edit" @tap.stop="startEditField(card.id, key)">
+                  <SijiIcon name="edit" :size="12" />
+                  </view>
+                  <view class="field-clear" @tap.stop="clearField(card.id, key)">
                   <SijiIcon name="close" :size="12" />
+                  </view>
                 </view>
               </view>
               <input
@@ -597,11 +607,16 @@ function handleExport() {
             <view
               v-if="!editingField || editingField.cardId !== card.id || editingField.field !== key"
               class="field-display"
-              @tap="enabled && startEditField(card.id, key)"
+              @tap="enabled && !value && startEditField(card.id, key)"
             >
               <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
-              <view v-if="enabled && value" class="field-clear" @tap.stop="clearField(card.id, key)">
+              <view v-if="enabled && value" class="field-actions">
+                <view class="field-edit" @tap.stop="startEditField(card.id, key)">
+                <SijiIcon name="edit" :size="12" />
+                </view>
+                <view class="field-clear" @tap.stop="clearField(card.id, key)">
                 <SijiIcon name="close" :size="12" />
+                </view>
               </view>
             </view>
             <input
