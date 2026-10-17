@@ -11,14 +11,18 @@
  * 纯函数 + 两个薄存储封装，可直接单测（tests/plan-summary.test.js）。
  */
 import { toPlanTs } from './datetime.js'
-import { weekCheckinSummary } from './plan-heatmap.js'
+import { weekCheckinSummary, weekCheckinDays } from './plan-heatmap.js'
 import { recurTypeOf } from './plan-recur.js'
+import { DUE_SOON_DAYS } from './plan-alerts.js'
 
 /** 每天首次弹出的日期门控 key（存当天 YYYY-MM-DD） */
 export const SUMMARY_SHOWN_KEY = 'siji_plan_summary_at'
 
 /** 已完成分组最多列多少条（全部列出会在计划多时拖垮 App 渲染；只截「已完成」不截在办） */
 export const DONE_LIMIT = 30
+
+/** 「今日焦点」最多列几条（逾期最久的排第一，其余用快到期的补齐） */
+export const FOCUS_LIMIT = 4
 
 const STATUS_TEXT = ['待开始', '进行中', '已完成']
 const PRIORITY_TEXT = ['普通', '重要', '紧急']
@@ -84,6 +88,11 @@ function toSummaryItem(plan, ctx) {
   const dueTs = toPlanTs(dueRaw, true)
   const overdue = status !== 2 && dueTs != null && dueTs < now
 
+  // 剩余天数按「自然日」算（今天=0，明天=1），与 overdue 的「已过时刻」判定分开：
+  // 今天 08:00 到期而现在是 10:00 —— overdue=true（进「已过期」组），leftDays=0。
+  const dueDayStart = dueTs == null ? null : todayStartOf(dueTs)
+  const leftDays = dueDayStart == null ? null : Math.round((dueDayStart - todayStart) / 86400000)
+
   const kids = childMap[plan.client_id] || []
   const childDone = kids.filter(k => Number(k.status) === 2).length
 
@@ -108,6 +117,10 @@ function toSummaryItem(plan, ctx) {
     priorityColor: PRIORITY_COLOR[priority] || PRIORITY_COLOR[0],
     overdue: overdue,
     lateDays: overdue ? Math.max(1, Math.round((now - dueTs) / 86400000)) : 0,
+    leftDays: leftDays,
+    // 今天 / 明天到期（都不含 overdue —— 已过期的归「已过期」组，不重复出现在「今天/明天」）
+    dueToday: !overdue && leftDays === 0 && status !== 2,
+    dueTomorrow: !overdue && leftDays === 1 && status !== 2,
     metaText: metas.join(' · ')
   }
 }
@@ -125,7 +138,12 @@ function sortItems(a, b) {
  * 组装汇总表数据
  * @param {Array} plans getPlanList() 原样
  * @param {number} [now]
- * @returns {{ stats, priorityBar, groups, doneHidden }}
+ * @returns {{ stats, focus, weekBar, groups, doneHidden }}
+ *   - stats：统计头（与计划页「计划总览」同口径，另加 todayTodo = 今天/明天到期条数）
+ *   - focus：今日焦点（逾期最久 1 条 + 今天 / 明天 / DUE_SOON_DAYS 天内到期补齐，最多 FOCUS_LIMIT 条）
+ *   - weekBar：本周打卡迷你条 { flags[7], done, total, todayIndex }
+ *   - groups：分组明细（已过期 → 今天/明天 → 进行中 → 待开始 → 已完成；空组不产出）
+ *   - doneHidden：已完成分组被截断（DONE_LIMIT）的条数
  */
 export function buildPlanSummary(plans, now = Date.now()) {
   const all = (Array.isArray(plans) ? plans : []).filter(p => p && p.is_deleted !== 1)
@@ -166,15 +184,9 @@ export function buildPlanSummary(plans, now = Date.now()) {
     total, active, completed, pending, rate, overdue,
     high: pHigh, mid: pMid, low: pLow,
     subTotal, subDone,
-    weekCheckins: week.times, weekDays: week.days
+    weekCheckins: week.times, weekDays: week.days,
+    todayTodo: 0
   }
-
-  const pSum = pHigh + pMid + pLow
-  const priorityBar = pSum === 0 ? [] : [
-    { label: '紧急', count: pHigh, pct: Math.round(pHigh / pSum * 100), color: PRIORITY_COLOR[2] },
-    { label: '重要', count: pMid, pct: Math.round(pMid / pSum * 100), color: PRIORITY_COLOR[1] },
-    { label: '普通', count: pLow, pct: Math.round(pLow / pSum * 100), color: PRIORITY_COLOR[0] }
-  ]
 
   const ctx = { now, todayStart: todayStartOf(now), childMap }
   const items = tops.map(p => {
@@ -186,15 +198,45 @@ export function buildPlanSummary(plans, now = Date.now()) {
   })
 
   const overdueItems = items.filter(i => i.overdue).sort(sortItems)
-  const activeItems = items.filter(i => !i.overdue && i.status === 1).sort(sortItems)
-  const pendingItems = items.filter(i => !i.overdue && i.status === 0).sort(sortItems)
+  // 「今天/明天」独立成组：它是用户真正的时间轴，且从这里移出后 进行中/待开始 不再重复出现它们
+  const todayItems = items.filter(i => i.dueToday || i.dueTomorrow).sort(sortItems)
+  const soonItems = items
+    .filter(i => !i.overdue && i.leftDays != null && i.leftDays >= 2 && i.leftDays <= DUE_SOON_DAYS)
+    .sort((a, b) => (a._dueTs || 0) - (b._dueTs || 0))
+  const activeItems = items.filter(i => !i.overdue && !i.dueToday && !i.dueTomorrow && i.status === 1).sort(sortItems)
+  const pendingItems = items.filter(i => !i.overdue && !i.dueToday && !i.dueTomorrow && i.status === 0).sort(sortItems)
   const doneAll = items.filter(i => i.status === 2).sort((a, b) => (b._createdAt || 0) - (a._createdAt || 0))
   const doneItems = doneAll.slice(0, DONE_LIMIT)
+
+  stats.todayTodo = todayItems.length
+
+  // 今日焦点：逾期最久的 1 条 → 今天到期 → 明天到期 → 3 天内到期，补齐到 FOCUS_LIMIT
+  // 只给「看什么」，动作留给计划详情（汇总表是纯展示层，不做写操作）
+  const focus = []
+  const pushFocus = (it, tag, tone) => {
+    if (!it || focus.length >= FOCUS_LIMIT) return
+    focus.push({ clientId: it.clientId, title: it.title, tag, tone })
+  }
+  const worstOverdue = overdueItems.slice().sort((a, b) => b.lateDays - a.lateDays)[0]
+  if (worstOverdue) pushFocus(worstOverdue, `逾期${worstOverdue.lateDays}天`, 'danger')
+  todayItems.filter(i => i.dueToday).forEach(it => pushFocus(it, '今天到期', 'danger'))
+  todayItems.filter(i => i.dueTomorrow).forEach(it => pushFocus(it, '明天到期', 'warn'))
+  soonItems.forEach(it => pushFocus(it, `${it.leftDays}天后`, 'warn'))
+
+  // 本周打卡迷你条（与 weekCheckinSummary 同一扫描口径）
+  const weekFlags = weekCheckinDays(all, now)
+  const weekBar = {
+    flags: weekFlags,
+    done: weekFlags.filter(Boolean).length,
+    total: 7,
+    todayIndex: (new Date(now).getDay() + 6) % 7
+  }
 
   const strip = arr => arr.map(({ _dueTs, _createdAt, ...rest }) => rest)
 
   const groups = [
     { key: 'overdue', label: '已过期', items: strip(overdueItems) },
+    { key: 'today', label: '今天/明天', items: strip(todayItems) },
     { key: 'active', label: '进行中', items: strip(activeItems) },
     { key: 'pending', label: '待开始', items: strip(pendingItems) },
     { key: 'done', label: '已完成', items: strip(doneItems) }
@@ -202,7 +244,8 @@ export function buildPlanSummary(plans, now = Date.now()) {
 
   return {
     stats,
-    priorityBar,
+    focus,
+    weekBar,
     groups,
     doneHidden: Math.max(0, doneAll.length - doneItems.length)
   }

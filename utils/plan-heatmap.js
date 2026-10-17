@@ -127,13 +127,38 @@ export function canGoNext(year, month, nowTs = Date.now()) {
  * 返回 { times 次数, days 有记录天数 }
  */
 export function weekCheckinSummary(plans, nowTs = Date.now()) {
+  const { times, flags } = weekCheckinScan(plans, nowTs)
+  return { times, days: flags.filter(Boolean).length }
+}
+
+/**
+ * 本周（周一起 7 天）逐日打卡标记（4.30.0：计划汇总表的迷你打卡条）
+ * 与 weekCheckinSummary 共用 weekCheckinScan，口径不会漂移
+ * @returns {boolean[]} 长度 7，索引 0 = 周一；主计划与子计划一起算
+ */
+export function weekCheckinDays(plans, nowTs = Date.now()) {
+  return weekCheckinScan(plans, nowTs).flags
+}
+
+/**
+ * 本周打卡唯一扫描口径：次数（同一天多次累加）+ 逐日标记（同一天多次只记一次）
+ * 只统计 checkins（不含完成日志），主计划与子计划一起算；已删除计划排除
+ */
+function weekCheckinScan(plans, nowTs = Date.now()) {
   const now = new Date(nowTs)
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const mondayTs = todayStart - ((now.getDay() + 6) % 7) * 86400000
-  const from = dateKeyOf(mondayTs)
-  const to = dateKeyOf(mondayTs + 6 * 86400000)
+  const keys = []
+  const idxOf = {}
+  for (let i = 0; i < 7; i++) {
+    const k = dateKeyOf(mondayTs + i * 86400000)
+    keys.push(k)
+    idxOf[k] = i
+  }
+  const from = keys[0]
+  const to = keys[6]
+  const flags = [false, false, false, false, false, false, false]
   let times = 0
-  const daySet = new Set()
   const source = Array.isArray(plans) ? plans.filter(p => p && p.is_deleted !== 1) : []
   source.forEach(p => {
     if (!Array.isArray(p.checkins)) return
@@ -141,8 +166,9 @@ export function weekCheckinSummary(plans, nowTs = Date.now()) {
       const date = c && c.date
       if (!date || date < from || date > to) return
       times += 1
-      daySet.add(date)
+      const i = idxOf[date]
+      if (i !== undefined) flags[i] = true
     })
   })
-  return { times, days: daySet.size }
+  return { times, flags }
 }

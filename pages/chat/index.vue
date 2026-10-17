@@ -31,7 +31,7 @@ import { hasOpenerActions, isBriefingV2 } from '@/utils/enter-dialogue.js'
 import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-dialogue.js'
 import { buildPlanSummary, shouldShowPlanSummary, markPlanSummaryShown } from '@/utils/plan-summary.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
-import { buildDailyBrief, briefShownToday, markBriefShown } from '@/composables/useDailyBrief.js'
+import { getPromptFlag, setPromptFlag } from '@/utils/reminder/settings.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { ref as vueRef } from 'vue'
 import { useChatRuler } from '@/composables/useChatRuler.js'
@@ -99,6 +99,8 @@ let _queuedEnterSummary = null
 
 /** 把新总结落成一条 AI 消息；重复或空内容返回 false（判定见 utils/enter-dialogue.js） */
 function injectEnterSummary(summary) {
+  // 4.30.0：可关（提示与提醒 → 进入简报卡）。关了就不再往对话里写开场卡。
+  if (!getPromptFlag('briefing')) return false
   if (!shouldAppendEnterSummary(summary, _lastEnterSignature)) return false
   if (!appendEnterSummary(summary)) return false
   _lastEnterSignature = enterSummarySignature(summary)
@@ -305,11 +307,6 @@ let _pendingPrefill = ''
 const _prefillHandler = (text) => { if (text) _pendingPrefill = String(text) }
 uni.$on('prefill-input', _prefillHandler)
 
-// 4.15 每日小结卡（本地聚合：今日记录/支出/打卡/进行中计划）
-const dailyBrief = ref(null)
-const showDailyBrief = ref(false)
-function dismissDailyBrief() { showDailyBrief.value = false }
-
 // 4.15 消息长按「提取待办转计划」（复用记录 AI 提取核心）
 const { extractTodosFromAnyText } = useDiaryAI(vueRef({ content: '' }))
 function handleExtractTodos(msg) {
@@ -329,18 +326,6 @@ onShow(() => {
   }
   syncAllMessageTags()
   resetVirtual()
-  // 4.15 每日小结：每天最多一次，有内容才出现
-  if (!briefShownToday()) {
-    const brief = buildDailyBrief()
-    if (brief) {
-      dailyBrief.value = brief
-      showDailyBrief.value = true
-      markBriefShown()
-    } else {
-      dailyBrief.value = null
-      showDailyBrief.value = false
-    }
-  }
   if (!isSending.value && store.messages.length > 0) {
     // 消息列表非空时才滚动，避免首次进入空列表滚动竞争
     nextTick(() => {
@@ -515,20 +500,40 @@ function goPlanDetail(clientId) {
 	uni.navigateTo({ url: `/pages/plan/detail?clientId=${clientId}` })
 }
 
-// ===== 计划汇总表（4.29.5：每次打开应用 / 每天第一次进聊天页自动弹）=====
+// ===== 计划汇总表（4.29.5 起每天首次弹；4.30.0 起受「提示与提醒」开关管）=====
 // 数据来自 utils/plan-summary.js（纯函数，统计口径与计划 Tab 的「计划总览」一致）
+const EMPTY_SUMMARY = { stats: {}, focus: [], weekBar: null, groups: [], doneHidden: 0 }
 const showPlanSummary = ref(false)
-const planSummaryData = ref({ stats: {}, priorityBar: [], groups: [], doneHidden: 0 })
+const planSummaryData = ref(EMPTY_SUMMARY)
 
 function openPlanSummary() {
 	try {
 		planSummaryData.value = buildPlanSummary(getPlanList())
 	} catch (e) {
-		planSummaryData.value = { stats: {}, priorityBar: [], groups: [], doneHidden: 0 }
+		planSummaryData.value = EMPTY_SUMMARY
 	}
 	showPlanSummary.value = true
 	// 开了就记当天 —— 否则每次回前台 / 切 Tab 都会再弹一次
 	markPlanSummaryShown()
+}
+
+/** 表内「不再自动弹出」：立刻写开关并关掉当前这张（不用跑去设置页） */
+function disablePlanSummaryAuto() {
+	setPromptFlag('summarySheet', false)
+	closePlanSummary()
+	uni.showToast({ title: '已关闭每日自动弹出', icon: 'none' })
+}
+
+/** 表内「提示设置」入口 */
+function openNotifySettings() {
+	closePlanSummary()
+	uni.navigateTo({ url: '/pages/settings/sub/notify' })
+}
+
+/** 从计划速览面板手动打开汇总表（4.30.0：关掉自动弹出后这里仍是稳定入口） */
+function openSummaryFromSheet() {
+	togglePlanSheet()
+	openPlanSummary()
 }
 
 function closePlanSummary() {
@@ -547,14 +552,18 @@ function goPlanListFromSummary() {
 
 /**
  * 每天第一次进聊天页弹一次汇总表
+ * 4.30.0：先看「提示与提醒」开关（关了就整条链路不参与）；
  * 首启那次不弹（引导向导优先，它要教用户配 API Key；两张浮层叠一起没法用）；
  * 延迟 600ms 让开场消息与滚动先落位，避免打开瞬间两处动画打架。
  */
 function maybeShowPlanSummary() {
+	if (!getPromptFlag('summarySheet')) return
 	if (showOnboarding.value) return
 	if (!shouldShowPlanSummary()) return
 	setTimeout(() => {
 		if (showOnboarding.value || showPlanSummary.value) return
+		// 600ms 内用户可能刚从表里关掉了自动弹出，这里再确认一次
+		if (!getPromptFlag('summarySheet')) return
 		openPlanSummary()
 	}, 600)
 }
@@ -712,6 +721,10 @@ function handleWelcomeChip(text) {
           <text v-if="p.checkedToday" class="plan-item-checkin">今日已打卡</text>
         </view>
       </scroll-view>
+      <!-- 4.30.0：汇总表的稳定入口 —— 关掉每日自动弹出后仍能打开，也是「提示设置」的可达路径 -->
+      <view class="plan-sheet-footer" @tap="openSummaryFromSheet">
+        <text class="plan-sheet-footer-text">查看计划汇总</text>
+      </view>
       <view class="plan-sheet-footer" @tap="goPlanPage">
         <text class="plan-sheet-footer-text">打开计划页</text>
       </view>
@@ -760,14 +773,6 @@ function handleWelcomeChip(text) {
         <view v-if="hasMore" class="load-more-hint">
           <text v-if="isLoadingMore">加载中...</text>
           <text v-else>上拉加载更多</text>
-        </view>
-        <!-- 4.15 每日小结卡 -->
-        <view v-if="showDailyBrief && dailyBrief" class="daily-brief" @tap="dismissDailyBrief">
-          <view class="daily-brief-head">
-            <text class="daily-brief-title">今日小结</text>
-            <text class="daily-brief-close">✕</text>
-          </view>
-          <text class="daily-brief-line" v-for="(line, li) in dailyBrief.lines" :key="li">{{ line }}</text>
         </view>
         <view class="messages-list">
           <view
@@ -934,13 +939,15 @@ function handleWelcomeChip(text) {
     <!-- AI 使用说明 Modal -->
     <GuideModal :show="showGuide" @close="showGuide = false" />
   <OnboardingGuide :show="showOnboarding" @finish="showOnboarding = false" />
-  <!-- 4.29.5：计划汇总表（每天第一次进聊天页自动弹；也可由引导走完后手动打开） -->
+  <!-- 4.29.5：计划汇总表（每天第一次进聊天页自动弹；4.30.0 起表内可直接关掉自动弹出） -->
   <PlanSummarySheet
     :show="showPlanSummary"
     :summary="planSummaryData"
     @close="closePlanSummary"
     @go-plan="goPlanFromSummary"
     @go-plan-list="goPlanListFromSummary"
+    @disable-auto="disablePlanSummaryAuto"
+    @open-notify="openNotifySettings"
   />
 
     <!-- 模型快速切换 Modal -->
@@ -978,51 +985,6 @@ function handleWelcomeChip(text) {
 </style>
 
 <style lang="scss" scoped>
-/* 4.15 每日小结卡（本地聚合，点卡关闭，每天最多一次） */
-.daily-brief {
-  margin: 8rpx 24rpx 16rpx;
-  padding: 20rpx 24rpx;
-  background: #FFFFFF;
-  border-radius: 16rpx;
-  border: 1rpx solid #E4E4E7;
-}
-.daily-brief-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8rpx;
-}
-.daily-brief-title {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #18181B;
-}
-.daily-brief-close {
-  font-size: 24rpx;
-  color: #A1A1AA;
-  padding: 4rpx 8rpx;
-}
-.daily-brief-line {
-  display: block;
-  font-size: 24rpx;
-  color: #52525B;
-  line-height: 1.8;
-}
-
-/* #ifndef MP-WEIXIN */
-html.theme-dark {
-  .daily-brief { background: #27272A; border-color: #3F3F46; }
-  .daily-brief-title { color: #FAFAFA; }
-  .daily-brief-close { color: #71717A; }
-  .daily-brief-line { color: #A1A1AA; }
-}
-/* #endif */
-/* #ifdef MP-WEIXIN */
-@media (prefers-color-scheme: dark) {
-  .daily-brief { background: #27272A; border-color: #3F3F46; }
-  .daily-brief-title { color: #FAFAFA; }
-  .daily-brief-close { color: #71717A; }
-  .daily-brief-line { color: #A1A1AA; }
-}
-/* #endif */
+/* 4.15 的每日小结卡已删除（4.30.0）：它讲的今日记录/支出/进行中/打卡
+   在计划汇总表里都有且更细，留着就是同一件事说两遍 */
 </style>

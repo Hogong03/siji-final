@@ -208,17 +208,18 @@ describe('4.5.0 状态行与按钮', () => {
     nextStep: { clientId: 'n1', title: '背高频词', minutes: 20 }
   }
 
-  it('状态行：过时点破并给出口，快到期报事实，超出两条的归并', () => {
+  it('状态行：4.30.0 起合并成一句，只报事实、不逐条点名', () => {
     const lines = buildPlanAlertLines(alerts)
-    expect(lines[0]).toContain('3 个计划过了截止')
-    expect(lines[0]).toContain('「搬家」已拖 3 天')
-    expect(lines[0]).toContain('还有 1 个')
-    expect(lines[1]).toBe('「周报」还有 2 天到期')
+    expect(lines).toEqual(['计划：3 项已过期 · 1 项快到期'])
   })
 
-  it('今天到期说「今天到期」，下一步行带时长', () => {
-    const lines = buildPlanAlertLines({ overdue: [], dueSoon: [{ clientId: 'p4', name: '周报', leftDays: 0 }], total: 1 })
-    expect(lines).toEqual(['「周报」今天到期'])
+  it('只有快到期 / 只有过期 / 都没有都不炸；下一步行带时长', () => {
+    expect(buildPlanAlertLines({ overdue: [], dueSoon: [{ clientId: 'p4', name: '周报', leftDays: 0 }], total: 1 }))
+      .toEqual(['计划：1 项快到期'])
+    expect(buildPlanAlertLines({ overdue: [{ clientId: 'p1', name: '搬家', lateDays: 3 }], dueSoon: [], total: 1 }))
+      .toEqual(['计划：1 项已过期'])
+    expect(buildPlanAlertLines({ overdue: [], dueSoon: [], total: 0 })).toEqual([])
+    expect(buildPlanAlertLines(null)).toEqual([])
     expect(buildNextStepLine({ title: '背高频词', minutes: 20 })).toBe('下一步可以从「背高频词」开始，约 20 分钟。')
     expect(buildNextStepLine({ title: '背高频词', minutes: 0 })).toBe('下一步可以从「背高频词」开始。')
     expect(buildNextStepLine(null)).toBe('')
@@ -232,7 +233,8 @@ describe('4.5.0 状态行与按钮', () => {
 
   it('消息恒产出状态段落：问候 + 状态 + 下一步 + 上班卡', () => {
     const msg = buildEnterSummaryMessage(null, extras, NOW)
-    expect(msg.content).toContain('过了截止')
+    // 4.30.0：计划状态合并成一句「计划：N 项已过期 · M 项快到期」
+    expect(msg.content).toContain('计划：3 项已过期 · 1 项快到期')
     expect(msg.content).toContain('下一步可以从「背高频词」开始')
     expect(msg.content).toContain('还没打上班卡')
     expect(msg._enterSummaryDigest.alertsTotal).toBe(4)
@@ -343,9 +345,10 @@ describe('buildBriefing：简报卡 payload', () => {
     expect(msg.content).toContain('下午好')
   })
 
-  it('指标格：昨日支出/连续打卡/新记录，最多 3 格；全空不渲染', () => {
+  it('指标格：昨日支出/新记录/新进展，最多 3 格；全空不渲染', () => {
     const full = buildBriefing(summary({ yesterdayExpense: 42.5, eventsTotal: 2, diaryCount: 3, streak: 5 }), null, at(15))
-    expect(full.metrics.map(m => m.key)).toEqual(['expense', 'streak', 'diary'])
+    // 4.30.0：去掉「连续打卡」格（计划汇总表的打卡条 + 正文行已覆盖，一格三处重复）
+    expect(full.metrics.map(m => m.key)).toEqual(['expense', 'diary', 'events'])
     // 连续打卡 1 天不上格（与文案口径一致）
     const low = buildBriefing(summary({ streak: 1, diaryCount: 0, eventsTotal: 0, yesterdayExpense: 0 }), null, at(15))
     expect(low.metrics).toEqual([])

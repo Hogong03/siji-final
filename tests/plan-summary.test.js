@@ -1,9 +1,10 @@
 /**
- * test: 计划汇总表（4.29.5）
+ * test: 计划汇总表（4.29.5 / 4.30.0）
  *
  * 覆盖 utils/plan-summary.js：
  *  - 统计口径必须与计划 Tab 的「计划总览」一致（只计顶层计划、子计划进度归并、本周打卡）
- *  - 分组（已过期 / 进行中 / 待开始 / 已完成）、组内排序、逾期天数
+ *  - 分组（已过期 / 今天明天 / 进行中 / 待开始 / 已完成）、组内排序、逾期天数
+ *  - 4.30.0 新增：今日焦点 focus、今天/明天独立成组、本周打卡迷你条 weekBar
  *  - 已完成分组截断 + doneHidden
  *  - 每天首次弹出的日期门控
  */
@@ -12,7 +13,7 @@ import { resetStorage } from './setup.js'
 import './setup.js'
 import {
   buildPlanSummary, summaryDayKey, shouldShowPlanSummary, markPlanSummaryShown,
-  SUMMARY_SHOWN_KEY, DONE_LIMIT
+  SUMMARY_SHOWN_KEY, DONE_LIMIT, FOCUS_LIMIT
 } from '../utils/plan-summary.js'
 
 // 固定「现在」= 2026-10-17（周六）10:00 —— 本周一 10-12、本周日 10-18
@@ -110,17 +111,17 @@ describe('buildPlanSummary：统计口径', () => {
     expect(stats.weekDays).toBe(2) // 10-13、10-14
   })
 
-  it('优先级色条：按顶层计划分布，全 0 时不产出', () => {
+  it('优先级分布仍按顶层统计（4.30.0 去掉了色条，只留组内圆点）', () => {
     const plans = [
       plan({ priority: 2 }), plan({ priority: 2 }), plan({ priority: 1 }), plan({ priority: 0 })
     ]
-    const { stats, priorityBar } = buildPlanSummary(plans, NOW)
-    expect(stats.high).toBe(2)
-    expect(stats.mid).toBe(1)
-    expect(stats.low).toBe(1)
-    expect(priorityBar.map(p => p.label)).toEqual(['紧急', '重要', '普通'])
-    expect(priorityBar.map(p => p.pct)).toEqual([50, 25, 25])
-    expect(buildPlanSummary([], NOW).priorityBar).toEqual([])
+    const r = buildPlanSummary(plans, NOW)
+    expect(r.stats.high).toBe(2)
+    expect(r.stats.mid).toBe(1)
+    expect(r.stats.low).toBe(1)
+    expect(r.priorityBar).toBeUndefined()
+    // 行内高优圆点还在（信息密度更高的那层）
+    expect(r.groups[0].items.find(i => i.priority === 2).priorityColor).toBeTruthy()
   })
 })
 
@@ -200,5 +201,77 @@ describe('buildPlanSummary：分组与明细', () => {
     expect(r.doneHidden).toBe(0)
     // 脏数据（null / 非数组）也不炸
     expect(buildPlanSummary(null, NOW).stats.total).toBe(0)
+  })
+})
+
+describe('buildPlanSummary：今日焦点 / 今天明天 / 打卡条（4.30.0）', () => {
+  it('今日焦点：逾期最久 1 条在前，再补今天 / 明天 / 3 天内到期，最多 FOCUS_LIMIT 条', () => {
+    const plans = [
+      plan({ client_id: 'old', status: 1, due_date: '2026-10-15' }),   // 逾期 1 天
+      plan({ client_id: 'old2', status: 1, due_date: '2026-10-10' }),  // 逾期 6 天 → 最久，排最前
+      plan({ client_id: 'today', status: 1, due_date: '2026-10-17' }),
+      plan({ client_id: 'tom', status: 1, due_date: '2026-10-18' }),
+      plan({ client_id: 'soon', status: 1, due_date: '2026-10-19' }),  // 2 天后，在 DUE_SOON 窗口内
+      plan({ client_id: 'far', status: 1, due_date: '2026-10-25' }),   // 太远，不进焦点
+      plan({ client_id: 'done', status: 2, due_date: '2026-10-17' })   // 已完成不进焦点
+    ]
+    const { focus } = buildPlanSummary(plans, NOW)
+    expect(focus.map(f => f.clientId)).toEqual(['old2', 'today', 'tom', 'soon'])
+    expect(focus[0].tag).toBe('逾期6天')
+    expect(focus[0].tone).toBe('danger')
+    expect(focus[1].tag).toBe('今天到期')
+    expect(focus[1].tone).toBe('danger')
+    expect(focus[2].tag).toBe('明天到期')
+    expect(focus[2].tone).toBe('warn')
+    expect(focus[3].tag).toBe('2天后')
+    expect(focus.length).toBeLessThanOrEqual(FOCUS_LIMIT)
+  })
+
+  it('「今天/明天」独立成组并从 进行中/待开始 移出；统计口径不变', () => {
+    const plans = [
+      plan({ client_id: 'today', status: 1, due_date: '2026-10-17' }),
+      plan({ client_id: 'tom', status: 0, due_date: '2026-10-18' }),
+      plan({ client_id: 'later', status: 1, due_date: '2026-10-25' }),
+      plan({ client_id: 'none', status: 1 })
+    ]
+    const r = buildPlanSummary(plans, NOW)
+    const today = r.groups.find(g => g.key === 'today')
+    expect(today.items.map(i => i.clientId)).toEqual(['today', 'tom'])
+    expect(r.stats.todayTodo).toBe(2)
+    // 统计头仍是全部顶层（与计划页「计划总览」同口径），不因分组移动而变
+    expect(r.stats.active).toBe(3)
+    expect(r.stats.pending).toBe(1)
+    const active = r.groups.find(g => g.key === 'active')
+    expect(active.items.map(i => i.clientId).sort()).toEqual(['later', 'none'])
+  })
+
+  it('本周打卡条：逐日标记与次数同一口径（今天 10-17 周六 → 索引 5）', () => {
+    const plans = [
+      plan({
+        client_id: 'a', status: 1, checkins: [
+          { at: NOW, date: '2026-10-12' },  // 周一
+          { at: NOW, date: '2026-10-14' },  // 周三
+          { at: NOW, date: '2026-10-14' }   // 同一天第二次：次数 +1，标记不重复
+        ]
+      }),
+      plan({ client_id: 'old', status: 1, checkins: [{ at: NOW, date: '2026-10-05' }] }) // 上周不计
+    ]
+    const { weekBar, stats } = buildPlanSummary(plans, NOW)
+    expect(weekBar.flags).toEqual([true, false, true, false, false, false, false])
+    expect(weekBar.done).toBe(2)
+    expect(weekBar.total).toBe(7)
+    expect(weekBar.todayIndex).toBe(5)
+    // 次数仍走 weekCheckinSummary 口径（同日多次累加）
+    expect(stats.weekCheckins).toBe(3)
+    expect(stats.weekDays).toBe(2)
+  })
+
+  it('空数据：focus / today 组 / 打卡条都不产出，但 weekBar 结构仍在', () => {
+    const r = buildPlanSummary([], NOW)
+    expect(r.focus).toEqual([])
+    expect(r.groups).toEqual([])
+    expect(r.stats.todayTodo).toBe(0)
+    expect(r.weekBar.flags).toEqual([false, false, false, false, false, false, false])
+    expect(r.weekBar.done).toBe(0)
   })
 })

@@ -96,32 +96,22 @@ export function buildEnterLines(summary) {
 
 /* ==================== 4.5.0：计划状态 / 下一步 / 上班卡 ==================== */
 
-/** 过时+快到期最多点破几个（多余的归并进「还有 N 个」） */
-export const ALERT_LINE_LIMIT = 2
-
 /**
  * 计划状态行（collectPlanAlerts 的结果写成话）
- * 口径：过时是「点破 + 给出口」（收尾/顺延/今天做掉），快到期只报事实；不诊断、不催
+ * 4.30.0：合并成**一句**，不再逐条点名 —— 点名与动作交给计划汇总表与「看计划」按钮，
+ * 开场消息只报事实（几项过期 / 几项快到期），避免一段话里铺开三行计划。
  * @param {{ overdue: Array, dueSoon: Array, total: number }} [alerts]
- * @returns {string[]}
+ * @returns {string[]} 没有内容返回空数组；最多 1 行
  */
 export function buildPlanAlertLines(alerts) {
-  const out = []
-  if (!alerts) return out
-  const overdue = Array.isArray(alerts.overdue) ? alerts.overdue : []
-  const dueSoon = Array.isArray(alerts.dueSoon) ? alerts.dueSoon : []
-  if (overdue.length > 0) {
-    const shownList = overdue.slice(0, ALERT_LINE_LIMIT)
-    const shown = shownList
-      .map(p => `「${p.name}」已拖 ${p.lateDays} 天`)
-      .join('、')
-    const extra = overdue.length - shownList.length
-    out.push(`有 ${overdue.length} 个计划过了截止：${shown}${extra > 0 ? `，还有 ${extra} 个` : ''} —— 要收尾、顺延还是今天做掉？`)
-  }
-  dueSoon.slice(0, ALERT_LINE_LIMIT).forEach(p => {
-    out.push(p.leftDays <= 0 ? `「${p.name}」今天到期` : `「${p.name}」还有 ${p.leftDays} 天到期`)
-  })
-  return out
+  if (!alerts) return []
+  const overdue = Array.isArray(alerts.overdue) ? alerts.overdue.length : 0
+  const dueSoon = Array.isArray(alerts.dueSoon) ? alerts.dueSoon.length : 0
+  if (overdue <= 0 && dueSoon <= 0) return []
+  const parts = []
+  if (overdue > 0) parts.push(`${overdue} 项已过期`)
+  if (dueSoon > 0) parts.push(`${dueSoon} 项快到期`)
+  return [`计划：${parts.join(' · ')}`]
 }
 
 /** 下一步行（pickNextStep 的结果写成话；没有返回空串） */
@@ -174,7 +164,7 @@ export function buildBriefingMetrics(summary) {
   // 4.20.0：周一洞察 —— 上周支出格（只有周播报在场时给，与文本行同源）
   const weekTotal = summary.weekBill && Number(summary.weekBill.total) || 0
   if (weekTotal > 0) out.push({ key: 'weekSpend', value: `¥${weekTotal % 1 === 0 ? weekTotal : weekTotal.toFixed(2)}`, label: '上周支出' })
-  if ((summary.streak || 0) >= 2) out.push({ key: 'streak', value: `${summary.streak} 天`, label: '连续打卡' })
+  // 4.30.0：去掉「连续打卡」格 —— 计划汇总表的本周打卡条与正文行都覆盖了，一格三处重复
   if ((summary.diaryCount || 0) > 0) out.push({ key: 'diary', value: String(summary.diaryCount), label: '新记录' })
   if ((summary.eventsTotal || 0) > 0) out.push({ key: 'events', value: String(summary.eventsTotal), label: '新进展' })
   return out.slice(0, 3)

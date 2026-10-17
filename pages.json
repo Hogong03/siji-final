@@ -73,6 +73,14 @@
      }
     },
     {
+     "path": "notify",
+     "style": {
+      "navigationBarTitleText": "提示与提醒",
+      "navigationBarBackgroundColor": "@navBgColor",
+      "navigationBarTextStyle": "@navTxtStyle"
+     }
+    },
+    {
      "path": "key-guide",
      "style": {
       "navigationBarTitleText": "连接 AI",

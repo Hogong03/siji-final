@@ -10,7 +10,7 @@ const STORAGE_KEY_SETTINGS = 'siji_reminder_settings'
 
 /**
  * 获取全局提醒设置
- * @returns {{ enabled: boolean, defaultAdvanceMin: number, quietHoursStart: string, quietHoursEnd: string, snoozeMin: number, plans: object }}
+ * @returns {{ enabled: boolean, defaultAdvanceMin: number, quietHoursStart: string, quietHoursEnd: string, snoozeMin: number, prompts: object, plans: object }}
  */
 export function getReminderSettings() {
   try {
@@ -24,14 +24,55 @@ export function getReminderSettings() {
         quietHoursStart: s.quietHoursStart === '' ? '' : (s.quietHoursStart || '22:00'),
         quietHoursEnd: s.quietHoursEnd === '' ? '' : (s.quietHoursEnd || '08:00'),
         snoozeMin: normalizeSnoozeMin(s.snoozeMin),
+        prompts: normalizePromptFlags(s.prompts),
         plans: s.plans || {}
       }
     }
   } catch (e) {
     logger.warn('[reminder] getReminderSettings error:', e)
   }
-  return { enabled: true, defaultAdvanceMin: 30, quietHoursStart: '22:00', quietHoursEnd: '08:00', snoozeMin: DEFAULT_SNOOZE_MIN, plans: {} }
+  return { enabled: true, defaultAdvanceMin: 30, quietHoursStart: '22:00', quietHoursEnd: '08:00', snoozeMin: DEFAULT_SNOOZE_MIN, prompts: normalizePromptFlags(null), plans: {} }
 }
+
+/* ==================== 4.30.0：提示类开关 ==================== */
+
+/**
+ * 提示类开关默认值（全部落在 siji_reminder_settings 同一份文档的 prompts 字段里）
+ * summarySheet：每天首次进聊天页自动弹「计划汇总表」
+ * briefing：进入聊天页的简报卡（消息流里的开场结构化卡）
+ * reminderToast：计划到点的应用内提醒 toast
+ */
+export const PROMPT_FLAG_DEFAULTS = {
+  summarySheet: true,
+  briefing: true,
+  reminderToast: true
+}
+
+/** 归一化提示开关：只认显式 false 为关，其余一律回落默认（存储坏了也不会静默关掉提示） */
+function normalizePromptFlags(raw) {
+  const src = raw && typeof raw === 'object' ? raw : {}
+  const out = {}
+  Object.keys(PROMPT_FLAG_DEFAULTS).forEach(k => {
+    out[k] = src[k] === false ? false : PROMPT_FLAG_DEFAULTS[k]
+  })
+  return out
+}
+
+/** 读单个提示开关（未知 key 返回 true，调用方不会因此静默不提示） */
+export function getPromptFlag(key) {
+  if (PROMPT_FLAG_DEFAULTS[key] === undefined) return true
+  return getReminderSettings().prompts[key] !== false
+}
+
+/** 写单个提示开关，返回写入后的值 */
+export function setPromptFlag(key, on) {
+  if (PROMPT_FLAG_DEFAULTS[key] === undefined) return true
+  const s = getReminderSettings()
+  s.prompts = Object.assign({}, s.prompts, { [key]: !!on })
+  saveReminderSettings(s)
+  return s.prompts[key]
+}
+
 
 /** 推迟默认档（分钟）：只认 5 / 15 / 30 三档，非法回落 5 */
 export const DEFAULT_SNOOZE_MIN = 5

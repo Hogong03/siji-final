@@ -10,7 +10,7 @@
  */
 
 import { logger } from '../logger.js'
-import { formatDisplayTime, formatDuration } from './settings.js'
+import { formatDisplayTime, formatDuration, getPromptFlag } from './settings.js'
 
 /**
  * 该设备是否需要运行时申请通知权限（纯函数，便于单测）
@@ -58,8 +58,11 @@ export function ensureNotifyPermission() {
 /**
  * 前台提醒用 toast 轻提示（4.29.3 取代 ActionSheet 弹窗）
  * 只提示不阻塞：用户知道到点了，处理去计划页，不在当前操作上插一层弹窗。
+ * 4.30.0：补上提示开关（prompts.reminderToast）—— 关了应用内不再弹 toast，
+ * 落账仍由调用方在 toast 之前完成，所以关掉提示不影响「已提醒过」的去重。
  */
 function showReminderToast(plan, isOverdue) {
+  if (!getPromptFlag('reminderToast')) return
   const prefix = isOverdue ? '计划已过期' : '计划提醒'
   const title = plan && plan.title ? plan.title : '未命名计划'
   try {
