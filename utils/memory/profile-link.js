@@ -12,21 +12,21 @@ import { getAllMemories, STORAGE_KEY } from './store.js'
 
 /** 已知事实句式 → 画像字段建议（按优先级匹配） */
 const FACT_RULES = [
-  { re: /生日(?:是|为|在)?\s*([\d\u4e00-\u9fa5年\-/.月日]{4,16})/, cardId: 'basic', cardTitle: '基本信息', field: 'birthday', label: '生日' },
-  { re: /性别(?:是|为)?\s*(男|女)/, cardId: 'basic', cardTitle: '基本信息', field: 'gender', label: '性别' },
-  { re: /(?:在|于)([\u4e00-\u9fa5A-Za-z0-9]{2,12})(?:工作|上班|任职)/, cardId: 'basic', cardTitle: '基本信息', field: 'occupation', label: '职业' },
-  { re: /职业(?:是|为)?\s*([\u4e00-\u9fa5A-Za-z0-9]{2,10})/, cardId: 'basic', cardTitle: '基本信息', field: 'occupation', label: '职业' },
-  { re: /(?:住在|居住在|家在|所在地(?:是|为)?)\s*([\u4e00-\u9fa5A-Za-z0-9]{2,12})/, cardId: 'basic', cardTitle: '基本信息', field: 'location', label: '所在地' },
-  { re: /(?:我叫|我的名字(?:是|叫))\s*([\u4e00-\u9fa5A-Za-z0-9]{1,10})/, cardId: 'basic', cardTitle: '基本信息', field: 'nickname', label: '昵称' },
-  { re: /(?:月预算|预算)(?:是|为|约)?\s*(¥?\d[\d,.]*(?:万|千)?)/, cardId: 'lifestyle', cardTitle: '生活方式', field: 'budget', label: '月预算' },
-  { re: /(?:作息|睡觉时间|睡眠时间)(?:是|为)?\s*([\u4e00-\u9fa5A-Za-z0-9:点半]{2,12})/, cardId: 'lifestyle', cardTitle: '生活方式', field: 'sleepTime', label: '作息' },
-  { re: /每天\s*([\d:点半]{2,8})(?:睡|休息)/, cardId: 'lifestyle', cardTitle: '生活方式', field: 'sleepTime', label: '作息' }
+  { re: /生日(?:是|为|在)?\s*([\d\u4e00-\u9fa5年\-/.月日]{4,16})/, cardId: 'portrait', cardTitle: '我的画像', field: 'birthday', label: '生日' },
+  { re: /性别(?:是|为)?\s*(男|女)/, cardId: 'portrait', cardTitle: '我的画像', field: 'gender', label: '性别' },
+  { re: /(?:在|于)([\u4e00-\u9fa5A-Za-z0-9]{2,12})(?:工作|上班|任职)/, cardId: 'portrait', cardTitle: '我的画像', field: 'occupation', label: '职业' },
+  { re: /职业(?:是|为)?\s*([\u4e00-\u9fa5A-Za-z0-9]{2,10})/, cardId: 'portrait', cardTitle: '我的画像', field: 'occupation', label: '职业' },
+  { re: /(?:住在|居住在|家在|所在地(?:是|为)?)\s*([\u4e00-\u9fa5A-Za-z0-9]{2,12})/, cardId: 'portrait', cardTitle: '我的画像', field: 'location', label: '所在地' },
+  { re: /(?:我叫|我的名字(?:是|叫))\s*([\u4e00-\u9fa5A-Za-z0-9]{1,10})/, cardId: 'portrait', cardTitle: '我的画像', field: 'nickname', label: '昵称' },
+  { re: /(?:月预算|预算)(?:是|为|约)?\s*(¥?\d[\d,.]*(?:万|千)?)/, cardId: 'portrait', cardTitle: '我的画像', field: 'budget', label: '月预算' },
+  { re: /(?:作息|睡觉时间|睡眠时间)(?:是|为)?\s*([\u4e00-\u9fa5A-Za-z0-9:点半]{2,12})/, cardId: 'portrait', cardTitle: '我的画像', field: 'sleepTime', label: '作息' },
+  { re: /每天\s*([\d:点半]{2,8})(?:睡|休息)/, cardId: 'portrait', cardTitle: '我的画像', field: 'sleepTime', label: '作息' }
 ]
 
 /** 偏好句式 → 画像字段建议 */
 const PREF_RULES = [
-  { re: /(?:我不喜欢|我不爱|讨厌|不吃|忌口)([^，。！？、；\n]{2,8})/, cardId: 'lifestyle', cardTitle: '生活方式', field: 'dietary', label: '饮食偏好' },
-  { re: /(?:我喜欢|我爱|爱好(?:是)?|喜欢|爱)([^，。！？、；\n]{2,8})/, cardId: 'lifestyle', cardTitle: '生活方式', field: 'hobbies', label: '兴趣爱好' }
+  { re: /(?:我不喜欢|我不爱|讨厌|不吃|忌口)([^，。！？、；\n]{2,8})/, cardId: 'portrait', cardTitle: '我的画像', field: 'dietary', label: '饮食偏好' },
+  { re: /(?:我喜欢|我爱|爱好(?:是)?|喜欢|爱)([^，。！？、；\n]{2,8})/, cardId: 'portrait', cardTitle: '我的画像', field: 'hobbies', label: '兴趣爱好' }
 ]
 
 /** 记忆 → 画像字段建议（已知事实 + 偏好，返回 null 时需用户手动指定） */

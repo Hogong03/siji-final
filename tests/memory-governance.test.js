@@ -18,7 +18,11 @@ const DAY = 24 * 60 * 60 * 1000
 function seedProfileField(field, value) {
   const p = getProfile()
   p.enabled = true
-  const card = p.cards.find(c => c.id === 'lifestyle')
+  let card = p.cards.find(c => c.id === 'portrait')
+  if (!card) {
+    card = { id: 'portrait', title: '我的画像', icon: 'sparkle', fields: {} }
+    p.cards.push(card)
+  }
   card.fields[field] = value
   saveProfile(p)
 }

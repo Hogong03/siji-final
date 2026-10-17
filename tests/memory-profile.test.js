@@ -10,17 +10,16 @@ import {
 } from '@/utils/memory.js'
 import { getProfile, saveProfile, setProfileEnabled, addArrayItem } from '@/utils/profile.js'
 
-/** 构造启用的画像 */
+/** 构造启用的画像（确保 portrait 卡存在） */
 function seedProfile(fields) {
   const p = getProfile()
   p.enabled = true
-  for (const card of p.cards) {
-    if (card.id === 'lifestyle') {
-      for (const [k, v] of Object.entries(fields)) {
-        card.fields[k] = v
-      }
-    }
+  let portrait = p.cards.find(c => c.id === 'portrait')
+  if (!portrait) {
+    portrait = { id: 'portrait', title: '我的画像', icon: 'sparkle', fields: {} }
+    p.cards.push(portrait)
   }
+  Object.assign(portrait.fields, fields)
   saveProfile(p)
 }
 
@@ -31,7 +30,7 @@ describe('memory ↔ profile 联动', () => {
   })
 
   it('suggestProfileAdoption：喜欢/爱好句式 → hobbies', () => {
-    expect(suggestProfileAdoption('我喜欢喝咖啡')).toEqual({ cardId: 'lifestyle', cardTitle: '生活方式', field: 'hobbies', label: '兴趣爱好', value: '喝咖啡' })
+    expect(suggestProfileAdoption('我喜欢喝咖啡')).toEqual({ cardId: 'portrait', cardTitle: '我的画像', field: 'hobbies', label: '兴趣爱好', value: '喝咖啡' })
     expect(suggestProfileAdoption('我的爱好是打篮球')).toMatchObject({ field: 'hobbies', value: '打篮球' })
   })
 
@@ -48,12 +47,12 @@ describe('memory ↔ profile 联动', () => {
   it('adoptMemoryToProfile：写入画像并标记记忆', () => {
     seedProfile({})
     const mem = addMemory('用户喜欢喝咖啡', 'preference')
-    const r = adoptMemoryToProfile(mem.id, 'lifestyle', 'hobbies', '喝咖啡')
+    const r = adoptMemoryToProfile(mem.id, 'portrait', 'hobbies', '喝咖啡')
     expect(r.success).toBe(true)
 
     const profile = getProfile()
-    const lifestyle = profile.cards.find(c => c.id === 'lifestyle')
-    expect(lifestyle.fields.hobbies).toContain('喝咖啡')
+    const portrait = profile.cards.find(c => c.id === 'portrait')
+    expect(portrait.fields.hobbies).toContain('喝咖啡')
 
     const stored = getAllMemories().find(m => m.id === mem.id)
     expect(stored.adoptedToProfile).toBeTruthy()
@@ -78,7 +77,7 @@ describe('memory ↔ profile 联动', () => {
   it('buildMemoryContext：已采纳标记的记忆不再注入', () => {
     seedProfile({})
     const mem = addMemory('用户喜欢喝咖啡', 'preference')
-    adoptMemoryToProfile(mem.id, 'lifestyle', 'hobbies', '喝咖啡')
+    adoptMemoryToProfile(mem.id, 'portrait', 'hobbies', '喝咖啡')
     const ctx = buildMemoryContext()
     expect(ctx).not.toContain('喝咖啡')
   })
@@ -115,7 +114,7 @@ describe('记忆批量整合到画像', () => {
     seedProfile({})
     const mem = addMemory('用户喜欢喝咖啡', 'preference')
     expect(getUnadoptedMemories('all').length).toBe(1)
-    adoptMemoryToProfile(mem.id, 'lifestyle', 'hobbies', '喝咖啡')
+    adoptMemoryToProfile(mem.id, 'portrait', 'hobbies', '喝咖啡')
     expect(getUnadoptedMemories('all').length).toBe(0)
   })
 
@@ -124,15 +123,15 @@ describe('记忆批量整合到画像', () => {
     const m1 = addMemory('我喜欢喝咖啡', 'preference')
     const m2 = addMemory('我不吃香菜', 'preference')
     const r = integrateMemoriesToProfile([
-      { id: m1.id, cardTitle: '生活方式', field: 'hobbies', value: '喝咖啡' },
-      { id: m2.id, cardTitle: '生活方式', field: 'dietary', value: '香菜' }
+      { id: m1.id, cardTitle: '我的画像', field: 'hobbies', value: '喝咖啡' },
+      { id: m2.id, cardTitle: '我的画像', field: 'dietary', value: '香菜' }
     ])
     expect(r).toEqual({ success: 2, skipped: 0 })
 
     const profile = getProfile()
-    const lifestyle = profile.cards.find(c => c.id === 'lifestyle')
-    expect(lifestyle.fields.hobbies).toContain('喝咖啡')
-    expect(lifestyle.fields.dietary).toContain('香菜')
+    const portrait = profile.cards.find(c => c.id === 'portrait')
+    expect(portrait.fields.hobbies).toContain('喝咖啡')
+    expect(portrait.fields.dietary).toContain('香菜')
     expect(getAllMemories().every(m => m.adoptedToProfile)).toBe(true)
   })
 
@@ -141,14 +140,14 @@ describe('记忆批量整合到画像', () => {
     const m1 = addMemory('我喜欢喝咖啡', 'preference')
     const m2 = addMemory('我不吃香菜', 'preference')
     const r = integrateMemoriesToProfile([
-      { id: m1.id, cardTitle: '生活方式', field: 'hobbies', value: '喝咖啡' },
-      { id: m2.id, cardTitle: '生活方式', field: '', value: '香菜' },
-      { id: m2.id, cardTitle: '生活方式', field: 'dietary', value: '' }
+      { id: m1.id, cardTitle: '我的画像', field: 'hobbies', value: '喝咖啡' },
+      { id: m2.id, cardTitle: '我的画像', field: '', value: '香菜' },
+      { id: m2.id, cardTitle: '我的画像', field: 'dietary', value: '' }
     ])
     expect(r.success).toBe(1)
     expect(r.skipped).toBe(2)
     const profile = getProfile()
-    expect(profile.cards.find(c => c.id === 'lifestyle').fields.hobbies).toContain('喝咖啡')
+    expect(profile.cards.find(c => c.id === 'portrait').fields.hobbies).toContain('喝咖啡')
   })
 
   it('integrateMemoriesToProfile：非数组入参返回 0', () => {
@@ -163,12 +162,12 @@ describe('已知事实智能映射与分组整合', () => {
   })
 
   it('suggestProfileAdoption：已知事实映射到对应分组字段', () => {
-    expect(suggestProfileAdoption('我在字节跳动工作')).toEqual({ cardId: 'basic', cardTitle: '基本信息', field: 'occupation', label: '职业', value: '字节跳动' })
-    expect(suggestProfileAdoption('我的生日是1999年1月1日')).toMatchObject({ cardId: 'basic', cardTitle: '基本信息', field: 'birthday' })
-    expect(suggestProfileAdoption('我叫李明')).toMatchObject({ cardId: 'basic', field: 'nickname', value: '李明' })
-    expect(suggestProfileAdoption('我住在上海')).toMatchObject({ cardId: 'basic', field: 'location', value: '上海' })
-    expect(suggestProfileAdoption('我的月预算是5000')).toMatchObject({ cardId: 'lifestyle', field: 'budget', value: '5000' })
-    expect(suggestProfileAdoption('我每天12点睡')).toMatchObject({ cardId: 'lifestyle', field: 'sleepTime' })
+    expect(suggestProfileAdoption('我在字节跳动工作')).toEqual({ cardId: 'portrait', cardTitle: '我的画像', field: 'occupation', label: '职业', value: '字节跳动' })
+    expect(suggestProfileAdoption('我的生日是1999年1月1日')).toMatchObject({ cardId: 'portrait', cardTitle: '我的画像', field: 'birthday' })
+    expect(suggestProfileAdoption('我叫李明')).toMatchObject({ cardId: 'portrait', field: 'nickname', value: '李明' })
+    expect(suggestProfileAdoption('我住在上海')).toMatchObject({ cardId: 'portrait', field: 'location', value: '上海' })
+    expect(suggestProfileAdoption('我的月预算是5000')).toMatchObject({ cardId: 'portrait', field: 'budget', value: '5000' })
+    expect(suggestProfileAdoption('我每天12点睡')).toMatchObject({ cardId: 'portrait', field: 'sleepTime' })
   })
 
   it('adoptMemoryToProfile：分组不存在时按 cardTitle 自动创建', () => {
@@ -188,16 +187,16 @@ describe('已知事实智能映射与分组整合', () => {
     const m2 = addMemory('我在字节跳动工作', 'fact')
     const m3 = addMemory('我的星座是双子座', 'fact')
     const r = integrateMemoriesToProfile([
-      { id: m1.id, cardTitle: '生活方式', field: 'hobbies', value: '打篮球' },
-      { id: m2.id, cardTitle: '基本信息', field: 'occupation', value: '字节跳动' },
+      { id: m1.id, cardTitle: '我的画像', field: 'hobbies', value: '打篮球' },
+      { id: m2.id, cardTitle: '我的画像', field: 'occupation', value: '字节跳动' },
       { id: m3.id, cardTitle: '性格特征', field: '星座', value: '双子座' }
     ])
     expect(r).toEqual({ success: 3, skipped: 0 })
 
     const profile = getProfile()
-    const lifestyle = profile.cards.find(c => c.id === 'lifestyle')
-    expect(lifestyle.fields.hobbies).toEqual(['咖啡', '打篮球'])
-    expect(profile.cards.find(c => c.id === 'basic').fields.occupation).toBe('字节跳动')
+    const portrait = profile.cards.find(c => c.id === 'portrait')
+    expect(portrait.fields.hobbies).toEqual(['咖啡', '打篮球'])
+    expect(profile.cards.find(c => c.id === 'portrait').fields.occupation).toBe('字节跳动')
     const newCard = profile.cards.find(c => c.title === '性格特征')
     expect(newCard).toBeTruthy()
     expect(newCard.fields.星座).toBe('双子座')
@@ -207,10 +206,10 @@ describe('已知事实智能映射与分组整合', () => {
     seedProfile({ budget: '3000' })
     const m1 = addMemory('我的月预算是5000', 'fact')
     const r = integrateMemoriesToProfile([
-      { id: m1.id, cardTitle: '生活方式', field: 'budget', value: '5000' }
+      { id: m1.id, cardTitle: '我的画像', field: 'budget', value: '5000' }
     ])
     expect(r.success).toBe(1)
-    expect(getProfile().cards.find(c => c.id === 'lifestyle').fields.budget).toBe('5000')
+    expect(getProfile().cards.find(c => c.id === 'portrait').fields.budget).toBe('5000')
   })
 })
 
@@ -221,17 +220,19 @@ describe('画像数组字段归一化去重（3.2 M2）', () => {
   })
 
   it('大小写 / 全半角差异不再重复追加', () => {
-    addArrayItem('lifestyle', 'hobbies', 'Badminton')
-    addArrayItem('lifestyle', 'hobbies', 'badminton')
-    addArrayItem('lifestyle', 'hobbies', 'ＢＡＤＭＩＮＴＯＮ')
-    const card = getProfile().cards.find(c => c.id === 'lifestyle')
+    seedProfile({})
+    addArrayItem('portrait', 'hobbies', 'Badminton')
+    addArrayItem('portrait', 'hobbies', 'badminton')
+    addArrayItem('portrait', 'hobbies', 'ＢＡＤＭＩＮＴＯＮ')
+    const card = getProfile().cards.find(c => c.id === 'portrait')
     expect(card.fields.hobbies).toEqual(['Badminton'])
   })
 
   it('不同内容正常追加', () => {
-    addArrayItem('lifestyle', 'hobbies', '篮球')
-    addArrayItem('lifestyle', 'hobbies', '羽毛球')
-    const card = getProfile().cards.find(c => c.id === 'lifestyle')
+    seedProfile({})
+    addArrayItem('portrait', 'hobbies', '篮球')
+    addArrayItem('portrait', 'hobbies', '羽毛球')
+    const card = getProfile().cards.find(c => c.id === 'portrait')
     expect(card.fields.hobbies).toEqual(['篮球', '羽毛球'])
   })
 })

@@ -6,6 +6,41 @@
 
 export const V430 = [
   {
+    version: '4.33.0',
+    date: '2026-10-18',
+    title: '删除"基本信息/生活方式"两张固定卡，字段并入"我的画像"',
+    summary: [
+      '我的信息页从三张固定卡收敛为一张"我的画像"卡：昵称/性别/生日/职业/所在地/简介/预算/作息/爱好/饮食全部归入画像卡，平铺在三层分组下方',
+      '一次性迁移：老用户刷新后，basic/lifestyle 两张卡自动消失，已填值合并进 portrait（标量不覆盖、数组去重合并），不丢数据',
+      '记忆自动采纳（suggestProfileAdoption）目标从 basic/lifestyle 统一改为 portrait，AI 抽取的事实/偏好直接写画像卡',
+      'addArrayItem 字段不是数组时自动初始化为空数组再追加，行为更健壮；画像卡改为不可删除',
+    ],
+    categories: [
+      {
+        title: '数据结构',
+        items: [
+          'utils/profile.js：createEmptyProfile 默认 cards 从 [basic, lifestyle] 改为 []（portrait 由 profile-seed 注入）',
+          'utils/profile.js：新增 migrateLegacyCards(data)，把 basic/lifestyle 卡字段 merge 进 portrait（数组用 Set 去重、标量仅空值才写），merge 完 filter 删除这两张卡',
+          'utils/profile.js：getProfile 里"确保 basic/lifestyle 存在"的自动补卡逻辑改为调用 migrateLegacyCards；deleteCard 守卫从 basic/lifestyle 改为 portrait',
+          'utils/profile.js：addArrayItem 在 card.fields[field] 不是数组时初始化为 [] 再追加',
+        ],
+      },
+      {
+        title: '记忆联动',
+        items: [
+          'utils/memory/profile-link.js：FACT_RULES（9条）与 PREF_RULES（2条）的 cardId/cardTitle 从 basic/生活方式、lifestyle/基本信息统一改为 portrait/我的画像',
+        ],
+      },
+      {
+        title: '测试适配',
+        items: [
+          'tests/memory-profile.test.js：seedProfile helper 改为确保 portrait 卡存在；所有 lifestyle/basic 引用改为 portrait',
+          'tests/memory-governance.test.js：seedProfileField helper 从 lifestyle 改为 portrait，不存在则新建',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.32.0',
     date: '2026-10-18',
     title: '关系图谱入口内联到标题行 + 内置画像字段重构（补"我怎么做"三层）',

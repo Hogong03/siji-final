@@ -75,12 +75,52 @@ function createEmptyProfile() {
   return {
     enabled: false,
     version: 2,
-    cards: [
-      JSON.parse(JSON.stringify(FIXED_CARDS.basic)),
-      JSON.parse(JSON.stringify(FIXED_CARDS.lifestyle))
-    ],
+    cards: [],
     updatedAt: 0
   }
+}
+
+/**
+ * 4.33.0 一次性迁移：把旧的 basic/lifestyle 固定卡字段并入 portrait，然后删除这两张卡
+ * 老用户首次升级后：基本信息/生活方式的手填值不丢，自动出现在"我的画像"卡里
+ */
+function migrateLegacyCards(data) {
+  if (!Array.isArray(data.cards)) return data
+  const cards = data.cards
+  const basic = cards.find(c => c.id === 'basic')
+  const lifestyle = cards.find(c => c.id === 'lifestyle')
+  if (!basic && !lifestyle) return data
+
+  let portrait = cards.find(c => c.id === 'portrait' || c.title === '我的画像')
+  if (!portrait) {
+    portrait = {
+      id: 'portrait',
+      title: '我的画像',
+      icon: 'sparkle',
+      fields: {},
+      source: 'migrated',
+      createdAt: Date.now()
+    }
+    cards.push(portrait)
+  }
+  portrait.fields = portrait.fields || {}
+
+  const mergeFields = (src) => {
+    if (!src || !src.fields) return
+    for (const [k, v] of Object.entries(src.fields)) {
+      if (Array.isArray(v)) {
+        const old = Array.isArray(portrait.fields[k]) ? portrait.fields[k] : []
+        portrait.fields[k] = [...new Set([...old, ...v])]
+      } else if (portrait.fields[k] === undefined || portrait.fields[k] === null || portrait.fields[k] === '') {
+        portrait.fields[k] = v
+      }
+    }
+  }
+  mergeFields(basic)
+  mergeFields(lifestyle)
+
+  data.cards = cards.filter(c => c.id !== 'basic' && c.id !== 'lifestyle')
+  return data
 }
 
 /**
@@ -162,15 +202,8 @@ export function getProfile() {
       return migrated
     }
 
-    // 确保固定卡片存在
-    const cardIds = data.cards?.map(c => c.id) || []
-    if (!cardIds.includes('basic')) {
-      data.cards?.unshift(JSON.parse(JSON.stringify(FIXED_CARDS.basic)))
-    }
-    if (!cardIds.includes('lifestyle')) {
-      const idx = data.cards?.findIndex(c => c.id === 'basic') ?? -1
-      data.cards?.splice((idx + 1) || 1, 0, JSON.parse(JSON.stringify(FIXED_CARDS.lifestyle)))
-    }
+    // 4.33.0：旧 basic/lifestyle 固定卡迁移并入 portrait，不再自动补这两张卡
+    migrateLegacyCards(data)
 
     return data
   } catch {
@@ -239,9 +272,9 @@ export function updateCardTitle(cardId, title) {
   return card
 }
 
-/** 删除卡片（固定卡片不可删） */
+/** 删除卡片（画像卡不可删） */
 export function deleteCard(cardId) {
-  if (cardId === 'basic' || cardId === 'lifestyle') return false
+  if (cardId === 'portrait') return false
   const profile = getProfile()
   const idx = profile.cards.findIndex(c => c.id === cardId)
   if (idx >= 0) {
@@ -287,7 +320,8 @@ function normalizeArrayValue(value) {
 export function addArrayItem(cardId, field, value) {
   const profile = getProfile()
   const card = profile.cards.find(c => c.id === cardId)
-  if (card && Array.isArray(card.fields[field])) {
+  if (card) {
+    if (!Array.isArray(card.fields[field])) card.fields[field] = []
     // 3.2 M2：归一化去重（大小写/全半角/空白差异不重复追加）
     const norm = normalizeArrayValue(value)
     const duplicated = card.fields[field].some(v => norm && normalizeArrayValue(v) === norm)
