@@ -14,9 +14,9 @@
 | 技术栈 | uni-app + Vue 3 (Composition API) + Pinia |
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
-| 代码量 | ~196 文件 / ~34,000 行 |
-| 测试 | 106 文件 / 1412 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例） |
-| 版本 | v4.27.0（人生周报多维度 + 本周焦点契约 + 画像/教练模式；含 4.26 记录沉淀 / 4.25 成果引擎） |
+| 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
+| 测试 | 106 文件 / 1412 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
+| 版本 | v4.29.2（文档与验收基线对齐实测：AGENTS 概况/速查表补齐 + 真机清单补 4.13~4.29 覆盖缺口；含 4.29.1 push 弹窗修复 / 4.28.0 个人画像 / 4.27.0 人生周报 + 焦点契约 / 4.26 记录沉淀 / 4.25 成果引擎） |
 
 ---
 
@@ -148,11 +148,11 @@
 │   ├── memory-rank.js  # 记忆相关度排序（BM25 + 时间衰减 + 语义扩展，供 buildMemoryContext 检索）
 │   ├── memory-synonyms.js # 记忆检索语义扩展层（同义分组 + 拼音桥接，纯函数）
 │   ├── storage/        # 存储层（按领域分文件：diary/bill/plan/tags/feedback 等）
-│   │   └── version-log/  # 版本日志数据段（按大版本分段，最新段 4.12.js；各小版本线已发布前合并）
+│   │   └── version-log/  # 版本日志数据段（按大版本分段 40 段，最新段 4.29.js；各小版本线已发布前合并）
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 86 文件 1213 用例
+├── tests/              # 106 文件 1412 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -294,7 +294,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 改动作类型白名单 | `store/data.js` 的 `isKnownActionType`（ACTION_MAP 是唯一事实来源）+ `store/index.js` 透传 + `utils/ai/autoExecutor.js` 的 `keepKnownActions`（幻觉类型按无 action 处理）+ `utils/ai/tools/executor.js` 的 `TOOL_NAMES`（不存在的工具名明确回传） |
 | 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
 | 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL`（度量语义变了就 +1，报告与页面都会显示）+ `formatFailureReport(rows, meta)` |
-| 改 AI 效果自检 | `utils/ai/eval/cases.js`（30 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
+| 改 AI 效果自检 | `utils/ai/eval/cases.js`（34 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
 | 改 BKD 技术手册（内置记录） | `utils/storage/bkd-handbook.js`（4 篇，标签「技术手册」），`App.vue` 的 appReady 调 `ensureBkdHandbook()` 补发，改内容要 +`BKD_SEED_VERSION`；「内置」徽标前缀在 `utils/seed-records.js`（bkdh_ / prof_） |
 | 改个人画像（内置记录） | `utils/storage/profile-seed.js`（4 篇，标签「个人画像」：经历/23 岁画像/学习计划/MBTI，4.28.0），`App.vue` appReady 在 ensureBkdHandbook 后调 `ensureProfileSeed()` 补发，改内容要 +`PROFILE_SEED_VERSION`；同时把画像关键维度写 `siji_my_profile` 画像卡（固定 id portrait，存在即不重写，**不动 enabled**）——画像注入 AI 的开关在设置→个人信息 |
 | 加内置种子数据（记录 / 模板） | 参考 `utils/storage/bkd-handbook.js` 的 `ensureBkdHandbook`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates`；**下线种子内容**走 `utils/storage/seed-cleanup.js`（软删 + 幂等，参考 removeCet6Content） |
@@ -317,6 +317,12 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 | 加测试 | `tests/xxx.test.js` |
 | 字号切换 | `utils/font-scale.js`（四档响应式比例 + fontRpx 内联字号）+ 设置外观弹层档位选择 + 缩放面（MessageBubble/MarkdownRenderer baseFontSize/EnterBriefing/diary read）；只缩阅读内容，UI 骨架字号稳定；**缩放面内禁止显式 font-size 拦截继承（md-* 用 inherit、标题用 em，4.13.3）**；**options API 组件的模板要用导入函数必须经 methods 暴露（4.13.1 实证）**；**脚本往 scss 插规则先确认锚点括号层级（4.13.2：锚点在深色块内导致浅色规则被静默改作用域）** |
 | AI 效果自检 | 支持 turns 多轮用例（4.16.0：逐轮调用、前文作 history、合并判定）；语料随行制继续生效 |
+| 改输入区 / AI 功能面板 | `components/chat/InputArea.vue`（输入行收敛为「+ ｜ 输入框 ｜ 发送」，只留 `showAiTool` 状态与 `onToolPick` 分发）+ `components/chat/AiToolPanel.vue`（4.29.0 底部 sheet 4 项：图片识别 visionOn / 文件读取 / 语音转文字 voiceOn / 更多能力，受能力开关门控；只 emit close/pick，不持选图录音逻辑）；**新增入口只往面板加，别再让输入行变长**；改完跑 `tests/ai-tool-panel.test.js` |
+| 改对话管理（列表 / 搜索 / 摘要） | `components/chat/ConversationPanel.vue` + `ConversationPanelHeader.vue` + `ConversationListItem.vue` + `ConversationFilterPanel.vue`（4.24.0：搜索 / 行尾「⋯」菜单重命名-编辑标签-删除 / 摘要行 / 自动标题）+ `composables/useConversationManager.js` + `utils/conversation-search.js` / `utils/chat-search.js` / `utils/conv-tags.js`；删除走红色确认键，长按一律用 `usePressHold` |
+| 改聊天页消息操作（重试 / 编辑 / 虚拟列表） | `composables/useRetryBar.js`（重试条）+ `useMessageEdit.js`（就地编辑）+ `useVirtualMessages.js`（长会话窗口化）+ `useStreamRenderer.js`（流式上屏）+ `useScrollControl.js`；消息操作收纳到长按呼出（4.13.0） |
+| 改计划速览面板 / 热力图 | 聊天页顶部计划按钮与底部速览面板（4.22.0）：`pages/chat/index.vue` + `components/plan/PlanDailyStrip.vue` / `PlanWeekStrip.vue` / `PlanTimeStrip.vue`；热力图 `utils/plan-heatmap.js` + `components/plan/PlanHeatmap.vue`（`pages/plan/stats.vue` 使用，跑 `tests/plan-heatmap.test.js`） |
+| 改回收站（软删除恢复） | 三个 `trash.vue` 页面：`pages/diary/trash.vue` / `pages/bill/trash.vue` / `pages/plan/trash.vue`；软删除口径 `is_deleted`（0 正常 / 1 已删），恢复与彻底删除都必须只动对应领域存储层 |
+| 改周报卡片渲染（AI 结果卡） | `components/ai/AiResultCard.vue` + `AiToolButton.vue`：AI 生成结果的分段展示与「应用到数据」入口，与 `ExecResultCard`（工具执行卡）职责不同，别混用 |
 | 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；**SijiIcon 图标换色是 JS 驱动（消费 theme.js 的 isDark 响应式换 src）—— 跨端样式编译器差异优先 JS 方案（4.12.5）**；**关键主题视觉（图标/用户气泡反白/发送停止键）一律 JS/内联驱动（4.12.5/4.12.7/4.12.9 三轮实证：App 上 scss 深色块不可赌，真机复报直接改 JS/内联，别再调 scss）**；守卫 tests/theme-mode.test.js + tests/theme-runtime.test.js |
 | 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |
 | 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
@@ -328,7 +334,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 **每次应用更新（改代码、修 Bug、加功能）后必须记录版本历史，禁止跳过：**
 
 1. `manifest.json` 提升 `versionName` / `versionCode`（如 2.2.0→2.2.1 / 220→221）
-2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.12.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
+2. `utils/storage/version-log/` 最新段数组顶部新增一条记录（当前段 `4.29.js`；新增一个分段时 `utils/storage/version-data.js` 顶部加一行 import 并在 getDefaultHistory 里展开，改哪一块进哪一块）：
    - `version` 与 manifest 一致、`date` 当天、`title` 一句话概括
    - `summary` 3-5 条核心变更（列表页可见）
    - `categories` 按功能分类的完整变更明细（详情页可见）
@@ -352,9 +358,9 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `d122845`（feat: 4.10.0 AI 能力拆分；随后 4.9.1 聚合层修复由并行会话发布）
-- 远端：`origin/main`，2026-10-02 推送成功（`0bdb242..280a46f`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
-- Mimosa 提交钩子会拦「高危」：本轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
+- 当前 HEAD: `7e80cae`（fix: 4.29.1 push 模块弹窗真机修复），与 `origin/main` 已同步
+- 远端：`origin/main`，2026-10-15 推送成功（`708bc02..7e80cae`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
+- Mimosa 提交钩子会拦「高危」：4.5.0 那轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
 - `http.sslVerify` 保持 true
 
 ---
@@ -387,7 +393,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
 - 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1412 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
-- vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 318 个源文件的具名 import）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
+- vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
 - 读文件的平台事实（别照抄 H5 逻辑）：`uni.chooseFile` 官方支持表 H5 √ / App ✗ / 微信小程序 ✗（小程序走 `wx.chooseMessageFile`）。App 端绕开它的办法是直接调系统能力：**Android** 用 `plus.android` 调 `ACTION_GET_CONTENT`（3.7.5，零插件零权限，选完拷进 `_doc/upload/` 后一切照旧）；**iOS** 的 `UIDocumentPickerViewController` 需要 delegate，`plus.ios` 桥不动，仍然只能提示（截图 / 粘贴 / 原生插件）—— 别再写「App 端需插件」这种把两个平台一起否掉的说法

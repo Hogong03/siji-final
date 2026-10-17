@@ -7,7 +7,7 @@
  * 列表页只显示 summary（核心更改摘要）
  * 详情页显示 categories（按功能分类的完整变更列表，可折叠）
  *
- * 默认数据拆至 version-data.js（数据段在 version-log/ 下，按大版本分段，最新段 3.5.js）
+ * 默认数据拆至 version-data.js（数据段在 version-log/ 下，按大版本分段，最新段 4.29.js）
  */
 
 import { getDefaultHistory } from './version-data.js'
