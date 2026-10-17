@@ -359,10 +359,11 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## Git 状态
 
-- 当前 HEAD: `3e29135`（fix: 4.29.3 三处实测修复），与 `origin/main` 已同步
-- 远端：`origin/main`，2026-10-17 推送成功（`664f246..3e29135`）；GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送（push 成功也会因这条 stderr 提示让 PowerShell 报 exit 1，以 `rev-list --count origin/main...HEAD` = `0 0` 为准）
+- 当前 HEAD：**本节不锁具体 hash**（每次提交都会过期，反复制造陈旧文档）—— 看 `git log --oneline -1`
+- 远端：`origin/main`；**是否同步以 `git rev-list --left-right --count origin/main...HEAD` = `0 0` 为准** —— push 成功时 GitHub 会往 stderr 写「This repository moved」提示，PowerShell 据此报 exit 1，属假报警，别当失败
+- GitHub 提示仓库已迁移到 `Hogong03/siji-final`，旧地址 `siji-private` 仍可推送
 - Mimosa 提交钩子会拦「高危」：4.5.0 那轮 7 条全是误报（测试夹具假 key / 构建缓存 / mock 的 exec 与动态路径），已按其建议修法消除（假 key 改拼接、walk 加 root+sep 边界、mock 用计算键名、缓存移出仓库）；钩子对全量扫描不完整只有兼容提示
-- `http.sslVerify` 保持 true
+- `http.sslVerify` 保持 true；偶发 `schannel: failed to receive handshake` 是网络抖动，**原地重试即可**（4.29.2 / 4.29.4 两次都是重试后成功）
 
 ---
 
