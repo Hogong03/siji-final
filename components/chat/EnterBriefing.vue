@@ -3,7 +3,7 @@
 		<!-- 问候行：时段池轮换 + 离开回来的语境 -->
 		<view class="briefing-greet">
 			<text class="briefing-greet-text" :style="{ fontSize: fontRpx(28) }">{{ greetLine }}</text>
-			<text class="briefing-greet-date" :style="{ fontSize: fontRpx(20) }">{{ dateLine }}</text>
+			<text v-if="dateLine" class="briefing-greet-date" :style="{ fontSize: fontRpx(20) }">{{ dateLine }}</text>
 		</view>
 
 		<!-- 指标格：最多 3 格，无数据的格子不渲染 -->
@@ -92,6 +92,11 @@ export default {
 				return `${b.greeting || ''}，回来了。`
 			}
 			return `${b.greeting || ''}。`
+		},
+		/* 日期行（4.29.4 补）：模板一直有 {{ dateLine }} 但组件没实现，Vue 每次渲染都告警。
+		   值来自 _briefing.dateLine（数据层按消息生成时刻算）；老卡片没这个字段就不渲染。 */
+		dateLine() {
+			return this.briefing.dateLine || ''
 		},
 		/* 今日打卡进度条填充宽度（done/total，异常收敛到 0-100%） */
 		checkinPercent() {

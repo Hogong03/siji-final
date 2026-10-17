@@ -216,6 +216,25 @@ export function buildBriefingChips(summary, extras, primary) {
   return all.filter(b => b.key !== dropped).slice(0, 3)
 }
 
+/** 星期中文表（0=周日） */
+const WEEKDAY_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+/**
+ * 简报卡问候行下方的日期行（4.29.4 补）
+ *
+ * 背景：EnterBriefing 模板里一直有 `{{ dateLine }}`，但数据层与组件两侧都没实现
+ * —— 渲染时 Vue 报「Property "dateLine" was accessed during render but is not defined」。
+ * 在数据层按消息生成时刻算，不在组件里取「今天」：简报卡会随消息落盘，
+ * 老卡片必须显示它自己那天的日期，否则翻旧对话看到的全是今天。
+ * @param {number} [now]
+ * @returns {string} 形如「10月17日 周六」
+ */
+export function buildBriefingDateLine(now = Date.now()) {
+  const d = new Date(now)
+  const wd = WEEKDAY_CN[d.getDay()] || ''
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${wd}`
+}
+
 /**
  * 结构化简报 payload（4.12.0）：挂在进入消息上由 EnterBriefing 组件渲染；
  * 纯数据可单测。content 文本仍照旧生成 —— 老版本回落渲染与 AI 历史窗口都还吃它。
@@ -230,6 +249,7 @@ export function buildBriefing(summary, extras = null, now = Date.now()) {
   return {
     version: BRIEFING_VERSION,
     greeting: buildBriefingGreeting(now),
+    dateLine: buildBriefingDateLine(now),
     opener: buildEnterOpener(summary, now),
     metrics: buildBriefingMetrics(summary),
     // 4.13.0：今日打卡进度（无可打卡计划为 null，渲染层不出进度行）

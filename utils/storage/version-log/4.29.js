@@ -6,6 +6,36 @@
 
 export const V429 = [
   {
+    version: '4.29.4',
+    date: '2026-10-17',
+    title: '修简报卡 dateLine 空实现（Vue 每渲染一次告警）+ 补上守卫测试的 options API 盲区',
+    summary: [
+      '用户贴出运行时告警：`Property "dateLine" was accessed during render but is not defined on instance` —— `components/chat/EnterBriefing.vue` 模板第 6 行一直有 `{{ dateLine }}`，但组件 computed 里只有 briefing/greetLine/checkinPercent，数据层的 _briefing payload 也没有这个字段，**两侧都没实现**',
+      '修法：`utils/enter-dialogue.js` 新增 `buildBriefingDateLine(now)`（形如「10月17日 周六」），由 `buildBriefing` 写进 payload；组件补 dateLine computed 读它。**在数据层按建卡时刻生成、不在组件里取「今天」** —— 简报卡随消息落盘，老卡片必须显示它自己那天的日期',
+      '老卡片（已落盘、payload 无 dateLine）自动不渲染该行（模板加 v-if），零迁移',
+      '**真正的根因是守卫测试有盲区**：`tests/sfc-bindings.test.js` 里 `if (!descriptor.scriptSetup) return` —— 只查 `<script setup>`，options API 组件被整体跳过，所以这类「模板写了、实现漏了」的 bug 在 options API 组件上从 3.5.5 起就无人看守（4.13.1 的 fontRpx 是同一族）',
+      '守卫补 options API 通道：用 @babel/parser 解析 `export default {}` 真正收集 props/computed/methods/data/inject/setup 的键名，与 compileTemplate 产出的 _ctx.x 比对。**首版用「名字在 script 里出现过」的文本启发式，被自己写的注释骗过、实测抓不到 bug，已废弃改为解析真实键名**（改名验证：报 `未定义：dateLine`，恢复后全绿）',
+    ],
+    categories: [
+      {
+        title: '简报卡 dateLine（4.29.4）',
+        items: [
+          'utils/enter-dialogue.js：新增 WEEKDAY_CN + `buildBriefingDateLine(now)`；`buildBriefing` 返回值新增 `dateLine` 字段（放在 greeting 之后）',
+          'components/chat/EnterBriefing.vue：新增 `dateLine` computed（读 `this.briefing.dateLine`，缺省空串）；模板日期行加 `v-if="dateLine"`，老卡片不渲染空行',
+          'tests/enter-dialogue.test.js：新增日期行用例（buildBriefingDateLine 两种日期 + buildBriefing 透出 dateLine）',
+        ],
+      },
+      {
+        title: '守卫测试补 options API 盲区（4.29.4）',
+        items: [
+          'tests/sfc-bindings.test.js：新增 `collectOptionsNames()`（@babel/parser 解析 export default，收集 props/computed/methods/data/inject/setup 返回对象的键名，注释与字符串里的同名文字不算）与 `keysOfReturns()`',
+          '新增第二条用例「options API 组件的模板标识符必须在选项里真的定义过」：options API 组件用 compileTemplate 不带 bindingMetadata 编译，未解析标识符落成 _ctx.x，与上面收集到的键名 + ALLOWED 比对，差集即漏实现',
+          '验证方式：临时把 EnterBriefing 的 dateLine computed 改名 → 守卫报 `components/chat/EnterBriefing.vue 未定义：dateLine`；恢复后 3 例全绿（证明守卫不是空测试）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.29.3',
     date: '2026-10-17',
     title: '三处实测修复：应用外通知全哑（推送 API 误用）+ 应用内提醒改 toast + 新建计划可加子计划',

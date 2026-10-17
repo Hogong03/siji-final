@@ -11,7 +11,7 @@ import {
   shouldAppendEnterSummary, isEnterSummaryMessage, buildEnterButtons,
   buildPlanAlertLines, buildNextStepLine, buildWorkLine, buildGreeting,
   buildBriefing, buildBriefingPrimary, isBriefingV2, buildBriefingGreeting, BRIEFING_VERSION,
-  isOpenerMessage, WELCOME_FLAG, OPENER_FLAG
+  buildBriefingDateLine, isOpenerMessage, WELCOME_FLAG, OPENER_FLAG
 } from '../utils/enter-dialogue.js'
 
 const NOW = new Date(2026, 8, 15, 15, 30, 0).getTime()
@@ -419,6 +419,13 @@ describe('buildBriefing：简报卡 payload', () => {
     expect(buildBriefing(summary({ checkinToday: null }), null, at(15)).checkin).toBe(null)
     expect(buildBriefing(summary(), null, at(15)).checkin).toBe(null)
     expect(buildBriefing(null, null, at(15)).checkin).toBe(null)
+  })
+
+  it('日期行按消息生成时刻算（4.29.4 补：EnterBriefing 的 dateLine 一直是空实现）', () => {
+    // 卡片会落盘，日期必须取自建卡时刻，不能在组件里取「今天」，否则翻旧对话全是今天
+    expect(buildBriefingDateLine(at(15))).toBe('9月15日 周二')
+    expect(buildBriefingDateLine(new Date(2026, 9, 17, 9, 0, 0).getTime())).toBe('10月17日 周六')
+    expect(buildBriefing(summary(), null, at(15)).dateLine).toBe('9月15日 周二')
   })
 })
 

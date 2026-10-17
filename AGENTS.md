@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
-| 测试 | 106 文件 / 1417 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
-| 版本 | v4.29.3（三处实测修复：应用外通知全哑的真因 + 应用内提醒改 toast + 新建计划可加子计划；含 4.29.2 文档基线对齐 / 4.28.0 个人画像 / 4.27.0 人生周报 + 焦点契约） |
+| 测试 | 106 文件 / 1419 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
+| 版本 | v4.29.4（修简报卡 dateLine 空实现 + 补守卫测试 options API 盲区；含 4.29.3 三处实测修复 / 4.29.2 文档对齐 / 4.28.0 个人画像） |
 
 ---
 
@@ -152,7 +152,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 106 文件 1417 用例
+├── tests/              # 106 文件 1419 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -393,7 +393,8 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1417 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 106 文件 / 1419 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- **模板标识符漏实现由 `tests/sfc-bindings.test.js` 双通道看守**（4.29.4 补齐）：`<script setup>` 走 compileScript(inlineTemplate) 的 `_ctx.x` 扫描；**options API 走 @babel/parser 解析 `export default {}` 收集 props/computed/methods/data/inject/setup 键名**再比对（旧版只查 script setup，EnterBriefing 的 `{{ dateLine }}` 因此漏网成 Vue warn）。**别用「名字在 script 里出现过」这类文本启发式** —— 注释里提一句就被骗过，实测抓不到 bug
 - **同一时段只跑一个 vitest 进程**（4.29.2 实证）：并发两个会报 `Errors 2 errors`、只跑 104/106 文件 / 1381/1412 用例，看着像回归其实是资源争抢。看到这个数字先确认没有并行进程，再谈问题
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出
 - 日期相关用例的坑（3.5.13 已修）：`isBackfillable` 拒绝「今天及未来」，所以**周一没有「本周历史日」可补**。任何依赖「补记本周某天」的用例都会在周一失败，改用「今天打卡」或上一周日期
