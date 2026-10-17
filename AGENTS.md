@@ -113,6 +113,12 @@
 - **图标分型规矩（4.12.3）**：A 型线条功能图标 = 必须浅深成对（走 scripts/gen-icons.cjs 成对产出，SijiIcon 双图自动切换）；B 型品牌 logo（provider-*）与 C 型彩色插画头像（agent-*）**不做深色反色版**，深色下垫白底托/加描边区分边界（ai.scss 与 settings/chat 首页已有先例）
 - 存量数据兼容：已持久化的旧 icon 路径在 `utils/agent-templates.js` 的 `AGENT_ICON_V2` 映射表中登记，`normalizeAgentIcon()` 渲染时归一化，禁止删除旧名文件前不登记映射
 
+### 交互与主题（跨领域，最常踩）
+
+- **弹出面板一律底部弹出**：`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`）
+- **深色模式**：H5/App 路径在组件 scoped 里写 `html.theme-dark { 嵌套 }`（**必须带 `html` 元素前缀**，禁止 `:global` 包嵌套与裸 `.theme-dark`）；MP 路径把 `@media (prefers-color-scheme: dark)` 包在 `/* #ifdef MP-WEIXIN */` 内。**关键主题视觉（图标换色 / 用户气泡反白 / 发送停止键）一律 JS 或内联驱动**（4.12.5/4.12.7/4.12.9 三轮实证：App 上 scss 深色块不可赌，真机复报直接改 JS/内联，别再调 scss）。守卫 `tests/theme-mode.test.js` + `tests/theme-runtime.test.js`
+- **长按类手势用 `composables/usePressHold.js`**（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」）
+
 ### 平台差异
 
 - **H5 可用 ≠ App 可用 ≠ 小程序可用** — 任何方案必须说明平台适配
@@ -248,86 +254,10 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 ## 关键文件速查
 
-| 需要做什么 | 看哪个文件 |
-|-----------|-----------|
-| 加新 AI 工具 | `utils/ai/tools.js` + `utils/ai/prompt-actions.js` + `store/data.js` |
-| 改 AI 回复风格 | `utils/ai/prompt-builder.js` 核心铁律 |
-| 加新页面 | `pages.json` + `pages/xxx/` |
-| 改全局样式 | `uni.scss` + `App.vue` |
-| 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
-| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
-| 改 Agent 入口判定 | `utils/ai/chat-stream.js` 的 `isClearlyCasual`（闲聊 / 工具循环分流） |
-| 改 Agent 请求传输 | `utils/ai/agent-transport.js`（超时 / 重试 / 流式三端分支；4.21.0 工具轮默认流式：H5 走 callWithToolsSSEToolRound、App 走 chat-chunked 带 tools、失败降级非流式 180s）+ `utils/ai/chat-chunked.js` 的 assembleStreamToolCalls（delta.tool_calls 按 index 增量拼装，两个流式端共用） |
-| 改进入总结（伪对话） | `composables/useEnterSummary.js`（两条基线 + 节流）+ `utils/enter-summary.js`（窗口裁决/聚合/低落扫描）+ `utils/enter-dialogue.js`（写成对话消息：开场白 / 正文行 / 签名去重）+ `pages/chat/index.vue` 的 `.enter-actions` + `utils/chat-session.js`（只带总结算空壳、空态入口让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `utils/enter-dialogue.js` 的 `buildEnterButtons`（消息里的预置按钮）+ `composables/useChatSession.js` 的 `resumeBack`（回去时销毁伪对话） |
-| 改 AI 动静摘要 | `utils/progress-digest.js`（组装）+ `utils/ai/chat-helpers.js`（buildChatMessages 注入点） |
-| 改冷启动新对话 | `utils/chat-session.js`（判定）+ `composables/useChatSession.js`（编排）+ `pages/chat/index.vue` onMounted 与 `.resume-*` 卡片 | `utils/next-step.js`（选取与每天一次）+ `composables/useChatEngine.js` offerNextStep + `pages/chat/index.vue` 卡片 |
-| 改记忆注入 | `utils/memory/context.js` 的 `buildMemoryContext` + `utils/memory-rank.js`（门面 `utils/memory.js` 只做转出，别把逻辑写回门面） |
-| 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms`（扩展词必须再切二元组） |
-| 改联网搜索 | `utils/ai/search-adapters.js`（后端注册表 / 请求 / 解析）+ `utils/ai/search-config.js`（开关 / 后端 / Key 裁决）+ `pages/settings/sub/ai.vue` 的"联网搜索"卡片 |
-| 改读网址 | `utils/ai/read-adapters.js`（direct 直连 / tavily 阅读 + `normalizeUrl` 从第一个 http(s):// 起算并截断粘连中文 + `directFailHint` 按平台给失败原因）+ `utils/ai/read-config.js`（开关 / 后端 / Key 裁决）+ `utils/ai/html-text.js`（本地 HTML 转文本）+ `utils/ai/tools/read-url.js`（直连失败自动兜底 / 成功补 host）+ `pages/settings/sub/ai.vue` 的"读网址"卡片 |
-| 改 App 端选文件（plus.android 四条铁律） | ① Uri **当 Java 对象传**（`String(uri)` 不是可用 URI）；② **每个对象的方法都要导入才调得动**：`invokeSafe`（直接调 → `plus.android.invoke`）+ `importInstance`，**流对象与 channel 也不例外**（真机上 `input.read` / `input.getChannel` 就是这么挂的）；③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`）；④ 拷贝三级（字节数组 → `transferFrom`（`getChannel` 缺失退 `Channels.newChannel`）→ 文本直读），全败时文本类退 `plus.io` 直读 |
-| 改 App 端选文件（旧行，已被上面替换） | ① `data.getData()` 的 Uri **当 Java 对象传**，`String(uri)` 出来的不是可用 URI；② **没 importClass 的对象方法直接调用会抛** —— 每个调用走 `invokeSafe` 或先 `importClass`（类名 + 实例两种都试）；③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`），全败时文本类退 `plus.io` 直读 |
-| 改 App 端选文件（Uri 铁律，保留） | `data.getData()` 的 Uri **必须当 Java 对象一路传下去**，`String(uri)` 拿到的不是可用 URI（真机上这一步导致「拷贝失败 open-input」）；`getData` 为空时退 `ClipData.getItemAt(0).getUri`；开流三级见 `utils/files/android-picker.js` 的 `openContentStream` |
-| 改读文件 | `utils/files/file-types.js`（类型与大小）+ `local-io.js`（三端本地读）+ `file-text.js`（清洗 / 截断 / 拼装；**无后缀名按 mime 补全 ensureExtName / extFromMime，office 系 mime 兜底必须排在 json/xml/csv 之前——openxmlformats 含 xml 会被误判 text，4.17.1**）+ `doc-parse.js`（解析后端注册表 DOC_BACKENDS：**zhipu（4.17.0，复用智谱聊天 Key）** / moonshot；resolveDocConfig 自动选用 智谱→Moonshot；删除端点由后端 deleteUrl 声明；上传优先 `absPath`）+ `picker.js`（选文件：**H5 原生 input type=file（4.16.1 起，uni.chooseFile 带 extension 抛 removeChild）** / 小程序 chooseMessageFile / **Android 系统选择器**）+ `android-picker.js`（plus.android 选 + 拷贝三级兜底：字节数组 / FileChannel / 文本直读；`toNativePath` 去 `file://` 前缀）+ `index.js`（readPickedFile 入口）+ `components/chat/InputArea.vue` 文件按钮 |
-| 改每周账单播报 / 周洞察 | `utils/weekly-insights.js`（4.20.0 洞察层：分类环比 / 连续消费模式 / 打卡记录维度 / 建议，统计周=刚结束的完整周；**4.27.0 人生周报：成果 streak / 运动标签记录 / 上周焦点对照三维度**）+ `utils/bill-weekly.js`（基础口径与周门控 key）+ `composables/useEnterSummary.js`（接线，markWeeklyBillAnnounced 仍由调用方负责）+ `utils/enter-dialogue.js`（「看看花在哪」预置按钮 / 上周支出指标格） |
-| 改微光本 / 成果本 | `utils/storage/glimmer.js`（kind win=成果/moment=小事，**date+kind 双主键同日并存、removeGlimmer 支持 kind 按条删，4.25.1**；getGlimmerStats streak 统计，4.25.0）+ `utils/ai/tools/glimmer.js` schema + `store/executors/glimmer.js` + 进入消息的晚间收尾问询（enter-dialogue needWinPrompt 消费） |
-| 改社交额度 / 回复草稿 | `utils/social-quota.js`（计数口径、文案、三条草稿）+ `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
-| 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息的 `_isWelcome` / `_isEnterSummary` / `_enterButtons`、会话的 `agentId`）+ `utils/chat-session.js`（`isEmptyConversation` 标记 + 「没用户消息也没 AI 产出」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔） |
-| 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` 压缩 / `execCardText` 卡片文案）+ `utils/ai/autoExecutor.js`（agent 路径 `compact` 落盘点）+ `components/chat/ExecResultCard.vue`（`toolCardText` 分支）+ `composables/useChatNavigation.js` 的 `canOpenType`（有没有页面可跳） |
-| 改开场对话 / 卡片按钮 | `utils/enter-dialogue.js`（`buildWelcomeMessage` / `hasOpenerActions` / `buildEnterButtons(null)` 给通用按钮）+ `pages/chat/index.vue` 的 `.enter-actions` 渲染条件 + `components/chat/MessageBubble.vue` 的 `emitWelcomeChip`（按钮事件必须走 `uni.$emit`，与页面的 `uni.$on` 同一条通道）+ `store/chat/persist.js` 的 `_enterButtons` 白名单 |
-| 改计划时间显示 / 回填 | 计划时间有四个字段在流转：`start_time` / `end_time` / `estimated_time` / `due_date`（+ `deadline` 冗余）。**回填要依次回落**（`utils/ai` 之外看 `pages/plan/composables/usePlanForm.js` 的 `applyStoredItem`：开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上看着像没有时间 |
-| 改计划日期换算（节日） | `utils/holidays.js`（`upcomingHolidays` / `holidayPromptLine` / `inferHolidayFromText`；农历节日查表，**表里没有的年份不注入，宁可不给也不编错**，新增年份补一行）+ `utils/ai/prompt-builder.js` 动态段注入 + `utils/ai/prompt-actions.js` 铁律 + `store/executors/plan.js` 的 `inferDatesFromText` 兜底（只在模型没给任何时间时生效） |
-| 改计划时间 / 提醒 | `pages/plan/composables/usePlanForm.js`（`persistForm` 编辑值优先）+ `components/plan/PlanTimeSection.vue`（picker 里用 view，别用 disabled input）+ `utils/reminder/scheduler.js` 的 `computeDefaultFire` / `computeUpcomingFires`（4.22.0 未来 N 天命中扫描）+ `utils/reminder/notifier.js` 的 `ensureNotifyPermission` + `utils/reminder/push-schedule.js`（4.22.0 本地推送预注册：启动/回前台注册未来 7 天命中点，App 被杀也可达，60s 节流） |
-| 改阅读页滚动条 | `pages/diary/read.vue` 的 `:show-scrollbar="false"`（App / 小程序）+ `pages/diary/read.scss` 里的 H5 段 `::-webkit-scrollbar`（条件编译）+ `.read-page { overflow: hidden }` —— 别让系统滚动条和左边目录尺叠在一起 |
-| 改目录尺刻度位置 | 刻度位置来自 `percent`：`splitSections` 与 `extractOutline` **必须同一套行位置算法**（`utils/text-outline.js`）—— 只给 sections 不给 percent，刻度会全堆在 0%（4.1.1 修过这个） |
-| 改记录阅读页版式 | `pages/diary/read.vue` + `read.scss`（**版式基线**：封面头部 → 章节编号 01 + 加粗标题 → 正文 28rpx/1.85；底部进度条 + 顶部当前章节 + 回到顶部）+ `utils/text-outline.js` 的 `readingProgress` / `sectionAtProgress` + `composables/useOutlineRuler.js` 的 `readProgress` / `activeSection` |
-| 改记录阅读页 / 目录尺 | `pages/diary/read.vue` + `read.scss`（章节锚点 #sec-view-N）+ `utils/text-outline.js`（章节解析纯函数）+ `composables/useOutlineRuler.js`（触摸与跳转，复用 `utils/chat-ruler.js` 的换算）+ `pages/diary/detail.vue` 的「阅读」入口 |
-| 改对话尺 | `utils/chat-ruler.js`（阈值 / 刻度 / 视口纯计算）+ `composables/useChatRuler.js`（滚动同步与触摸跳转）+ `pages/chat/index.vue` 的 `.messages-wrap` 与 #msg-N 锚点 + `pages/chat/chat.scss` 的 `.chat-ruler` |
-| 改计划记录沉淀（里程碑） | `utils/storage/plan-milestone.js`（buildStartRecord/buildMilestoneRecord + claimMilestoneKey 幂等登记 siji_plan_milestones + 阶段与根才写/检查点不写/单发计划不写），收口在 `utils/storage/plan.js` 的 savePlan 完成分支与 logPlanCheckIn 首次打卡，**新增完成入口无需改** |
-| 改本周焦点契约 | `utils/week-focus.js`（siji_week_focus 单条周级覆盖，weekKey 与提醒/周报同口径）+ `store/executors/week-focus.js`（set/get）+ briefing 按钮/正文行（enter-dialogue 消费 summary.weekFocus.isCurrent）+ 周报对照（weekly-insights weekFocus，weekKey 落上周才对照） |
-| 改计划详情逻辑 | `pages/plan/detail.vue`（只做组合）+ `pages/plan/composables/usePlanForm.js` / `usePlanCheckin.js` / `usePlanChildActions.js` / `usePlanNextStep.js` |
-| 改计划详情视图 | `components/plan/PlanActionSection.vue` / `PlanFieldsSection.vue` / `PlanAiTools.vue`（样式各带 scss，分块公共样式 `components/plan/plan-section.scss`） |
-| 判断「跑的是不是旧构建」 | 版本历史页顶部横幅（`pages/settings/sub/version-history.vue`）+ `utils/version-check.js` 的 `isRunningOlderThan(latest)`；**排查更新不生效时先看这里**：运行版本 ≠ 日志最新 → 编译产物没装上去（删 `unpackage/dist` 重编译 + 覆盖安装） |
-| 改版本号来源 | `utils/version-check.js` 的 `getCurrentVersion`：**以编译进包的 `manifest.versionName` 为准**（基座里 `plus.runtime.version` 是宿主版本、H5 的 `__uniConfig.versionName` 不保证存在，都会回落成 1.0.0）；App 端 OTA 过 wgt 时用 `primeAppVersion` 读到的资源包版本覆盖 |
-| 改版本号读取 / 反馈导出 | `utils/version-check.js`（`primeAppVersion` 读资源包版本 + `getVersion`；基座里 `plus.runtime.version` 是宿主版本）+ `pages/settings/sub/dev-feedback.vue`（导出头部 meta）+ `utils/dev-feedback.js`（纯函数） |
-| 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`，聊天页与自检共用一份）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` 的 `_agentMode` 判定 + `utils/ai/response-parser.js` 的 `normalizeActions`（嵌套 multi 拍平） |
-| 改动作类型白名单 | `store/data.js` 的 `isKnownActionType`（ACTION_MAP 是唯一事实来源）+ `store/index.js` 透传 + `utils/ai/autoExecutor.js` 的 `keepKnownActions`（幻觉类型按无 action 处理）+ `utils/ai/tools/executor.js` 的 `TOOL_NAMES`（不存在的工具名明确回传） |
-| 改声称操作 / 兜底 | `utils/ai/constants.js`（`OP_CLAIM_RE` 基础集 + `OP_CLAIM_RE_FALLBACK` 收窄集）+ `utils/ai/autoExecutor.js`（Agent 与 JSON 两条路径的闸门要一致）+ `utils/ai/fallback.js`（`extractFallbackAction` 提取）+ `utils/ai/agent-loop.js` 透传 `_opClaimWithoutAction` |
-| 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL`（度量语义变了就 +1，报告与页面都会显示）+ `formatFailureReport(rows, meta)` |
-| 改 AI 效果自检 | `utils/ai/eval/cases.js`（34 条语料，纯数据，日期现算，`{plan}` / `{billAmount}` 占位符 + `needs` 数据前置（plan/bill/checkinPlan），缺前置判跳过）+ `utils/ai/eval/runner.js`（buildEvalContext 含 checkinPlan 检测 / judgeCase 判定 / runCases 编排 / 语料网络错误重试一次 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面（缺前置弹窗一键补建：测试账单 / 上班模板） |
-| 改 BKD 技术手册（内置记录） | `utils/storage/bkd-handbook.js`（4 篇，标签「技术手册」），`App.vue` 的 appReady 调 `ensureBkdHandbook()` 补发，改内容要 +`BKD_SEED_VERSION`；「内置」徽标前缀在 `utils/seed-records.js`（bkdh_ / prof_） |
-| 改个人画像（内置记录） | `utils/storage/profile-seed.js`（4 篇，标签「个人画像」：经历/23 岁画像/学习计划/MBTI，4.28.0），`App.vue` appReady 在 ensureBkdHandbook 后调 `ensureProfileSeed()` 补发，改内容要 +`PROFILE_SEED_VERSION`；同时把画像关键维度写 `siji_my_profile` 画像卡（固定 id portrait，存在即不重写，**不动 enabled**）——画像注入 AI 的开关在设置→个人信息 |
-| 加内置种子数据（记录 / 模板） | 参考 `utils/storage/bkd-handbook.js` 的 `ensureBkdHandbook`（按 client_id 增量补发 + 跨月判重 + 软删不复活），在 `App.vue` 的 `appReady` 里于 `rebuildIndex()` 之前调用；plan 处对应 `utils/storage/plan.js` 的 `ensureDefaultTemplates`；**下线种子内容**走 `utils/storage/seed-cleanup.js`（软删 + 幂等，参考 removeCet6Content） |
-| 改长文能力（输出上限 / 长文例外 / 阅读入口） | `utils/ai/providers.js` 的 `PROVIDER_MAX_TOKENS` / `getMaxTokens`（四家输出上限，未声明回落 4096）+ 四条请求路径的 `max_tokens`（`chat-sse.js` / `chat-chunked.js` / `agent-transport.js` 两处 / `buildProviderRequest`）+ `utils/ai/prompt-actions.js` 的 BEHAVIOR_RULES 长文例外 + `utils/ai/prompt-builder.js` 核心铁律 1 的适用范围 + `components/chat/MessageBubble.vue` 的 `LONG_TEXT_MIN` / `read-long` + `pages/chat/index.vue` 的 `handleReadLong`（没存过就先 `create_diary` 再进阅读页）。**上限铁律：max_tokens 锁 8192 且工具轮必须走流式（4.20.1/4.21.0 实测：GLM-5.3 强制思考下 tool_calls 一次 12K tokens 非流式必超时，流式 idle 续期后不再受总时长限制）；改上限值要同步 `tests/long-form.test.js` 与自检语料 `long-form-article`；JSON 路径的裸换行容错在 `response-parser.js` 的 tryParseWithControlCharFix** |
-| 改长按类手势（长按删除等） | `composables/usePressHold.js`（按住 550ms + 位移容差 10px + 触发后 600ms 忽略 tap）。**别再用 uni 原生 `@longpress`** —— 它不看手指是否滑动，滑动翻页时会误触发（4.4.0 修过反馈列表「滑动弹出删除」）；**4.12.6 盘点后已清零对话面板与 agent 卡片的残留 @longpress**（plan 组件的网格单元三处保留——无滑动误扰场景） |
-| 改聊天页入场动画 | 气泡内内容自动跟随 MessageBubble 的 bubbleIn；**气泡外的兄弟块**（开场按钮 .enter-actions / 无 Key 卡 .no-key-card / 恢复卡 .resume-card / 建议条 .suggestions-bar）各自在 `pages/chat/chat.scss` 挂 `chatRiseIn` —— 新增气泡外块时必须自查入场动画（4.11.1） |
-| 改记录页标签条 | `composables/useDiaryList.js`（`showAllTags` / `sortMode` / `tapAll` / `moveTag`；`quickTags` 走 `applyTagOrder`）+ `pages/diary/list.vue` + `pages/diary/list.scss`（`.quick-tag.sorting` / `.tag-move`）+ 顺序存储 `utils/storage/tags.js` 的 `siji_tag_order` |
-| 改聊天历史窗口 | `utils/ai/chat-helpers.js` 的 `trimHistory()`（单条 1200 字 / 总量 6000 字 / 保底 6 条）+ `getRecentHistory()`。**长文能力上线后历史必须按预算裁**，否则一篇两三千字的回复会被每条消息重发一遍 |
-| 记版本历史 | `utils/storage/version-log/` 最新段顶部 + `manifest.json` 版本号 |
-| 改应用外通知（本地推送 / 通知权限） | `utils/reminder/push-schedule.js`（`registerPlanPushes` 启动/回前台预注册未来 7 天）+ `utils/reminder/notifier.js`（即时通知 + `ensureNotifyPermission`）。**四条铁律（4.29.3 全是真机踩出来的，别再写错）**：① 官方 API 是 `plus.push.createMessage(content, payload, option)` —— **没有 `createPushMessage`**；② options 必须放**第 3 个**参数（放第 2 个会被当 payload：通知正文显示一坨 JSON）；③ `delay` 单位是**秒**（旧代码传毫秒 → 1000ms 被当 1000 秒；且 delay 落空 = 注册时立即弹、到点不提醒）；④ `plus.runtime.getProperty` 回调是 **WidgetInfo**，字段只有 appid/version/versionCode/name/description/author/email/**features** —— **没有 manifest**，判模块可用性只能看 `features` 含不含 `Push`（features 拿不到时不拦，宁可多发也不静默不发） |
-| 改上班打卡 / 提醒推迟 | `utils/storage/plan.js` 的 `tpl_work`（上班模板，reminder 字段随模板创建落位）+ `utils/reminder/snooze.js`（推迟表：不写 triggered，到点重响）+ `scheduler.js` 的 `checkAllReminders` 双分支（snooze 到期 ∪ 常规命中，触发后经回调落账）+ `settings.js` 的 `snoozeMin`（全局默认档 5/15/30）+ `PlanReminderSection.vue` 的推迟档 UI。**4.29.3：应用内提醒已从 ActionSheet 弹窗改 toast（`showReminderToast`），触发即 `onDone()` 落账 —— 应用内不再有「立即打卡 / 推迟 / 查看」入口**；snooze 机制只剩到期重响与触发异常兜底两条写入口 |
-| 改进入单消息 | `utils/enter-dialogue.js`（`buildEnterSummaryMessage` 恒产出：4.12.0 起同时产出文本 content 与 `_briefing` v2 结构化 payload；`buildBriefing` 组装指标格/主按钮/问候池）+ `utils/plan-alerts.js`（过时/快到期口径，只报顶层）+ `components/chat/EnterBriefing.vue`（v2 简报卡渲染，样式在组件 scoped）+ `composables/useEnterSummary.js` 的 `buildPlanExtras`/`snapshotEnterContext`/`readYesterdayExpense` + `composables/useChatSession.js` 的 `appendEnterSummary`/`buildOpenerMessage`（落对话时 `markNextStepShown` 占当天名额）+ `useConversationManager.js` 的 `seedOpener`；**页级按钮行只服务旧消息**（index.vue 按 `isBriefingV2` 组合判定）；**欢迎语只剩存量清理语义**（`buildWelcomeMessage` 不再是开场路径） |
-| App 端真机验证 | `docs/真机验证清单.md`（发版 Smoke + 平台专项 + 验证记录，验证完登记一行） |
-| 改 AI 能力开关 | `utils/ai/features.js`（注册表 + TOOL_FEATURE_MAP）+ `pages/settings/sub/ai.vue` 的「AI 能力」分组卡 + 各注入点（agent-transport 过滤 / executor 拦截 / chat-helpers 段 / prompt-builder extSection / useEnterSummary / InputArea） |
-| 改免 Key 引导流 | `pages/settings/sub/key-guide.vue`（厂商卡+验证保存）+ `utils/ai/key-verify.js`（真实请求验证）+ `pages/chat/index.vue` 无 Key 引导卡 + `pages/settings/sub/ai-eval.vue` 无 Key 弹窗 |
-| 改自动备份 | `utils/storage/backup.js`（纯函数可单测 + App 文件层）+ `pages/settings/sub/data.vue` 自动备份卡 + `App.vue` appReady 调度（App 端 `_doc/siji-backup/` 留 3 份；照片文件不进备份 v1） |
-| 改照片日记 / 心情 | `utils/diary-image.js`（三端选图持久化唯一入口）+ `pages/diary/detail.vue`（九宫格+心情 5 档）+ `pages/diary/list.vue` 缩略图；mood/images 字段收口在 `store/executors/diary.js`（clampMood/normalizeImages），工具 schema 在 `utils/ai/tools/diary.js` |
-| 改月报 | `utils/report-data.js`（buildMonthlyReport 聚合纯函数）+ `pages/stats/report.vue`（canvas 长图三端保存）+ `pages/diary/list.vue` 入口 |
-| 改语音转文字 | `utils/ai/features.js` 的 voice 开关（默认关）+ `components/chat/InputArea.vue` 麦克风 + `utils/ai/recorder.js`/`transcribe.js`（智谱 ASR，2.3 遗产复用） |
-| AI 效果自检基线 | `docs/AI效果自检基线.md`（三档口径读法 + 每次自检登记一行 + 扩语料规矩） |
-| 加测试 | `tests/xxx.test.js` |
-| 字号切换 | `utils/font-scale.js`（四档响应式比例 + fontRpx 内联字号）+ 设置外观弹层档位选择 + 缩放面（MessageBubble/MarkdownRenderer baseFontSize/EnterBriefing/diary read）；只缩阅读内容，UI 骨架字号稳定；**缩放面内禁止显式 font-size 拦截继承（md-* 用 inherit、标题用 em，4.13.3）**；**options API 组件的模板要用导入函数必须经 methods 暴露（4.13.1 实证）**；**脚本往 scss 插规则先确认锚点括号层级（4.13.2：锚点在深色块内导致浅色规则被静默改作用域）** |
-| AI 效果自检 | 支持 turns 多轮用例（4.16.0：逐轮调用、前文作 history、合并判定）；语料随行制继续生效 |
-| 改输入区 / AI 功能面板 | `components/chat/InputArea.vue`（输入行收敛为「+ ｜ 输入框 ｜ 发送」，只留 `showAiTool` 状态与 `onToolPick` 分发）+ `components/chat/AiToolPanel.vue`（4.29.0 底部 sheet 4 项：图片识别 visionOn / 文件读取 / 语音转文字 voiceOn / 更多能力，受能力开关门控；只 emit close/pick，不持选图录音逻辑）；**新增入口只往面板加，别再让输入行变长**；改完跑 `tests/ai-tool-panel.test.js` |
-| 改对话管理（列表 / 搜索 / 摘要） | `components/chat/ConversationPanel.vue` + `ConversationPanelHeader.vue` + `ConversationListItem.vue` + `ConversationFilterPanel.vue`（4.24.0：搜索 / 行尾「⋯」菜单重命名-编辑标签-删除 / 摘要行 / 自动标题）+ `composables/useConversationManager.js` + `utils/conversation-search.js` / `utils/chat-search.js` / `utils/conv-tags.js`；删除走红色确认键，长按一律用 `usePressHold` |
-| 改聊天页消息操作（重试 / 编辑 / 虚拟列表） | `composables/useRetryBar.js`（重试条）+ `useMessageEdit.js`（就地编辑）+ `useVirtualMessages.js`（长会话窗口化）+ `useStreamRenderer.js`（流式上屏）+ `useScrollControl.js`；消息操作收纳到长按呼出（4.13.0） |
-| 改计划速览面板 / 热力图 | 聊天页顶部计划按钮与底部速览面板（4.22.0）：`pages/chat/index.vue` + `components/plan/PlanDailyStrip.vue` / `PlanWeekStrip.vue` / `PlanTimeStrip.vue`；热力图 `utils/plan-heatmap.js` + `components/plan/PlanHeatmap.vue`（`pages/plan/stats.vue` 使用，跑 `tests/plan-heatmap.test.js`） |
-| 改计划汇总表（每天首次弹出） | `utils/plan-summary.js`（`buildPlanSummary(plans, now)` 纯函数 + `shouldShowPlanSummary`/`markPlanSummaryShown` 日期门控 + `DONE_LIMIT=30`）+ `components/plan/PlanSummarySheet.vue`（底部面板，只渲染与 emit，不读存储）+ `pages/chat/index.vue` 的 `maybeShowPlanSummary()`（onMounted 里，引导优先 + 600ms 延迟）。**统计口径必须与 `pages/plan/composables/usePlanList.js` 的 stats 一致**（只计顶层、子计划归并、本周打卡复用 `weekCheckinSummary`）—— 改一处要同步另一处，否则聊天页与计划页数字对不上；跑 `tests/plan-summary.test.js` |
-| 改回收站（软删除恢复） | 三个 `trash.vue` 页面：`pages/diary/trash.vue` / `pages/bill/trash.vue` / `pages/plan/trash.vue`；软删除口径 `is_deleted`（0 正常 / 1 已删），恢复与彻底删除都必须只动对应领域存储层 |
-| 改周报卡片渲染（AI 结果卡） | `components/ai/AiResultCard.vue` + `AiToolButton.vue`：AI 生成结果的分段展示与「应用到数据」入口，与 `ExecResultCard`（工具执行卡）职责不同，别混用 |
-| 深色模式 | H5/App 路径：组件 scoped 样式里 `html.theme-dark { 嵌套 }`（必须带 html 元素前缀，禁止 :global 包嵌套与裸 .theme-dark——实证见 tests/theme-mode.test.js）；MP 路径：@media 包在 #ifdef MP-WEIXIN 内；**SijiIcon 图标换色是 JS 驱动（消费 theme.js 的 isDark 响应式换 src）—— 跨端样式编译器差异优先 JS 方案（4.12.5）**；**关键主题视觉（图标/用户气泡反白/发送停止键）一律 JS/内联驱动（4.12.5/4.12.7/4.12.9 三轮实证：App 上 scss 深色块不可赌，真机复报直接改 JS/内联，别再调 scss）**；守卫 tests/theme-mode.test.js + tests/theme-runtime.test.js |
-| 改弹出面板位置 | 面板一律**底部弹出**（`position: fixed; left/right/bottom: 0` + `translateY(100%)` → 显形 `translateY(0)`，圆角 `24rpx 24rpx 0 0`，`padding-bottom: calc(24rpx + env(safe-area-inset-bottom))`，`z-index: 1000`）。从顶部滑出（`top: 0`）在 H5 与自定义导航栏下会被导航栏压住（4.2.1 修过 `pages/diary/list.scss`） |
-| 改记录模块 | 类型 3 种（`pages/diary/detail.vue` 的 `RECORD_TYPES` + `store/executors/diary.js` 的白名单）+ **分类只留标签一个维度** + 自动打标签 `utils/diary-tags.js` + 一句话筛选与副标题 `utils/diary-query.js` + 回顾挑选 `utils/record-review.js` + 列表页 `composables/useDiaryList.js` / `pages/diary/list.vue`。**改类型或分类口径必须同时看两个迁移**（`migrateRecordTypes` / `migrateDiaryCategories`，在 `App.vue` appReady 调用） |
+> **完整对照表（「要改 X → 看哪个文件」）已独立为 `docs/速查表.md`，按需读，不再每轮全量注入**（2026-10-17，降 token 成本）。
+> 动手前先 `read docs/速查表.md` 定位目标文件；改完若涉及新领域，往那里补一行。
+> 跨领域硬约定见上方的「核心约定」——那份是 always-on 的。
+> **注意：这张表搬出去是为了省钱，不是作废。真要改某块功能时漏读它 = 直接踩坑。**
 
 ---
 
@@ -403,5 +333,6 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 - 抽聊天页卡片组件的约束：`pages/chat/chat.scss` 是 scoped 样式（父页 scoped 不会作用到子组件内部元素），抽组件时必须把 `.enter-*` / `.next-step-*` 一并搬进新组件的 scoped 样式，并做一次真机渲染验收
 - 读文件的平台事实（别照抄 H5 逻辑）：`uni.chooseFile` 官方支持表 H5 √ / App ✗ / 微信小程序 ✗（小程序走 `wx.chooseMessageFile`）。App 端绕开它的办法是直接调系统能力：**Android** 用 `plus.android` 调 `ACTION_GET_CONTENT`（3.7.5，零插件零权限，选完拷进 `_doc/upload/` 后一切照旧）；**iOS** 的 `UIDocumentPickerViewController` 需要 delegate，`plus.ios` 桥不动，仍然只能提示（截图 / 粘贴 / 原生插件）—— 别再写「App 端需插件」这种把两个平台一起否掉的说法
 - 文件正文占上下文：单个文件上限 8000 字（`MAX_FILE_CHARS`，与 `read_url` 的工具截断同一口径），聊天历史只保留窗口内最近一条带文件消息的正文，更早的降级成「已读过文件 xxx」卡片 —— 改这块要连带跑 `tests/file-read.test.js`
-- **上下文被压缩 / 压缩失败也不怕**：`docs/会话检查点.md` 是恢复入口（当前状态 / 上一个线程做了什么 / 手上没做完的活 / 悬着的真机验证 / 压缩失败根因）。**新对话第一件事读它，每次发版成功后回来更新它的第一、三节** —— 上一个线程（`01a01c09`）就是因为远端压缩硬失败把上下文丢了
+- **上下文被压缩 / 压缩失败也不怕**：`docs/会话检查点.md` 是恢复入口（当前状态 / 悬着的真机验证 / 压缩失败根因 / 恢复姿势）。**新对话第一件事读它，每次发版成功后回来更新它的第一、二节**。**历史脉络已裁到 `docs/存档/会话检查点-历史-2026-10.md`（按需读），这两份 + `docs/速查表.md` 就是全部按需文档 —— 布局见检查点第一节的「文档布局」行** —— 上一个线程（`01a01c09`）就是因为远端压缩硬失败把上下文丢了
+- **每轮注入的上下文成本是被管理的**（2026-10-17 起）：`AGENTS.md` 是 always-on（**只放每轮都要遵守的规则**），文件位置索引在 `docs/速查表.md`（按需读）。**往 `AGENTS.md` 加内容前先问：这条是「每轮都必须看到」，还是「动手做那件事时才要看」？后者一律进速查表或对应 docs。** 单次膨胀 10KB ≈ 每轮多烧 3,000 token，永久复利
 - 完整交接文档见 `CODEX_HANDOFF.md`

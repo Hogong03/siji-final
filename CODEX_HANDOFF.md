@@ -366,38 +366,7 @@ npx vitest run
 
 ## 9. 关键文件速查
 
-| 需要做什么 | 看哪个文件 |
-|-----------|-----------|
-| 加新 AI 工具 | `utils/ai/tools.js` + `utils/ai/prompt-actions.js` + `store/data.js` |
-| 改 AI 回复风格 | `utils/ai/prompt-builder.js` 核心铁律 |
-| 加新页面 | `pages.json` + `pages/xxx/` |
-| 改全局样式 | `uni.scss` + `App.vue` |
-| 加存储键 | `utils/storage/xxx.js` + `utils/storage.js` 导出 |
-| 改 Agent 行为 | `utils/ai/agent-loop.js` + `utils/ai/prompt-actions.js` |
-| 改计划时间字段（四个字段的流转） | 计划时间有 `start_time` / `end_time` / `estimated_time` / `due_date`（+ 冗余 `deadline`）。`pages/plan/composables/usePlanForm.js` 的 `applyStoredItem` 回填必须回落（开始 = `estimated_time → start_time`，截止 = `due_date → deadline → end_time`），否则「只有 start_time」的 AI 计划在界面上像没有时间；`timeSummary` 带时刻 |
-| 加测试 | `tests/xxx.test.js` |
-| 改每周账单播报 | `utils/bill-weekly.js` + `composables/useEnterSummary.js` + `pages/chat/index.vue` |
-| 改会话落盘 / 回去接着聊 | `store/chat/persist.js`（落盘白名单：消息 `_isWelcome` / `_isEnterSummary` / `_enterSummaryKind` / `_enterButtons` / `_enterSummaryDigest`、会话 `agentId` / `agentName`）+ `utils/chat-session.js`（`isEmptyConversation` 的「没用户消息也没 AI 产出 = 壳」兜底）+ `composables/useChatSession.js` 的 `resumeBack`（返回真实跳转结果）+ `store/chat.js` 的 `switchConversation`（返回布尔）+ `tests/chat-persist.test.js` |
-| 改进入总结（伪对话） | `utils/enter-dialogue.js`（消息组装/签名/`buildEnterButtons` 预置按钮）+ `composables/useChatSession.js` 的 `appendEnterSummary` 与 `resumeBack`（回去时销毁伪对话）+ `utils/chat-session.js`（空壳/让位）+ `store/chat.js` 的 `dropWelcomeMessages`（覆盖开场白）+ `pages/chat/index.vue` 的 `.enter-actions` 与 `handleEnterButton` |
-| 改社交额度/回复草稿 | `utils/social-quota.js` + `components/common/SocialQuotaBar.vue` / `components/relation/ReplyDrafts.vue` |
-| 改执行卡 / 工具结果落地 | `utils/ai/exec-payload.js`（`compactExecDetail` / `execCardText`）+ `utils/ai/autoExecutor.js`（agent 路径落盘点）+ `components/chat/ExecResultCard.vue` + `composables/useChatNavigation.js` 的 `canOpenType` |
-| 改声称操作 / 兜底 | `utils/ai/constants.js`（基础集 / 收窄集）+ `utils/ai/autoExecutor.js`（两条路径闸门一致）+ `utils/ai/fallback.js`（提取）+ `agent-loop.js` 透传标记。教训：改声称正则必须同时看 Agent 路径（autoExecutor.js:29）与 JSON 路径（autoExecutor.js:140） |
-| 改确认闸门 | `utils/ai/confirm-gate.js`（`pendingConfirmations` / `needUserConfirm`）+ `utils/ai/agent-loop.js` 的 `_jsonFallback` 与 `runAgentChat` + `composables/useChatEngine.js` 的确认分支 + `utils/ai/response-parser.js` 的 `normalizeActions` |
-| AI 效果自检基线 | `docs/AI效果自检基线.md`（通过 / 兜底 / 跳过三档读法 + 每次跑完登记一行 + 扩语料的五条规矩） |
-| 改 AI 效果自检口径 | `utils/ai/eval/runner.js` 的 `EVAL_PROTOCOL_VERSION` / `EVAL_PROTOCOL_LABEL` + `pages/settings/sub/ai-eval.vue` 的 reportMeta —— 改度量语义时必须 bump，否则又是一份「不知道哪套代码跑的」报告 |
-| 改 AI 效果自检 | `utils/ai/eval/cases.js`（24 条语料，纯数据，日期现算）+ `runner.js` 的 `buildEvalContext` / `resolveCase`（数据前置与占位符）+ 缺前置判 SKIP |+ `utils/ai/eval/runner.js`（judgeCase 判定 / runCases 编排 / summarizeResults / formatFailureReport）+ `utils/ai/agent-loop.js` 的 `cfg.dryRun`（干跑不落库）+ `pages/settings/sub/ai-eval.vue` 页面 |
-| 改对话尺 | `utils/chat-ruler.js`（纯计算）+ `composables/useChatRuler.js`（编排）+ `pages/chat/index.vue` / `chat.scss` |
-| 改联网搜索 | `utils/ai/search-adapters.js`（后端 + 请求/解析）+ `utils/ai/search-config.js`（开关/Key 裁决）+ `pages/settings/sub/ai.vue` 卡片 |
-| 改读网址 | `utils/ai/read-adapters.js`（含 `normalizeUrl` 截断粘连中文 / `directFailHint` 按平台）+ `read-config.js` + `html-text.js` + `tools/read-url.js` + `pages/settings/sub/ai.vue` 卡片 |
-| 改 App 端选文件（踩坑记录，按真机失败顺序） | ①「拷贝失败」→ `convertLocalFileSystemURL` 给 `file://` URL，`FileOutputStream` 只认裸路径（`toNativePath`）②「拷贝失败（open-input）」→ **Uri 被 `String()` 字符串化**，必须传 Java 对象 ③ 开流三级（`openInputStream` / `openFileDescriptor`+`FileInputStream(fd)` / `openAssetFileDescriptor`）④「open-all-failed」→ **类没导入**：`invokeSafe`（直接调 → `plus.android.invoke`）+ `importClass`（类名与实例）⑤「stream-fail:input.read is not a function」→ **流对象的方法同样要导入**：流 / channel 的 `read` / `write` / `readLine` / `getChannel` / `transferFrom` 全走 `invokeSafe`，`getChannel` 缺失退 `Channels.newChannel`；文本类始终留 `inlineText` 兜底 |
-| 改 App 端选文件 | `utils/files/android-picker.js`（Android 系统选择器 + `safeFileName` / `uploadRelPath` 纯函数 + `copyContentUriToSandbox`）+ `utils/files/picker.js` 的 `appPickRoute` + `doc-parse.js` 的 `absPath` 优先 |
-| 改读文件 | `utils/files/` 六个文件 + `components/chat/InputArea.vue` 文件按钮 + `composables/useChatEngine.js` 的 sendOpts.file 接线 |
-| 改记忆语义扩展 | `utils/memory-synonyms.js`（同义分组 + 拼音词表）+ `utils/memory-rank.js` 的 `buildQueryTerms` |
-| 改长期记忆 | `utils/memory.js`（门面）→ `utils/memory/xxx.js` 对应职责文件 |
-| 深色模式 | 各组件 `<style>` 末尾 `@media (prefers-color-scheme: dark)` |
-| 记录类型 | `pages/diary/detail.vue` RECORD_TYPES 常量 |
-
----
+> 已合并到 **`docs/速查表.md`**（唯一事实来源，45 行；本节原 30 行是它的子集）。按需读那个文件。
 
 ## 10. Git 状态
 
