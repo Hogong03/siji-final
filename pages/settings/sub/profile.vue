@@ -460,8 +460,8 @@ function handleExport() {
     <!-- 画像卡片列表 -->
     <view v-for="card in profile.cards" :key="card.id" class="profile-card" :class="'card-' + card.id">
       <!-- 卡片头部 -->
-      <view class="card-header" :class="{ collapsed: isCardCollapsed(card.id) }" @tap="toggleCard(card.id)">
-        <view class="card-title-wrap" @tap.stop="handleTitleTap(card)">
+      <view class="card-header" :class="{ collapsed: isCardCollapsed(card.id) }">
+        <view class="card-title-wrap">
           <SijiIcon :name="card.icon || 'sparkle'" :size="18" />
           <text v-if="!editingCardTitle || editingCardTitle.cardId !== card.id" class="card-title-text">{{ card.title }}</text>
           <input
@@ -479,7 +479,7 @@ function handleExport() {
         <view v-if="!isFixedCard(card) && enabled" class="card-delete" @tap.stop="handleDeleteCard(card.id)">
           <SijiIcon name="close" :size="16" />
         </view>
-        <view class="card-collapse">
+        <view class="card-collapse" @tap.stop="toggleCard(card.id)">
           <SijiIcon :name="isCardCollapsed(card.id) ? 'chevron-down' : 'chevron-up'" :size="14" />
         </view>
       </view>

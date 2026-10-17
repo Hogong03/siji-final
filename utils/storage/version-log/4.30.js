@@ -6,6 +6,24 @@
 
 export const V430 = [
   {
+    version: '4.33.2',
+    date: '2026-10-18',
+    title: '画像卡片标题行只读，折叠/展开收敛到右侧箭头',
+    summary: [
+      '点"我的画像"标题文字不再误触折叠，标题行默认只读',
+      '折叠/展开操作收敛到右侧 chevron 箭头按钮，明确可点区域',
+      '自定义卡片的标题编辑仍走右侧铅笔按钮，入口不变',
+    ],
+    categories: [
+      {
+        title: '交互调整',
+        items: [
+          'pages/settings/sub/profile.vue：card-header 去掉整行 @tap，card-title-wrap 去掉 @tap.stop="handleTitleTap"，card-collapse 加 @tap.stop="toggleCard(card.id)"',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.33.1',
     date: '2026-10-18',
     title: '画像字段防误触：已填值默认只读，点正文不弹编辑框',
