@@ -215,18 +215,33 @@
 }
 
 .card-delete {
-  padding: 8rpx;
-  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48rpx;
+  min-height: 48rpx;
+  padding: 10rpx;
+  opacity: 0.45;
 }
 
 .card-edit-btn {
-  padding: 8rpx;
-  opacity: 0.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48rpx;
+  min-height: 48rpx;
+  padding: 10rpx;
+  opacity: 0.4;
 }
 
 .card-collapse {
-  padding: 8rpx;
-  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48rpx;
+  min-height: 48rpx;
+  padding: 10rpx;
+  opacity: 0.55;
   margin-left: 8rpx;
 }
 
@@ -304,6 +319,10 @@
 .chip-remove {
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 36rpx;
+  min-height: 36rpx;
+  padding: 6rpx;
   opacity: 0.4;
 }
 
@@ -357,13 +376,23 @@
 }
 
 .field-edit {
-  padding: 8rpx;
-  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48rpx;
+  min-height: 48rpx;
+  padding: 10rpx;
+  opacity: 0.45;
 }
 
 .field-clear {
-  padding: 8rpx;
-  opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48rpx;
+  min-height: 48rpx;
+  padding: 10rpx;
+  opacity: 0.35;
 }
 
 .field-input {

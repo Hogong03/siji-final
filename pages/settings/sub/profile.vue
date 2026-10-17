@@ -474,13 +474,13 @@ function handleExport() {
           />
         </view>
         <view v-if="!isFixedCard(card) && enabled" class="card-edit-btn" @tap.stop="startEditTitle(card.id)">
-          <SijiIcon name="edit" :size="14" />
+          <SijiIcon name="edit" :size="18" />
         </view>
         <view v-if="!isFixedCard(card) && enabled" class="card-delete" @tap.stop="handleDeleteCard(card.id)">
-          <SijiIcon name="close" :size="16" />
+          <SijiIcon name="close" :size="18" />
         </view>
         <view class="card-collapse" @tap.stop="toggleCard(card.id)">
-          <SijiIcon :name="isCardCollapsed(card.id) ? 'chevron-down' : 'chevron-up'" :size="14" />
+          <SijiIcon :name="isCardCollapsed(card.id) ? 'chevron-down' : 'chevron-up'" :size="18" />
         </view>
       </view>
 
@@ -497,7 +497,7 @@ function handleExport() {
                 <view v-for="chip in value" :key="chip" class="chip">
                   <text class="chip-text">{{ chip }}</text>
                   <view v-if="enabled" class="chip-remove" @tap="removeChip(card.id, key, chip)">
-                    <SijiIcon name="close" :size="12" />
+                    <SijiIcon name="close" :size="18" />
                   </view>
                 </view>
                 <view v-if="enabled && (!chipInputField || chipInputField.cardId !== card.id || chipInputField.field !== key)"
@@ -514,10 +514,10 @@ function handleExport() {
                   <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
                   <view v-if="enabled && value" class="field-actions">
                     <view class="field-edit" @tap.stop="startEditField(card.id, key)">
-                    <SijiIcon name="edit" :size="12" />
+                    <SijiIcon name="edit" :size="16" />
                     </view>
                     <view class="field-clear" @tap.stop="clearField(card.id, key)">
-                    <SijiIcon name="close" :size="12" />
+                    <SijiIcon name="close" :size="18" />
                     </view>
                   </view>
                 </view>
@@ -539,7 +539,7 @@ function handleExport() {
               <view v-for="chip in value" :key="chip" class="chip">
                 <text class="chip-text">{{ chip }}</text>
                 <view v-if="enabled" class="chip-remove" @tap="removeChip(card.id, key, chip)">
-                  <SijiIcon name="close" :size="12" />
+                  <SijiIcon name="close" :size="18" />
                 </view>
               </view>
             </view>
@@ -552,10 +552,10 @@ function handleExport() {
                 <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
                 <view v-if="enabled && value" class="field-actions">
                   <view class="field-edit" @tap.stop="startEditField(card.id, key)">
-                  <SijiIcon name="edit" :size="12" />
+                  <SijiIcon name="edit" :size="16" />
                   </view>
                   <view class="field-clear" @tap.stop="clearField(card.id, key)">
-                  <SijiIcon name="close" :size="12" />
+                  <SijiIcon name="close" :size="18" />
                   </view>
                 </view>
               </view>
@@ -582,7 +582,7 @@ function handleExport() {
             <view v-for="chip in value" :key="chip" class="chip">
               <text class="chip-text">{{ chip }}</text>
               <view v-if="enabled" class="chip-remove" @tap="removeChip(card.id, key, chip)">
-                <SijiIcon name="close" :size="12" />
+                <SijiIcon name="close" :size="18" />
               </view>
             </view>
             <view v-if="enabled && (!chipInputField || chipInputField.cardId !== card.id || chipInputField.field !== key)"
@@ -612,10 +612,10 @@ function handleExport() {
               <text :class="{ 'field-empty': !value }">{{ value || '点击填写' }}</text>
               <view v-if="enabled && value" class="field-actions">
                 <view class="field-edit" @tap.stop="startEditField(card.id, key)">
-                <SijiIcon name="edit" :size="12" />
+                <SijiIcon name="edit" :size="16" />
                 </view>
                 <view class="field-clear" @tap.stop="clearField(card.id, key)">
-                <SijiIcon name="close" :size="12" />
+                <SijiIcon name="close" :size="18" />
                 </view>
               </view>
             </view>
@@ -634,7 +634,7 @@ function handleExport() {
 
         <!-- 添加自定义字段按钮 -->
         <view v-if="enabled" class="add-field-btn" @tap="addCustomField(card.id)">
-          <SijiIcon name="add" :size="14" />
+          <SijiIcon name="add" :size="18" />
           <text>添加字段</text>
         </view>
         </view><!-- /card-body-inner -->
@@ -647,7 +647,7 @@ function handleExport() {
         <text class="ai-prefs-title">AI 学到的偏好</text>
         <view class="ai-prefs-right">
           <text class="ai-prefs-count">{{ aiPrefs.length }} 条待采纳</text>
-          <SijiIcon :name="showAiPrefs ? 'chevron-up' : 'chevron-down'" :size="14" />
+          <SijiIcon :name="showAiPrefs ? 'chevron-up' : 'chevron-down'" :size="18" />
         </view>
       </view>
       <view v-if="showAiPrefs" class="ai-prefs-body">
@@ -685,11 +685,11 @@ function handleExport() {
     <!-- 底部操作 -->
     <view v-if="enabled && filledCount > 0" class="bottom-actions">
       <view class="btn-secondary" @tap="handleExport">
-        <SijiIcon name="export" :size="14" />
+        <SijiIcon name="export" :size="18" />
         <text>导出画像 JSON</text>
       </view>
       <view class="btn-danger" @tap="handleClearAll">
-        <SijiIcon name="trash" :size="14" />
+        <SijiIcon name="trash" :size="18" />
         <text>清空所有信息</text>
       </view>
     </view>

@@ -6,6 +6,25 @@
 
 export const V430 = [
   {
+    version: '4.33.3',
+    date: '2026-10-18',
+    title: '画像页小按钮热区扩大到 48rpx，图标同步放大',
+    summary: [
+      '字段行铅笔/删除按钮、卡片头部编辑/删除/折叠箭头热区统一扩到 48rpx 最小触控尺寸',
+      'chip 删除按钮热区扩到 36rpx',
+      '图标尺寸同步放大：字段行 12→16，卡片头部 14/16→18',
+    ],
+    categories: [
+      {
+        title: 'UI 调整',
+        items: [
+          'pages/settings/sub/profile.scss：.field-edit/.field-clear/.card-edit-btn/.card-delete/.card-collapse 统一加 display:flex + min-width/min-height 48rpx + padding 10rpx；.chip-remove 加 min 36rpx',
+          'pages/settings/sub/profile.vue：SijiIcon size 从 12→16（字段行）、14/16→18（卡片头部）',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.33.2',
     date: '2026-10-18',
     title: '画像卡片标题行只读，折叠/展开收敛到右侧箭头',
