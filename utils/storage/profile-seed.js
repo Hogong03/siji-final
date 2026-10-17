@@ -26,7 +26,7 @@ export const PROFILE_TAG_CATEGORY = 'life'
 
 /** 种子标记与版本（改内容就 +1，ensureProfileSeed 据此刷新） */
 export const PROFILE_SEED_MARK = 'profile-seed'
-export const PROFILE_SEED_VERSION = 1
+export const PROFILE_SEED_VERSION = 2
 
 /* ────────────────────────── 第一篇：我的经历 ────────────────────────── */
 
@@ -246,17 +246,25 @@ export const PROFILE_ARTICLE_IDS = PROFILE_ARTICLES.map(a => a.client_id)
 export const PROFILE_CARD_ID = 'portrait'
 export const PROFILE_CARD_TITLE = '我的画像'
 
-/** 画像卡字段（AI 感知的画像维度，enabled 后注入对话上下文） */
+/** 画像卡字段（AI 感知的画像维度，enabled 后注入对话上下文）
+ *  分三层：我是谁 / 我要去哪 / 我怎么做（与 profile.vue 的 PROFILE_GROUPS 对齐）
+ */
 const PROFILE_CARD_FIELDS = {
-  当前阶段: '23 岁，学生→社会人过渡，计算机专业，上班中',
-  职业方向: '全栈 → AI 工程（软件工程 → AI 工程 → 技术负责人 → 产品/商业 → 创业）',
-  性格优势: '学习能力、问题解决能力、爆发力、自我信心',
-  主要短板: '长期执行稳定性不足，容易觉得"不着急"',
-  金钱目标: '先建现金安全垫（约 20 万是心理节点），再提高职业收入上限',
-  家庭目标: '有能力照顾家人',
-  感情目标: '找到真正合适的另一半，拥有稳定亲密关系',
-  人生关键词: '不要后悔',
-  MBTI: 'I/N/T/J 暂偏（I 独处充电但能主动社交；N 看整体架构与长期；T/J 略偏）'
+  // 我是谁
+  当前阶段: '23 岁，学生→社会人过渡，计算机专业，上班中；价值排序：身体→家庭→收入→技术成长→感情→事业',
+  MBTI: 'I/N/T/J 暂偏（I 独处充电但能主动社交；N 看整体架构与长期；T/J 略偏，仍在确定中）',
+  性格优势: '学习能力强、问题求解快、有目标时爆发力足、对自己能力有信心',
+  主要短板: '长期执行稳定性不足，危机驱动型，容易觉得"还年轻、不着急"；AI 写出代码但有时不理解为什么',
+  // 我要去哪
+  职业方向: '全栈 → AI 工程（软件工程 → AI 工程 → 技术负责人 → 产品/商业 → 创业），2026-2029 三年路线',
+  人生关键词: '不要后悔；回头看时不觉得白活了',
+  金钱目标: '先建现金安全垫（约 20 万是心理节点），再提高职业收入上限，让技术产生额外收入',
+  家庭目标: '有能力照顾家人，从"被照顾"转向"承担责任"',
+  感情目标: '找到真正合适的另一半，拥有稳定亲密关系；从"为什么她离开我"转向"我可以更成熟"',
+  // 我怎么做
+  行动原则: '以成果为单位而非时间；不等待动力、建固定输出系统；做项目接触用户创造价值；不急创业，先积累技术、钱、人脉与行业理解；每年比去年强一点',
+  产品意识: '动手前先调研需求，考虑用户、场景与价值，不是纯技术思维；从"会调用 AI"变成"能做 AI 系统"',
+  创业潜力: '有，但路径清晰：先建技术壁垒 → 副业 → 条件成熟再创业；20 万安全垫是心理门槛，不裸辞不赌博'
 }
 
 /**
@@ -358,23 +366,34 @@ export function ensureProfileSeed(now) {
     addCustomTag('diary', PROFILE_TAG, null, null, PROFILE_TAG_CATEGORY)
   } catch (e) { /* 标签表写失败不影响记录本身 */ }
 
-  // 画像卡：存在即不重写；不动 enabled（是否注入 AI 由用户决定）
+  // 画像卡：不存在则新建；已存在则 merge 补缺失字段（用户已填的不覆盖，不动 enabled）
   let cardAdded = false
   try {
     const profile = getProfile()
-    const has = (profile.cards || []).some(c => c.id === PROFILE_CARD_ID || c.title === PROFILE_CARD_TITLE)
-    if (!has) {
-      profile.cards.push({
+    let card = (profile.cards || []).find(c => c.id === PROFILE_CARD_ID || c.title === PROFILE_CARD_TITLE)
+    if (!card) {
+      card = {
         id: PROFILE_CARD_ID,
         title: PROFILE_CARD_TITLE,
         icon: 'sparkle',
         fields: { ...PROFILE_CARD_FIELDS },
         source: 'ai_extracted',
         createdAt: at
-      })
-      saveProfile(profile)
+      }
+      profile.cards.push(card)
       cardAdded = true
+    } else {
+      card.fields = card.fields || {}
+      let filled = false
+      Object.keys(PROFILE_CARD_FIELDS).forEach(k => {
+        if (!(k in card.fields) || card.fields[k] === '' || card.fields[k] == null) {
+          card.fields[k] = PROFILE_CARD_FIELDS[k]
+          filled = true
+        }
+      })
+      if (filled) card.updatedAt = at
     }
+    saveProfile(profile)
   } catch (e) { /* 画像卡写失败不影响记录本身 */ }
 
   return {

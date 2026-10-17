@@ -134,10 +134,30 @@
   flex: 1;
 }
 
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .header-title {
   font-size: 34rpx;
   font-weight: 700;
   color: #18181B;
+}
+
+.rel-link {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 22rpx;
+  color: #71717A;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  background: #F4F4F5;
+}
+.rel-link:active {
+  background: #E4E4E7;
 }
 
 .header-desc {
@@ -557,6 +577,8 @@ html.theme-dark {
   .header-card { background: #27272A; }
   .header-enabled { border-color: #52525B; }
   .header-title { color: #FAFAFA; }
+  .rel-link { background: #3F3F46; color: #A1A1AA; }
+  .rel-link:active { background: #52525B; }
   .header-desc { color: #71717A; }
   .profile-card { background: #27272A; }
   .profile-card.card-basic { border-left-color: #52525B; }
@@ -614,6 +636,8 @@ html.theme-dark {
   .header-card { background: #27272A; }
   .header-enabled { border-color: #52525B; }
   .header-title { color: #FAFAFA; }
+  .rel-link { background: #3F3F46; color: #A1A1AA; }
+  .rel-link:active { background: #52525B; }
   .header-desc { color: #71717A; }
   .profile-card { background: #27272A; }
   .profile-card.card-basic { border-left-color: #52525B; }

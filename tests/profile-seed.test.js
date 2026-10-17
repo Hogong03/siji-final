@@ -96,7 +96,7 @@ describe('「我的画像」画像卡', () => {
     expect(card).toBeTruthy()
     expect(card.id).toBe('portrait')
     expect(card.fields['职业方向']).toContain('AI 工程')
-    expect(card.fields['人生关键词']).toBe('不要后悔')
+    expect(card.fields['人生关键词']).toContain('不要后悔')
     // 内置画像不应擅自打开注入开关
     expect(profile.enabled).toBe(false)
   })

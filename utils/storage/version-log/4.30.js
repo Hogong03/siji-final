@@ -6,6 +6,34 @@
 
 export const V430 = [
   {
+    version: '4.32.0',
+    date: '2026-10-18',
+    title: '关系图谱入口内联到标题行 + 内置画像字段重构（补"我怎么做"三层）',
+    summary: [
+      '关系图谱入口从独立卡片移到"个人信息"标题右边，灰色小胶囊"♡ 关系图谱·N人"，节省一屏高度',
+      '内置画像卡字段从 9 个扩到 12 个，与三层分组完全对齐：新增"我怎么做"层（行动原则/产品意识/创业潜力）',
+      'ensureProfileSeed 的卡写入逻辑从"存在即跳过"改为 merge：老用户刷新后自动补全新字段，已填的自定义值不被覆盖',
+      'seed_v 从 1 bump 到 2，记录内容同步刷新；人生关键词扩为"不要后悔；回头看时不觉得白活了"',
+    ],
+    categories: [
+      {
+        title: 'UI 调整',
+        items: [
+          'pages/settings/sub/profile.vue：删除独立 relations-entry 卡，header-title 行内加 rel-link 小胶囊（心形图标 + "关系图谱·N人"），v-if="enabled" 且 @tap.stop 跳关系图谱',
+          'pages/settings/sub/profile.scss：新增 .header-title-row（flex+gap 12rpx）与 .rel-link（22rpx 字、#71717A 字、#F4F4F5 底、20rpx 圆角），深色双通道补 .rel-link { background:#3F3F46; color:#A1A1AA }',
+        ],
+      },
+      {
+        title: '内置画像重构',
+        items: [
+          'utils/storage/profile-seed.js：PROFILE_CARD_FIELDS 从 9 字段扩到 12 字段，按三层分组重排；新增行动原则（以成果为单位/不等待动力/做项目接触用户）、产品意识（先调研需求/从会调用 AI 到能做 AI 系统）、创业潜力（技术壁垒→副业→条件成熟再创业，不裸辞）',
+          'ensureProfileSeed 卡写入逻辑改为 merge：卡不存在则新建；已存在则遍历 PROFILE_CARD_FIELDS，只补"缺失或空"的字段，用户已填的非空值不覆盖，并更新 card.updatedAt',
+          'PROFILE_SEED_VERSION 从 1 bump 到 2，老用户刷新后自动获得新字段且不丢手改内容',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.31.0',
     date: '2026-10-18',
     title: '我的信息升级：画像三层分组 + 完整度进度条 + 人生六维概览 + JSON 导出',

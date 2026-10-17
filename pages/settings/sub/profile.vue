@@ -425,7 +425,13 @@ function handleExport() {
     <!-- 顶部开关 -->
     <view class="header-card" :class="{ 'header-enabled': enabled }">
       <view class="header-left">
-        <view class="header-title">个人信息</view>
+        <view class="header-title-row">
+          <view class="header-title">个人信息</view>
+          <view v-if="enabled" class="rel-link" @tap.stop="goRelations">
+            <SijiIcon name="heart" :size="13" />
+            <text>关系图谱 · {{ relationsStats.total }}人</text>
+          </view>
+        </view>
         <view class="header-desc">
           {{ enabled ? `已完善 ${fillPercent}%（${filledCount}/${totalFields} 项）` : '开启后即可编辑，AI 将感知你的个人信息' }}
         </view>
@@ -438,20 +444,6 @@ function handleExport() {
       <view class="progress-bar">
         <view class="progress-fill" :style="{ width: fillPercent + '%' }" />
       </view>
-    </view>
-
-    <!-- 关系图谱入口（仅开启时显示，位于开关下方） -->
-    <view v-if="enabled" class="relations-entry" @tap="goRelations">
-      <view class="re-left">
-        <view class="re-icon">
-          <SijiIcon name="heart" :size="20" />
-        </view>
-        <view class="re-info">
-          <text class="re-title">关系图谱</text>
-          <text class="re-desc">{{ relationsStats.total }} 人 · {{ relationsStats.interactionCount }} 次互动</text>
-        </view>
-      </view>
-      <text class="re-arrow">›</text>
     </view>
 
     <!-- 人生六维概览 -->
