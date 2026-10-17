@@ -6,6 +6,113 @@
   padding: 24rpx 24rpx 120rpx;
 }
 
+/* ---- 完整度进度条 ---- */
+.progress-wrap {
+  padding: 0 8rpx;
+  margin: -8rpx 0 16rpx;
+}
+.progress-bar {
+  height: 6rpx;
+  background: #F4F4F5;
+  border-radius: 3rpx;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #18181B;
+  border-radius: 3rpx;
+  transition: width 0.4s ease;
+}
+
+/* ---- 人生六维概览 ---- */
+.life-wheel {
+  background: #FFFFFF;
+  border-radius: $radius-lg;
+  padding: 24rpx 28rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #F4F4F5;
+}
+.lw-title {
+  font-size: 22rpx;
+  color: #71717A;
+  margin-bottom: 16rpx;
+}
+.lw-dims {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx 24rpx;
+}
+.lw-dim {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.lw-dim .dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #E4E4E7;
+  border: 1rpx solid #E4E4E7;
+}
+.lw-dim.dim-on .dot {
+  background: #18181B;
+  border-color: #18181B;
+}
+.lw-label {
+  font-size: 24rpx;
+  color: #A1A1AA;
+}
+.lw-dim.dim-on .lw-label {
+  color: #18181B;
+}
+
+/* ---- 字段三层分组标题 ---- */
+.field-group {
+  margin-top: 20rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed #E4E4E7;
+}
+.field-group:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.group-label {
+  font-size: 22rpx;
+  color: #A1A1AA;
+  margin-bottom: 8rpx;
+  letter-spacing: 1rpx;
+}
+
+/* ---- 次级按钮（导出） ---- */
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 24rpx;
+  border-radius: $radius-md;
+  border: 1rpx solid #E4E4E7;
+  color: #3F3F46;
+  font-size: 26rpx;
+}
+.btn-secondary:active {
+  background: #F4F4F5;
+}
+
+/* 卡片入场动画 */
+.header-card,
+.relations-entry,
+.profile-card,
+.ai-prefs-section,
+.add-card-section {
+  animation: cardRiseIn 0.3s ease;
+}
+
+@keyframes cardRiseIn {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ---- 顶部开关 ---- */
 .header-card {
   display: flex;
@@ -110,7 +217,25 @@
 
 /* ---- 字段行 ---- */
 .card-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  max-height: 2000rpx;
+  opacity: 1;
+
+  &.body-collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+.card-body-inner {
   padding: 8rpx 28rpx 16rpx;
+  animation: bodyFadeIn 0.25s ease;
+}
+
+@keyframes bodyFadeIn {
+  from { opacity: 0; transform: translateY(-8rpx); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .field-row {
@@ -296,6 +421,17 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16rpx;
+  cursor: pointer;
+}
+
+.ai-prefs-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.ai-prefs-body {
+  animation: bodyFadeIn 0.25s ease;
 }
 
 .ai-prefs-title {
@@ -458,6 +594,18 @@ html.theme-dark {
   .re-title { color: #FAFAFA; }
   .re-desc { color: #71717A; }
   .re-arrow { color: #71717A; }
+  .progress-bar { background: #3F3F46; }
+  .progress-fill { background: #FAFAFA; }
+  .life-wheel { background: #27272A; border-color: #3F3F46; }
+  .lw-title { color: #71717A; }
+  .lw-dim .dot { background: #3F3F46; border-color: #3F3F46; }
+  .lw-dim.dim-on .dot { background: #FAFAFA; border-color: #FAFAFA; }
+  .lw-label { color: #52525B; }
+  .lw-dim.dim-on .lw-label { color: #FAFAFA; }
+  .field-group { border-top-color: #3F3F46; }
+  .group-label { color: #52525B; }
+  .btn-secondary { border-color: #3F3F46; color: #A1A1AA; }
+  .btn-secondary:active { background: #3F3F46; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
@@ -503,5 +651,17 @@ html.theme-dark {
   .re-title { color: #FAFAFA; }
   .re-desc { color: #71717A; }
   .re-arrow { color: #71717A; }
+  .progress-bar { background: #3F3F46; }
+  .progress-fill { background: #FAFAFA; }
+  .life-wheel { background: #27272A; border-color: #3F3F46; }
+  .lw-title { color: #71717A; }
+  .lw-dim .dot { background: #3F3F46; border-color: #3F3F46; }
+  .lw-dim.dim-on .dot { background: #FAFAFA; border-color: #FAFAFA; }
+  .lw-label { color: #52525B; }
+  .lw-dim.dim-on .lw-label { color: #FAFAFA; }
+  .field-group { border-top-color: #3F3F46; }
+  .group-label { color: #52525B; }
+  .btn-secondary { border-color: #3F3F46; color: #A1A1AA; }
+  .btn-secondary:active { background: #3F3F46; }
 }
 /* #endif */

@@ -6,6 +6,26 @@
 
 export const V430 = [
   {
+    version: '4.31.0',
+    date: '2026-10-18',
+    title: '我的信息升级：画像三层分组 + 完整度进度条 + 人生六维概览 + JSON 导出',
+    summary: [
+      '画像卡字段按「我是谁 / 我要去哪 / 我怎么做」三层分组渲染（参考 Replika、Serenity 人生领域划分），不再 12 字段平铺',
+      '顶部开关卡显示完整度百分比与细进度条（已完善 X%，已填/总项）',
+      '新增人生六维概览条：职业/财务/家庭/感情/成长/健康，已填实色、未填灰点',
+      '底部新增「导出画像 JSON」按钮（H5 下载文件，App/MP 复制到剪贴板），解决 localStorage 换机丢失',
+    ],
+    categories: [
+      {
+        title: '我的信息页面',
+        items: [
+          'pages/settings/sub/profile.vue：新增 PROFILE_GROUPS 三层映射、groupCardFields 分组函数、cardGroups 预计算、LIFE_DIMENSIONS 六维 computed、totalFields/fillPercent 完整度、handleExport 导出函数；模板按分组渲染（hasGroups 分支 vs 平铺分支）、顶部进度条、六维概览条、底部导出按钮',
+          'pages/settings/sub/profile.scss：新增 .progress-wrap/.progress-bar/.progress-fill、.life-wheel/.lw-title/.lw-dims/.lw-dim/.dot/.lw-label、.field-group/.group-label、.btn-secondary 浅色样式，深色双通道（H5/App html.theme-dark + MP @media）同步补齐',
+        ],
+      },
+    ],
+  },
+  {
     version: '4.30.0',
     date: '2026-10-18',
     title: '提示体系收敛：删每日小结卡、计划汇总表改版（今日焦点 + 折叠 + 可关）、提示开关落地',
