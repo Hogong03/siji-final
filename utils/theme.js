@@ -34,18 +34,26 @@ let mqlHandler = null
 let uniHandler = null
 
 /**
- * 读系统深色态。H5 走 matchMedia，App/MP 走 getSystemInfoSync().theme。
- * 全部失败按浅色处理（与 useTheme 历史行为一致）。
+ * 读系统深色态。
+ *
+ * 4.35.0 修正读取顺序：**先读 uni.getSystemInfoSync().theme，再退 matchMedia**。
+ * 原来 matchMedia 在前 —— App 逻辑层只要有 window（有没有 document 是另一件事），
+ * 第一分支就命中并返回它自己的结果，`getSystemInfoSync().theme` 那条路永远走不到。
+ * 官方口径（DarkMode 适配指南）：声明了 darkmode: true 的平台 theme 返回 'light'/'dark'，
+ * 未声明则 theme 为 undefined —— 所以只有拿到 'light'/'dark' 才算权威结论，undefined 才继续往下试。
  */
 function readSystemDark() {
   try {
+    if (typeof uni !== 'undefined' && typeof uni.getSystemInfoSync === 'function') {
+      const th = uni.getSystemInfoSync().theme
+      if (th === 'dark') return true
+      if (th === 'light') return false
+      // undefined：该平台 manifest 未开 darkmode，继续往下试
+    }
+  } catch (e) { /* 忽略，退到 matchMedia */ }
+  try {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches === true
-    }
-  } catch (e) { /* 忽略，退到 uni 分支 */ }
-  try {
-    if (typeof uni !== 'undefined' && typeof uni.getSystemInfoSync === 'function') {
-      return uni.getSystemInfoSync().theme === 'dark'
     }
   } catch (e) { /* 忽略，按浅色处理 */ }
   return false
@@ -102,6 +110,26 @@ function syncH5TabIcons() {
   } catch (e) { /* 结构不符则无操作，API 层仍会兜 */ }
 }
 
+// 4.30.1：切 tab 时 uni-h5 重渲染 tabBar img，theme.json 变量不重新求值 → 选中图标回到浅色版。
+// 用 MutationObserver 监听 tabBar img src 变化，一旦发现与当前主题不符立刻替换，比 hashchange 更可靠
+// （uni-h5 内部路由可能不触发标准 hashchange）。
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const _sync = () => { try { syncH5TabIcons() } catch (e) {} }
+  window.addEventListener('hashchange', _sync)
+  // 初始延迟挂 MutationObserver，等 .uni-tabbar 渲染出来
+  setTimeout(() => {
+    try {
+      const bar = document.querySelector('.uni-tabbar')
+      if (!bar) return
+      new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.attributeName === 'src') _sync()
+        }
+      }).observe(bar, { attributes: true, subtree: true, attributeFilter: ['src'] })
+    } catch (e) {}
+  }, 300)
+}
+
 /**
  * 构造注入到页面 WebView 的类切换 JS（4.12.3 抽出可单测）
  * App 端逻辑层没有 document，只能通过 plus.webview.evalJS 在各页面的视图层执行
@@ -118,6 +146,7 @@ export function buildToggleJs(dark) {
 let applyClass = () => {}
 let setNativeBars = () => {}
 let watchSystem = () => {}
+let applyNativeUiStyle = () => {}
 
 // #ifdef MP-WEIXIN
 // MP：无 DOM 无类驱动，媒体查询版 CSS 自行跟随系统；pages.json @变量编译期已随系统。
@@ -217,6 +246,23 @@ applyClass = () => {
     }
   } catch (e) { /* App 挂类失败静默 */ }
 }
+
+/**
+ * App 端原生 UI 风格（4.35.0）。
+ * 官方文档（DarkMode 适配指南 · 监听主题切换事件）明确：
+ * **「在 App 上需要先调用 plus.nativeUI.setUIStyle('auto') 开启跟随系统主题切换的功能，
+ * 才能监听到主题切换事件」** —— 不调这个，uni.onThemeChange 永远不来。
+ * 现象就是「冷启动那次能读对系统态，运行中切系统主题完全不跟随」。
+ * system 档 → 'auto'（把跟随能力打开）；手动档 → 直接把原生层钉到该档，与页面内容一致。
+ */
+applyNativeUiStyle = () => {
+  try {
+    if (typeof plus === 'undefined' || !plus.nativeUI) return
+    if (typeof plus.nativeUI.setUIStyle !== 'function') return
+    const style = mode === 'dark' ? 'dark' : (mode === 'light' ? 'light' : 'auto')
+    plus.nativeUI.setUIStyle(style)
+  } catch (e) { /* 原生层不支持时静默，页面换色仍由 JS 驱动 */ }
+}
 // #endif
 
 watchSystem = (on) => {
@@ -293,9 +339,11 @@ function setThemeMode(next) {
   try { uni.setStorageSync(STORAGE_KEY, mode) } catch (e) { /* 落盘失败静默，本次会话仍生效 */ }
   if (mode === 'light' || mode === 'dark') {
     isDark.value = mode === 'dark'
+    applyNativeUiStyle() // App：原生层也钉到手动档
     watchSystem(false) // 手动档摘掉系统监听
   } else {
     isDark.value = readSystemDark()
+    applyNativeUiStyle() // App：setUIStyle('auto') 是 onThemeChange 能来的前提
     watchSystem(true) // system 档重新挂监听
   }
   applyTheme()
@@ -314,9 +362,11 @@ function initTheme() {
   mode = readStoredMode()
   if (mode === 'light' || mode === 'dark') {
     isDark.value = mode === 'dark'
+    applyNativeUiStyle() // App：原生层也钉到手动档
     watchSystem(false)
   } else {
     isDark.value = readSystemDark()
+    applyNativeUiStyle() // App：setUIStyle('auto') 是 onThemeChange 能来的前提
     watchSystem(true)
   }
   applyTheme()

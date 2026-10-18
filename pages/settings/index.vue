@@ -325,7 +325,7 @@ function go(target) {
 
 .row-icon { flex-shrink: 0; }
 
-.row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .row-label { font-size: $font-md; font-weight: 600; color: #18181B; 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-desc { font-size: $font-xs; color: #A1A1AA;

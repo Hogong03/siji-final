@@ -1,0 +1,20 @@
+{
+  "name": "siji-keepalive",
+  "id": "siji-keepalive",
+  "version": "1.0.0",
+  "description": "思迹后台常驻（Android 前台服务）。纯 Service 无 UI、无 JS 模块导出：由 utils/keepalive.js 通过 plus.android 反射启动，见 docs/后台保活方案.md",
+  "_dp_type": "nativeplugin",
+  "_dp_nativeplugin": {
+    "android": {
+      "plugins": [],
+      "integrateType": "aar",
+      "minSdkVersion": 21,
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "parameters": {}
+    }
+  }
+}

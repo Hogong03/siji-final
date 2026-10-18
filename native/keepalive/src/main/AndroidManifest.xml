@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  思迹后台常驻插件（4.35.0）— 打进 AAR 的 AndroidManifest，云打包/离线打包时并入宿主。
+
+  只声明一个前台服务 + 三个权限，无 Activity / 无资源 / 无 receiver。
+  foregroundServiceType 用 specialUse：dataSync 在 Android 15 上有 6 小时/24 小时上限，
+  到点会被系统 stopForeground；specialUse 无此上限，代价是 Google Play 需要审核说明。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.siji.keepalive">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <service
+            android:name="com.siji.keepalive.SijiKeepAliveService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="life_assistant_background_reminder" />
+        </service>
+    </application>
+</manifest>

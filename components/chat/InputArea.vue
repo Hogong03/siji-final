@@ -406,7 +406,7 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 
 .input-wrap {
 	flex: 1; min-height: 72rpx; max-height: 350rpx; padding: 12rpx 24rpx;
-	background: #F4F4F5; border-radius: 36rpx; border: 1rpx solid #E4E4E7;
+	background: #F4F4F5; border-radius: 20rpx; border: 1rpx solid #E4E4E7;
 	display: flex; align-items: center; overflow-y: auto;
 	transition: border-color 0.2s ease, background-color 0.2s ease;
 	&:focus-within {
@@ -433,7 +433,7 @@ defineExpose({ reset, setText, getImage: () => selectedImage.value, resetImage: 
 .send-btn.active .send-dot {
 	background: #000000; opacity: 1;
 }
-.send-btn:active .send-dot { transform: scale(1.05); }
+.send-btn:active .send-dot { transform: scale(1.08); }
 .send-icon { color: #FFFFFF; font-size: 36rpx; font-weight: 700; }
 .stop-dot { background: #18181B; }
 .stop-btn:active .stop-dot { transform: scale(.9); }

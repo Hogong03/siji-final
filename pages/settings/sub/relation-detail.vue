@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="page">
     <view v-if="relation" class="detail-content">
       <!-- 人物头部 -->
@@ -61,10 +61,12 @@
       </view>
 
       <!-- 操作按钮 -->
-      <view class="actions">
-        <button class="btn-action" @tap="startSimulation">模拟演练</button>
-        <button class="btn-action" @tap="openEditForm">编辑</button>
-        <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
+      <view class="section actions-card">
+        <view class="actions">
+          <button class="btn-action" @tap="startSimulation">模拟演练</button>
+          <button class="btn-action" @tap="openEditForm">编辑</button>
+          <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
+        </view>
       </view>
     </view>
 
@@ -282,7 +284,7 @@ function handleDelete() {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; background: #FAFAFA; }
+.page { min-height: 100vh; background: #F4F4F5; }
 .detail-content { padding: 24rpx; }
 
 .hero {
@@ -328,7 +330,8 @@ function handleDelete() {
 .interaction-content { font-size: 28rpx; color: #3F3F46; margin-top: 8rpx; display: block; }
 .interaction-result, .interaction-emotion { font-size: 24rpx; color: #71717A; margin-top: 4rpx; display: block; }
 
-.actions { display: flex; gap: 24rpx; margin-top: 24rpx; }
+.actions { display: flex; gap: 24rpx; }
+.actions-card { padding: 20rpx 28rpx; }
 .btn-action {
   flex: 1; height: 88rpx; border-radius: 16rpx;
   font-size: 30rpx; font-weight: 600; border: none;

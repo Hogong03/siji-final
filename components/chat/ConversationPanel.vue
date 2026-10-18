@@ -210,7 +210,7 @@ function handleSearchInput(e) {
   display: flex;
   align-items: center;
   gap: $spacing-xs;
-  margin: $spacing-sm $spacing-md 0;
+  margin: $spacing-sm $spacing-md $spacing-sm;
   padding: 10rpx 20rpx;
   background: #F4F4F5;
   border-radius: 16rpx;

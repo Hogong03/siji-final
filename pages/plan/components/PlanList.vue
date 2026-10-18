@@ -75,7 +75,7 @@ const emit = defineEmits([
 .plan-scroll {
 	flex: 1;
 	box-sizing: border-box;
-	padding: 8rpx 20rpx 0;
+	padding: 8rpx 24rpx 0;
 }
 
 .empty-actions {

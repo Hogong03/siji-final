@@ -6,6 +6,77 @@
 
 export const V430 = [
   {
+    version: '4.35.0',
+    date: '2026-10-19',
+    title: 'Android 后台常驻：前台服务原生插件 + 提示与提醒页后台运行开关',
+    summary: [
+      '新增原生插件 nativeplugins/siji-keepalive（4KB AAR）：Android 前台服务 + 常驻通知，退后台/从最近任务划掉后进程不再被立刻回收',
+      '构建不依赖 Android Studio / Gradle / uniapp 插件 SDK —— 纯 Java 源码 + android.jar 用 javac 编译，scripts/build-keepalive-aar.ps1 一条命令出 AAR',
+      '设置 - 提示与提醒新增「后台运行」组（App 端）：后台常驻开关 + 电池优化放行入口；开关存 siji_keepalive_enabled，默认关',
+      '插件没打进包（标准基座/旧包）时静默降级、启动不崩；App.vue 在 appReady 与 onShow 各同步一次服务状态',
+      '新增 tests/keepalive.test.js；真机验证项登记进 docs/真机验证清单.md，方案与打包步骤见 docs/后台保活方案.md'
+    ],
+    categories: [
+      {
+        title: '后台常驻（原生插件）',
+        items: [
+          'native/keepalive/src/main/java/com/siji/keepalive/SijiKeepAliveService.java（新增）：前台服务，START_STICKY 自重启、stopWithTask=false 划任务不停、通知渠道 siji_keepalive（IMPORTANCE_LOW、不响不震、点通知回 App）',
+          'native/keepalive/src/main/AndroidManifest.xml（新增）：声明 service + FOREGROUND_SERVICE / FOREGROUND_SERVICE_SPECIAL_USE / POST_NOTIFICATIONS，foregroundServiceType=specialUse（dataSync 在 Android 15 有 6 小时/24 小时上限）',
+          'nativeplugins/siji-keepalive/package.json（新增）：本地原生插件描述，integrateType=aar、minSdkVersion=21、无 UniModule（plugins 为空数组）',
+          'nativeplugins/siji-keepalive/android/siji-keepalive.aar（构建产物，4KB）：classes.jar + AndroidManifest.xml',
+          'scripts/build-keepalive-aar.ps1（新增）：定位 android.jar → javac(-source/-target 8) → jar → zip 出 AAR；JDK 8/17 都吃',
+          '文档 docs/后台保活方案.md（新增）：可行性边界、构建/打包步骤、Android 14+ 类型选择、Store 审核口径、真机验证清单'
+        ]
+      },
+      {
+        title: 'JS 封装与接入',
+        items: [
+          'utils/keepalive.js（新增）：isKeepAliveOn/setKeepAliveOn（键 siji_keepalive_enabled）、isKeepAliveSupported（plus.android.importClass 探测 + 结果缓存）、startKeepAlive（API 26+ startForegroundService）、stopKeepAlive（stopService）、syncKeepAlive（按开关幂等同步）、openBatteryOptimizationSettings（ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS，兜底应用详情页）',
+          'App.vue：appReady 与 onShow 各调一次 syncKeepAlive（try/catch 兜住，插件缺失不影响启动）',
+          'manifest.json：app-plus.nativePlugins 注册 siji-keepalive + 补 FOREGROUND_SERVICE / FOREGROUND_SERVICE_SPECIAL_USE 权限 + versionName 4.35.0 / versionCode 4350'
+        ]
+      },
+      {
+        title: '设置页',
+        items: [
+          'pages/settings/sub/notify.vue：新增「后台运行」组（#ifdef APP-PLUS）：后台常驻开关（含 keepAliveSupported 置灰态说明）+ 允许后台运行（电池优化引导）+ 深色配套 .np-row-tap/.np-arrow'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/keepalive.test.js（新增）：开关归一、shouldStartKeepAlive 双条件、buildStartSpec（类名/action/文案兜底）、androidMajorVersion、开关读写、插件缺失时的四条降级路径',
+          '真机项：常驻通知是否出现、划掉最近任务后 60s 轮询是否还在跑、特殊 ROM 是否需要电池白名单（docs/真机验证清单.md）'
+        ]
+      }
+    ]
+  },
+  {
+    version: '4.34.0',
+    date: '2026-10-18',
+    title: '人脉页改版：砍ECharts力导向图，改分组卡片+最近互动',
+    summary: [
+      '砍掉 relation-graph 页的 ECharts 力导向图（H5下黑块渲染失败）',
+      '新设计：顶部概览数字 + 按家人/伴侣/朋友/工作/师长分组卡片',
+      '每人显示首字头像+名字+context+tags+上次互动距今几天',
+      'role 归一化映射：母亲/父亲自动归入家人，女友归入伴侣等',
+      '深色模式适配，零阴影零渐变纯Zinc灰阶'
+    ],
+    categories: [
+      {
+        title: '人脉',
+        items: [
+          'pages/settings/sub/relation-graph.vue 整体重写，删除 RelationGraphECharts 依赖',
+          'pages/settings/sub/relation-graph.scss 整体重写',
+          '新增顶部概览行：总人数/7天内互动/平均亲密度',
+          '新增 role 归一化映射 ROLE_GROUPS，把具体角色归到5大类',
+          '人物卡片：80rpx首字头像 + 名字 + context+tags + 距今时间',
+          '超30天未联系的人头像变灰、时间文字变红'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.33.4',
     date: '2026-10-18',
     title: '画像按钮颜色加深、图标放大、间距收紧',

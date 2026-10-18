@@ -41,11 +41,13 @@ export function getReminderSettings() {
  * summarySheet：每天首次进聊天页自动弹「计划汇总表」
  * briefing：进入聊天页的简报卡（消息流里的开场结构化卡）
  * reminderToast：计划到点的应用内提醒 toast
+ * advice：应用建议面板（按时段 + 数据 + 运行环境给建议，签名变了才重出）
  */
 export const PROMPT_FLAG_DEFAULTS = {
   summarySheet: true,
   briefing: true,
-  reminderToast: true
+  reminderToast: true,
+  advice: true
 }
 
 /** 归一化提示开关：只认显式 false 为关，其余一律回落默认（存储坏了也不会静默关掉提示） */

@@ -36,6 +36,7 @@
 		checkAllReminders
 	} from '@/utils/reminder.js'
 	import { registerPlanPushes } from '@/utils/reminder/push-schedule.js'
+	import { syncKeepAlive } from '@/utils/keepalive.js'
 	import {
 		checkVersionUpdate,
 		primeAppVersion
@@ -125,6 +126,11 @@
 				try {
 					registerPlanPushes()
 				} catch (e) { /* ignore */ }
+				// 4.35.0：后台常驻（App 端 Android 前台服务，开关在 设置 - 提示与提醒）
+				// 插件没打进包时内部静默降级，不会影响启动
+				try {
+					syncKeepAlive()
+				} catch (e) { /* ignore */ }
 				// 3.4.5 / 3.5.12：进入总结（冷启动 + 回前台两条路径，回前台结算见 onShow）
 				initEnterSummary()
 				// 自动本地备份（App 端专属）：开关开（siji_auto_backup 默认开）且距上次超过 24h
@@ -209,6 +215,13 @@
 		// 4.22.0：回前台重注册本地推送（60s 节流）—— 提醒配置或计划变更后滚动窗口自动对齐
 		try {
 			registerPlanPushes()
+		} catch (e) {
+			/* ignore */
+		}
+
+		// 4.35.0：回前台校正后台常驻状态（用户在系统里关过通知 / 系统杀过进程时补拉起）
+		try {
+			syncKeepAlive()
 		} catch (e) {
 			/* ignore */
 		}
@@ -367,4 +380,97 @@
 	.feedback-form-page {
 		animation: fadeInUp 0.3s ease both;
 	}
+
+	/* ─── uni.showModal 全局美化（H5/App-vue）───
+	 * 圆角 24rpx、淡入缩放动画、深色适配、黑白按钮
+	 */
+	/* #ifndef MP-WEIXIN */
+	.uni-modal {
+		border-radius: 24rpx !important;
+		overflow: hidden;
+		background: #FFFFFF !important;
+		animation: modalPopIn 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) !important;
+	}
+
+	.uni-modal-mask {
+		background: rgba(0, 0, 0, 0.45) !important;
+		animation: maskFadeIn 0.2s ease !important;
+	}
+
+	.uni-modal__title {
+		font-size: 32rpx !important;
+		font-weight: 600 !important;
+		color: #18181B !important;
+		padding: 36rpx 32rpx 12rpx !important;
+	}
+
+	.uni-modal__content {
+		font-size: 28rpx !important;
+		color: #3F3F46 !important;
+		padding: 12rpx 32rpx 28rpx !important;
+		line-height: 1.6 !important;
+	}
+
+	.uni-modal__btns {
+		border-top: 1rpx solid #E4E4E7 !important;
+	}
+
+	.uni-modal__btn {
+		font-size: 30rpx !important;
+		font-weight: 500 !important;
+		color: #18181B !important;
+	}
+
+	.uni-modal__btn:after {
+		border-right: 1rpx solid #E4E4E7 !important;
+	}
+
+	/* 深色模式 */
+	html.theme-dark .uni-modal {
+		background: #27272A !important;
+	}
+	html.theme-dark .uni-modal__title {
+		color: #FAFAFA !important;
+	}
+	html.theme-dark .uni-modal__content {
+		color: #D4D4D8 !important;
+	}
+	html.theme-dark .uni-modal__btns {
+		border-top-color: #3F3F46 !important;
+	}
+	html.theme-dark .uni-modal__btn {
+		color: #FAFAFA !important;
+	}
+	html.theme-dark .uni-modal__btn:after {
+		border-right-color: #3F3F46 !important;
+	}
+
+	@keyframes modalPopIn {
+		from { opacity: 0; transform: scale(0.92) translateY(10rpx); }
+		to { opacity: 1; transform: scale(1) translateY(0); }
+	}
+
+	@keyframes maskFadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	/* uni.showActionSheet 美化 */
+	.uni-actionsheet {
+		border-radius: 24rpx 24rpx 0 0 !important;
+		overflow: hidden;
+	}
+
+	html.theme-dark .uni-actionsheet {
+		background: #27272A !important;
+	}
+	html.theme-dark .uni-actionsheet__cell {
+		color: #FAFAFA !important;
+	}
+
+	/* uni.showToast 美化 */
+	.uni-toast {
+		border-radius: 24rpx !important;
+	}
+	/* #endif */
 </style>

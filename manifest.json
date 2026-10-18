@@ -2,10 +2,11 @@
   "name": "思迹",
   "appid": "__UNI__128A9A5",
   "description": "AI个人生活助手 — 对话式记录/记账/计划",
-  "versionName": "4.33.4",
-  "versionCode": 4334,
+  "versionName": "4.35.0",
+  "versionCode": 4350,
   "transformPx": false,
   "app-plus": {
+    "darkmode": true,
     "themeLocation": "theme.json",
     "usingComponents": true,
     "nvueStyleCompiler": "uni-app",
@@ -19,6 +20,9 @@
     "modules": {
       "Push": {}
     },
+    "nativePlugins": {
+      "siji-keepalive": {}
+    },
     "distribute": {
       "android": {
         "permissions": [
@@ -26,6 +30,8 @@
           "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
           "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
           "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\"/>",
+          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>",
+          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_SPECIAL_USE\"/>",
           "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
         ]
       },
@@ -78,6 +84,8 @@
     "softinputMode": "adjustResize"
   },
   "h5": {
+    "darkmode": true,
+    "themeLocation": "theme.json",
     "router": {
       "mode": "hash"
     },

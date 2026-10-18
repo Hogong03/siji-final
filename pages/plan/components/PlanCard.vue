@@ -108,8 +108,8 @@ function formatEst(ds) {
 .plan-card {
 	background: #FFFFFF;
 	border-radius: 12rpx;
-	padding: 16rpx 20rpx;
-	margin-bottom: 10rpx;
+	padding: 24rpx;
+	margin-bottom: 16rpx;
 	border-left: 6rpx solid transparent;
 
 	&:active { transform: scale(0.98); }

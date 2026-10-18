@@ -18,6 +18,7 @@ import ModelSwitcher from '@/components/chat/ModelSwitcher.vue'
 import UnifiedSwitcher from '@/components/chat/UnifiedSwitcher.vue'
 import OnboardingGuide from '@/components/chat/OnboardingGuide.vue'
 import PlanSummarySheet from '@/components/plan/PlanSummarySheet.vue'
+import AdviceSheet from '@/components/advice/AdviceSheet.vue'
 import { useChatEngine } from '@/composables/useChatEngine.js'
 import { useScrollControl } from '@/composables/useScrollControl.js'
 import { useConversationManager } from '@/composables/useConversationManager.js'
@@ -32,6 +33,8 @@ import { enterSummarySignature, shouldAppendEnterSummary } from '@/utils/enter-d
 import { buildPlanSummary, shouldShowPlanSummary, markPlanSummaryShown } from '@/utils/plan-summary.js'
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { getPromptFlag, setPromptFlag } from '@/utils/reminder/settings.js'
+import { buildAdvice, shouldShowAdvice, markAdviceShown } from '@/utils/advice.js'
+import { isDark } from '@/utils/theme.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { ref as vueRef } from 'vue'
 import { useChatRuler } from '@/composables/useChatRuler.js'
@@ -165,7 +168,8 @@ const {
   sortedConversations, filteredConversations, groupedConversations, hasTags,
   toggleConvList, setFilter, selectTag, refreshTags,
   handleNewConversation: _handleNewConversation, handleSwitchConversation: _handleSwitchConversation, handleDeleteConversation: _handleDeleteConversation,
-  handleMoreConversation
+  handleMoreConversation, convActionVisible, closeConvAction,
+  onActionRename, onActionTag, onActionDelete
 } = useConversationManager(store, getWelcomeMessage, resetScrollState, buildOpenerMessage)
 
 function handleResumeBack() {
@@ -568,9 +572,130 @@ function maybeShowPlanSummary() {
 	}, 600)
 }
 
+// ===== 应用建议（4.35.0）=====
+// 打开应用时按「应用内容 + 当前时段 + 运行环境」给建议；三层任一变化（上下文签名变了）就重出。
+// 生成与门控都在 utils/advice.js（纯函数 + 一层节流），本页只做取环境、挂载与跳转。
+const EMPTY_ADVICE = { greeting: '', bucketLabel: '', focus: '', items: [], env: {} }
+const showAdvice = ref(false)
+const adviceData = ref(EMPTY_ADVICE)
+
+/** 首次引导是否已走完（与 checkOnboarding 同一标记） */
+function onboardingDone() {
+	try { return uni.getStorageSync('siji_onboarding_done') === '1' } catch (e) { return false }
+}
+
+/**
+ * 离线探测（同步、能探测到就探，探不到按在线处理）：
+ * H5 走 navigator.onLine，App 走 plus.networkinfo；小程序没有同步 API，回落「在线」。
+ */
+function probeOffline() {
+	try {
+		if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') return !navigator.onLine
+	} catch (e) { /* 忽略，试 App 分支 */ }
+	try {
+		if (typeof plus !== 'undefined' && plus.networkinfo && typeof plus.networkinfo.getCurrentType === 'function') {
+			return plus.networkinfo.getCurrentType() === plus.networkinfo.CONNECTION_NONE
+		}
+	} catch (e) { /* 忽略，按在线处理 */ }
+	return false
+}
+
+/** 当前运行环境四要素 */
+function currentAdviceEnv() {
+	return {
+		aiReady: Object.keys(store.providerKeys || {}).length > 0,
+		firstRun: !onboardingDone(),
+		offline: probeOffline(),
+		dark: !!isDark.value
+	}
+}
+
+/** 手动/自动打开建议面板（打开即记一次，避免同签名反复弹） */
+function openAdvice() {
+	let built = EMPTY_ADVICE
+	try {
+		built = buildAdvice({ now: Date.now(), env: currentAdviceEnv() })
+	} catch (e) {
+		built = EMPTY_ADVICE
+	}
+	adviceData.value = built
+	showAdvice.value = true
+	markAdviceShown(Date.now(), built.signature)
+}
+
+function closeAdvice() {
+	showAdvice.value = false
+}
+
+/** 表内「不再自动弹出」：写开关并关掉当前这张 */
+function disableAdviceAuto() {
+	setPromptFlag('advice', false)
+	closeAdvice()
+	uni.showToast({ title: '已关闭自动建议', icon: 'none' })
+}
+
+/** 表内「提示设置」入口 */
+function openAdviceNotifySettings() {
+	closeAdvice()
+	uni.navigateTo({ url: '/pages/settings/sub/notify' })
+}
+
+/** 点一条建议：跳页 / 开引导 / 预填话术 */
+function goAdvice(item) {
+	closeAdvice()
+	const a = item && item.action
+	if (!a) return
+	if (a.type === 'nav' && a.url) {
+		const tabs = ['/pages/chat/index', '/pages/functions/index', '/pages/settings/index']
+		if (tabs.indexOf(a.url) >= 0) uni.switchTab({ url: a.url })
+		else uni.navigateTo({ url: a.url })
+	} else if (a.type === 'guide') {
+		showOnboarding.value = true
+	} else if (a.type === 'prefill' && a.text) {
+		uni.$emit('prefill-input', a.text)
+	}
+}
+
+/**
+ * 进聊天页看看要不要给建议。
+ * 四条让位规则（避免叠浮层、避免同一件事说两遍）：
+ *   1. 首启引导那轮不弹（它要教配 Key，两张浮层叠一起没法用）
+ *   2. 页面已在消息区挂了「无 Key 引导卡」时不弹（同一件事，别再弹一张面板）
+ *   3. 同一轮已经弹了计划汇总表 → 让位，等下次进来再给
+ *   4. 延迟 900ms（晚于汇总表的 600ms），落位更稳
+ */
+function maybeShowAdvice() {
+	if (!getPromptFlag('advice')) return
+	if (showOnboarding.value) return
+	if (noKeyGuideVisible.value) return
+	if (showPlanSummary.value) return
+	let built = EMPTY_ADVICE
+	try {
+		built = buildAdvice({ now: Date.now(), env: currentAdviceEnv() })
+	} catch (e) {
+		return // 取数失败就整条链路放弃，不弹空表
+	}
+	const decision = shouldShowAdvice(Date.now(), built.signature, getPromptFlag('advice'))
+	if (!decision.show) return
+	setTimeout(() => {
+		if (showOnboarding.value || showPlanSummary.value || showAdvice.value) return
+		if (!getPromptFlag('advice')) return
+		adviceData.value = built
+		showAdvice.value = true
+		markAdviceShown(Date.now(), built.signature)
+	}, 900)
+}
+
+/** 从计划速览面板手动打开建议（不受自动弹门控限制） */
+function openAdviceFromSheet() {
+	togglePlanSheet()
+	openAdvice()
+}
+
 function goPlanPage() {
 	togglePlanSheet()
-	uni.switchTab({ url: '/pages/plan/index' })
+	// 计划页不在 tabBar 里（tabBar 只有 chat/functions/settings），switchTab 会 fail，必须 navigateTo
+	uni.navigateTo({ url: '/pages/plan/index' })
 }
 
 // 顶部厂商 logo 映射
@@ -656,6 +781,8 @@ onMounted(() => {
   checkOnboarding()
   // 4.29.5：每天第一次进聊天页弹计划汇总表（首启引导那轮让位）
   maybeShowPlanSummary()
+  // 4.35.0：应用建议（内容 + 时段 + 运行环境，签名变了才重出；汇总表弹了就让位）
+  maybeShowAdvice()
 })
 
 onUnmounted(() => {
@@ -724,6 +851,10 @@ function handleWelcomeChip(text) {
       <!-- 4.30.0：汇总表的稳定入口 —— 关掉每日自动弹出后仍能打开，也是「提示设置」的可达路径 -->
       <view class="plan-sheet-footer" @tap="openSummaryFromSheet">
         <text class="plan-sheet-footer-text">查看计划汇总</text>
+      </view>
+      <!-- 4.35.0：建议的手动入口（自动弹被关掉或当天已弹过时，从这里也能看） -->
+      <view class="plan-sheet-footer" @tap="openAdviceFromSheet">
+        <text class="plan-sheet-footer-text">看看建议</text>
       </view>
       <view class="plan-sheet-footer" @tap="goPlanPage">
         <text class="plan-sheet-footer-text">打开计划页</text>
@@ -949,6 +1080,15 @@ function handleWelcomeChip(text) {
     @disable-auto="disablePlanSummaryAuto"
     @open-notify="openNotifySettings"
   />
+  <!-- 4.35.0：应用建议面板（进聊天页按内容/时段/运行环境给建议；表内可直接关掉自动弹出） -->
+  <AdviceSheet
+    :show="showAdvice"
+    :advice="adviceData"
+    @close="closeAdvice"
+    @go="goAdvice"
+    @disable-auto="disableAdviceAuto"
+    @open-notify="openAdviceNotifySettings"
+  />
 
     <!-- 模型快速切换 Modal -->
     <ModelSwitcher :show="showModelSwitch" @close="showModelSwitch = false" />
@@ -977,6 +1117,24 @@ function handleWelcomeChip(text) {
       @search="val => keyword = val"
       @navigate="(url) => { toggleConvList(); uni.navigateTo({ url }) }"
     />
+
+    <!-- 对话行操作面板（自定义底部弹出，替代 uni.showActionSheet） -->
+    <view v-if="convActionVisible" class="conv-action-mask" @tap="closeConvAction">
+      <view class="conv-action-sheet" @tap.stop>
+        <view class="conv-action-item" @tap="onActionRename">
+          <text class="conv-action-text">重命名</text>
+        </view>
+        <view class="conv-action-item" @tap="onActionTag">
+          <text class="conv-action-text">编辑标签</text>
+        </view>
+        <view class="conv-action-item" @tap="onActionDelete">
+          <text class="conv-action-text danger">删除对话</text>
+        </view>
+        <view class="conv-action-cancel" @tap="closeConvAction">
+          <text class="conv-action-cancel-text">取消</text>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -987,4 +1145,28 @@ function handleWelcomeChip(text) {
 <style lang="scss" scoped>
 /* 4.15 的每日小结卡已删除（4.30.0）：它讲的今日记录/支出/进行中/打卡
    在计划汇总表里都有且更细，留着就是同一件事说两遍 */
+
+.conv-action-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100;
+  display: flex; align-items: flex-end;
+}
+.conv-action-sheet {
+  width: 100%; padding: 12rpx; padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+}
+.conv-action-item {
+  background: #FFFFFF; border-radius: 16rpx; padding: 32rpx; text-align: center;
+  margin-bottom: 12rpx;
+}
+.conv-action-text { font-size: 30rpx; color: #18181B; }
+.conv-action-text.danger { color: #DC2626; }
+.conv-action-cancel {
+  background: #FFFFFF; border-radius: 16rpx; padding: 32rpx; text-align: center; margin-top: 12rpx;
+}
+.conv-action-cancel-text { font-size: 30rpx; color: #71717A; font-weight: 600; }
+
+html.theme-dark .conv-action-item { background: #27272A; }
+html.theme-dark .conv-action-text { color: #FAFAFA; }
+html.theme-dark .conv-action-text.danger { color: #F87171; }
+html.theme-dark .conv-action-cancel { background: #27272A; }
+html.theme-dark .conv-action-cancel-text { color: #A1A1AA; }
 </style>

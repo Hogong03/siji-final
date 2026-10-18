@@ -18,6 +18,10 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
   const activeTag = ref(null) // null = 全部
   const keyword = ref('') // 搜索关键词（标题 + 消息内容）
 
+  // 行操作菜单（自定义底部面板，替代 uni.showActionSheet——H5 深色模式原生 ActionSheet 样式失控）
+  const convActionVisible = ref(false)
+  const currentConv = ref(null)
+
   // 全部标签列表（从全局标签库读取）
   const allTags = ref([])
 
@@ -90,16 +94,29 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
     showConvList.value = false
   }
 
-  /** 行操作菜单（4.24.0）：重命名 / 标签 / 删除 —— 桌面 H5 鼠标没有 touch 事件，长按删除在桌面端完全不可用，收敛为显式菜单 */
+  /** 行操作菜单（4.24.0）：重命名 / 标签 / 删除 —— 打开自定义底部面板 */
   function handleMoreConversation(conv) {
-    uni.showActionSheet({
-      itemList: ['重命名', '编辑标签', '删除对话'],
-      success: (res) => {
-        if (res.tapIndex === 0) handleRenameConversation(conv)
-        else if (res.tapIndex === 1) handleAddTag(conv)
-        else if (res.tapIndex === 2) handleDeleteConversation(conv)
-      }
-    })
+    currentConv.value = conv
+    convActionVisible.value = true
+  }
+  function closeConvAction() {
+    convActionVisible.value = false
+    currentConv.value = null
+  }
+  function onActionRename() {
+    const c = currentConv.value
+    closeConvAction()
+    if (c) handleRenameConversation(c)
+  }
+  function onActionTag() {
+    const c = currentConv.value
+    closeConvAction()
+    if (c) handleAddTag(c)
+  }
+  function onActionDelete() {
+    const c = currentConv.value
+    closeConvAction()
+    if (c) handleDeleteConversation(c)
   }
 
   function handleSwitchConversation(id) {
@@ -219,6 +236,8 @@ export function useConversationManager(store, getWelcomeMessage, scrollReset, se
     sortedConversations, filteredConversations, groupedConversations, hasTags,
     toggleConvList, setFilter, selectTag, refreshTags,
     handleNewConversation, handleSwitchConversation, handleDeleteConversation,
-    handleRenameConversation, handleAddTag, handleMoreConversation
+    handleRenameConversation, handleAddTag, handleMoreConversation,
+    convActionVisible, currentConv, closeConvAction,
+    onActionRename, onActionTag, onActionDelete
   }
 }
