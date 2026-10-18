@@ -6,6 +6,10 @@
  */
 import { ref } from 'vue'
 import { getSnoozeMin, setSnoozeMin, SNOOZE_OPTIONS } from '@/utils/reminder.js'
+// 4.35.1：原先是动态 import（`import('@/utils/reminder/notifier.js')`）。
+// notifier 已被 @/utils/reminder.js 静态引入，动态写法既不省分包（构建警告会直接告诉你）
+// 又多一层 Promise，改静态。
+import { ensureNotifyPermission } from '@/utils/reminder/notifier.js'
 import { useTheme } from '@/composables/useTheme.js'
 
 const { isDark } = useTheme()
@@ -40,7 +44,7 @@ const emit = defineEmits([
 const snoozeMin = ref(getSnoozeMin())
 function requestNotify() {
   // 被永久拒绝的系统不会再弹 —— 此时引导用户去系统设置（设置 → 应用 → 思迹 → 通知）
-  import('@/utils/reminder/notifier.js').then(m => m.ensureNotifyPermission())
+  ensureNotifyPermission()
   uni.showToast({ title: '若仍未弹出授权，请到系统设置开启通知', icon: 'none' })
 }
 

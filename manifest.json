@@ -1,118 +1,118 @@
 {
-  "name": "思迹",
-  "appid": "__UNI__128A9A5",
-  "description": "AI个人生活助手 — 对话式记录/记账/计划",
-  "versionName": "4.35.0",
-  "versionCode": 4350,
-  "transformPx": false,
-  "app-plus": {
-    "darkmode": true,
-    "themeLocation": "theme.json",
-    "usingComponents": true,
-    "nvueStyleCompiler": "uni-app",
-    "compilerVersion": 3,
-    "splashscreen": {
-      "alwaysShowBeforeRender": false,
-      "waiting": false,
-      "autoclose": true,
-      "delay": 0
-    },
-    "modules": {
-      "Push": {}
-    },
-    "nativePlugins": {
-      "siji-keepalive": {}
-    },
-    "distribute": {
-      "android": {
-        "permissions": [
-          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
-          "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
-          "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
-          "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\"/>",
-          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>",
-          "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_SPECIAL_USE\"/>",
-          "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
-        ]
-      },
-      "ios": {
-        "dSYMs": false,
-        "privacyDescription": {
-          "NSPhotoLibraryUsageDescription": "用于选择图片进行AI对话或上传",
-          "NSPhotoLibraryAddUsageDescription": "用于保存截图或导出数据到相册",
-          "NSCameraUsageDescription": "用于拍照并进行AI对话"
-        }
-      },
-      "sdkConfigs": {},
-      "splashscreen": {
-        "androidStyle": "default"
-      },
-      "icons": {
-        "android": {
-          "hdpi": "unpackage/res/icons/72x72-v2.png",
-          "xhdpi": "unpackage/res/icons/96x96-v2.png",
-          "xxhdpi": "unpackage/res/icons/144x144-v2.png",
-          "xxxhdpi": "unpackage/res/icons/192x192-v2.png"
+    "name" : "思迹",
+    "appid" : "__UNI__128A9A5",
+    "description" : "AI个人生活助手 — 对话式记录/记账/计划",
+    "versionName" : "4.35.1",
+    "versionCode" : 4351,
+    "transformPx" : false,
+    "app-plus" : {
+        "darkmode" : true,
+        "themeLocation" : "theme.json",
+        "usingComponents" : true,
+        "nvueStyleCompiler" : "uni-app",
+        "compilerVersion" : 3,
+        "splashscreen" : {
+            "alwaysShowBeforeRender" : false,
+            "waiting" : false,
+            "autoclose" : true,
+            "delay" : 0
         },
-        "ios": {
-          "appstore": "unpackage/res/icons/1024x1024.png",
-          "ipad": {
-            "app": "unpackage/res/icons/76x76.png",
-            "app@2x": "unpackage/res/icons/152x152.png",
-            "notification": "unpackage/res/icons/20x20.png",
-            "notification@2x": "unpackage/res/icons/40x40.png",
-            "proapp@2x": "unpackage/res/icons/167x167.png",
-            "settings": "unpackage/res/icons/29x29.png",
-            "settings@2x": "unpackage/res/icons/58x58.png",
-            "spotlight": "unpackage/res/icons/40x40.png",
-            "spotlight@2x": "unpackage/res/icons/80x80.png"
-          },
-          "iphone": {
-            "app@2x": "unpackage/res/icons/120x120.png",
-            "app@3x": "unpackage/res/icons/180x180.png",
-            "notification@2x": "unpackage/res/icons/40x40.png",
-            "notification@3x": "unpackage/res/icons/60x60.png",
-            "settings@2x": "unpackage/res/icons/58x58.png",
-            "settings@3x": "unpackage/res/icons/87x87.png",
-            "spotlight@2x": "unpackage/res/icons/80x80.png",
-            "spotlight@3x": "unpackage/res/icons/120x120.png"
-          }
+        "modules" : {
+            "Push" : {}
+        },
+        "nativePlugins" : {
+            "siji-keepalive" : {}
+        },
+        "distribute" : {
+            "android" : {
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+                    "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
+                    "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\"/>",
+                    "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\"/>",
+                    "<uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_SPECIAL_USE\"/>",
+                    "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"
+                ]
+            },
+            "ios" : {
+                "dSYMs" : false,
+                "privacyDescription" : {
+                    "NSPhotoLibraryUsageDescription" : "用于选择图片进行AI对话或上传",
+                    "NSPhotoLibraryAddUsageDescription" : "用于保存截图或导出数据到相册",
+                    "NSCameraUsageDescription" : "用于拍照并进行AI对话"
+                }
+            },
+            "sdkConfigs" : {},
+            "splashscreen" : {
+                "androidStyle" : "default"
+            },
+            "icons" : {
+                "android" : {
+                    "hdpi" : "unpackage/res/icons/72x72-v2.png",
+                    "xhdpi" : "unpackage/res/icons/96x96-v2.png",
+                    "xxhdpi" : "unpackage/res/icons/144x144-v2.png",
+                    "xxxhdpi" : "unpackage/res/icons/192x192-v2.png"
+                },
+                "ios" : {
+                    "appstore" : "unpackage/res/icons/1024x1024.png",
+                    "ipad" : {
+                        "app" : "unpackage/res/icons/76x76.png",
+                        "app@2x" : "unpackage/res/icons/152x152.png",
+                        "notification" : "unpackage/res/icons/20x20.png",
+                        "notification@2x" : "unpackage/res/icons/40x40.png",
+                        "proapp@2x" : "unpackage/res/icons/167x167.png",
+                        "settings" : "unpackage/res/icons/29x29.png",
+                        "settings@2x" : "unpackage/res/icons/58x58.png",
+                        "spotlight" : "unpackage/res/icons/40x40.png",
+                        "spotlight@2x" : "unpackage/res/icons/80x80.png"
+                    },
+                    "iphone" : {
+                        "app@2x" : "unpackage/res/icons/120x120.png",
+                        "app@3x" : "unpackage/res/icons/180x180.png",
+                        "notification@2x" : "unpackage/res/icons/40x40.png",
+                        "notification@3x" : "unpackage/res/icons/60x60.png",
+                        "settings@2x" : "unpackage/res/icons/58x58.png",
+                        "settings@3x" : "unpackage/res/icons/87x87.png",
+                        "spotlight@2x" : "unpackage/res/icons/80x80.png",
+                        "spotlight@3x" : "unpackage/res/icons/120x120.png"
+                    }
+                }
+            }
+        },
+        "nvueLaunchMode" : "",
+        "softinputMode" : "adjustResize"
+    },
+    "h5" : {
+        "darkmode" : true,
+        "themeLocation" : "theme.json",
+        "router" : {
+            "mode" : "hash"
+        },
+        "devServer" : {
+            "proxy" : {
+                "/api" : {
+                    "target" : "http://localhost:3000",
+                    "changeOrigin" : true
+                }
+            }
         }
-      }
     },
-    "nvueLaunchMode": "",
-    "softinputMode": "adjustResize"
-  },
-  "h5": {
-    "darkmode": true,
-    "themeLocation": "theme.json",
-    "router": {
-      "mode": "hash"
-    },
-    "devServer": {
-      "proxy": {
-        "/api": {
-          "target": "http://localhost:3000",
-          "changeOrigin": true
+    "mp-weixin" : {
+        "darkmode" : true,
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false
+        },
+        "usingComponents" : true,
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "不使用"
+            },
+            "scope.writePhotosAlbum" : {
+                "desc" : "用于保存导出数据"
+            }
         }
-      }
-    }
-  },
-  "mp-weixin": {
-    "darkmode": true,
-    "appid": "",
-    "setting": {
-      "urlCheck": false
     },
-    "usingComponents": true,
-    "permission": {
-      "scope.userLocation": {
-        "desc": "不使用"
-      },
-      "scope.writePhotosAlbum": {
-        "desc": "用于保存导出数据"
-      }
-    }
-  },
-  "vueVersion": "3"
+    "vueVersion" : "3"
 }

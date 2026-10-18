@@ -6,6 +6,36 @@
 
 export const V430 = [
   {
+    version: '4.35.1',
+    date: '2026-10-19',
+    title: '打断提醒模块循环依赖：Push 探测抽成叶子模块，动态 import 全部改静态',
+    summary: [
+      '消掉 HBuilder 构建日志里的两条警告（notifier / push-schedule 既被动态又被静态引用）—— 根因是 notifier → push-schedule → scheduler → notifier 的循环依赖',
+      '新增 utils/reminder/push-probe.js（只依赖 logger 的叶子模块）：widgetHasPush + probePushModule 从 push-schedule 搬出，push-schedule 用 re-export 保持旧引用可用',
+      'notifier 的 plus.push 探测改静态引用；PlanReminderSection.vue 的 ensureNotifyPermission 从动态 import 改静态（notifier 本就在同一 chunk，动态写法不省分包）',
+      '新增 tests/reminder-module-cycle.test.js：依赖图无环 + push-probe 叶子不变量 + 提醒链路无动态 import 三条守卫',
+      '逻辑与 4.29.3 真机修复版逐字一致，无用户可见行为变化；全量 110 文件 / 1485 用例全绿'
+    ],
+    categories: [
+      {
+        title: '提醒模块依赖整理',
+        items: [
+          'utils/reminder/push-probe.js（新增）：widgetHasPush / probePushModule / __resetPushProbeCache，只 import logger，探测结果进程内缓存',
+          'utils/reminder/push-schedule.js：删掉本地探测实现与 pushModuleAvail 缓存，改为 import + re-export（旧引用 `from push-schedule` 不用改）',
+          'utils/reminder/notifier.js：`import(\'@/utils/reminder/push-schedule.js\').then(...)` 改静态 `import { probePushModule } from \'./push-probe.js\'`，触发路径少一层 Promise',
+          'components/plan/PlanReminderSection.vue：requestNotify 里的动态 import 改静态 import（顶部 ensureNotifyPermission）',
+          'manifest.json：versionName 4.35.1 / versionCode 4351（文件被 HBuilderX 重新格式化为 4 空格 + `"key" : value`，diff 变大但无字段变化）'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/reminder-module-cycle.test.js（新增，5 例）：utils/reminder/ 静态依赖图无环、push-probe 只依赖 logger、notifier 不再依赖 push-schedule/scheduler、push-schedule re-export 仍在、提醒链路无 `import(` 动态导入'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.35.0',
     date: '2026-10-19',
     title: 'Android 后台常驻：前台服务原生插件 + 提示与提醒页后台运行开关',

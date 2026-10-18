@@ -11,6 +11,7 @@
 
 import { logger } from '../logger.js'
 import { formatDisplayTime, formatDuration, getPromptFlag } from './settings.js'
+import { probePushModule } from './push-probe.js'
 
 /**
  * 该设备是否需要运行时申请通知权限（纯函数，便于单测）
@@ -112,21 +113,20 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
 
   // 后台通知（App 端）
   // #ifdef APP-PLUS
-  // 4.27.1：先探测 cond 模块是否可用 —— 未声明的包调 plus.push 会弹基座级系统弹窗且 catch 不住
-  import('@/utils/reminder/push-schedule.js').then(m => {
-    m.probePushModule((ok) => {
-      if (!ok) return
-      try {
-        // 4.29.3：官方 API 是 createMessage(content, payload, options) ——
-        // 旧代码写的 createPushMessage 不存在，调用即抛错被 catch 吞掉，应用外通知从未发出
-        const payload = JSON.stringify({ type: 'plan_reminder', planId: plan.client_id })
-        plus.push.createMessage(body, payload, { title, sound: 'system', cover: false })
-        logger.log('[reminder] push message created')
-      } catch (e) {
-        logger.warn('[reminder] push create failed:', e && e.message)
-      }
-    })
-  }).catch(() => { /* 探测失败不弹 */ })
+  // 4.27.1：先探测 push 模块是否可用 —— 未声明的包调 plus.push 会弹基座级系统弹窗且 catch 不住
+  // 4.35.1：探测搬到 push-probe.js（叶子模块），这里改成静态引用，打断 notifier→push-schedule→scheduler→notifier 的环
+  probePushModule((ok) => {
+    if (!ok) return
+    try {
+      // 4.29.3：官方 API 是 createMessage(content, payload, options) ——
+      // 旧代码写的 createPushMessage 不存在，调用即抛错被 catch 吞掉，应用外通知从未发出
+      const payload = JSON.stringify({ type: 'plan_reminder', planId: plan.client_id })
+      plus.push.createMessage(body, payload, { title, sound: 'system', cover: false })
+      logger.log('[reminder] push message created')
+    } catch (e) {
+      logger.warn('[reminder] push create failed:', e && e.message)
+    }
+  })
   // #endif
 
   // H5 通知
