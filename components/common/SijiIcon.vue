@@ -2,9 +2,13 @@
 /**
  * SijiIcon — 图标组件 v5（4.12.5 改 JS 驱动换图）
  *
- * 统一渲染 Lucide 线框 PNG（96×96 高清，三端一致）：
+ * 统一渲染 Lucide 线框 PNG（最大显示 44rpx，源图 128×128，三端一致）：
  *   - 浅色模式用深色图标（#18181B），深色模式用白色图标（#FFFFFF）
  *   - color 语义：primary（跟随主题）/ secondary（灰）/ white（白）/ amber（仅 sun）
+ *
+ * 4.31.0：plan/bill/diary/edit/calendar 的源图从 1024×1024 降到 128×128 并改名 v4
+ * （1024 对 44rpx 是 15 倍过采样，浅色版因此 50-91KB；降采样后 419KB → 53KB）。
+ * **改图标内容或尺寸必须同时把版本号 +1** —— App 端同名资源不刷新（AGENTS 规矩）。
  *
  * v4 及之前靠「双 <image> 叠放 + html.theme-dark CSS 切换显隐」—— H5 正常，但 App 端
  * 样式编译器对这类选择器的处理与 H5 不同，实测深色下图标仍停留在浅色版（用户截图实证：
@@ -37,9 +41,9 @@ const props = defineProps({
 
 const file = computed(() => (KNOWN.has(props.name) ? props.name : 'info'))
 
-/** v3 重画的图标（统一线性风格，与 calendar 不再重复） */
-const V3 = new Set(['plan', 'bill', 'diary', 'edit', 'calendar'])
-const ver = computed(() => (V3.has(file.value) ? 'v3' : 'v2'))
+/** v4 重画的图标（统一线性风格，与 calendar 不再重复；4.31.0 由 v3 降采样改名而来） */
+const V4 = new Set(['plan', 'bill', 'diary', 'edit', 'calendar'])
+const ver = computed(() => (V4.has(file.value) ? 'v4' : 'v2'))
 
 const sizeRpx = computed(() => {
   if (typeof props.size === 'number') return props.size + 'rpx'
