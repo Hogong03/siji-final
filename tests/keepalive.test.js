@@ -15,6 +15,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import './setup.js'
 import {
   KEEPALIVE_KEY,
+  MODULE_NAME,
   SERVICE_CLASS,
   ACTION_START,
   NOTIFY_TITLE,
@@ -37,7 +38,28 @@ import { resetStorage } from './setup.js'
 beforeEach(() => {
   resetStorage()
   __resetKeepAliveCache()
+  delete global.plus
+  delete global.uni.requireNativePlugin
 })
+
+/** 最小 plus mock：够 isKeepAliveSupported 的类探测通过（importClass 不抛 = aar 在包里） */
+function mockPlusAndroid(extra) {
+  global.plus = Object.assign({
+    os: { name: 'Android' },
+    android: { importClass: () => ({}) }
+  }, extra || {})
+}
+
+/** 假原生模块：记录调用，模拟 uni.requireNativePlugin('siji-keepalive') 的返回 */
+function mockNativeModule() {
+  const calls = { start: [], stop: [] }
+  const mod = {
+    start(opts, cb) { calls.start.push({ opts, cb }) },
+    stop(cb) { calls.stop.push({ cb }) }
+  }
+  global.uni.requireNativePlugin = (name) => (name === MODULE_NAME ? mod : null)
+  return calls
+}
 
 describe('normalizeKeepAliveFlag（开关归一）', () => {
   it('显式真值才算开', () => {
@@ -147,5 +169,76 @@ describe('插件不可用时的降级（node 环境没有 plus）', () => {
     const r = syncKeepAlive()
     expect(r.on).toBe(false)
     expect(r.acted).toBe(false)
+  })
+})
+
+describe('模块路径（4.35.2 正路：uni.requireNativePlugin）', () => {
+  it('类探测通过 + 模块可用 → start 走模块并带文案兜底', () => {
+    mockPlusAndroid()
+    const calls = mockNativeModule()
+    expect(isKeepAliveSupported()).toBe(true)
+
+    expect(startKeepAlive()).toBe(true)
+    expect(calls.start.length).toBe(1)
+    // 不传 opts → 用常驻通知默认文案
+    expect(calls.start[0].opts).toEqual({ title: NOTIFY_TITLE, text: NOTIFY_TEXT })
+    expect(typeof calls.start[0].cb).toBe('function')
+
+    // 传自定义文案 → 原样下发
+    expect(startKeepAlive({ title: 'T', text: 'X' })).toBe(true)
+    expect(calls.start[1].opts).toEqual({ title: 'T', text: 'X' })
+  })
+
+  it('stop 走模块路径', () => {
+    mockPlusAndroid()
+    const calls = mockNativeModule()
+    expect(stopKeepAlive()).toBe(true)
+    expect(calls.stop.length).toBe(1)
+    expect(typeof calls.stop[0].cb).toBe('function')
+  })
+
+  it('模块回调 ok=false 不影响返回值（异步失败只记日志，反射同样会失败，不重试）', () => {
+    mockPlusAndroid()
+    let captured = null
+    global.uni.requireNativePlugin = () => ({
+      start(opts, cb) { captured = cb },
+      stop() {}
+    })
+    expect(startKeepAlive()).toBe(true)
+    expect(typeof captured).toBe('function')
+    // 回执失败不抛错（logger.warn 吞掉）
+    expect(() => captured({ ok: false, error: 'denied' })).not.toThrow()
+    expect(() => captured(null)).not.toThrow()
+  })
+
+  it('requireNativePlugin 缺失 / 抛错 → 落反射兜底（mock 不全时安全返回 false）', () => {
+    // plus 只有类探测能力，没有 runtimeMainActivity → 反射路径内部 catch → false
+    mockPlusAndroid()
+    expect(startKeepAlive()).toBe(false)
+    expect(stopKeepAlive()).toBe(false)
+
+    // requireNativePlugin 抛错同样落兜底
+    global.uni.requireNativePlugin = () => { throw new Error('bridge gone') }
+    __resetKeepAliveCache()
+    expect(startKeepAlive()).toBe(false)
+    delete global.uni.requireNativePlugin
+    __resetKeepAliveCache()
+  })
+
+  it('requireNativePlugin 返回缺方法的对象 → 视为不可用，不调 start', () => {
+    mockPlusAndroid()
+    let called = 0
+    global.uni.requireNativePlugin = () => ({ start() { called++ } }) // 缺 stop
+    expect(startKeepAlive()).toBe(false)
+    expect(called).toBe(0)
+  })
+
+  it('syncKeepAlive：开关开 + 平台支持 + 模块可用 → acted true', () => {
+    mockPlusAndroid()
+    const calls = mockNativeModule()
+    setKeepAliveOn(true)
+    const r = syncKeepAlive()
+    expect(r).toEqual({ on: true, supported: true, acted: true })
+    expect(calls.start.length).toBe(1)
   })
 })

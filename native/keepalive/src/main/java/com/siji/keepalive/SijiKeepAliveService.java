@@ -51,6 +51,23 @@ public class SijiKeepAliveService extends Service {
     /** 通知渠道只需建一次，用实例标记避免每次 onStartCommand 都 create */
     private boolean channelReady = false;
 
+    /**
+     * 进程内运行标志（4.35.2）：onCreate 置 true / onDestroy 置 false。
+     * 给模块的 isRunning() 查 —— 只反映本进程视角，不查系统服务表（那需要 Context + ActivityManager）。
+     */
+    private static volatile boolean running = false;
+
+    /** 模块查询入口：前台服务当前是否活着 */
+    public static boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        running = true;
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;

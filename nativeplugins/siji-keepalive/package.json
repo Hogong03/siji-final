@@ -1,12 +1,18 @@
 {
   "name": "siji-keepalive",
   "id": "siji-keepalive",
-  "version": "1.0.0",
-  "description": "思迹后台常驻（Android 前台服务）。纯 Service 无 UI、无 JS 模块导出：由 utils/keepalive.js 通过 plus.android 反射启动，见 docs/后台保活方案.md",
+  "version": "1.1.0",
+  "description": "思迹后台常驻（Android 前台服务）。模块入口 SijiKeepAliveModule（start/stop/isRunning，uni.requireNativePlugin('siji-keepalive')）+ 前台服务 SijiKeepAliveService；JS 侧另有 plus.android 反射兜底，见 utils/keepalive.js 与 docs/后台保活方案.md",
   "_dp_type": "nativeplugin",
   "_dp_nativeplugin": {
     "android": {
-      "plugins": [],
+      "plugins": [
+        {
+          "type": "module",
+          "name": "siji-keepalive",
+          "class": "com.siji.keepalive.SijiKeepAliveModule"
+        }
+      ],
       "integrateType": "aar",
       "minSdkVersion": 21,
       "permissions": [

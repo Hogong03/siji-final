@@ -6,6 +6,44 @@
 
 export const V430 = [
   {
+    version: '4.35.2',
+    date: '2026-10-19',
+    title: '后台常驻插件补上原生模块入口：HBuilderX 打包校验拒绝空 plugins，签名全部经基座 dex 实证',
+    summary: [
+      '4.35.0 的空 plugins 数组被 HBuilderX 打包校验拒绝（「_dp_nativeplugin.android.plugins 节点下存在为空的对象」）；从校验器源码（plugins/uniapp-extension/out/index.js）确认硬性要求：plugins 非空且每条必须有 type(module/component)/name/class',
+      '新增 SijiKeepAliveModule：@UniJSMethod 的 start/stop/isRunning，成为 uni.requireNativePlugin 正路入口；JS 侧模块优先、plus.android 反射降级为兜底（双路径打同一个 Service）',
+      'DCloud API 签名全部从本机 HBuilderX 标准基座（android_base.apk）的 dex 逐字节实证，不走教程印象：mUniSDKInstance 声明在 WXModule 上且类型是 AbsSDKInstance（不是 UniSDKInstance）、getContext 直接声明在 AbsSDKInstance 接口上',
+      '无 uniapp SDK 也能编译：native/keepalive/stubs/ 六个同 FQN stub 只进 classpath 不进 aar；构建脚本新增 stub 编译阶段 + 泄漏闸门（classes 出现 com/siji/keepalive 之外的类即终止）+ 产物复核（模块类与服务类必须在 aar 内）',
+      'javap 字节码复核通过（superclass / getfield 描述符 / RUNTIME 注解 / fastjson 方法签名）；AAR 4KB→5.6KB；tests/keepalive.test.js 15→21 例；全量 110 文件 / 1491 用例全绿'
+    ],
+    categories: [
+      {
+        title: '原生插件（合法性修复）',
+        items: [
+          'native/keepalive/src/main/java/com/siji/keepalive/SijiKeepAliveModule.java（新增）：extends UniModule，start(JSONObject,UniJSCallback)/stop(UniJSCallback)/isRunning(UniJSCallback) 三个 @UniJSMethod；mUniSDKInstance.getContext() 拿 Context，new Intent(ctx, Service.class) 显式类引用；异常全部 catch 回传 JS 不崩',
+          'native/keepalive/src/main/java/com/siji/keepalive/SijiKeepAliveService.java：补静态 running 标志（onCreate 置 true / onDestroy 置 false）+ isRunning() 供模块查询',
+          'nativeplugins/siji-keepalive/package.json：plugins 从 [] 改为 [{type:module, name:siji-keepalive, class:com.siji.keepalive.SijiKeepAliveModule}]，version 1.0.0→1.1.0',
+          'nativeplugins/siji-keepalive/android/siji-keepalive.aar：重构建（5.6KB，含模块类+服务类，无 stub 泄漏）'
+        ]
+      },
+      {
+        title: 'stub 编译体系（本仓库无 uniapp SDK）',
+        items: [
+          'native/keepalive/stubs/（新增 6 个文件）：com/taobao/weex/common/WXModule（public AbsSDKInstance mUniSDKInstance）、io/dcloud/feature/uniapp/common/UniModule、io/dcloud/feature/uniapp/AbsSDKInstance（接口，Context getContext()）、annotation/UniJSMethod（RUNTIME retention）、bridge/UniJSCallback（invoke/invokeAndKeepAlive）、com/alibaba/fastjson/JSONObject（无参构造/getString/put）——全部从基座 dex 实证后落 stub',
+          'scripts/build-keepalive-aar.ps1：4.35.2 重写 —— stub 编译到独立目录只进 classpath；泄漏闸门（插件 classes 只允许 com/siji/keepalive）；AAR 复核（模块类与服务类必须存在）；BOM 提醒（PS 5.1 无 BOM 按 GBK 读会打断语法）',
+          '验证方法（可复现）：解 android_base.apk 的 classes*.dex → node dex-classdef.mjs 解析 class_def/field_ids/method_ids → 对照 javap -v 的描述符'
+        ]
+      },
+      {
+        title: 'JS 双路径',
+        items: [
+          'utils/keepalive.js：新增 MODULE_NAME 与模块探测缓存；startKeepAlive/stopKeepAlive 先走 uni.requireNativePlugin（只在类探测通过后才碰，标准基座零接触），同步抛错落反射兜底；异步回执只记日志不重试（权限拒绝时两条路径同样失败）；原反射实现保留为 startKeepAliveByReflection/stopKeepAliveByReflection',
+          'tests/keepalive.test.js：新增「模块路径」组 6 例 —— start/stop 走模块、文案兜底、回调失败不影响返回值、requireNativePlugin 缺失/抛错/缺方法时的兜底行为、syncKeepAlive 三态'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.35.1',
     date: '2026-10-19',
     title: '打断提醒模块循环依赖：Push 探测抽成叶子模块，动态 import 全部改静态',

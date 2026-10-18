@@ -1,18 +1,21 @@
 /**
- * keepalive.js — Android 后台常驻（4.35.0）
+ * keepalive.js — Android 后台常驻（4.35.0 首版，4.35.2 双路径）
  *
  * 目标：退到后台 / 从最近任务划掉后，进程尽量不被系统回收，从而让 60s 轮询提醒、
  * 回前台的增量结算继续有效；配合 4.22.0 的本地推送（进程真被杀也能到点弹通知）双保险。
  *
- * 实现方式（为什么不是 uni.requireNativePlugin）：
- *   插件 nativeplugins/siji-keepalive 是一个**纯 Android Service**，没有 UniModule 类
- *   （不需要 uniapp 插件 SDK，aar 4KB，javac 就能构建，见 scripts/build-keepalive-aar.ps1）。
- *   这里用 plus.android 反射构造 Intent → startForegroundService 拉起它。
+ * 实现方式（4.35.2 起双路径）：
+ *   正路：uni.requireNativePlugin('siji-keepalive') → SijiKeepAliveModule
+ *         （aar 里的原生模块，start/stop/isRunning；模块类为什么存在见 4.35.2 版本日志 ——
+ *          HBuilderX 打包校验要求 plugins 非空且每条有 type/name/class）
+ *   兜底：plus.android 反射构造 Intent → startForegroundService 拉起 Service
+ *         （模块桥万一在某个基座上挂了，这条仍能工作；两条路径打的是同一个 Service）
  *
  * 三条铁律（写错就是真机踩坑）：
  *  1. 插件没打进包（标准基座 / 旧包）时，importClass 会抛错 —— 必须 catch 并静默降级，
- *     否则启动即崩。判定结果缓存，避免每轮都抛异常。
- *  2. startForegroundService 是 API 26+；26 以下只能 startService。
+ *     否则启动即崩。判定结果缓存，避免每轮都抛异常。requireNativePlugin 只在类探测
+ *     通过后才调（标准基座里连碰都不碰它）。
+ *  2. startForegroundService 是 API 26+；26 以下只能 startService（模块和反射两条路径都判）。
  *  3. Android 14+ 前台服务必须在 manifest 里声明 foregroundServiceType（aar 里已声明
  *     specialUse）；渠道/通知被用户关掉时 Service 会自杀，这里不回滚开关 —— 用户关的是
  *     通知，不代表他不要后台常驻。
@@ -24,6 +27,8 @@ import { logger } from './logger.js'
 
 /** 开关存储键（App 端本地） */
 export const KEEPALIVE_KEY = 'siji_keepalive_enabled'
+/** 原生模块名（= nativeplugins/siji-keepalive/package.json 的 plugins[0].name） */
+export const MODULE_NAME = 'siji-keepalive'
 /** Service 类名（与 native/keepalive 源码、aar manifest 保持一致） */
 export const SERVICE_CLASS = 'com.siji.keepalive.SijiKeepAliveService'
 export const ACTION_START = 'com.siji.keepalive.action.START'
@@ -77,7 +82,7 @@ export function setKeepAliveOn(on) {
 let supportedCache = null
 
 /**
- * 前台服务插件是否可用：App 端 + Android + aar 已打进包（类能加载）。
+ * 前台服务插件是否可用：App 端 + Android + aar 已打进包（Service 类能加载）。
  * 缓存结果，避免每轮 syncKeepAlive 都触发一次异常。
  */
 export function isKeepAliveSupported() {
@@ -98,8 +103,41 @@ export function isKeepAliveSupported() {
   return supportedCache
 }
 
+/* ─── 原生模块（正路入口）─── */
+let moduleCache = null
+let moduleProbed = false
+
 /**
- * 组装启动 Instruction 的参数（纯函数，便于单测）
+ * 取原生模块句柄（uni.requireNativePlugin）。探测一次即缓存。
+ * 前置条件：isKeepAliveSupported() —— 标准基座里 aar 类都不存在，
+ * 根本不碰 requireNativePlugin（避免未知基座行为）。
+ * @returns {{ start: Function, stop: Function } | null}
+ */
+function getKeepAliveModule() {
+  if (moduleProbed) return moduleCache
+  moduleProbed = true
+  moduleCache = null
+  // #ifdef APP-PLUS
+  try {
+    if (!isKeepAliveSupported()) return null
+    if (typeof uni !== 'undefined' && typeof uni.requireNativePlugin === 'function') {
+      const m = uni.requireNativePlugin(MODULE_NAME)
+      if (m && typeof m.start === 'function' && typeof m.stop === 'function') {
+        moduleCache = m
+      } else {
+        logger.warn('[keepalive] requireNativePlugin 返回异常，走 plus.android 反射兜底')
+      }
+    }
+  } catch (e) {
+    moduleCache = null
+    logger.warn('[keepalive] requireNativePlugin 抛错，走 plus.android 反射兜底:', e && e.message)
+  }
+  // #endif
+  return moduleCache
+}
+
+/**
+ * 组装启动参数（纯函数，便于单测）：模块路径与反射路径共用同一份文案兜底。
  * @returns {{ className: string, action: string, extraTitle: string, extraText: string }}
  */
 export function buildStartSpec(title, text) {
@@ -119,11 +157,35 @@ export function androidMajorVersion(osVersion) {
 
 /**
  * 启动常驻服务（幂等：重复调用只会让 Service 更新通知文案）
+ * 正路 = 原生模块；模块同步抛错才落反射兜底。两条路径打的是同一个 Service。
  * @param {{ title?: string, text?: string }} [opts]
  * @returns {boolean} 是否成功发起
  */
 export function startKeepAlive(opts) {
   if (!isKeepAliveSupported()) return false
+  const mod = getKeepAliveModule()
+  if (mod) {
+    // #ifdef APP-PLUS
+    try {
+      const spec = buildStartSpec(opts && opts.title, opts && opts.text)
+      // 异步回执只用于日志：真失败（权限被拒）反射路径也一样失败，不重试
+      mod.start({ title: spec.extraTitle, text: spec.extraText }, (res) => {
+        if (!res || res.ok !== true) {
+          logger.warn('[keepalive] 模块路径启动失败:', res && res.error)
+        }
+      })
+      logger.log('[keepalive] 前台服务已启动（模块路径）')
+      return true
+    } catch (e) {
+      logger.warn('[keepalive] 模块路径异常，转反射兜底:', e && e.message)
+    }
+    // #endif
+  }
+  return startKeepAliveByReflection(opts)
+}
+
+/** 反射兜底启动（原 4.35.0 实现，保留原因：模块桥在个别基座上不可赌） */
+function startKeepAliveByReflection(opts) {
   // #ifdef APP-PLUS
   try {
     const spec = buildStartSpec(opts && opts.title, opts && opts.text)
@@ -141,7 +203,7 @@ export function startKeepAlive(opts) {
     } else {
       main.startService(intent)
     }
-    logger.log('[keepalive] 前台服务已启动')
+    logger.log('[keepalive] 前台服务已启动（反射路径）')
     return true
   } catch (e) {
     logger.warn('[keepalive] 启动失败:', e && e.message)
@@ -159,6 +221,27 @@ export function startKeepAlive(opts) {
  */
 export function stopKeepAlive() {
   if (!isKeepAliveSupported()) return false
+  const mod = getKeepAliveModule()
+  if (mod) {
+    // #ifdef APP-PLUS
+    try {
+      mod.stop((res) => {
+        if (!res || res.ok !== true) {
+          logger.warn('[keepalive] 模块路径停止失败:', res && res.error)
+        }
+      })
+      logger.log('[keepalive] 前台服务已停止（模块路径）')
+      return true
+    } catch (e) {
+      logger.warn('[keepalive] 模块路径停止异常，转反射兜底:', e && e.message)
+    }
+    // #endif
+  }
+  return stopKeepAliveByReflection()
+}
+
+/** 反射兜底停止 */
+function stopKeepAliveByReflection() {
   // #ifdef APP-PLUS
   try {
     const main = plus.android.runtimeMainActivity()
@@ -168,7 +251,7 @@ export function stopKeepAlive() {
     plus.android.importClass(intent)
     intent.setClassName(String(main.getPackageName()), SERVICE_CLASS)
     main.stopService(intent)
-    logger.log('[keepalive] 前台服务已停止')
+    logger.log('[keepalive] 前台服务已停止（反射路径）')
     return true
   } catch (e) {
     logger.warn('[keepalive] 停止失败:', e && e.message)
@@ -232,7 +315,9 @@ export function openBatteryOptimizationSettings() {
   // #endif
 }
 
-/** 测试用：清掉探测缓存 */
+/** 测试用：清掉探测缓存（类探测 + 模块探测） */
 export function __resetKeepAliveCache() {
   supportedCache = null
+  moduleCache = null
+  moduleProbed = false
 }
