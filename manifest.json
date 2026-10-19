@@ -21,7 +21,20 @@
             "Push" : {}
         },
         "nativePlugins" : {
-            "siji-keepalive" : {}
+            "siji-keepalive" : {
+                "__plugin_info__" : {
+                    "name" : "siji-keepalive",
+                    "description" : "思迹后台常驻（Android 前台服务）。模块入口 SijiKeepAliveModule（start/stop/isRunning，uni.requireNativePlugin('siji-keepalive')）+ 前台服务 SijiKeepAliveService；JS 侧另有 plus.android 反射兜底，见 utils/keepalive.js 与 docs/后台保活方案.md",
+                    "platforms" : "Android",
+                    "url" : "",
+                    "android_package_name" : "",
+                    "ios_bundle_id" : "",
+                    "isCloud" : false,
+                    "bought" : -1,
+                    "pid" : "",
+                    "parameters" : {}
+                }
+            }
         },
         "distribute" : {
             "android" : {
