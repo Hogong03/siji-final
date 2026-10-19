@@ -20,6 +20,7 @@
     <div class="wrap nav__inner">
       <a class="nav__brand" href="#top"><img src="assets/app-icon.png" alt="思迹图标">思迹</a>
       <nav class="nav__links">
+        <a href="#download">下载</a>
         <a href="#demo">介绍片</a>
         <a href="#philosophy">设计原则</a>
         <a href="#features">能做什么</a>
@@ -34,13 +35,13 @@
     <section class="hero">
       <div class="wrap hero__grid">
         <div>
-          <span class="hero__eyebrow">AI 对话式生活助手 · v3.5.10</span>
+          <span class="hero__eyebrow">AI 对话式生活助手 · v4.35.2 · Android</span>
           <h1 class="hero__title">把「想」<br>变成「做」<span>。</span></h1>
           <p class="hero__lead">思迹是一款对话式 AI 生活助手。不用填表、不用打卡，说出想法就够了 —— AI 负责记录、整理，并给出下一步。</p>
           <div class="hero__cta">
-            <a class="btn btn--primary" href="#demo">看 54 秒介绍片</a>
+            <a class="btn btn--primary" href="download/siji-v4.35.2.apk" download>下载 Android 版</a>
+            <a class="btn" href="#demo">看 54 秒介绍片</a>
             <a class="btn" href="#features">看看能做什么</a>
-            <a class="btn" href="#philosophy">为什么这么设计</a>
           </div>
           <p class="hero__meta">记录 · 计划 · 账单 · 人脉 · 决策 ｜ 数据保存在你自己的设备上</p>
         </div>
@@ -67,6 +68,47 @@
             </div>
           </div>
           <div class="phone__compose"><span>说点什么…</span><span>记一下</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <div class="wrap">
+        <p class="section__eyebrow">下载</p>
+        <h2 class="section__title">下载 Android 版</h2>
+        <p class="section__lead">一个安装包，装完就能用。不用注册账号，数据全部留在你自己的手机里。</p>
+
+        <div class="dl">
+          <div class="dl__card">
+            <a class="btn btn--primary btn--lg" href="download/siji-v4.35.2.apk" download>下载 APK · 15.0 MB</a>
+            <ul class="dl__facts">
+              <li>版本 v4.35.2（2026-10-19 构建）</li>
+              <li>支持 Android 5.0 及以上，建议 8.0 以上</li>
+              <li>包体 15.0 MB，安装后约 40 MB</li>
+              <li>SHA-256 前 16 位 <code>818d04dae5b88f66</code></li>
+            </ul>
+            <p class="dl__note">安装时若提示「未知来源」，选「仍要安装」即可 —— 思迹只请求网络与通知权限，不读取通讯录、不获取位置。</p>
+          </div>
+
+          <div class="dl__qr">
+            <img src="assets/download-qr.png" alt="手机扫码下载思迹 APK" width="180" height="180">
+            <span>手机扫码直接下载</span>
+          </div>
+        </div>
+
+        <div class="dl__steps">
+          <div class="dl__step">
+            <span class="dl__step-no">1</span>
+            <div><strong>装好后先配一个模型 Key</strong><p>设置 → AI 模型，填 DeepSeek / 智谱 GLM / 通义千问 / Moonshot 任意一家的 API Key，只存本机。</p></div>
+          </div>
+          <div class="dl__step">
+            <span class="dl__step-no">2</span>
+            <div><strong>允许通知</strong><p>Android 13 以上会弹一次通知授权，允许后计划到点才能提醒你。</p></div>
+          </div>
+          <div class="dl__step">
+            <span class="dl__step-no">3</span>
+            <div><strong>打开「后台常驻」</strong><p>设置 → 提示与提醒 → 后台常驻。通知栏会常留一条，用来保证退到后台也不漏提醒。</p></div>
+          </div>
         </div>
       </div>
     </section>
@@ -217,24 +259,24 @@
         <h2 class="section__title">一直在长</h2>
         <div class="logs">
           <div class="log reveal">
-            <div class="log__ver">v3.5.6<span class="log__date">2026-09-11</span></div>
+            <div class="log__ver">v4.35.2<span class="log__date">2026-10-19</span></div>
             <div>
-              <div class="log__title">打卡缺口补齐</div>
-              <ul class="log__items"><li>补记可以撤销了，误触不再等于脏数据</li><li>连续天数按「每日 / 每周」分别统计</li><li>详情页日历可以翻月，记录页与日历口径统一</li></ul>
+              <div class="log__title">后台常驻 + 提醒更稳</div>
+              <ul class="log__items"><li>新增「后台常驻」开关，退到后台、划掉任务也不容易被系统回收</li><li>计划到点提醒改由系统级推送兜底，App 被杀也能收到</li><li>提醒模块打通，省电与提醒成功率兼得</li></ul>
             </div>
           </div>
           <div class="log reveal">
-            <div class="log__ver">v3.5.4<span class="log__date">2026-09-10</span></div>
+            <div class="log__ver">v4.34.0<span class="log__date">2026-10-18</span></div>
             <div>
-              <div class="log__title">打卡回看与温和补记</div>
-              <ul class="log__items"><li>热力格点开就是当天明细</li><li>总览页直接看本周打卡</li><li>昨天忘了做的事，今天可以补记</li></ul>
+              <div class="log__title">人脉页改版</div>
+              <ul class="log__items"><li>分组卡片替代关系图，一眼看到「谁很久没联系」</li><li>每人显示最近互动与亲密度，超 30 天自动变灰</li></ul>
             </div>
           </div>
           <div class="log reveal">
-            <div class="log__ver">v3.5.0<span class="log__date">2026-09-09</span></div>
+            <div class="log__ver">v4.30.0<span class="log__date">2026-10-17</span></div>
             <div>
-              <div class="log__title">循环任务闭环</div>
-              <ul class="log__items"><li>每天 / 每周的固定动作，打卡闭环</li><li>内置备考类长期计划模板</li><li>循环子计划收尾与进度自动同步</li></ul>
+              <div class="log__title">少打扰：提示集中管理</div>
+              <ul class="log__items"><li>计划汇总表改版，今日焦点置顶</li><li>新增「提示与提醒」页，四类主动提示可一键关闭</li><li>删掉每日小结横条，界面更安静</li></ul>
             </div>
           </div>
         </div>
@@ -244,7 +286,7 @@
 
   <footer class="footer">
     <div class="wrap footer__row">
-      <span>思迹 SIJI · v3.5.10</span>
+      <span>思迹 SIJI · v4.35.2 · <a href="download/siji-v4.35.2.apk" download>下载 Android 版</a></span>
       <span>思迹不做医疗诊断与治疗建议，不替代专业就医与用药。</span>
       <span>© <span id="year">2026</span> 思迹</span>
     </div>

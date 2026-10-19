@@ -40,3 +40,5 @@ test-log-*.md
 
 # 本地自动备份（AI 优化/迁移快照，不进仓库）
 backup/
+
+site/download/*.apk
