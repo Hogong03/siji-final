@@ -186,6 +186,61 @@ export const TRACEBACK_CORPUS = [
     expect: { intent: true, injection: true, multiPerson: true }
   },
 
+  // ───────── 第三人关系：话题不是「我和他」，不得把用户的互动时间线套上去 ─────────
+  {
+    id: 'third-party-relationship',
+    category: 'third_party',
+    message: '阿伟说他跟女朋友关系变差了',
+    relations: AWAY_AND_XIAOWANG,
+    // 话题是「阿伟与别人」：注入我的互动时间线属错误归属
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'third-party-i-think',
+    category: 'third_party',
+    message: '我觉得阿伟最近跟女朋友闹矛盾了',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'third-party-family',
+    category: 'third_party',
+    message: '阿伟说他最近和家里人不太和睦',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'third-party-reported-quarrel',
+    category: 'third_party',
+    message: '阿伟跟我说，他最近不太想理女朋友',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'third-party-say-another-person',
+    category: 'third_party',
+    message: '阿伟说他跟小王关系变差了',
+    relations: AWAY_AND_XIAOWANG,
+    // 对象是另一个人名（不是「我」）→ 同样属第三人关系
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'self-still-triggers-after-fix',
+    category: 'explicit_change',
+    message: '我最近觉得和阿伟疏远了',
+    relations: AWAY_AND_XIAOWANG,
+    // 修第三人归属不能误伤用户自己的关系
+    expect: { intent: true, injection: true, person: '阿伟' }
+  },
+  {
+    id: 'implicit-baseline-unchanged',
+    category: 'implicit_change',
+    message: '阿伟最近有点怪怪的',
+    relations: AWAY_AND_XIAOWANG,
+    // 本轮只修第三人归属，不通放宽含蓄触发：这条必须保持当前基线行为（不注入）
+    expect: { intent: false, injection: false }
+  },
+
   // ───────── 无记录人物 / 归属易错 ─────────
   {
     id: 'unknown-person',
@@ -200,14 +255,6 @@ export const TRACEBACK_CORPUS = [
     category: 'unknown_person',
     message: '老李对我越来越冷淡了',
     relations: AWAY_AND_XIAOWANG,
-    expect: { intent: 'optional', injection: false }
-  },
-  {
-    id: 'third-party-relationship',
-    category: 'unknown_person',
-    message: '阿伟说他跟女朋友关系变差了',
-    relations: AWAY_AND_XIAOWANG,
-    // 话题是「阿伟与别人的关系」，不是「我和阿伟」：注入我的互动时间线属错误归属
     expect: { intent: 'optional', injection: false }
   },
   {

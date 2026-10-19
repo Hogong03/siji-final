@@ -22,6 +22,7 @@ import { describe, it, expect } from 'vitest'
 import './setup.js'
 import { resetStorage } from './setup.js'
 import { TRACEBACK_CORPUS } from '../utils/ai/eval/traceback-corpus.js'
+import { buildChatMessages } from '../utils/ai/chat-helpers.js'
 import {
   runTracebackCase,
   analyzeTracebackCase,
@@ -97,9 +98,9 @@ describe('硬不变量（现在就必须成立）', () => {
     expect(M.safetyFailIds).toEqual([])
   })
 
-  it('明确关系变化的 5 种说法全部触发并关联正确人物', () => {
+  it('明确关系变化的 6 种说法全部触发并关联正确人物', () => {
     const explicit = ROWS.filter(r => r.category === 'explicit_change')
-    expect(explicit.length).toBe(5)
+    expect(explicit.length).toBe(6)
     explicit.forEach(r => {
       expect(r.injected, `${r.id} 应注入`).toBe(true)
       expect(r.person, `${r.id} 应关联到人物`).toBe('阿伟')
@@ -129,15 +130,16 @@ describe('硬不变量（现在就必须成立）', () => {
 })
 
 describe('基线快照（实测值，防止后续悄悄恶化）', () => {
-  it('召回率不低于 8/12（明确类 5/5 全中）', () => {
-    expect(M.needInjection).toBe(12)
-    expect(M.recall).toBeGreaterThanOrEqual(8 / 12)
+  it('召回率不低于 9/13（明确类 6/6 全中）', () => {
+    expect(M.needInjection).toBe(13)
+    expect(M.recall).toBeGreaterThanOrEqual(9 / 13)
     expect(rowById('explicit-away').injected).toBe(true)
+    expect(rowById('self-still-triggers-after-fix').injected).toBe(true)
   })
 
-  it('注入层误触发率不高于 1/9（当前唯一命中者已知，见缺口）', () => {
-    expect(M.forbidInjection).toBe(9)
-    expect(M.falseInjectionRate).toBeLessThanOrEqual(1 / 9)
+  it('注入层误触发率保持 0/14', () => {
+    expect(M.forbidInjection).toBe(14)
+    expect(M.falseInjectionRate).toBe(0)
   })
 
   it('历史询问不强制注入（可走 query_interaction 兜底）', () => {
@@ -149,14 +151,59 @@ describe('基线快照（实测值，防止后续悄悄恶化）', () => {
       .forEach(id => expect(rowById(id).blockedByIntent, `${id} 应被意图门拦下`).toBe(true))
   })
 
-  it('第二道门拦下的全都是「没人名指向」的用例（人物门很硬，可依赖）', () => {
-    expect(M.blockedByPersonIds.sort()).toEqual(
-      ['doubt-no-person', 'generic-why-cold', 'generic-colleague-cold', 'generic-movie', 'unknown-person-cold'].sort()
-    )
+  it('第二道门拦下两类：没人名指向 + 第三人关系归属', () => {
+    expect(M.blockedByPersonIds.sort()).toEqual([
+      'doubt-no-person',
+      'generic-why-cold', 'generic-colleague-cold', 'generic-movie',
+      'third-party-relationship', 'third-party-say-another-person',
+      'unknown-person-cold'
+    ].sort())
+  })
+
+  it('本轮修复没有改变基线以外的行为：含蓄说法仍未触发（缺口 1 待修）', () => {
+    expect(rowById('implicit-baseline-unchanged').intent).toBe(false)
+    expect(rowById('implicit-baseline-unchanged').injected).toBe(false)
   })
 })
 
-describe('已知缺口（本轮只记录，下一步修；修好后 these tests 会失败并提醒移除）', () => {
+describe('缺口 3 已修复：第三人关系不再错误归属', () => {
+  const THIRD_PARTY_IDS = [
+    'third-party-relationship',        // 阿伟说他跟女朋友关系变差了
+    'third-party-i-think',             // 我觉得阿伟最近跟女朋友闹矛盾了
+    'third-party-family',              // 阿伟说他最近和家里人不太和睦
+    'third-party-reported-quarrel',    // 阿伟跟我说，他最近不太想理女朋友
+    'third-party-say-another-person'   // 阿伟说他跟小王关系变差了
+  ]
+
+  it('5 种第三人说法全部不注入回溯', () => {
+    THIRD_PARTY_IDS.forEach(id => {
+      expect(rowById(id).injected, `${id} 不该注入`).toBe(false)
+    })
+  })
+
+  it('挡住它们的是人物门（归属判定），不是碰巧没命中意图', () => {
+    // 至少 first 与 fifth 的意图是命中的 —— 只有归属规则能挡住
+    expect(rowById('third-party-relationship').intent).toBe(true)
+    expect(rowById('third-party-say-another-person').intent).toBe(true)
+    expect(rowById('third-party-relationship').contextBuilt).toBe(false)
+    expect(rowById('third-party-say-another-person').contextBuilt).toBe(false)
+  })
+
+  it('用户自己的关系不受影响（对照组）', () => {
+    expect(rowById('self-still-triggers-after-fix').injected).toBe(true)
+    expect(rowById('explicit-cold').injected).toBe(true)      // 阿伟最近对我很冷淡
+    expect(rowById('doubt-with-person').injected).toBe(true)  // 小王是不是讨厌我了
+  })
+
+  it('第三人关系消息的其他上下文照常处理（只跳回溯，不屏蔽整条消息）', () => {
+    const system = buildChatMessages('阿伟说他跟女朋友关系变差了', [], {})[0].content
+    expect(system).toContain('关系图谱')      // 正常的关系卡片上下文仍在
+    expect(system).toContain('阿伟')
+    expect(system).not.toContain('关系回溯')  // 只有回溯被跳过
+  })
+})
+
+describe('已知缺口（本轮只修了缺口 3；下面这些仍是当前缺陷，修好后 these tests 会失败并提醒移除）', () => {
   it.fails('缺口 1：含蓄说法「阿伟最近有点怪怪的」当前不触发回溯（漏触发）', () => {
     expect(rowById('implicit-weird').injected).toBe(true)
   })
@@ -169,13 +216,10 @@ describe('已知缺口（本轮只记录，下一步修；修好后 these tests 
     expect(rowById('multi-explicit').multiPerson).toBe('multi')
   })
 
-  it.fails('缺口 3：第三人关系「阿伟说他跟女朋友关系变差了」被误注入（错误归属）', () => {
-    expect(rowById('third-party-relationship').injected).toBe(false)
-  })
-
   it('缺口记录已写进报告（多人类与漏触发清单可直接查）', () => {
     expect(M.multiSilentPickIds).toContain('multi-explicit')
     expect(M.missedIds).toContain('implicit-weird')
-    expect(M.falseInjectionIds).toContain('third-party-relationship')
+    // 缺口 3 已修复：误触发清单现在应为空
+    expect(M.falseInjectionIds).toEqual([])
   })
 })

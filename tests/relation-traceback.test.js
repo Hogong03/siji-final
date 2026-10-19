@@ -20,7 +20,8 @@ import {
   getRelationTimeline,
   summarizeEmotionShift,
   detectTracebackIntent,
-  buildTracebackContext
+  buildTracebackContext,
+  analyzeTracebackOwnership
 } from '../utils/relation-traceback.js'
 import { buildChatMessages } from '../utils/ai/chat-helpers.js'
 import { BEHAVIOR_RULES } from '../utils/ai/prompt-actions.js'
@@ -201,6 +202,58 @@ describe('回溯上下文：三层分离', () => {
     addInteraction(a, 1, { content: '吃饭' })
     const ctx = buildTracebackContext('为什么我和阿伟疏远了', { now })
     expect(ctx).not.toContain('亲密度')
+  })
+})
+
+describe('第三人归属识别（4.42.0）', () => {
+  it('转述引语 + 他者称谓 → 第三人', () => {
+    expect(analyzeTracebackOwnership('阿伟说他跟女朋友关系变差了', '阿伟')).toBe('third_party')
+    expect(analyzeTracebackOwnership('阿伟说他最近和家里人不太和睦', '阿伟')).toBe('third_party')
+    expect(analyzeTracebackOwnership('阿伟跟我说，他最近不太想理女朋友', '阿伟')).toBe('third_party')
+  })
+
+  it('配对结构（用户觉得 X 跟别人闹矛盾）→ 第三人', () => {
+    expect(analyzeTracebackOwnership('我觉得阿伟最近跟女朋友闹矛盾了', '阿伟')).toBe('third_party')
+    expect(analyzeTracebackOwnership('阿伟和他老婆吵架了，我劝了半天', '阿伟')).toBe('third_party')
+  })
+
+  it('名字落在别人的引语里且是那段关系的对象 → 第三人', () => {
+    expect(analyzeTracebackOwnership('阿伟说他跟小王关系变差了', '小王')).toBe('third_party')
+    expect(analyzeTracebackOwnership('阿伟说他跟小王关系变差了', '阿伟')).toBe('third_party')
+  })
+
+  it('引语主语或对象是用户 → 仍是用户自己的关系（不许误挡）', () => {
+    expect(analyzeTracebackOwnership('阿伟说我最近和他疏远了', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('阿伟说他最近和我不太联系', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('阿伟跟我和好了', '阿伟')).toBe('self')
+  })
+
+  it('用户自己的关系描述一律 self', () => {
+    expect(analyzeTracebackOwnership('我最近觉得和阿伟疏远了', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('阿伟最近对我很冷淡', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('为什么阿伟最近不理我了', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('我和阿伟的关系是不是变差了', '阿伟')).toBe('self')
+  })
+
+  it('保守默认：别人提到 X（不是 X 与某人的关系）不判第三人', () => {
+    // 「我妈说阿伟最近很冷淡」里没有「他跟某人」结构 → 按 self，避免误挡
+    expect(analyzeTracebackOwnership('我妈说阿伟最近很冷淡', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('阿伟最近有点怪怪的', '阿伟')).toBe('self')
+  })
+
+  it('人名不在消息里 / 参数缺失 → 安全返回 self', () => {
+    expect(analyzeTracebackOwnership('今天天气不错', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('', '阿伟')).toBe('self')
+    expect(analyzeTracebackOwnership('阿伟说他跟女朋友关系变差了', '')).toBe('self')
+  })
+
+  it('buildTracebackContext 对第三人关系返回空串（不注入）', () => {
+    const a = addPerson('阿伟')
+    addInteraction(a, 2, { content: '和阿伟吃了午饭' })
+    expect(buildTracebackContext('阿伟说他跟女朋友关系变差了', { now })).toBe('')
+    expect(buildTracebackContext('我觉得阿伟最近跟女朋友闹矛盾了', { now })).toBe('')
+    // 对照组：用户自己的关系照常注入
+    expect(buildTracebackContext('我最近觉得和阿伟疏远了', { now })).toContain('关系回溯（阿伟')
   })
 })
 
