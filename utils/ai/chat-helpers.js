@@ -5,6 +5,7 @@
  */
 
 import { buildSystemPrompt, getUserProfile } from './prompt-builder.js'
+import { buildProfileContextBrief } from '../profileContext.js'
 import { isLiteChatMode } from './prompt-actions.js'
 import { isFeatureOn } from './features.js'
 import { buildMemoryContext } from '@/utils/memory.js'
@@ -63,6 +64,14 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
   const profile = getUserProfile()
   if (profile) {
     system += `\n\n---\n用户近期数据：\n${profile}`
+  }
+
+  // 4.36.0：用户画像摘要 —— 开关打开才注入（内部判 enabled），其余画像卡走 get_profile 按需读取。
+  // 预算统一 600 字符，不按 lite 打折：lite 判据是「无指令动词 + 无金额」，恰好覆盖情绪倾诉与
+  // 自我认知类消息（最需要画像的场景）；而 lite 省下的是 CORE_ACTIONS 的 3.5k 字符，画像只占其零头。
+  const profileBrief = buildProfileContextBrief()
+  if (profileBrief) {
+    system += `\n\n---\n${profileBrief.text}`
   }
 
   // 长期记忆：按当前消息相关度检索 top-30 注入（无命中回落最近 30 条，3.5.11）

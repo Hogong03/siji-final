@@ -13,7 +13,6 @@
  *   reply写作规范 8条→5条(合并相似项)、精简示例
  *   总 token 降 ~35%（实测 buildSystemPrompt().length 对比）
  */
-import { buildProfileContext } from '../profile.js'
 import { holidayPromptLine } from '../holidays.js'
 import { CORE_ACTIONS, LITE_ACTIONS, BEHAVIOR_RULES } from './prompt-actions.js'
 import { isFeatureOn } from './features.js'

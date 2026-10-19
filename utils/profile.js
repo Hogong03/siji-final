@@ -362,7 +362,15 @@ export function reorderCards(newOrder) {
 }
 
 // 以下函数已迁移至 profileContext.js，通过 re-export 保持向后兼容
-export { buildProfileContext, smartUpdateProfile, getFilledCount, getBasicFilledCount } from './profileContext.js'
+// 4.36.0：buildProfileContext（全量拼接、零调用）已删除，改为 buildProfileContextBrief
+export {
+  buildProfileContextBrief,
+  PROFILE_BRIEF_MAX_CHARS,
+  PROFILE_BRIEF_FIELDS,
+  smartUpdateProfile,
+  getFilledCount,
+  getBasicFilledCount
+} from './profileContext.js'
 
 
 /** 清空所有 profile 信息 */

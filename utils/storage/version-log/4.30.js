@@ -6,6 +6,44 @@
 
 export const V430 = [
   {
+    version: '4.36.0',
+    date: '2026-10-19',
+    title: '个人画像真正进入每轮对话：600 字预算摘要 + 字段优先级 + 修掉画像关闭仍过滤记忆的开关不一致',
+    summary: [
+      '画像卡此前从不进 AI 上下文：buildProfileContext 在 prompt-builder 里只 import 未调用（全仓零调用点），每轮注入的「用户近期数据」只是支出/记录/计划概览，不含画像任何字段',
+      '新增 buildProfileContextBrief：只取 portrait 卡的关键字段，最终输出 ≤ 600 字符（标题+正文+尾注一起算），单字段超 60 字截断，白名单 22 个字段按优先级占预算，未登记字段自动兜底排序',
+      '冲突语义修正：不再声明「以本摘要为准」，改为「稳定性内容可长期沿用；职业/作息/目标/关系状态等可变信息，若与更近期的记录冲突以更近期的记录为准」',
+      'lite 档不按模式名打折：lite 的判据是「无指令动词 + 无金额 + 长度≥4」，恰好覆盖情绪倾诉与自我认知类消息（最需要画像），而它省下的是 CORE_ACTIONS 的 3.5k 字符',
+      '修开关不一致：getProfileValues 不看 enabled，导致关掉画像后记忆仍被画像字段静默过滤；现改为关闭时返回空数组（调用方每轮记忆注入 + 月结，均为去重用途）',
+      '删死代码：buildProfileContext（全量拼接、无预算）与 prompt-builder 的死导入一并移除；新增 tests/profile-injection.test.js 12 例，全量 111 文件 / 1503 用例全绿'
+    ],
+    categories: [
+      {
+        title: '画像注入',
+        items: [
+          'utils/profileContext.js：删除 buildProfileContext；新增 PROFILE_BRIEF_FIELDS（key/label/order 三列分离，中英键并存）、PROFILE_BRIEF_MAX_CHARS=600、PROFILE_FIELD_MAX_CHARS=60、buildProfileContextBrief(opts)',
+          '预算拆分：overhead = 标题 + 尾注 + 两个换行，正文只在剩余预算内按行累加；超预算整行跳过（不半截截断），保证保留字段完整可读；返回 { text, chars, dropped, fields }',
+          'utils/ai/chat-helpers.js：在「用户近期数据」之后、记忆上下文之前接入 buildProfileContextBrief()，仅画像 enabled 时注入',
+          'utils/ai/prompt-builder.js：移除 buildProfileContext 死导入；utils/profile.js 的 re-export 改为导出新函数与常量'
+        ]
+      },
+      {
+        title: '记忆过滤',
+        items: [
+          'utils/memory/profile-values.js：getProfileValues 增加 enabled 门（false 时返回 []），修「关闭画像仍按画像字段过滤记忆」的语义不一致',
+          '影响面已核：调用方只有 memory/context.js（每轮记忆注入）与 memory/monthly.js（月结去重），关闭画像后放开过滤符合预期'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/profile-injection.test.js（新增 12 例）：开关关闭不注入 / 空画像不报错 / 只有非 portrait 卡不注入 / 总长 ≤600 / 多字段裁剪时高优先级字段保留 / 单字段截断带省略号 / maxChars 可注入 / 冲突语义措辞 / lite 与完整档长度一致 / 注入位置在数据概览之后 / 记忆过滤随开关变化',
+          '断言对象是 buildChatMessages 的 messages[0].content，防「函数写对但没接上」的回归'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.35.2',
     date: '2026-10-19',
     title: '后台常驻插件补上原生模块入口：HBuilderX 打包校验拒绝空 plugins，签名全部经基座 dex 实证',

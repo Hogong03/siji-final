@@ -16,6 +16,11 @@ export function getProfileValues() {
   try {
     const profile = getProfile()
     if (!profile || !Array.isArray(profile.cards)) return []
+    // 4.36.0：画像开关关闭时不再用画像字段过滤记忆。
+    // 此前不看 enabled，导致「关掉画像」后记忆仍被画像字段值静默吃掉（开关语义不一致）。
+    // 调用方只有 memory/context.js（每轮记忆注入）与 memory/monthly.js（月结），都是去重用途，
+    // 关闭画像后放开过滤符合预期。
+    if (profile.enabled !== true) return []
     const values = []
     for (const card of profile.cards) {
       for (const val of Object.values(card.fields || {})) {
