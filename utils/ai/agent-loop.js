@@ -23,6 +23,7 @@ import { parseAiResponse } from './response-parser.js'
 import { AGENT_TOOL_INSTRUCTION } from './prompt-actions.js'
 import { executeWebSearch } from './tools/web-search.js'
 import { executeReadUrl } from './tools/read-url.js'
+import { resolveInteractionTarget } from '../relations.js'
 import { callWithTools } from './agent-transport.js'
 import { logger } from '../logger.js'
 
@@ -200,6 +201,18 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       const fnName = call.function?.name
       const parsed = parseToolArgs(call.function?.arguments)
       if (!parsed.ok) continue // 参数不可用的调用不做确认，交给写入轮回传错误
+      // 4.37.0：人脉互动在确认卡之前先解析目标 —— 歧义/未找到不挂起确认，
+      // 落到下面的写入循环（executeTool 同款解析）把候选回传给模型，由模型向用户确认。
+      // 解析成功则把 id 写进确认卡参数，确认后写入用同一个 relation_id。
+      if (fnName === 'log_interaction') {
+        const resolved = resolveInteractionTarget({
+          relationId: parsed.args.relation_id,
+          relationName: parsed.args.relation_name
+        })
+        if (resolved.status !== 'resolved') continue
+        parsed.args.relation_id = resolved.relation.id
+        parsed.args.relation_name = resolved.relation.name
+      }
       if (needsConfirmation(fnName, parsed.args)) {
         pendingCalls.push({ name: fnName, args: parsed.args })
         pendingCallSet.add(call)

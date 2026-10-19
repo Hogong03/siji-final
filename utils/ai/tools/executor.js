@@ -4,6 +4,7 @@
  */
 import { logger } from '../../logger.js'
 import { addCustomTag, getTagsByCategory, removeCustomTag, updateTagCategory } from '../../storage/tags.js'
+import { resolveInteractionTarget, briefRelation } from '../../relations.js'
 import { needsConfirmation, TOOL_LABELS, TOOL_DEFINITIONS } from './index.js'
 import { TOOL_FEATURE_MAP, isFeatureActive } from '../features.js'
 import { buildAgentPayload } from './agent.js'
@@ -29,6 +30,38 @@ export function executeTool(store, name, args = {}) {
     if (fid && !isFeatureActive(fid)) {
       return { ok: false, text: `${name} 功能已在设置中关闭，请勿再调用；如用户需要请提示到「设置 → AI 配置 → AI 能力」开启`, detail: null }
     }
+    // 4.37.0：人脉互动先解析目标人物 —— 歧义/未找到既不给确认卡也不写库，
+    // 直接把候选（含 id）回给模型，由它向用户确认后再带 relation_id 重调。
+    // 解析成功则把 id 写回参数：确认卡与后续写入用的是同一个 ID，不再按姓名二次匹配。
+    if (name === 'log_interaction') {
+      const resolved = resolveInteractionTarget({ relationId: args.relation_id, relationName: args.relation_name })
+      if (resolved.status === 'ambiguous') {
+        const lines = resolved.candidates.map((r, i) =>
+          `${i + 1}. ${r.name}（${r.role || '未分类'}${r.context ? '，' + r.context : ''}）id=${r.id}`
+        )
+        return {
+          ok: false,
+          confirm: false,
+          text: `「${resolved.keyword}」匹配到 ${resolved.candidates.length} 个人（${resolved.reason}），不要猜；先让用户确认是哪一位，再用对应的 relation_id 重新调用 log_interaction：\n${lines.join('\n')}`,
+          detail: {
+            type: 'interaction_target_ambiguous',
+            keyword: resolved.keyword,
+            reason: resolved.reason,
+            candidates: resolved.candidates.map(briefRelation)
+          }
+        }
+      }
+      if (resolved.status === 'none') {
+        return {
+          ok: false,
+          confirm: false,
+          text: `没有找到「${resolved.keyword || ''}」这个人物。先 create_relation 建卡，或向用户确认姓名后再记录互动。`,
+          detail: { type: 'interaction_target_missing', keyword: resolved.keyword }
+        }
+      }
+      args = { ...args, relation_id: resolved.relation.id, relation_name: resolved.relation.name }
+    }
+
     // 确认闸门前置：写操作默认需用户确认（3.0 M3），查询/撤销直接放行
     if (needsConfirmation(name, args)) {
       const label = TOOL_LABELS[name] || name

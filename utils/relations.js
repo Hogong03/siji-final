@@ -38,7 +38,7 @@ export function getRelationById(id) {
   return getAllRelations().find(r => r.id === id) || null
 }
 
-/** 按姓名模糊查找 */
+/** 按姓名模糊查找（姓名 / 场景 / 标签）—— 用于 query_relation 这类关键词检索 */
 export function findRelationsByName(name) {
   if (!name) return []
   const kw = name.toLowerCase()
@@ -47,6 +47,81 @@ export function findRelationsByName(name) {
     (r.context || '').toLowerCase().includes(kw) ||
     (r.tags || []).some(t => t.toLowerCase().includes(kw))
   )
+}
+
+/**
+ * 精确姓名匹配（4.37.0）：严格相等、去首尾空格，同名返回全部候选。
+ * 与 findRelationsByName 分开的原因：写互动时「像人名」的上下文词/标签词
+ * 绝不能算命中，否则会把互动记到错误的人名下。
+ */
+export function findRelationsByExactName(name) {
+  const key = String(name == null ? '' : name).trim()
+  if (!key) return []
+  return getAllRelations().filter(r => String(r.name || '').trim() === key)
+}
+
+/**
+ * 姓名模糊候选（4.37.0）：**只匹配姓名**，不看 context / tags。
+ * 少于 2 字直接返回空（单字名噪声太大，交给精确匹配）。
+ */
+export function findRelationCandidates(keyword, opts = {}) {
+  const key = String(keyword == null ? '' : keyword).trim()
+  if (key.length < 2) return []
+  const limit = opts.limit || 5
+  return getAllRelations()
+    .filter(r => String(r.name || '').includes(key))
+    .slice(0, limit)
+}
+
+/** 候选摘要：给 AI 与确认流程用的可区分信息（不含全量 traits/preferences，省 token） */
+export function briefRelation(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    role: r.role || '',
+    context: r.context || '',
+    tags: Array.isArray(r.tags) ? r.tags.slice(0, 3) : [],
+    last_interaction: r.last_interaction || '',
+    relationship_score: r.relationship_score != null ? r.relationship_score : null
+  }
+}
+
+/**
+ * 解析一次互动要记给谁（4.37.0）—— **只读，不写库**。
+ *
+ * 规则（优先级从上到下，绝不按数组顺序默认取第一个）：
+ *  1. 有效 relation_id 且人物存在 → 直接用（ID 优先）
+ *  2. 姓名精确匹配且唯一 → 用该人
+ *  3. 姓名精确匹配但同名多人 → ambiguous
+ *  4. 姓名模糊匹配唯一 → 用该人（保持 4.36 之前的行为）
+ *  5. 姓名模糊匹配多个 → ambiguous
+ *  6. 无匹配 → none
+ *
+ * @param {{ relationId?: string, relationName?: string }} [target]
+ * @returns {{ status:'resolved', relation:object }
+ *          | { status:'ambiguous', reason:string, keyword:string, candidates:object[] }
+ *          | { status:'none', keyword:string }}
+ */
+export function resolveInteractionTarget(target = {}) {
+  const id = String(target.relationId == null ? '' : target.relationId).trim()
+  const name = String(target.relationName == null ? '' : target.relationName).trim()
+
+  if (id) {
+    const byId = getAllRelations().find(r => r.id === id)
+    if (byId) return { status: 'resolved', relation: byId }
+    // ID 失效（人物被删或前端传错）：有姓名就退回按姓名解析，否则视为未找到
+  }
+  if (!name) return { status: 'none', keyword: '' }
+
+  const exact = findRelationsByExactName(name)
+  if (exact.length === 1) return { status: 'resolved', relation: exact[0] }
+  if (exact.length > 1) return { status: 'ambiguous', reason: '同名', keyword: name, candidates: exact }
+
+  const fuzzy = findRelationCandidates(name)
+  if (fuzzy.length === 1) return { status: 'resolved', relation: fuzzy[0] }
+  if (fuzzy.length > 1) return { status: 'ambiguous', reason: '模糊匹配多个', keyword: name, candidates: fuzzy }
+
+  return { status: 'none', keyword: name }
 }
 
 /** 创建关系卡片 */

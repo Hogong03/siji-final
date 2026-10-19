@@ -6,6 +6,44 @@
 
 export const V430 = [
   {
+    version: '4.37.0',
+    date: '2026-10-19',
+    title: '人脉互动不再猜人：同名/模糊多候选只返回候选不写入，确认后按 relation_id 落库',
+    summary: [
+      '旧实现按姓名匹配后直接取 matched[0]：同名两人或模糊命中多人时，一次真实互动会被记到错的人名下，污染后续画像、关系分析与 AI 建议，且用户很难发现',
+      '匹配拆三层：findRelationsByExactName（严格相等，同名返回全部）/ findRelationCandidates（**只匹配姓名**，不看 context 与 tags）/ resolveInteractionTarget（只读不写，返回 resolved/ambiguous/none）',
+      '执行器歧义时返回 needChoice + 候选（含 id、角色、场景），一条互动都不写；无匹配保持原有「关系卡片不存在」提示；唯一精确/唯一模糊匹配照旧直接写入（兼容旧行为）',
+      'agent-loop 把目标解析提到确认卡之前：解析成功则把 relation_id 写回参数（确认卡与最终写入用同一个 ID），歧义与未找到不挂起确认、改为把候选回传模型由用户确认',
+      '工具描述与 CORE_ACTIONS 同步加约束「匹配到多人禁止猜第一个」；单字关键词不做模糊候选（噪声保护，避免把场景词/单字当人名）；新增 tests/relation-ambiguity.test.js 18 例，全量 112 文件 / 1521 用例全绿'
+    ],
+    categories: [
+      {
+        title: '人脉匹配',
+        items: [
+          'utils/relations.js：新增 findRelationsByExactName / findRelationCandidates / briefRelation / resolveInteractionTarget；findRelationsByName 保留给 query_relation 关键词检索（姓名+场景+标签）',
+          'resolveInteractionTarget 规则：有效 relation_id 优先 → 精确唯一 → 精确同名歧义 → 模糊唯一（兼容） → 模糊多个歧义 → 未找到；ID 失效时退回按姓名解析；软删除由 getAllRelations 过滤，不参与候选',
+          'briefRelation 只带 id/name/role/context/tags(≤3)/last_interaction/score，控制回传给模型的体积'
+        ]
+      },
+      {
+        title: '写入链路',
+        items: [
+          'store/executors/relation.js 的 execLogInteraction：歧义 → { success:false, needChoice:true, detail.candidates }，不调用 logInteraction；无匹配 → 保留「关系卡片不存在，请先创建该人脉」文案',
+          'utils/ai/tools/executor.js：log_interaction 在确认闸门之前解析目标；歧义/未找到直接 ok:false（不带 confirm，不给确认卡），解析成功则把 relation_id 写进 args，后续确认卡 payload 与写入共用同一 ID',
+          'utils/ai/agent-loop.js：pendingCalls 收集阶段先解析 log_interaction 目标，非 resolved 的跳过挂起（落到写入循环由 executeTool 回传候选），resolved 的把 id 写进确认卡参数',
+          'utils/ai/tools/relation.js 与 prompt-builder 的 CORE_ACTIONS：description/说明补「匹配到多人禁止猜，先让用户确认再用 id 重调」'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/relation-ambiguity.test.js（新增 18 例）：id 优先 / id 失效不误配 / 精确唯一 / 同名歧义候选齐全 / 模糊唯一兼容 / 模糊多个歧义 / 精确与模糊函数分工 / 场景词标签词不算人名 / 单字不做模糊候选 / 歧义双方零写入 / 无匹配不产生孤立互动 / 软删除不入候选 / 候选选中后按 id 落到正确人名下 / 单人照旧成功 / executeTool 歧义文本带 id 且不给确认卡 / executeTool 成功时 payload 已注入 relation_id',
+          '回归：bugfix-regression 的按姓名记录与未知人名错误文案全部保持通过'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.36.0',
     date: '2026-10-19',
     title: '个人画像真正进入每轮对话：600 字预算摘要 + 字段优先级 + 修掉画像关闭仍过滤记忆的开关不一致',

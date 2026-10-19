@@ -1,4 +1,4 @@
-import { createRelation, updateRelation, deleteRelation, getAllRelations, findRelationsByName, logInteraction, getInteractions } from '@/utils/relations.js'
+import { createRelation, updateRelation, deleteRelation, getAllRelations, findRelationsByName, resolveInteractionTarget, briefRelation, logInteraction, getInteractions } from '@/utils/relations.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 /**
@@ -78,15 +78,37 @@ export function createRelationExecutors(ctx) {
   }
 
   function execLogInteraction(p) {
-    let relation = null
-    if (p.relation_id) {
-      relation = getAllRelations().find(r => r.id === p.relation_id)
-    } else if (p.relation_name) {
-      // 模型未拿到 ID 时按人名自动匹配
-      const matched = findRelationsByName(p.relation_name)
-      relation = matched.length > 0 ? matched[0] : null
+    // 4.37.0：目标人物解析与写入分离 —— 歧义/未找到都不得写库（旧实现取 matched[0]，
+    // 同名或模糊命中多人时会把互动记到错的人名下，且用户不易察觉）
+    const resolved = resolveInteractionTarget({ relationId: p.relation_id, relationName: p.relation_name })
+
+    if (resolved.status === 'ambiguous') {
+      const lines = resolved.candidates.map((r, i) =>
+        `${i + 1}. ${r.name}（${r.role || '未分类'}${r.context ? '，' + r.context : ''}）id=${r.id}`
+      )
+      return {
+        success: false,
+        needChoice: true,
+        message: `「${resolved.keyword}」匹配到 ${resolved.candidates.length} 个人（${resolved.reason}），先确认是哪一位再记录：\n${lines.join('\n')}`,
+        detail: {
+          type: 'interaction_target_ambiguous',
+          keyword: resolved.keyword,
+          reason: resolved.reason,
+          candidates: resolved.candidates.map(briefRelation),
+          pendingInteraction: { scene: p.scene || '日常', content: p.content || '', result: p.result || '' }
+        }
+      }
     }
-    if (!relation) return { success: false, message: '关系卡片不存在，请先创建该人脉', detail: null }
+
+    if (resolved.status === 'none') {
+      return {
+        success: false,
+        message: '关系卡片不存在，请先创建该人脉',
+        detail: { type: 'interaction_target_missing', keyword: resolved.keyword }
+      }
+    }
+
+    const relation = resolved.relation
     const interaction = logInteraction({
       relation_id: relation.id,
       relation_name: relation.name,

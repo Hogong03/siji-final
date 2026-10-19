@@ -240,7 +240,7 @@ export function buildSystemPrompt(forceRefresh = false, opts = {}) {
 - create_relation: {name,role,context?,traits:[],preferences:[],notes?,relationship_score:1-10,tags:[]}
 - update_relation: {id,name?,role?,context?,traits?,preferences?,notes?,relationship_score?,tags?}
 - delete_relation: {id} needConfirm=true
-- log_interaction: {relation_id?,relation_name?,scene,content,result?,emotion?}  // relation_id 优先（上下文里 ID: 后的值），不知道 ID 时传 relation_name
+- log_interaction: {relation_id?,relation_name?,scene,content,result?,emotion?}  // relation_id 优先（上下文里 ID: 后的值），不知道 ID 时传 relation_name；若返回「匹配到 N 个人」，禁止猜第一个，先把候选（含 id）告诉用户，用户选定后用该 relation_id 重调
 - query_interaction: {relation_id}
 - query_relation: {keyword?}`)
   } else {
