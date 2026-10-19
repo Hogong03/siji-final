@@ -81,19 +81,13 @@ export const TRACEBACK_CORPUS = [
     expect: { intent: true, injection: true, person: '阿伟' }
   },
 
-  // ───────── 含蓄关系变化：期望触发（当前正则能力未知，评估漏触发） ─────────
-  {
-    id: 'implicit-weird',
-    category: 'implicit_change',
-    message: '阿伟最近有点怪怪的',
-    relations: AWAY_AND_XIAOWANG,
-    expect: { intent: true, injection: true, person: '阿伟' }
-  },
+  // ───────── 含蓄关系变化：① 明确双方关系状态变化（触发）② 描述双方交流变化（触发） ③ 含糊无指向（不触发） ─────────
   {
     id: 'implicit-not-like-before',
     category: 'implicit_change',
     message: '感觉和阿伟不如以前了',
     relations: AWAY_AND_XIAOWANG,
+    // 「和/跟 + 人名」的双方指向 + 「不如以前」的变化线索
     expect: { intent: true, injection: true, person: '阿伟' }
   },
   {
@@ -101,7 +95,39 @@ export const TRACEBACK_CORPUS = [
     category: 'implicit_change',
     message: '和小王聊天越来越没话说了',
     relations: AWAY_AND_XIAOWANG,
+    // 双方交流变化
     expect: { intent: true, injection: true, person: '小王' }
+  },
+  {
+    id: 'implicit-not-close',
+    category: 'implicit_change',
+    message: '我和阿伟没以前那么亲近了',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: true, injection: true, person: '阿伟' }
+  },
+  {
+    id: 'implicit-no-punctuation',
+    category: 'implicit_change',
+    message: '我跟阿伟没以前那么亲近了',
+    relations: AWAY_AND_XIAOWANG,
+    // 无标点的口语表达也要能识别（不依赖分句结构）
+    expect: { intent: true, injection: true, person: '阿伟' }
+  },
+  {
+    id: 'implicit-talk-less',
+    category: 'implicit_change',
+    message: '最近我跟阿伟越来越没话说了',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: true, injection: true, person: '阿伟' }
+  },
+  {
+    id: 'implicit-weird',
+    category: 'implicit_change',
+    message: '阿伟最近有点怪怪的',
+    relations: AWAY_AND_XIAOWANG,
+    // 含糊但缺少「用户与他的关系」指向：只是描述状态 → 4.44.0 明确为**不触发**
+    //（人物门能构建上下文，但意图门必须挡住）
+    expect: { intent: false, injection: false }
   },
 
   // ───────── 怀疑对方态度：有人物指向才注入 ─────────
@@ -233,6 +259,70 @@ export const TRACEBACK_CORPUS = [
     relations: AWAY_XIAOWANG_XIAOLI,
     // 同样三人，但小李写在最前 → 必须取「小李、小王」，证明上限选择与互动时间无关
     expect: { intent: true, injection: true, multiPerson: true, persons: ['小李', '小王'] }
+  },
+
+  // ───────── 反例：有相似字面但没有「用户自身关系变化」语义 ─────────
+  {
+    id: 'counter-vague-state',
+    category: 'counter',
+    message: '阿伟最近怪怪的',
+    relations: AWAY_AND_XIAOWANG,
+    // 状态描述，没有双方指向 → 不触发
+    expect: { intent: false, injection: false }
+  },
+  {
+    id: 'counter-third-party-paraphrase',
+    category: 'counter',
+    message: '小王说阿伟变了',
+    relations: AWAY_AND_XIAOWANG,
+    // 转述他人状态，不是用户与阿伟的关系变化 → 不触发
+    expect: { intent: false, injection: false }
+  },
+  {
+    id: 'counter-third-party-pair',
+    category: 'counter',
+    message: '小王说他跟阿伟没以前那么亲近了',
+    relations: AWAY_AND_XIAOWANG,
+    // 有「跟 + 人名 + 没以前」的双方指向，但那是小王与阿伟的关系 → 归属过滤挡下
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'counter-irrelevant-buru',
+    category: 'counter',
+    message: '我以前不如现在会处理关系',
+    relations: AWAY_AND_XIAOWANG,
+    // 「不如」出现在无关语境，且没有人名指向 → 不注入
+    expect: { intent: 'optional', injection: false }
+  },
+  {
+    id: 'counter-not-about-anyone',
+    category: 'counter',
+    message: '这家店的服务越来越客气了',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: 'optional', injection: false }
+  },
+
+  // ───────── 标点边界：归属判定必须按分句隔离，不能因标点变化串联不同人物 ─────────
+  {
+    id: 'boundary-semicolon',
+    category: 'boundary',
+    message: '阿伟最近对我很冷淡；小王挺好的',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: true, injection: true, persons: ['阿伟'] }
+  },
+  {
+    id: 'boundary-period',
+    category: 'boundary',
+    message: '阿伟最近对我很冷淡。小王挺好的',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: true, injection: true, persons: ['阿伟'] }
+  },
+  {
+    id: 'boundary-question',
+    category: 'boundary',
+    message: '阿伟最近对我很冷淡？小王呢',
+    relations: AWAY_AND_XIAOWANG,
+    expect: { intent: true, injection: true, persons: ['阿伟'] }
   },
 
   // ───────── 第三人关系：话题不是「我和他」，不得把用户的互动时间线套上去 ─────────

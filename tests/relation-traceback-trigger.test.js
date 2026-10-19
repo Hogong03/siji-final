@@ -23,7 +23,7 @@ import './setup.js'
 import { resetStorage } from './setup.js'
 import { TRACEBACK_CORPUS } from '../utils/ai/eval/traceback-corpus.js'
 import { buildChatMessages } from '../utils/ai/chat-helpers.js'
-import { buildTracebackContext, MAX_TRACEBACK_PERSONS } from '../utils/relation-traceback.js'
+import { buildTracebackContext, detectTracebackIntent, MAX_TRACEBACK_PERSONS } from '../utils/relation-traceback.js'
 import {
   runTracebackCase,
   analyzeTracebackCase,
@@ -140,20 +140,20 @@ describe('硬不变量（现在就必须成立）', () => {
 })
 
 describe('基线快照（实测值，防止后续悄悄恶化）', () => {
-  it('召回率不低于 14/17（明确类 6/6 全中；剩余漏触发全是缺口 1 的含蓄说法）', () => {
-    expect(M.needInjection).toBe(17)
-    expect(M.recall).toBeGreaterThanOrEqual(14 / 17)
-    expect(M.missedIds.sort()).toEqual(['implicit-no-topic', 'implicit-not-like-before', 'implicit-weird'].sort())
+  it('召回率 100%（22/22：显式 6 类 + 含蓄 5 类全部触发）', () => {
+    expect(M.needInjection).toBe(22)
+    expect(M.recall).toBe(1)
+    expect(M.missedIds).toEqual([])
   })
 
-  it('注入层误触发率保持 0/15', () => {
-    expect(M.forbidInjection).toBe(15)
+  it('注入层误触发率 0/21（含含蓄放行后新增的反例）', () => {
+    expect(M.forbidInjection).toBe(21)
     expect(M.falseInjectionRate).toBe(0)
     expect(M.falseInjectionIds).toEqual([])
   })
 
-  it('人物匹配准确率 100%（14/14，多人场景要求有序完全一致）', () => {
-    expect(M.personCases).toBe(14)
+  it('人物匹配准确率 100%（22/22，多人场景要求有序完全一致）', () => {
+    expect(M.personCases).toBe(22)
     expect(M.personAccuracy).toBe(1)
     expect(M.personWrongIds).toEqual([])
   })
@@ -162,8 +162,8 @@ describe('基线快照（实测值，防止后续悄悄恶化）', () => {
     expect(M.optionalCount).toBe(2)
   })
 
-  it('第一道门拦下了含蓄说法（上下文能建、但消息不是在问关系变化）', () => {
-    ;['implicit-weird', 'implicit-not-like-before', 'implicit-no-topic', 'implicit-baseline-unchanged']
+  it('第一道门拦下「有状态词但缺双方指向」的说法', () => {
+    ;['implicit-weird', 'implicit-baseline-unchanged', 'counter-vague-state']
       .forEach(id => expect(rowById(id).blockedByIntent, `${id} 应被意图门拦下`).toBe(true))
   })
 
@@ -177,13 +177,61 @@ describe('基线快照（实测值，防止后续悄悄恶化）', () => {
       'doubt-no-person',
       'generic-why-cold', 'generic-colleague-cold', 'generic-movie',
       'third-party-relationship', 'third-party-say-another-person',
+      'counter-third-party-pair',
       'unknown-person-cold'
     ].sort())
   })
+})
 
-  it('本轮修复没有改变基线以外的行为：含蓄说法仍未触发（缺口 1 待修）', () => {
-    expect(rowById('implicit-baseline-unchanged').intent).toBe(false)
-    expect(rowById('implicit-baseline-unchanged').injected).toBe(false)
+describe('缺口 1 已修复：含蓄表达按「结构组合」触发，不靠关键词', () => {
+  it('① 双方关系状态变化 → 触发（不如以前 / 没以前）', () => {
+    expect(rowById('implicit-not-like-before').persons).toEqual(['阿伟'])   // 感觉和阿伟不如以前了
+    expect(rowById('implicit-not-close').persons).toEqual(['阿伟'])         // 我和阿伟没以前那么亲近了
+  })
+
+  it('② 双方交流变化 → 触发（越来越没话说）', () => {
+    expect(rowById('implicit-no-topic').persons).toEqual(['小王'])          // 和小王聊天越来越没话说了
+    expect(rowById('implicit-talk-less').persons).toEqual(['阿伟'])         // 最近我跟阿伟越来越没话说了
+  })
+
+  it('③ 无标点的口语表达也能识别（不依赖标点分句）', () => {
+    expect(rowById('implicit-no-punctuation').persons).toEqual(['阿伟'])    // 我跟阿伟没以前那么亲近了
+  })
+
+  it('④ 只有状态词、没有双方指向 → 不触发（本轮明确语义）', () => {
+    expect(rowById('implicit-weird').injected).toBe(false)                  // 阿伟最近有点怪怪的
+    expect(rowById('counter-vague-state').injected).toBe(false)             // 阿伟最近怪怪的
+    expect(rowById('implicit-weird').intent).toBe(false)
+  })
+
+  it('⑤ 反例：转述他人 / 无关语境 / 没有指向，一律不注入', () => {
+    expect(rowById('counter-third-party-paraphrase').injected).toBe(false)  // 小王说阿伟变了
+    expect(rowById('counter-third-party-pair').injected).toBe(false)        // 小王说他跟阿伟没以前那么亲近了
+    expect(rowById('counter-irrelevant-buru').injected).toBe(false)         // 我以前不如现在会处理关系
+    expect(rowById('counter-not-about-anyone').injected).toBe(false)        // 这家店的服务越来越客气了
+  })
+
+  it('⑥ 反例里的第三人双方结构：意图命中但归属过滤挡下（与缺口 3 的配合）', () => {
+    const row = rowById('counter-third-party-pair')
+    expect(row.intent).toBe(true)      // 「跟阿伟 + 没以前」确实是关系变化句
+    expect(row.injected).toBe(false)   // 但那是小王与阿伟的关系
+  })
+
+  it('⑦ 标点边界：分号/句号/问号都不能把不同人物串联起来', () => {
+    ;['boundary-semicolon', 'boundary-period', 'boundary-question'].forEach(id => {
+      const row = rowById(id)
+      expect(row.persons, `${id} 只应包含第一个分句里的人`).toEqual(['阿伟'])
+    })
+  })
+
+  it('⑧ 含蓄规则仍是「结构组合」而不是关键词表：摘掉双方指向后不再触发', () => {
+    // 同一批线索词，去掉「和/跟 + 某人」就不再触发
+    expect(detectTracebackIntent('不如以前了')).toBe(false)
+    expect(detectTracebackIntent('越来越没话说了')).toBe(false)
+    expect(detectTracebackIntent('生疏了')).toBe(false)
+    // 加上双方指向才触发
+    expect(detectTracebackIntent('和阿伟不如以前了')).toBe(true)
+    expect(detectTracebackIntent('跟阿伟越来越没话说')).toBe(true)
   })
 })
 
@@ -282,22 +330,17 @@ describe('缺口 3 已修复：第三人关系不再错误归属', () => {
   })
 })
 
-describe('已知缺口（缺口 2/3 已修；下面只剩缺口 1 的含蓄漏触发，修好后 these tests 会失败并提醒移除）', () => {
-  it.fails('缺口 1：含蓄说法「阿伟最近有点怪怪的」当前不触发回溯（漏触发）', () => {
-    expect(rowById('implicit-weird').injected).toBe(true)
+describe('缺口状态：全部已修复（这里只留一条哨兵，防止缺口悄悄回归）', () => {
+  it('四个缺口对应的指标都应为空/满分——任何一项变差都会在这里先红', () => {
+    expect(M.falseInjectionIds).toEqual([])      // 缺口 3：错误归属
+    expect(M.multiSilentPickIds).toEqual([])     // 缺口 2：多人静默取一
+    expect(M.missedIds).toEqual([])              // 缺口 1：含蓄漏触发
+    expect(M.safetyFailIds).toEqual([])          // 行为安全
   })
 
-  it.fails('缺口 1b：「感觉和阿伟不如以前了」当前不触发（漏触发）', () => {
-    expect(rowById('implicit-not-like-before').injected).toBe(true)
-  })
-
-  it.fails('缺口 1c：「和小王聊天越来越没话说了」当前不触发（漏触发）', () => {
-    expect(rowById('implicit-no-topic').injected).toBe(true)
-  })
-
-  it('缺口记录已写进报告：误触发与静默取一都应为空', () => {
-    expect(M.multiSilentPickIds).toEqual([])
-    expect(M.falseInjectionIds).toEqual([])
-    expect(M.missedIds).toContain('implicit-weird')
+  it('意图规则含含蓄分支，但**不含**单纯的状态词触发（防回潮）', () => {
+    // 状态词单独出现不触发：这是缺口 1 修复时最容易被后人改坏的地方
+    expect(detectTracebackIntent('阿伟最近有点怪怪的')).toBe(false)
+    expect(detectTracebackIntent('他最近有点不对劲')).toBe(false)
   })
 })
