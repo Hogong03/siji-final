@@ -160,6 +160,7 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getAllRelations, findRelationsByName, createRelation, updateRelation, deleteRelation, getRelationsStats } from '@/utils/relations.js'
+import { RELATION_TEMPLATES, buildRelationForm, applyRelationTemplate } from '@/utils/relation-templates.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 import SocialQuotaBar from '@/components/common/SocialQuotaBar.vue'
 
@@ -184,50 +185,8 @@ function goProfile() {
 }
 
 // ─── 关系模板 ───
-const RELATION_TEMPLATES = [
-  {
-    role: '同事', icon: '💼', hint: '项目合作',
-    context: '公司/团队',
-    traits: '专业, 讲效率',
-    preferences: '就事论事, 重视结果',
-    score: 5, notes: ''
-  },
-  {
-    role: '领导', icon: '🎯', hint: '上下级',
-    context: '公司/部门',
-    traits: '决策型, 注重细节',
-    preferences: '汇报要有结论, 不喜欢意外',
-    score: 6, notes: '直接上级，周一对齐'
-  },
-  {
-    role: '朋友', icon: '🤝', hint: '日常社交',
-    context: '朋友聚会/线上',
-    traits: '幽默, 靠谱',
-    preferences: '随意聊天, 分享生活',
-    score: 7, notes: ''
-  },
-  {
-    role: '家人', icon: '🏠', hint: '亲属',
-    context: '家庭',
-    traits: '关心我, 有时唠叨',
-    preferences: '多打电话, 陪伴比礼物重要',
-    score: 8, notes: ''
-  },
-  {
-    role: '伴侣', icon: '❤️', hint: '亲密关系',
-    context: '生活',
-    traits: '温柔, 敏感',
-    preferences: '需要倾听, 不喜欢冷战',
-    score: 9, notes: '重要纪念日记录'
-  },
-  {
-    role: '其他', icon: '👤', hint: '自定义',
-    context: '',
-    traits: '',
-    preferences: '',
-    score: 5, notes: ''
-  }
-]
+// 4.39.0：模板数据与「应用模板」逻辑抽到 utils/relation-templates.js（纯函数，可测）。
+// 模板不含亲密度：产品预设分数预填会被当成用户评价，污染平均亲密度与情景模拟人设。
 
 const list = ref([])
 const filteredList = ref([])
@@ -240,15 +199,7 @@ const editingId = ref(null)
 const selectedTpl = ref('')
 const roles = ref(['同事', '领导', '朋友', '家人', '伴侣', '客户', '老师', '其他'])
 const roleIndex = ref(0)
-const form = ref({
-  name: '',
-  role: '同事',
-  context: '',
-  traitsStr: '',
-  preferencesStr: '',
-  relationship_score: 5,
-  notes: ''
-})
+const form = ref(buildRelationForm())
 
 onShow(() => {
   loadData()
@@ -310,7 +261,7 @@ function handleSubmit() {
 function handleEdit(item) {
   editMode.value = true
   editingId.value = item.id
-  form.value = {
+  form.value = buildRelationForm({
     name: item.name || '',
     role: item.role || '同事',
     context: item.context || '',
@@ -318,7 +269,7 @@ function handleEdit(item) {
     preferencesStr: (item.preferences && item.preferences.length) ? item.preferences.join(', ') : '',
     relationship_score: item.relationship_score || 5,
     notes: item.notes || ''
-  }
+  })
   const idx = roles.value.indexOf(item.role)
   roleIndex.value = idx >= 0 ? idx : 0
   selectedTpl.value = ''
@@ -348,22 +299,15 @@ function closeForm() {
 }
 
 function resetForm() {
-  form.value = {
-    name: '', role: '同事', context: '', traitsStr: '', preferencesStr: '',
-    relationship_score: 5, notes: ''
-  }
+  form.value = buildRelationForm()
   roleIndex.value = 0
   selectedTpl.value = ''
 }
 
 function applyTemplate(tpl) {
   selectedTpl.value = tpl.role
-  form.value.role = tpl.role
-  form.value.context = tpl.context
-  form.value.traitsStr = tpl.traits
-  form.value.preferencesStr = tpl.preferences
-  form.value.relationship_score = tpl.score
-  form.value.notes = tpl.notes
+  // 只填角色与画像信息；亲密度永远不动（用户没评价过就保持默认值）
+  applyRelationTemplate(form.value, tpl)
   const idx = roles.value.indexOf(tpl.role)
   if (idx >= 0) roleIndex.value = idx
 }

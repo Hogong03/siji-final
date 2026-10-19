@@ -6,6 +6,35 @@
 
 export const V430 = [
   {
+    version: '4.39.0',
+    date: '2026-10-19',
+    title: '关系模板不再预填亲密度：产品预设值不再伪装成用户评价，模板逻辑抽成可测纯函数',
+    summary: [
+      '模板此前自带亲密度 5/6/7/8/9：用户点一下模板再提交，产品设计者预设的分数就变成「用户评价」，污染平均亲密度统计、关系图谱排序与情景模拟人设',
+      '取消预填：模板只填角色/场景/特征/偏好/备注；新建表单默认值仍为 5（不扩大改动范围）；编辑已有关系时套用模板不覆盖用户已评的分数',
+      '模板数据与「应用模板」逻辑从 pages/settings/sub/relations.vue 抽到 utils/relation-templates.js（纯数据 + 纯函数 buildRelationForm / applyRelationTemplate）—— 「模板不许改分」需要有真断言，而 .vue 内部逻辑只能靠读源码文本判断',
+      '已知限制（暂不处理）：仍然无法区分「默认 5 分」与「用户主动评为 5 分」，需要新增来源标记才能解决；本轮先把产品预设值这个最明确的污染源掐掉',
+      '用户手动拖滑块仍是亲密度唯一合法写入路径（4.38.0 的 trustScore 机制保持）。新增 tests/relation-template-score.test.js 11 例，全量 114 文件 / 1549 用例全绿'
+    ],
+    categories: [
+      {
+        title: '模板治理',
+        items: [
+          'utils/relation-templates.js（新增）：RELATION_TEMPLATES 六个模板去掉 score 字段；buildRelationForm(overrides) 给出表单初始值（亲密度固定 DEFAULT_RELATIONSHIP_SCORE）；applyRelationTemplate(form, tpl) 只写 role/context/traitsStr/preferencesStr/notes，**绝不触碰 relationship_score**',
+          'pages/settings/sub/relations.vue：删除本地模板数组与 form 字面量，改调 buildRelationForm() / applyRelationTemplate()；resetForm 与 handleEdit 一并改用 buildRelationForm，applyTemplate 里移除 form.relationship_score = tpl.score',
+          '模板「其他」项（空模板）应用后不会清空姓名等用户已填内容'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/relation-template-score.test.js（新增 11 例）：6 个模板都不含 score/relationship_score（防回潮）/ 逐个应用模板后分数仍是默认值 / 领导·朋友·家人·伴侣四个高危模板不会把分数改成 6-9 / 编辑已有关系（已评 8 分）套用全部模板后仍是 8 / 用户拖滑块后再套模板不被覆盖 / 新建默认值仍 5 / 其他字段（role·context·traits·preferences·notes）照常填充 / 空模板不清空姓名 / 参数缺失安全返回 / 套模板+手动评分提交后落库为用户给的分 / 不手动评分时落库是默认值而不是模板值',
+          '守卫：sfc-bindings（.vue 模板标识符）与 module-exports（新增模块的具名导入）同步通过'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.38.0',
     date: '2026-10-19',
     title: '亲密度改由用户自己评价：执行层默认拒绝 AI 写入（建卡忽略、更新剥离），顺带修 last_interaction 永远写不进去',
