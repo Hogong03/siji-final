@@ -41,4 +41,8 @@ test-log-*.md
 # 本地自动备份（AI 优化/迁移快照，不进仓库）
 backup/
 
+# 关系回溯观察的真实记录（含私人信息，只留本地；模板与示例在 docs/关系回溯观察日志.md）
+docs/关系回溯观察日志-本地.md
+docs/关系回溯观察日志-本地.csv
+
 site/download/*.apk

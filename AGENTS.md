@@ -16,7 +16,7 @@
 | 路径 | `C:\Users\c3798\Desktop\思迹` |
 | 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
 | 测试 | 117 文件 / 1628 用例，Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
-| 版本 | v4.45.0（关系回溯端到端回归 14 例 + 规则冻结进观察期；score_source 设计分析未改代码） |
+| 版本 | v4.46.0（关系回溯观察日志落成可填写文件 + 真实记录本地隔离；无代码行为变更） |
 
 ---
 
