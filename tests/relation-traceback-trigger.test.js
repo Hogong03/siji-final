@@ -23,12 +23,14 @@ import './setup.js'
 import { resetStorage } from './setup.js'
 import { TRACEBACK_CORPUS } from '../utils/ai/eval/traceback-corpus.js'
 import { buildChatMessages } from '../utils/ai/chat-helpers.js'
+import { buildTracebackContext, MAX_TRACEBACK_PERSONS } from '../utils/relation-traceback.js'
 import {
   runTracebackCase,
   analyzeTracebackCase,
   summarizeTracebackMetrics,
   buildTracebackReport,
-  formatMetricLine
+  formatMetricLine,
+  seedTracebackFixture
 } from '../utils/ai/eval/traceback-eval.js'
 
 /** 固定「现在」，让 days_ago 与时间窗判定可复现 */
@@ -47,6 +49,14 @@ function runAll() {
 const ROWS = runAll()
 const M = summarizeTracebackMetrics(ROWS)
 const rowById = (id) => ROWS.find(r => r.id === id)
+
+/** 直接调 buildTracebackContext 前必须先播种对应用例的前置（存储是全局单例） */
+function seedCase(id) {
+  resetStorage()
+  const caze = TRACEBACK_CORPUS.find(c => c.id === id)
+  seedTracebackFixture(caze, NOW)
+  return caze
+}
 
 if (process.env.TRACEBACK_EVAL_REPORT) {
   // eslint-disable-next-line no-console
@@ -130,28 +140,39 @@ describe('硬不变量（现在就必须成立）', () => {
 })
 
 describe('基线快照（实测值，防止后续悄悄恶化）', () => {
-  it('召回率不低于 9/13（明确类 6/6 全中）', () => {
-    expect(M.needInjection).toBe(13)
-    expect(M.recall).toBeGreaterThanOrEqual(9 / 13)
-    expect(rowById('explicit-away').injected).toBe(true)
-    expect(rowById('self-still-triggers-after-fix').injected).toBe(true)
+  it('召回率不低于 14/17（明确类 6/6 全中；剩余漏触发全是缺口 1 的含蓄说法）', () => {
+    expect(M.needInjection).toBe(17)
+    expect(M.recall).toBeGreaterThanOrEqual(14 / 17)
+    expect(M.missedIds.sort()).toEqual(['implicit-no-topic', 'implicit-not-like-before', 'implicit-weird'].sort())
   })
 
-  it('注入层误触发率保持 0/14', () => {
-    expect(M.forbidInjection).toBe(14)
+  it('注入层误触发率保持 0/15', () => {
+    expect(M.forbidInjection).toBe(15)
     expect(M.falseInjectionRate).toBe(0)
+    expect(M.falseInjectionIds).toEqual([])
+  })
+
+  it('人物匹配准确率 100%（14/14，多人场景要求有序完全一致）', () => {
+    expect(M.personCases).toBe(14)
+    expect(M.personAccuracy).toBe(1)
+    expect(M.personWrongIds).toEqual([])
   })
 
   it('历史询问不强制注入（可走 query_interaction 兜底）', () => {
     expect(M.optionalCount).toBe(2)
   })
 
-  it('第一道门拦下了含蓄说法与历史询问（说明放宽意图门有空间）', () => {
-    ;['implicit-weird', 'implicit-not-like-before', 'implicit-no-topic', 'history-how-was-it', 'history-when']
+  it('第一道门拦下了含蓄说法（上下文能建、但消息不是在问关系变化）', () => {
+    ;['implicit-weird', 'implicit-not-like-before', 'implicit-no-topic', 'implicit-baseline-unchanged']
       .forEach(id => expect(rowById(id).blockedByIntent, `${id} 应被意图门拦下`).toBe(true))
   })
 
-  it('第二道门拦下两类：没人名指向 + 第三人关系归属', () => {
+  it('历史事实查询两道门都不经过（既没问关系变化，也没有合格人物）', () => {
+    ;['history-how-was-it', 'history-when']
+      .forEach(id => expect(rowById(id).neitherGate, `${id} 应两道门都不经过`).toBe(true))
+  })
+
+  it('第二道门拦下三类：没人名指向 + 第三人关系归属 + 只在他人引语里出现的名字', () => {
     expect(M.blockedByPersonIds.sort()).toEqual([
       'doubt-no-person',
       'generic-why-cold', 'generic-colleague-cold', 'generic-movie',
@@ -163,6 +184,64 @@ describe('基线快照（实测值，防止后续悄悄恶化）', () => {
   it('本轮修复没有改变基线以外的行为：含蓄说法仍未触发（缺口 1 待修）', () => {
     expect(rowById('implicit-baseline-unchanged').intent).toBe(false)
     expect(rowById('implicit-baseline-unchanged').injected).toBe(false)
+  })
+})
+
+describe('缺口 2 已修复：多人场景不再静默取一', () => {
+  it('两人都明确涉及用户的关系 → 两段都注入，且各自独立成段', () => {
+    const row = rowById('multi-explicit')
+    expect(row.persons).toEqual(['阿伟', '小王'])
+    seedCase('multi-explicit')
+    const ctx = buildTracebackContext('为什么我和阿伟、小王都疏远了', { now: NOW })
+    expect(ctx).toContain('关系回溯（阿伟')
+    expect(ctx).toContain('关系回溯（小王')
+    // 两段各自独立，不能混成一段
+    expect(ctx.match(/关系回溯（/g).length).toBe(2)
+    expect(ctx).toContain('各对应一个人')
+  })
+
+  it('两人历史互动时间不同 → 顺序按消息出现顺序，不因时间排序丢人', () => {
+    // 阿伟最近互动过、小王次之；但消息里小王写在前面 → 输出顺序仍是 小王、阿伟
+    expect(rowById('multi-order-appearance').persons).toEqual(['小王', '阿伟'])
+  })
+
+  it('顺带提及的人不注入（只在关系变化句里的人算数）', () => {
+    const row = rowById('multi-passing-mention')
+    expect(row.injected).toBe(true)
+    expect(row.persons).toEqual(['阿伟'])
+  })
+
+  it('两人中一人是第三人关系 → 只注入符合归属的那个人', () => {
+    const row = rowById('multi-one-third-party')
+    expect(row.persons).toEqual(['小王'])
+    expect(row.injected).toBe(true)
+  })
+
+  it('超过上限（3 人）→ 取消息中先出现的两个（确定性，与互动时间无关）', () => {
+    expect(rowById('multi-three-cap').persons).toEqual(['阿伟', '小王'])
+    // 同一组数据、只把「小李」写到最前 → 结果跟着变，证明选择只取决于消息顺序
+    expect(rowById('multi-three-cap-order').persons).toEqual(['小李', '小王'])
+  })
+
+  it('多人注入上限是明确的常量（2），不是「只看前两名」的隐式行为', () => {
+    expect(MAX_TRACEBACK_PERSONS).toBe(2)
+  })
+
+  it('确定性：同一消息多次评估结果一致（不受存储排序影响）', () => {
+    seedCase('multi-three-cap')
+    const first = buildTracebackContext('我最近和阿伟、小王、小李都疏远了', { now: NOW })
+    const second = buildTracebackContext('我最近和阿伟、小王、小李都疏远了', { now: NOW })
+    expect(first).toBe(second)
+    expect(first).toContain('关系回溯（阿伟')
+    expect(first).toContain('关系回溯（小王')
+    expect(first).not.toContain('关系回溯（小李')
+  })
+
+  it('多人场景仍遵守第三人归属：引语里的名字不进回溯', () => {
+    seedCase('multi-one-third-party')
+    const ctx = buildTracebackContext('阿伟说他跟女朋友闹矛盾了，小王最近对我很冷淡', { now: NOW })
+    expect(ctx).toContain('关系回溯（小王')
+    expect(ctx).not.toContain('关系回溯（阿伟')
   })
 })
 
@@ -203,7 +282,7 @@ describe('缺口 3 已修复：第三人关系不再错误归属', () => {
   })
 })
 
-describe('已知缺口（本轮只修了缺口 3；下面这些仍是当前缺陷，修好后 these tests 会失败并提醒移除）', () => {
+describe('已知缺口（缺口 2/3 已修；下面只剩缺口 1 的含蓄漏触发，修好后 these tests 会失败并提醒移除）', () => {
   it.fails('缺口 1：含蓄说法「阿伟最近有点怪怪的」当前不触发回溯（漏触发）', () => {
     expect(rowById('implicit-weird').injected).toBe(true)
   })
@@ -212,14 +291,13 @@ describe('已知缺口（本轮只修了缺口 3；下面这些仍是当前缺�
     expect(rowById('implicit-not-like-before').injected).toBe(true)
   })
 
-  it.fails('缺口 2：多人场景当前静默只选一个人（且按最近互动挑）', () => {
-    expect(rowById('multi-explicit').multiPerson).toBe('multi')
+  it.fails('缺口 1c：「和小王聊天越来越没话说了」当前不触发（漏触发）', () => {
+    expect(rowById('implicit-no-topic').injected).toBe(true)
   })
 
-  it('缺口记录已写进报告（多人类与漏触发清单可直接查）', () => {
-    expect(M.multiSilentPickIds).toContain('multi-explicit')
-    expect(M.missedIds).toContain('implicit-weird')
-    // 缺口 3 已修复：误触发清单现在应为空
+  it('缺口记录已写进报告：误触发与静默取一都应为空', () => {
+    expect(M.multiSilentPickIds).toEqual([])
     expect(M.falseInjectionIds).toEqual([])
+    expect(M.missedIds).toContain('implicit-weird')
   })
 })

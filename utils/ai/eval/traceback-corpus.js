@@ -36,6 +36,13 @@ const AWAY_AND_XIAOWANG = [
   { name: '小王', role: '同事', interactions: [itx(1, { scene: '会议', content: '一起开了个会', result: '', emotion: '平静' })] }
 ]
 
+/** 三人前置：给「超过上限」的用例用（阿伟最近、小王次之、小李最久没互动） */
+const AWAY_XIAOWANG_XIAOLI = [
+  { name: '阿伟', role: '朋友', interactions: [itx(1, { scene: '午餐', content: '和阿伟吃饭', emotion: '开心' })] },
+  { name: '小王', role: '同事', interactions: [itx(20, { scene: '会议', content: '和小王开会', emotion: '平静' })] },
+  { name: '小李', role: '同学', interactions: [itx(60, { scene: '聚会', content: '和小李聚会', emotion: '开心' })] }
+]
+
 export const TRACEBACK_CORPUS = [
   // ───────── 明确关系变化：必须触发且关联正确人物 ─────────
   {
@@ -170,20 +177,62 @@ export const TRACEBACK_CORPUS = [
     expect: { intent: 'optional', injection: false }
   },
 
-  // ───────── 多人场景：不许静默只挑一个人 ─────────
+  // ───────── 多人场景：不许静默只挑一个人；上限与顺序都必须确定 ─────────
   {
     id: 'multi-implicit',
     category: 'multi_person',
     message: '阿伟和小王最近都不太对劲',
     relations: AWAY_AND_XIAOWANG,
-    expect: { intent: true, injection: true, multiPerson: true }
+    // 「不对劲」属缺口 1 的含蓄说法：本轮不放宽意图门，保持不注入
+    expect: { intent: false, injection: false }
   },
   {
     id: 'multi-explicit',
     category: 'multi_person',
     message: '为什么我和阿伟、小王都疏远了',
     relations: AWAY_AND_XIAOWANG,
-    expect: { intent: true, injection: true, multiPerson: true }
+    // 两人都明确与用户的关系在变化 → 两段都要注入
+    expect: { intent: true, injection: true, multiPerson: true, persons: ['阿伟', '小王'] }
+  },
+  {
+    id: 'multi-order-appearance',
+    category: 'multi_person',
+    message: '我和小王、阿伟都疏远了',
+    relations: AWAY_AND_XIAOWANG,
+    // 顺序按消息里出现的先后，而不是「谁最近互动过」（阿伟的 last_interaction 更新）
+    expect: { intent: true, injection: true, multiPerson: true, persons: ['小王', '阿伟'] }
+  },
+  {
+    id: 'multi-passing-mention',
+    category: 'multi_person',
+    message: '阿伟最近对我很冷淡，顺便说一句小王升职了',
+    relations: AWAY_AND_XIAOWANG,
+    // 小王只是顺带提及，不在关系变化句里 → 不注入他的回溯
+    expect: { intent: true, injection: true, persons: ['阿伟'] }
+  },
+  {
+    id: 'multi-one-third-party',
+    category: 'multi_person',
+    message: '阿伟说他跟女朋友闹矛盾了，小王最近对我很冷淡',
+    relations: AWAY_AND_XIAOWANG,
+    // 阿伟那段是第三人关系（缺口 3 的归属判断），只有小王该被回溯
+    expect: { intent: true, injection: true, persons: ['小王'] }
+  },
+  {
+    id: 'multi-three-cap',
+    category: 'multi_person',
+    message: '我最近和阿伟、小王、小李都疏远了',
+    relations: AWAY_XIAOWANG_XIAOLI,
+    // 三人符合 → 上限 2，按出现顺序取（阿伟最近互动、小王次之、小李最久没互动）
+    expect: { intent: true, injection: true, multiPerson: true, persons: ['阿伟', '小王'] }
+  },
+  {
+    id: 'multi-three-cap-order',
+    category: 'multi_person',
+    message: '我最近和小李、小王、阿伟都疏远了',
+    relations: AWAY_XIAOWANG_XIAOLI,
+    // 同样三人，但小李写在最前 → 必须取「小李、小王」，证明上限选择与互动时间无关
+    expect: { intent: true, injection: true, multiPerson: true, persons: ['小李', '小王'] }
   },
 
   // ───────── 第三人关系：话题不是「我和他」，不得把用户的互动时间线套上去 ─────────

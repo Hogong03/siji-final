@@ -44,14 +44,19 @@ export function seedTracebackFixture(caze, now = Date.now()) {
 }
 
 /**
- * 从回溯上下文里取出关联到的人物名（当前实现只可能有一个）
+ * 从回溯上下文里取出关联到的人物名（可能多段，按出现顺序）
  * @param {string} ctx
  * @returns {string[]}
  */
 export function extractTracebackPersons(ctx) {
-  const m = String(ctx || '').match(/关系回溯（([^，]+)，/)
-  if (!m) return []
-  return m[1].split('、').map(s => s.trim()).filter(Boolean)
+  const text = String(ctx || '')
+  const names = []
+  const re = /关系回溯（([^，]+)，/g
+  let m
+  while ((m = re.exec(text)) !== null) {
+    m[1].split('、').map(s => s.trim()).filter(Boolean).forEach(n => names.push(n))
+  }
+  return names
 }
 
 /**
@@ -98,19 +103,26 @@ export function analyzeTracebackCase(caze, obs) {
   ;(exp.notContains || []).forEach(s => safety.push({ kind: 'notContains', text: s, ok: !String(obs.ctx).includes(s) }))
 
   const persons = obs.injected && Array.isArray(obs.persons) ? obs.persons : []
+  // 期望人物：persons（有序列表，用于多人场景）优先；否则 person（单人）
+  const expectPersons = Array.isArray(exp.persons) ? exp.persons : (exp.person ? [exp.person] : null)
+  const personsExact = (wantInjection && expectPersons && obs.injected)
+    ? (persons.length === expectPersons.length && persons.every((p, i) => p === expectPersons[i]))
+    : null
   return {
     id: caze.id,
     category: caze.category,
     message: caze.message,
     expectInjection: exp.injection === true ? 'inject' : (exp.injection === false ? 'forbid' : 'optional'),
-    expectPerson: exp.person || null,
+    expectPerson: expectPersons ? expectPersons.join('、') : null,
     intent: !!obs.intent,
     contextBuilt: !!obs.contextBuilt,
     injected: !!obs.injected,
     // 被第一道门（意图）拦下：上下文能建，但消息不是在问关系变化 → 生产不注入
     blockedByIntent: !!obs.contextBuilt && !obs.intent,
-    // 被第二道门（人物）拦下：意图命中，但没有人名指向/人物未收录 → 生产不注入
+    // 被第二道门（人物）拦下：意图命中，但没有人名指向/人物未收录/归属不属用户 → 生产不注入
     blockedByPerson: !!obs.intent && !obs.contextBuilt,
+    // 两道门都没经过：消息既不是在问关系变化，也没有合格人物（如历史事实查询）
+    neitherGate: !obs.contextBuilt && !obs.intent,
     // 召回：只看「必须注入」的用例
     recallHit: wantInjection ? !!obs.injected : null,
     miss: wantInjection ? !obs.injected : false,
@@ -119,10 +131,10 @@ export function analyzeTracebackCase(caze, obs) {
     // 历史询问这类「两种都行」的用例单独统计
     optionalHit: optional ? !!obs.injected : null,
     person: persons[0] || null,
-    // 人物匹配准确率只在「确实注入了」的用例上统计：漏触发属于召回问题，不该摊到匹配率上
-    personOk: (wantInjection && exp.person && obs.injected)
-      ? (persons.length === 1 && persons[0] === exp.person)
-      : null,
+    persons,
+    // 人物匹配：只在「确实注入了」的用例上统计（漏触发属召回问题）；
+    // 多人场景要求**有序完全一致**（顺序 = 消息中出现顺序，确定性）
+    personOk: (wantInjection && expectPersons && obs.injected) ? personsExact : null,
     multiPerson: exp.multiPerson
       // 没注入的多人类用例不算「静默选一人」（那是漏触发，计在召回里）
       ? (!obs.injected ? 'not_injected' : (persons.length > 1 ? 'multi' : 'silent_single'))
@@ -157,11 +169,12 @@ export function summarizeTracebackMetrics(rows) {
     // 两道门各自拦下了谁 —— 说明「收紧正则」与「收紧人物门」各自的作用面
     blockedByIntentIds: list.filter(r => r.blockedByIntent).map(r => r.id),
     blockedByPersonIds: list.filter(r => r.blockedByPerson).map(r => r.id),
+    neitherGateIds: list.filter(r => r.neitherGate).map(r => r.id),
     optionalCount: optional.length,
     optionalHit: optional.filter(r => r.optionalHit).length,
     personCases: personCases.length,
     personAccuracy: ratio(personCases.filter(r => r.personOk).length, personCases.length),
-    personWrongIds: personCases.filter(r => !r.personOk).map(r => `${r.id}→${r.person || 'none'}`),
+    personWrongIds: personCases.filter(r => !r.personOk).map(r => `${r.id}→${r.persons && r.persons.length ? r.persons.join('、') : 'none'}`),
     multiCases: multi.length,
     multiSilentPickIds: multi.filter(r => r.multiPerson === 'silent_single').map(r => r.id),
     safetyCases: safetyCases.length,
@@ -180,7 +193,7 @@ export function formatMetricLine(m, name) {
     safety: `行为安全性：${m.safetyOk ? '全部通过' : '存在失败'}（${m.safetyCases} 项断言）· 失败 ${m.safetyFailIds.join(',') || '无'}`,
     multi: `多人场景：${m.multiCases} 例，静默只选一人 ${m.multiSilentPickIds.length} 例（${m.multiSilentPickIds.join(',') || '无'}）`,
     optional: `历史询问（可注入可不注入）：${m.optionalHit}/${m.optionalCount} 例注入了回溯`,
-    blocked: `被第一道门（意图）拦下：${m.blockedByIntentIds.join(',') || '无'}；被第二道门（人物）拦下：${m.blockedByPersonIds.join(',') || '无'}`
+    blocked: `被第一道门（意图）拦下：${m.blockedByIntentIds.join(',') || '无'}；被第二道门（人物/归属/合格性）拦下：${m.blockedByPersonIds.join(',') || '无'}；两道门都未经过：${m.neitherGateIds.join(',') || '无'}`
   }
   return map[name] || ''
 }
@@ -212,7 +225,8 @@ export function buildTracebackReport(rows) {
   const body = rows.map(r => {
     const expText = r.expectInjection === 'inject' ? '注入' : (r.expectInjection === 'forbid' ? '不注入' : '可选')
     const bad = r.recallHit === false || r.falseInjection === true || r.personOk === false || r.multiPerson === 'silent_single'
-    return `| ${r.id} | ${r.category} | ${r.message} | ${r.intent ? 'Y' : 'N'} | ${r.injected ? 'Y' : 'N'} | ${r.person || '-'} | ${expText}${r.expectPerson ? '·' + r.expectPerson : ''} · ${bad ? '不符' : '符合'} |`
+    const who = (r.persons && r.persons.length) ? r.persons.join('、') : '-'
+    return `| ${r.id} | ${r.category} | ${r.message} | ${r.intent ? 'Y' : 'N'} | ${r.injected ? 'Y' : 'N'} | ${who} | ${expText}${r.expectPerson ? '·' + r.expectPerson : ''} · ${bad ? '不符' : '符合'} |`
   })
   return head.concat(body).join('\n')
 }

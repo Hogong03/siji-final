@@ -122,8 +122,10 @@ function agoText(days) {
  * （娶亲/亲属/角色称谓，不含人名——人名由「他/她 + 跟/和/与」结构兜住）
  */
 const OTHER_PARTY_ROLE = /(?:女朋友|男朋友|女友|男友|老婆|老公|妻子|丈夫|媳妇|对象|伴侣|未婚妻|未婚夫|家里人|家人|父母|爸妈|娘家人|妈妈|爸爸|儿子|女儿|孩子|弟弟|妹妹|哥哥|姐姐|亲戚|同事|同学|室友|朋友|领导|老板|老师|客户|前女友|前男友)/
-/** 转述动词：出现它说明后面是「他」说的话（引语），不是用户自己的关系状态 */
-const REPORT_VERB_TAIL = /^(?:[，,、]?\s*)?(?:(?:跟|给|向|对)\s*)?(?:我\s*)?(?:说|告诉|讲|表示|抱怨|提到|吐槽|聊到)\s*[，,:：]?\s*([\s\S]*)$/
+/** 转述动词：出现它说明后面是「他」说的话（引语），不是用户自己的关系状态
+ *  引语只在**同一句内**截取（切到 ，。！？； 为止）—— 否则「阿伟说他跟女朋友闹矛盾了，小王最近对我很冷淡」
+ *  会把后一句的「对我」误当成阿伟那段关系的对象 */
+const REPORT_VERB_TAIL = /^(?:[，,、]?\s*)?(?:(?:跟|给|向|对)\s*)?(?:我\s*)?(?:说|告诉|讲|表示|抱怨|提到|吐槽|聊到)\s*[，,:：]?\s*([^，,。！？!?；;\n]*)/
 /** 配对结构：跟/和/与 + 对象 */
 const PAIR_WITH = /(?:跟|和|与)\s*(?:他|她|自己)?\s*([^，,。！？!?\s]{1,6})/
 
@@ -134,10 +136,12 @@ const PAIR_WITH = /(?:跟|和|与)\s*(?:他|她|自己)?\s*([^，,。！？!?\s]
  */
 function lastReportVerbEnd(msg, pos) {
   const head = msg.slice(0, pos)
+  // 边界含逗号：只在**本句/本分句**内回溯转述动词，避免把上一分句的「他说…」算到这个名字头上
   const cut = Math.max(
     head.lastIndexOf('。'), head.lastIndexOf('！'), head.lastIndexOf('？'),
     head.lastIndexOf('!'), head.lastIndexOf('?'), head.lastIndexOf('；'),
-    head.lastIndexOf(';'), head.lastIndexOf('\n')
+    head.lastIndexOf(';'), head.lastIndexOf('\n'),
+    head.lastIndexOf('，'), head.lastIndexOf(',')
   )
   const seg = head.slice(cut + 1)
   const re = /(?:说|告诉|讲|表示|抱怨|提到|吐槽|聊到)(?:过)?\s*[，,:：]?\s*/g
@@ -224,36 +228,77 @@ const TREND_TEXT = {
 }
 
 /**
- * 构建关系事件回溯上下文（注入系统提示词）
- *
- * 找不到被提到的人物时返回 ''（不猜是谁）。多个人被提到时取最近有互动的那个。
- * @param {string} userMessage
- * @param {{ relation?: object, sinceDays?: number, limit?: number, now?: number }} [opts]
- * @returns {string}
+ * 一次回溯最多展开几个人（4.43.0）
+ * 说明：这是**注入上限**，不是「只看前两个」—— 超出的人是被**确定性**丢弃的：
+ * 先按消息中出现的先后排序再取前 N 个，不依赖 last_interaction 或存储顺序。
  */
-export function buildTracebackContext(userMessage, opts = {}) {
-  const msg = String(userMessage == null ? '' : userMessage)
-  let relation = opts.relation || null
+export const MAX_TRACEBACK_PERSONS = 2
 
-  if (!relation) {
-    const mentioned = detectMentionedRelations(msg)
-    if (mentioned.length === 0) return ''
-    relation = mentioned
-      .slice()
-      .sort((a, b) => (Number(b.last_interaction) || 0) - (Number(a.last_interaction) || 0))[0]
+/** 共用表达规则（原因只能是推测） */
+const EXPRESS_RULE = '【表达规则】上面是事实与用户自己的感受，都来自他自己的记录。原因只能作为**推测**提出：用「可能/也许」并明确说明这是你的猜测；禁止断言对方的态度或想法（不许说「他变冷淡了」这类结论）；样本不足就直接说不确定。'
+
+/** 句内「关系变化」信号：只用于判断某个人是否落在变化句里（不决定是否触发） */
+const CHANGE_CLAUSE = /(疏远|冷淡|变冷|变差|变淡|不联系|不理我|不回我|关系.{0,6}(变化|变差|不好)|讨厌|不想理|矛盾|吵架|闹|不对劲|怪怪的|不如以前|没话说)/
+
+/** 该人名是否落在含「关系变化」信号的句子里（按标点切句，句内判断；顺带提及不算） */
+function isInChangeClause(msg, name) {
+  const at = msg.indexOf(name)
+  if (at < 0) return false
+  let cursor = 0
+  const clauses = msg.split(/[，,。！？!?；;\n]/)
+  for (const clause of clauses) {
+    const start = cursor
+    const end = cursor + clause.length
+    cursor = end + 1 // 分隔符都是单字符
+    if (at >= start && at < end) return CHANGE_CLAUSE.test(clause)
   }
-  if (!relation) return ''
+  return false
+}
 
-  // 4.42.0：第三人归属 —— 话题是「他跟别人」时只跳过回溯注入，
-  // 不影响该消息的其他处理（关系卡片、记忆、计划等上下文照常注入）。
-  if (analyzeTracebackOwnership(msg, relation.name) === 'third_party') return ''
+/**
+ * 挑选本次回溯要展开的人物（4.43.0，纯函数，便于测试）
+ *
+ * 规则（顺序即优先级）：
+ *  1. 必须是**用户自己**的关系：归属判定为第三人（缺口 3）的跳过
+ *  2. 必须落在「关系变化」的句子里：只是顺带提及（在别的句子里提到名字）不算
+ *  3. 同一人只算一次（同名多卡按先出现的名字位置）
+ *  4. 按**消息中出现顺序**排序（确定性：与 last_interaction / 存储顺序无关）
+ *  5. 最多 MAX_TRACEBACK_PERSONS 个
+ *
+ * @param {string} userMessage
+ * @param {{ relation?: object }} [opts] 显式指定 relation 时只做归属过滤（调用方已决定回溯谁）
+ * @returns {object[]}
+ */
+export function selectTracebackPersons(userMessage, opts = {}) {
+  const msg = String(userMessage == null ? '' : userMessage)
+  const explicit = opts.relation
+  const candidates = explicit ? [explicit] : detectMentionedRelations(msg)
+  if (!candidates.length) return []
 
-  const sinceDays = Number.isFinite(opts.sinceDays) ? opts.sinceDays : 90
-  const items = getRelationTimeline(relation.id, { sinceDays, limit: opts.limit, now: opts.now })
+  const qualified = candidates.filter(r => {
+    if (!r || !r.name) return false
+    if (analyzeTracebackOwnership(msg, r.name) !== 'self') return false
+    if (explicit) return true
+    return isInChangeClause(msg, r.name)
+  })
+
+  const seen = new Set()
+  const unique = []
+  qualified.forEach(r => {
+    if (seen.has(r.name)) return
+    seen.add(r.name)
+    unique.push(r)
+  })
+  unique.sort((a, b) => msg.indexOf(a.name) - msg.indexOf(b.name))
+  return unique.slice(0, MAX_TRACEBACK_PERSONS)
+}
+
+/** 单人一段回溯（事实 + 感受）；表达规则由外层统一给一条 */
+function buildPersonSection(relation, { sinceDays, limit, now }) {
+  const items = getRelationTimeline(relation.id, { sinceDays, limit, now })
   const shift = summarizeEmotionShift(items)
   const name = relation.name || '这个人'
-
-  const lines = [`\n\n---\n关系回溯（${name}，只依据用户自己记录的内容，最近 ${sinceDays} 天）：`]
+  const lines = [`关系回溯（${name}，只依据用户自己记录的内容，最近 ${sinceDays} 天）：`]
 
   // 【事实】
   if (items.length === 0) {
@@ -277,9 +322,29 @@ export function buildTracebackContext(userMessage, opts = {}) {
     if (shift.neutral) pieces.push(`中性 ${shift.neutral} 次`)
     lines.push(`【你的感受】用户自己写下的情绪共 ${shift.sample} 条（${pieces.join('、')}）；${TREND_TEXT[shift.trend]}。`)
   }
-
-  // 【表达规则】
-  lines.push('【表达规则】上面是事实与用户自己的感受，都来自他自己的记录。原因只能作为**推测**提出：用「可能/也许」并明确说明这是你的猜测；禁止断言对方的态度或想法（不许说「他变冷淡了」这类结论）；样本不足就直接说不确定。')
-
   return lines.join('\n')
+}
+
+/**
+ * 构建关系事件回溯上下文（注入系统提示词）
+ *
+ * 找不到合格人物时返回 ''（不猜是谁）。多人时**每人一段**，段首标明对应人物，
+ * 结尾共用一条表达规则并声明「各段分别对应哪个人，不要混在一起说」。
+ * @param {string} userMessage
+ * @param {{ relation?: object, sinceDays?: number, limit?: number, now?: number }} [opts]
+ * @returns {string}
+ */
+export function buildTracebackContext(userMessage, opts = {}) {
+  const msg = String(userMessage == null ? '' : userMessage)
+  const sinceDays = Number.isFinite(opts.sinceDays) ? opts.sinceDays : 90
+  const picked = selectTracebackPersons(msg, opts)
+  if (picked.length === 0) return ''
+
+  const sections = picked.map(r => buildPersonSection(r, { sinceDays, limit: opts.limit, now: opts.now }))
+  const rule = picked.length > 1
+    ? `【表达规则】上面 ${picked.length} 段回溯各对应一个人（${picked.map(r => r.name).join('、')}），不要把他们的情况混在一起说。其余同下：` +
+      EXPRESS_RULE.replace('【表达规则】', '')
+    : EXPRESS_RULE
+
+  return '\n\n---\n' + sections.join('\n') + '\n' + rule
 }
