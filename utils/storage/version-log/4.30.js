@@ -6,6 +6,43 @@
 
 export const V430 = [
   {
+    version: '4.40.0',
+    date: '2026-10-19',
+    title: '关系事件回溯：问「为什么和他疏远了」时先给事实与你的感受，原因只能作为推测说',
+    summary: [
+      '此前问「为什么我最近觉得和小王疏远了」，AI 只能拿到关系卡片（角色/特征/一个来路不明的分数）与最近 3 条互动摘要，容易直接给出「他变冷淡了」这类断言',
+      '新增 utils/relation-traceback.js（纯函数）：按人 + 时间窗取互动时间线、情绪走向摘要（时间线对半比负面占比，带情绪记录不足 4 条时不给走向）、关系变化提问识别、以及三段式回溯上下文',
+      '严格三层分离：【事实】用户自己记录过的互动（时间/场景/做了什么/结果）；【你的感受】用户自己写下的情绪（不是 AI 判断的情绪）；【表达规则】原因只能作为推测提出并用「可能/也许」标注，禁止断言对方的态度或想法',
+      '注入点在 buildChatMessages 的关系上下文之后，仅在命中「关系变化」提问且人脉能力开启时注入；没提到任何已收录人物时**不注入**（不猜是谁），多个人被提到时取最近有互动的那个',
+      '数据全部复用现有 siji_interactions（scene/content/result/emotion/date），**不新增存储字段**；query_interaction 的输出改为事实与感受分开标注（结果 / 用户当时的情绪）。行为准则 +1 条，语料 +1 条（共 36 条），新增 tests/relation-traceback.test.js 21 例，全量 115 文件 / 1570 用例全绿'
+    ],
+    categories: [
+      {
+        title: '回溯模块',
+        items: [
+          'utils/relation-traceback.js（新增）：classifyEmotion（正/负/中性/未知，含「不太开心」这类否定式正面归负面）、getRelationTimeline(relationId,{sinceDays=90,limit=20,now})、summarizeEmotionShift（返回 counts + sample + trend up/down/flat/unknown）、detectTracebackIntent、buildTracebackContext',
+          '没有互动记录时如实说「最近 90 天没有记录到互动」，并明确这不能证明关系变差；没有情绪记录时明说没有感受数据、不要替用户编造感受',
+          '回溯上下文里不出现亲密度分数（分数来源未必可追溯，不能当关系变化的证据）'
+        ]
+      },
+      {
+        title: '注入与工具',
+        items: [
+          'utils/ai/chat-helpers.js：在关系上下文之后按 detectTracebackIntent + isFeatureOn(\'relation\') 注入回溯上下文',
+          'store/executors/relation.js 的 execQueryInteraction：逐条输出改为「日期 · 场景：内容（结果：…）（用户当时的情绪：…）」，明确均来自用户自己的记录，供 AI 区分事实与感受',
+          'utils/ai/prompt-actions.js BEHAVIOR_RULES：新增「先摆事实与感受、原因只能是推测、禁止断言对方态度、没记录就说没记录」一条'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/relation-traceback.test.js（新增 21 例）：情绪极性（含否定式）/ 按人回溯只取本人且倒序带 days_ago / 时间窗过滤 / limit / 空数据 / 走向 down / 样本不足 unknown / 无情绪 sample=0 / 意图命中与不命中 / 三段齐全 / 无互动如实说明 / 无情绪不编造 / 没提到人物不注入 / 多人取最近有互动者 / 事实不含分数 / buildChatMessages 命中才注入 / 行为准则存在 / query_interaction 标注结果与情绪',
+          'utils/ai/eval/cases.js 新增语料 relation-traceback-facts-not-verdicts（问关系为什么变差 → 禁止建卡改卡记互动、禁止断言「他变冷淡了」），语料总数 36 条'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.39.0',
     date: '2026-10-19',
     title: '关系模板不再预填亲密度：产品预设值不再伪装成用户评价，模板逻辑抽成可测纯函数',

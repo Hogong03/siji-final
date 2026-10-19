@@ -10,6 +10,7 @@ import { isLiteChatMode } from './prompt-actions.js'
 import { isFeatureOn } from './features.js'
 import { buildMemoryContext } from '@/utils/memory.js'
 import { buildRelationsContext, detectMentionedRelations } from '@/utils/relations.js'
+import { buildTracebackContext, detectTracebackIntent } from '@/utils/relation-traceback.js'
 import { buildDecisionsContext } from '@/utils/decisions.js'
 import { buildPlanContext } from '@/utils/plan-context.js'
 import { energyScan } from '@/utils/energy-context.js'
@@ -85,6 +86,15 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
     const relationsCtx = buildRelationsContext(userMessage)
     if (relationsCtx) {
       system += relationsCtx
+    }
+  }
+
+  // 4.40.0：关系事件回溯 —— 问「为什么我最近和他疏远了」这类问题时，
+  // 按【事实】/【你的感受】/【表达规则】三层注入，避免 AI 把推测说成事实
+  if (isFeatureOn('relation') && detectTracebackIntent(userMessage)) {
+    const tracebackCtx = buildTracebackContext(userMessage)
+    if (tracebackCtx) {
+      system += tracebackCtx
     }
   }
 

@@ -159,10 +159,20 @@ export function createRelationExecutors(ctx) {
     if (list.length === 0) {
       return { success: true, message: '暂无互动记录', detail: { type: 'query_interaction', count: 0, items: [] } }
     }
-    const summary = list.slice(0, 5).map(i => `${i.scene}: ${i.content.substring(0, 30)}`).join('；')
+    // 4.40.0：事实与感受分开标注（内容/结果 = 发生了什么，情绪 = 用户自己的感受），
+    // 供 AI 回溯时区分「事实」与「感受」，不要把它们混成一句判断
+    const lines = list.slice(0, 5).map(i => {
+      const t = Number(i.date) || Number(i.created_at) || 0
+      const d = t ? new Date(t) : null
+      const day = d ? `${d.getMonth() + 1}月${d.getDate()}日` : ''
+      const parts = [`  - ${day} ${i.scene || '日常'}：${String(i.content || '').substring(0, 40)}`]
+      if (i.result) parts.push(`（结果：${String(i.result).substring(0, 30)}）`)
+      if (i.emotion) parts.push(`（用户当时的情绪：${i.emotion}）`)
+      return parts.join('')
+    })
     return {
       success: true,
-      message: `共 ${list.length} 条互动记录：${summary}`,
+      message: `共 ${list.length} 条互动记录（均来自用户自己的记录，结果与情绪分别标注）：\n${lines.join('\n')}`,
       detail: { type: 'query_interaction', count: list.length, items: list.slice(0, 5) }
     }
   }

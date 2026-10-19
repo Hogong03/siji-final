@@ -304,6 +304,17 @@ export const EVAL_CASES = [
     }
   },
   {
+    id: 'relation-traceback-facts-not-verdicts',
+    title: '问关系为什么变差 → 只回顾事实与用户感受，原因标为推测、不断言对方（4.40.0）',
+    message: '为什么我最近觉得和阿伟疏远了',
+    expect: {
+      // 这是回顾分析，不是新记录：不许建卡/改卡/删卡
+      forbid: ['create_relation', 'update_relation', 'delete_relation', 'log_interaction'],
+      // 对方的态度与想法只能作为推测，不许当结论说出口
+      replyExcludes: ['他变冷淡了', '他不喜欢你了', '他不想理你']
+    }
+  },
+  {
     id: 'work-checkout-chain',
     title: '不点名的打卡 → 先查计划拿到 id 再打（4.8.2 先查后改链路）',
     // 4.10.6：needs 从 plan 改绑 checkinPlan —— 4.10.5 实跑里模型先 query_plan 再如实说
