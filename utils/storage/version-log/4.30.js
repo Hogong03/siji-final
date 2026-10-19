@@ -6,6 +6,39 @@
 
 export const V430 = [
   {
+    version: '4.41.0',
+    date: '2026-10-19',
+    title: '关系回溯触发范围离线评估：召回 66.7%、误触发 11.1%、人物匹配 100%，4 个缺口登记为 it.fails（本轮不改规则）',
+    summary: [
+      '建立 22 例确定性评估语料（8 类：明确关系变化 / 含蓄关系变化 / 怀疑对方态度 / 询问历史事件 / 一般情绪倾诉 / 泛化讨论 / 多人场景 / 无记录人物），每例自带数据前置，任何机器上结果一致，不调模型不联网',
+      '新增评估器与四类指标：召回率、注入层误触发率、人物匹配准确率、行为安全性；**两道门（意图门 + 人物门）分开记录**，否则会把「上下文能构建」误判成「已注入」（本轮首跑就踩了这个坑）',
+      '实测结果：召回 66.7%（8/12，漏触发 4 例全是含蓄说法与多人场景）、注入层误触发 11.1%（1 例：第三人关系「阿伟说他跟女朋友关系变差了」被错误归属）、人物匹配 100%（7/7）、安全性全部通过、历史询问 0/2 注入',
+      '关键结论：人物门很硬 —— 被它拦下的 5 例全是「没有人名指向」，「有人名但话题无关」一例都没有，说明放宽意图门的误注入风险主要由人物门承担；但**必须先修「第三人关系归属」与「多人静默只选一人」**，否则放宽会同时放大这两类错误',
+      '本轮**未修改任何触发规则**：4 个缺口用 it.fails 标注（修好后会报错提醒转正），完整报告见 docs/关系回溯触发评估.md（幂等生成，人工分析段在标记之后、重新生成时保留）。全量 116 文件 / 1587 用例（1583 通过 + 4 条 expected fail）'
+    ],
+    categories: [
+      {
+        title: '评估语料与评估器',
+        items: [
+          'utils/ai/eval/traceback-corpus.js（新增）：22 例语料，字段含 message / relations（数据前置）/ expect.intent / expect.injection（true|false|optional）/ expect.person / expect.multiPerson / contains / notContains',
+          'utils/ai/eval/traceback-eval.js（新增）：seedTracebackFixture（按前置写库）、runTracebackCase（同时记录 contextBuilt 与 injected）、analyzeTracebackCase、summarizeTracebackMetrics、formatMetricLine、buildTracebackReport（可复现 Markdown）',
+          'tests/relation-traceback-trigger.test.js（新增 17 例）：硬不变量 7 条 + 基线快照 5 条 + 已知缺口 4 条 it.fails + 缺口记录可查 1 条；支持 $env:TRACEBACK_EVAL_REPORT 打印报告、$env:TRACEBACK_EVAL_OUT 落盘（幂等，保留人工分析段）、$env:TRACEBACK_EVAL_DEBUG 单例调试',
+          'docs/关系回溯触发评估.md（新增）：指标 + 22 例逐例表（自动生成）+ 方法与口径 + 4 个缺口清单与最小修法建议 + 结论（人工维护）'
+        ]
+      },
+      {
+        title: '实测结论与下一步',
+        items: [
+          '缺口 1（漏触发，4 例）：「阿伟最近有点怪怪的」「感觉和阿伟不如以前了」「和小王聊天越来越没话说了」「阿伟和小王最近都不太对劲」——意图层不命中；建议加结构规则（已收录人名 + 关系状态词），不扩关键词表',
+          '缺口 2（多人静默取一）：「为什么我和阿伟、小王都疏远了」只注入了小王（按最近互动挑）；建议多人时注入全部（最多 2 人）并写明都要照顾到',
+          '缺口 3（错误归属，优先级最高）：「阿伟说他跟女朋友关系变差了」注入了「我和阿伟」的时间线；建议加第三人结构负向规则，且不能简单要求消息含「我」（会误伤缺口 1 的含蓄说法）',
+          '缺口 4（历史询问 0/2）：判定不必修 —— 事实查询走 query_interaction 更合适，回溯面向关系变化分析，语料已标 optional',
+          '口径修正留痕：语料是合成的（无真实对话日志），结论只说明正则行为；上下文里的反面例句会让 notContains 误断言，回复级安全交给 cases.js 的 replyExcludes'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.40.0',
     date: '2026-10-19',
     title: '关系事件回溯：问「为什么和他疏远了」时先给事实与你的感受，原因只能作为推测说',
