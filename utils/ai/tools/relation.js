@@ -5,7 +5,7 @@ export const RELATION_TOOLS = [
   // ===== 关系图谱 =====
   {
     name: 'create_relation',
-    description: '创建人物关系。用户介绍新人物（谁是我女朋友/同事等）时调用。',
+    description: '创建人物关系。用户介绍新人物（谁是我女朋友/同事等）时调用。亲密度由用户自己在关系页评价，不要传分数。',
     parameters: {
       type: 'object',
       properties: {
@@ -13,8 +13,7 @@ export const RELATION_TOOLS = [
         role: { type: 'string', description: '关系，如女朋友/同事' },
         context: { type: 'string' },
         traits: { type: 'array', items: { type: 'string' }, description: '性格特点' },
-        preferences: { type: 'array', items: { type: 'string' }, description: '偏好' },
-        relationship_score: { type: 'integer', minimum: 1, maximum: 10 }
+        preferences: { type: 'array', items: { type: 'string' }, description: '偏好' }
       },
       required: ['name', 'role']
     }

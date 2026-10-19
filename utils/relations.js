@@ -124,9 +124,20 @@ export function resolveInteractionTarget(target = {}) {
   return { status: 'none', keyword: name }
 }
 
-/** 创建关系卡片 */
-export function createRelation(data) {
+/** 亲密度默认值（无来源时的中性值。与「用户明确评价的中性」不可区分是已知限制，见 4.38.0 版本日志） */
+export const DEFAULT_RELATIONSHIP_SCORE = 5
+
+/**
+ * 创建关系卡片
+ * @param {object} data
+ * @param {{ trustScore?: boolean }} [opts] **只有 trustScore === true 的调用方才采信 data.relationship_score**
+ *   （4.38.0：亲密度是用户主观评价，AI 写入路径一律默认被拒；只有 UI 手动建卡传 true）
+ */
+export function createRelation(data, opts = {}) {
   const now = Date.now()
+  const score = (opts.trustScore === true && data.relationship_score != null)
+    ? data.relationship_score
+    : DEFAULT_RELATIONSHIP_SCORE
   const relation = {
     id: `rel_${now}_${Math.random().toString(36).slice(2, 8)}`,
     name: data.name || '未知',
@@ -135,7 +146,7 @@ export function createRelation(data) {
     traits: Array.isArray(data.traits) ? data.traits : [],
     preferences: Array.isArray(data.preferences) ? data.preferences : [],
     notes: data.notes || '',
-    relationship_score: data.relationship_score != null ? data.relationship_score : 5,
+    relationship_score: score,
     tags: Array.isArray(data.tags) ? data.tags : [],
     last_interaction: '',
     created_at: now,
@@ -149,14 +160,24 @@ export function createRelation(data) {
   return relation
 }
 
-/** 更新关系卡片 */
-export function updateRelation(id, updates) {
+/**
+ * 更新关系卡片
+ * @param {object} updates
+ * @param {{ trustScore?: boolean }} [opts] **缺省时忽略 relationship_score**（4.38.0）
+ *   AI 普通更新、互动落账等路径都不传 → 分数不可被非手动路径改写；UI 手动编辑传 true
+ */
+export function updateRelation(id, updates, opts = {}) {
   const all = getRawRelations()
   const idx = all.findIndex(r => r.id === id)
   if (idx < 0) return false
-  const allowed = ['name', 'role', 'context', 'traits', 'preferences', 'notes', 'relationship_score', 'tags']
+  // last_interaction 是系统记账字段（logInteraction 维护），由调用方控制；
+  // 执行器（AI 路径）的白名单里没有它，所以 AI 仍然改不到
+  const allowed = ['name', 'role', 'context', 'traits', 'preferences', 'notes', 'relationship_score', 'tags', 'last_interaction']
   for (const key of allowed) {
-    if (updates[key] != null) all[idx][key] = updates[key]
+    if (updates[key] == null) continue
+    // 亲密度是用户主观评价字段：非显式授权路径一律剥离（其余字段照常更新）
+    if (key === 'relationship_score' && opts.trustScore !== true) continue
+    all[idx][key] = updates[key]
   }
   all[idx].updated_at = Date.now()
   persistRelations(all)
@@ -249,6 +270,12 @@ export function deleteInteraction(id) {
 // ==================== 上下文注入 ====================
 
 /**
+ * 亲密度来源说明（4.38.0）：分数是现存记录值，来源未必可追溯（可能是历史默认值、模板预填、
+ * 用户手动评价或更早版本 AI 写入），因此不得据此断言「用户评价过」。AI 也不能修改它。
+ */
+const SCORE_PROVENANCE_NOTE = '（亲密度是现存记录值，来源未必可追溯，不要据此断言用户评价过；你也不能修改它）'
+
+/**
  * 构建关系图谱上下文（注入系统提示词）
  * 优化：若用户消息提到了已收录人物，只注入被提到的人物详情；
  *  否则注入最近 3 个关系卡片摘要（不全量 5 个，减少 token）
@@ -266,7 +293,7 @@ export function buildRelationsContext(userMessage) {
     })
     if (mentioned.length > 0) {
       const lines = mentioned.map(r => formatRelationLine(r))
-      return `\n\n---\n关系图谱（用户提到的人物）：\n${lines.join('\n')}`
+      return `\n\n---\n关系图谱（用户提到的人物）${SCORE_PROVENANCE_NOTE}：\n${lines.join('\n')}`
     }
   }
 
@@ -276,7 +303,7 @@ export function buildRelationsContext(userMessage) {
     .slice(0, 3)
 
   const lines = sorted.map(r => formatRelationLine(r))
-  return `\n\n---\n关系图谱（用户的人际网络）：\n${lines.join('\n')}`
+  return `\n\n---\n关系图谱（用户的人际网络）${SCORE_PROVENANCE_NOTE}：\n${lines.join('\n')}`
 }
 
 /** 格式化单个关系卡片为一行 */

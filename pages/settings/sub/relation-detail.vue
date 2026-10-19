@@ -256,7 +256,8 @@ function handleEdit() {
     relationship_score: editForm.value.relationship_score,
     notes: editForm.value.notes.trim()
   }
-  updateRelation(relationId.value, updates)
+  // trustScore：手动编辑是亲密度唯一的合法写入路径（4.38.0）
+  updateRelation(relationId.value, updates, { trustScore: true })
   uni.showToast({ title: '已保存', icon: 'success' })
   showEditForm.value = false
   loadData()

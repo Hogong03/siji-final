@@ -8,18 +8,26 @@ import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 export function createRelationExecutors(ctx) {
   // ==================== 关系图谱操作 ====================
 
+  /** 亲密度被剥离时给模型与用户的统一说明（AI 不得代改用户的主观评价，4.38.0） */
+  const SCORE_BLOCKED_MSG = '亲密度是你自己的评价，思迹不会代你修改；需要调整请到「人脉 → 该人物详情页」拖动滑块'
+
   function execCreateRelation(p) {
+    const scoreRequested = p && p.relationship_score != null
+    // 不传 trustScore：AI 建卡一律落到默认亲密度，模型自填的分数不被采信
     const relation = createRelation(p)
     invalidatePromptCache()
     return {
       success: true,
-      message: `已收录「${relation.name}」到关系图谱`,
+      message: `已收录「${relation.name}」到关系图谱`
+        + (scoreRequested ? `（未采信亲密度 ${p.relationship_score}：${SCORE_BLOCKED_MSG}）` : ''),
       detail: {
         type: 'relation', id: relation.id,
         name: relation.name, role: relation.role,
         context: relation.context, traits: relation.traits,
         preferences: relation.preferences, notes: relation.notes,
-        relationship_score: relation.relationship_score, tags: relation.tags
+        relationship_score: relation.relationship_score,
+        score_blocked: scoreRequested,
+        tags: relation.tags
       }
     }
   }
@@ -33,14 +41,34 @@ export function createRelationExecutors(ctx) {
       if (p[key] != null) updates[key] = p[key]
     }
     if (Object.keys(updates).length === 0) return { success: false, message: '无更新字段', detail: null }
+
+    const scoreRequested = updates.relationship_score != null
+
+    // 只请求改亲密度 → 直接拒绝，不写库（其余字段一个都没有）
+    if (scoreRequested && Object.keys(updates).every(k => k === 'relationship_score')) {
+      return {
+        success: false,
+        message: `没有改动任何信息：${SCORE_BLOCKED_MSG}`,
+        detail: { type: 'relation', id, score_blocked: true, score_requested: p.relationship_score }
+      }
+    }
+
+    // 不传 trustScore：分数被剥离，其余合法字段照常更新
     const ok = updateRelation(id, updates)
     if (!ok) return { success: false, message: '关系卡片不存在', detail: null }
     const updated = getAllRelations().find(r => r.id === id)
     invalidatePromptCache()
+    const applied = Object.keys(updates).filter(k => k !== 'relationship_score')
     return {
       success: true,
-      message: `已更新「${updated.name}」的信息`,
-      detail: { type: 'relation', id, updated_fields: Object.keys(updates), ...updated }
+      message: `已更新「${updated.name}」的信息`
+        + (scoreRequested ? `（亲密度未改：${SCORE_BLOCKED_MSG}）` : ''),
+      detail: {
+        type: 'relation', id,
+        updated_fields: applied,
+        score_blocked: scoreRequested,
+        ...updated
+      }
     }
   }
 

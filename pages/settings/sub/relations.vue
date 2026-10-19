@@ -293,10 +293,11 @@ function handleSubmit() {
     notes: form.value.notes.trim()
   }
   if (editMode.value) {
-    updateRelation(editingId.value, payload)
+    // trustScore：手动编辑是亲密度唯一的合法写入路径（4.38.0）
+    updateRelation(editingId.value, payload, { trustScore: true })
     uni.showToast({ title: '已保存', icon: 'success' })
   } else {
-    createRelation(payload)
+    createRelation(payload, { trustScore: true })
     uni.showToast({ title: '已收录', icon: 'success' })
   }
   showAddForm.value = false

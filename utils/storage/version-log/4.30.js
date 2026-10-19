@@ -6,6 +6,53 @@
 
 export const V430 = [
   {
+    version: '4.38.0',
+    date: '2026-10-19',
+    title: '亲密度改由用户自己评价：执行层默认拒绝 AI 写入（建卡忽略、更新剥离），顺带修 last_interaction 永远写不进去',
+    summary: [
+      '审查发现亲密度有 6 条写入通道：AI 建卡可自填（create_relation 参数暴露该字段）、AI 更新可覆盖（update_relation 白名单含它）、默认值 5、模板预填 5/6/7/8/9、用户滑块；写进去的数还会被注入回提示词当事实读，并直接决定情景模拟里对方的语气',
+      '约束落在**执行层**而不是只改提示词：utils/relations.js 的 createRelation/updateRelation 新增 opts.trustScore，**默认拒绝**写入亲密度（连"将来某条新路径忘了剥离"也拦得住），只有 UI 手动建卡/编辑传 true',
+      '提示词同步收口：extSection 与 create_relation 工具 schema 移除亲密度字段（连英文字段名都不再出现）；新增两条行为准则（禁止 AI 改分并引导用户到详情页拖滑块、现存分数来源未必可追溯禁止断言用户评价过）；关系上下文注入补一句来源说明',
+      '顺带修既有 bug：last_interaction 不在 updateRelation 的白名单里，logInteraction 里那句更新被静默丢弃 —— 关系图谱的「N 人超过 30 天没联系」「7 天内互动」一直失真；现已修复，且执行器白名单不含它，AI 仍然改不到',
+      'AI 更新同时传 notes 与亲密度时，备注照常写入、分数不动；绕过提示词直接调执行器或 utils 层同样写不进去。新增 tests/relation-score-governance.test.js 17 例，语料库补 1 条（`relation-score-not-ai-writable`：要求改分时禁止调用 update_relation、禁止谎称已改，语料共 35 条），全量 113 文件 / 1538 用例全绿'
+    ],
+    categories: [
+      {
+        title: '亲密度治理',
+        items: [
+          'utils/relations.js：新增 DEFAULT_RELATIONSHIP_SCORE=5；createRelation(data, opts) 仅当 opts.trustScore===true 才采信 data.relationship_score，否则落默认值；updateRelation(id, updates, opts) 缺省时跳过 relationship_score（其余字段照常更新）',
+          'store/executors/relation.js：execCreateRelation 回报「未采信亲密度 X」；execUpdateRelation 只请求改分时直接拒绝（不写库），同时传其他字段时剥离分数、detail.updated_fields 不再包含它，并回报「亲密度未改」',
+          'pages/settings/sub/relations.vue 与 relation-detail.vue：手动建卡/编辑三处传 { trustScore: true } —— 这是亲密度唯一的合法写入路径',
+          'AI 未获得任何改分 action：不给新建「set_relationship_score」，也不把内置更新变成可改分（避免模型自称用户授权即生效）'
+        ]
+      },
+      {
+        title: '提示词收口',
+        items: [
+          'utils/ai/prompt-builder.js extSection：create_relation / update_relation 的 JSON schema 去掉 relationship_score（有数据与无数据两个分支）',
+          'utils/ai/tools/relation.js：create_relation 工具 schema 删除该字段，描述补「亲密度由用户自己在关系页评价，不要传分数」',
+          'utils/ai/prompt-actions.js BEHAVIOR_RULES：新增「亲密度只能由用户自己评价，禁止 AI 设置/修改，用户要求时引导到详情页滑块」与「现存分数来源未必可追溯，禁止断言用户评价过」两条',
+          'utils/relations.js buildRelationsContext：两类关系上下文标题都带上「亲密度是现存记录值，来源未必可追溯，不要据此断言用户评价过；你也不能修改它」'
+        ]
+      },
+      {
+        title: '顺带修复',
+        items: [
+          'utils/relations.js updateRelation 白名单补 last_interaction：此前不在白名单，logInteraction 的 last_interaction 更新被静默丢弃（关系图谱久未联系/7 天内互动统计失真）',
+          '执行器 update_relation 的字段白名单维持不含 last_interaction，AI 改不到该记账字段（测试锁定）'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/relation-score-governance.test.js（新增 17 例）：AI 建卡传分被忽略且回报未采信 / 不传走默认 / 只请求改分被拒 / notes+分只写 notes（额外验收 1）/ 普通更新不受影响 / utils 层不带 trustScore 写不进（额外验收 2）/ 带 relation_id 别名写不进 / AI 改不到 last_interaction / UI 建卡与编辑可写分 / 单次带情绪互动不改分 / 提示词不含该字段 / 关系上下文含来源说明 / 两条行为准则存在 / 增删改查与软删除回归',
+          'utils/ai/eval/cases.js 新增语料 relation-score-not-ai-writable（要求改亲密度 → forbid update_relation + 禁止谎称已改），语料总数 35 条',
+          '相邻回归：AI 三件套（action-schema-consistency + module-exports + ai-eval 三个文件）+ relation-ambiguity + social-quota + simulation-prompts + prompt-builder + ai-features + bugfix-regression 共 11 文件 148 例全绿'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.37.0',
     date: '2026-10-19',
     title: '人脉互动不再猜人：同名/模糊多候选只返回候选不写入，确认后按 relation_id 落库',
