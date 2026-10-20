@@ -207,6 +207,17 @@ describe('collectPlanExecEvents：执行记录聚合', () => {
     expect(events[2].kind).toBe('done')
     expect(events[2].title).toBe('早睡')
   })
+
+  it('4.47.0：到期收尾进记录流且标为 ended，不混进完成', () => {
+    const now = Date.now()
+    seedPlans([
+      mkPlan({ client_id: 'exp', title: '每天听力', executions: [{ action: 'ended', at: now }] })
+    ])
+    const events = collectPlanExecEvents(getPlanList())
+    expect(events).toHaveLength(1)
+    expect(events[0].kind).toBe('ended')
+    expect(events[0].title).toBe('每天听力')
+  })
 })
 
 describe('setPlanSomeday：任意时间标记', () => {

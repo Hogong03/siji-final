@@ -14,7 +14,7 @@ import { generateEntityId } from '@/utils/uuid.js'
 import { getPlanReminder, setPlanReminder, removePlanReminder } from '@/utils/reminder.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 import { parseDateTime, combineDateTime } from '@/utils/datetime.js'
-import { recurTypeOf, recurCountOf } from '@/utils/plan-recur.js'
+import { recurTypeOf, recurCountOf, isExpiredPlan } from '@/utils/plan-recur.js'
 import { buildTimeStrip } from '@/utils/plan-time.js'
 import { buildChildPlanForm } from '@/utils/plan-child.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
@@ -179,6 +179,7 @@ export function usePlanForm({ saveChildren } = {}) {
       end_time: item.end_time || '',
       parent_id: item.parent_id || '',
       frozen_at: item.frozen_at || null,
+      end_reason: item.end_reason || '',
       childPlans: getChildPlans(item.client_id),
       ai_advice: item.ai_advice || '',
       ai_schedule: item.ai_schedule || '',
@@ -241,7 +242,8 @@ export function usePlanForm({ saveChildren } = {}) {
     updateIndex('plan', plan)
     if (typeof saveChildren === 'function') saveChildren(form.value.childPlans, plan.client_id)
     // 3.5.0：主计划手动收尾（状态→已完成）时，其循环子计划一并收尾
-    if (plan.status === 2) {
+    // 4.47.0：到期收尾（expired）不是用户完成，不连带关闭子计划
+    if (plan.status === 2 && !isExpiredPlan(plan)) {
       ;(form.value.childPlans || []).forEach(ch => {
         if (ch.status !== 2 && recurTypeOf(ch)) {
           const child = { ...ch, status: 2, parent_id: plan.client_id }

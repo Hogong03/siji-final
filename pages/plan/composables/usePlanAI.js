@@ -7,6 +7,7 @@
 import { ref } from 'vue'
 import { chatRequest } from '@/utils/api.js'
 import { getPlanList, getChildPlans, getPlanCheckInStats } from '@/utils/storage.js'
+import { isExpiredPlan, isDonePlan } from '@/utils/plan-recur.js'
 
 export function usePlanAI(form, store, opts = {}) {
   const aiScheduling = ref(false)
@@ -56,7 +57,8 @@ export function usePlanAI(form, store, opts = {}) {
     if (kids.length === 0) return ''
     return kids.map((c, i) => {
       if (!c || !c.title) return null
-      const state = c.status === 2 ? '已完成' : (c.someday_at ? '任意时间（今天不做，不催）' : '未完成')
+      // 4.47.0：只有到期收尾改口径；0/1 仍用「未完成」，避免改动 AI 提示词语义
+      const state = isExpiredPlan(c) ? '已到期' : (c.status === 2 ? '已完成' : (c.someday_at ? '任意时间（今天不做，不催）' : '未完成'))
       const mins = c.est_minutes > 0 ? '，约 ' + c.est_minutes + ' 分钟' : ''
       const desc = c.description ? '；' + c.description : ''
       return (i + 1) + '. ' + c.title + mins + ' — ' + state + desc
@@ -81,7 +83,7 @@ export function usePlanAI(form, store, opts = {}) {
       count += Array.isArray(p.checkins) ? p.checkins.length : 0
       if (stats.lastDate > lastDate) lastDate = stats.lastDate
     })
-    const doneKids = kids.filter(k => k.status === 2).length
+    const doneKids = kids.filter(k => isDonePlan(k)).length
     const somKids = kids.filter(k => k.someday_at).length
     const frozenKids = kids.filter(k => k.frozen_at).length
     const bits = ['计划内共打卡 ' + count + ' 次（' + days + ' 天）']

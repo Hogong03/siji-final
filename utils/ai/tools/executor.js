@@ -273,7 +273,10 @@ function formatPlans(d) {
   const items = Array.isArray(d.items) ? d.items : []
   if (items.length === 0) return '当前没有匹配的计划。'
   const lines = items.map(p => {
-    const status = { 0: '待开始', 1: '进行中', 2: '已完成' }[p.status] || ''
+    // 4.47.0：status=2 分「已完成 / 已到期」，AI 读到的也是这个口径
+    const status = p.status === 2
+      ? (p.end_reason === 'expired' ? '已到期' : '已完成')
+      : (p.status === 1 ? '进行中' : '待开始')
     const phaseCount = Array.isArray(p.phases) && p.phases.length ? `（${p.phases.length}个阶段）` : ''
     const subCount = Array.isArray(p.subtasks) ? `，${p.subtasks.length}个子任务` : ''
     return `- [id:${p.client_id || ''}] ${p.title || ''}${phaseCount} [${status}]${subCount}${p.deadline ? ' 截止' + p.deadline : ''}`

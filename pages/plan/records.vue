@@ -181,7 +181,7 @@ function onBackfillDay(date) {
 }
 
 function applyBackfill(item, date) {
-	const rec = logPlanCheckIn(item.client_id, '', date)
+	const rec = logPlanCheckIn(item.client_id, undefined, date)
 	if (!rec) {
 		uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
 		return
@@ -189,6 +189,13 @@ function applyBackfill(item, date) {
 	loadEvents()
 	selectedDate.value = date
 	uni.showToast({ title: '已补记 ' + date.slice(5), icon: 'none' })
+}
+
+/** 事件标签（4.47.0：到期收尾不再冒充「完成」） */
+function kindLabel(kind) {
+	if (kind === 'done') return '完成'
+	if (kind === 'ended') return '到期'
+	return '打卡'
 }
 
 function totalCount() {
@@ -246,7 +253,7 @@ function goDetail(planId) {
 					</view>
 					<view class="rp-item-body">
 						<view class="rp-item-title">
-							<text class="rp-kind" :class="'rk-' + item.kind">{{ item.kind === 'done' ? '完成' : '打卡' }}</text>
+							<text class="rp-kind" :class="'rk-' + item.kind">{{ kindLabel(item.kind) }}</text>
 							<text class="rp-plan-title">{{ item.title }}</text>
 						</view>
 						<text v-if="item.kind === 'checkin' && item.note" class="rp-note">{{ item.note }}</text>
@@ -272,7 +279,7 @@ function goDetail(planId) {
 					</view>
 					<view class="rp-item-body">
 						<view class="rp-item-title">
-							<text class="rp-kind" :class="'rk-' + item.kind">{{ item.kind === 'done' ? '完成' : '打卡' }}</text>
+							<text class="rp-kind" :class="'rk-' + item.kind">{{ kindLabel(item.kind) }}</text>
 							<text class="rp-plan-title">{{ item.title }}</text>
 						</view>
 						<text v-if="item.kind === 'checkin' && item.note" class="rp-note">{{ item.note }}</text>
@@ -405,6 +412,12 @@ function goDetail(planId) {
 		background: rgba(16, 185, 129, 0.12);
 		color: #059669;
 	}
+
+	&.rk-ended {
+		background: #FAFAFA;
+		color: #A1A1AA;
+		border: 1rpx solid #E4E4E7;
+	}
 }
 
 .rp-plan-title {
@@ -467,6 +480,7 @@ html.theme-dark {
 	.rp-item { background: #27272A; &:active { background: #3F3F46; } }
 	.rp-time-text { color: #71717A; }
 	.rp-kind.rk-checkin { background: #3F3F46; color: #A1A1AA; }
+	.rp-kind.rk-ended { background: #27272A; color: #71717A; border-color: #3F3F46; }
 	.rp-plan-title { color: #FAFAFA; }
 	.rp-note { color: #A1A1AA; }
 	.rp-arrow { color: #71717A; }
@@ -487,6 +501,11 @@ html.theme-dark {
     background: rgba(16, 185, 129, 0.12);
     color: #059669;
     }
+    &.rk-ended {
+    background: #27272A;
+    color: #71717A;
+    border-color: #3F3F46;
+    }
   }
 }
 /* #endif */
@@ -501,6 +520,7 @@ html.theme-dark {
 	.rp-item { background: #27272A; &:active { background: #3F3F46; } }
 	.rp-time-text { color: #71717A; }
 	.rp-kind.rk-checkin { background: #3F3F46; color: #A1A1AA; }
+	.rp-kind.rk-ended { background: #27272A; color: #71717A; border-color: #3F3F46; }
 	.rp-plan-title { color: #FAFAFA; }
 	.rp-note { color: #A1A1AA; }
 	.rp-arrow { color: #71717A; }

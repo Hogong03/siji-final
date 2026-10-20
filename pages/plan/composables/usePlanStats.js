@@ -3,6 +3,7 @@
  */
 import { ref, computed } from 'vue'
 import { getPlanList } from '@/utils/storage.js'
+import { isDonePlan, isExpiredPlan } from '@/utils/plan-recur.js'
 
 export function usePlanStats() {
   const plans = ref([])
@@ -30,10 +31,12 @@ export function usePlanStats() {
     const all = rangePlans.value
     const total = all.length
     const active = all.filter(p => p.status === 1).length
-    const completed = all.filter(p => p.status === 2).length
+    // 4.47.0：完成只算用户完成；到期收尾单独统计
+    const completed = all.filter(isDonePlan).length
+    const expired = all.filter(isExpiredPlan).length
     const pending = all.filter(p => p.status === 0).length
     const rate = total > 0 ? Math.round(completed / total * 100) : 0
-    return { total, active, completed, pending, rate }
+    return { total, active, completed, expired, pending, rate }
   })
 
   // 优先级分布
@@ -54,13 +57,15 @@ export function usePlanStats() {
   const statusDist = computed(() => {
     const all = rangePlans.value
     const active = all.filter(p => p.status === 1).length
-    const completed = all.filter(p => p.status === 2).length
+    const completed = all.filter(isDonePlan).length
+    const expired = all.filter(isExpiredPlan).length
     const pending = all.filter(p => p.status === 0).length
-    const total = active + completed + pending
+    const total = active + completed + expired + pending
     return [
       { label: '进行中', count: active, color: '#18181B', pct: total > 0 ? Math.round(active / total * 100) : 0 },
       { label: '已完成', count: completed, color: '#52525B', pct: total > 0 ? Math.round(completed / total * 100) : 0 },
-      { label: '待开始', count: pending, color: '#A1A1AA', pct: total > 0 ? Math.round(pending / total * 100) : 0 }
+      { label: '已到期', count: expired, color: '#A1A1AA', pct: total > 0 ? Math.round(expired / total * 100) : 0 },
+      { label: '待开始', count: pending, color: '#D4D4D8', pct: total > 0 ? Math.round(pending / total * 100) : 0 }
     ]
   })
 
@@ -75,7 +80,7 @@ export function usePlanStats() {
       const endTs = startTs + 86400000
       const created = plans.value.filter(p => p.created_at >= startTs && p.created_at < endTs).length
       const done = plans.value.filter(p => {
-        if (p.status !== 2) return false
+        if (!isDonePlan(p)) return false
         const updated = p.updated_at || 0
         return updated >= startTs && updated < endTs
       }).length
@@ -87,7 +92,7 @@ export function usePlanStats() {
 
   // 完成速度
   const completionStats = computed(() => {
-    const done = rangePlans.value.filter(p => p.status === 2 && p.created_at && p.updated_at)
+    const done = rangePlans.value.filter(p => isDonePlan(p) && p.created_at && p.updated_at)
     if (done.length === 0) return { avg: 0, fastest: 0, slowest: 0, count: 0 }
     const days = done.map(p => Math.ceil((p.updated_at - p.created_at) / 86400000))
     const avg = Math.round(days.reduce((s, d) => s + d, 0) / days.length)
@@ -110,7 +115,7 @@ export function usePlanStats() {
       const kids = childMap[p.client_id]
       if (kids && kids.length > 0) {
         total += kids.length
-        done += kids.filter(k => k.status === 2).length
+        done += kids.filter(k => isDonePlan(k)).length
       } else if (Array.isArray(p.subtasks) && p.subtasks.length > 0) {
         total += p.subtasks.length
         done += p.subtasks.filter(s => s.done).length
@@ -124,7 +129,7 @@ export function usePlanStats() {
     return priorityDist.value.map(p => {
       const targetP = p.label === '紧急' ? 2 : p.label === '重要' ? 1 : 0
       const items = rangePlans.value.filter(pl => (pl.priority || 0) === targetP)
-      const done = items.filter(pl => pl.status === 2).length
+      const done = items.filter(pl => isDonePlan(pl)).length
       return { ...p, total: items.length, done, completionRate: items.length > 0 ? Math.round(done / items.length * 100) : 0 }
     })
   })
@@ -137,7 +142,7 @@ export function usePlanStats() {
         p.tags.forEach(t => {
           if (!tagMap[t]) tagMap[t] = { label: t, total: 0, done: 0 }
           tagMap[t].total++
-          if (p.status === 2) tagMap[t].done++
+          if (isDonePlan(p)) tagMap[t].done++
         })
       }
     })

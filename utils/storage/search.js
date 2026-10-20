@@ -7,6 +7,7 @@
 
 import { getRawList, getMonthFromDate } from './helpers.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
+import { planStatusLabel } from '../plan-recur.js'
 
 const INDEX_KEY = 'siji_index'
 
@@ -257,7 +258,7 @@ export function globalSearch(keyword, options = {}) {
           title: item.title || '无标题',
           preview: (item.description || '').substring(0, 60),
           date: item.created_at,
-          extra: item.status === 2 ? '已完成' : item.status === 1 ? '进行中' : '待开始',
+          extra: planStatusLabel(item),
           route: '/pages/plan/detail?id=' + item.client_id
         })
       }

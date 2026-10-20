@@ -6,6 +6,59 @@
 
 export const V430 = [
   {
+    version: '4.47.0',
+    date: '2026-10-20',
+    title: '计划打卡语义校正：到期收尾不再冒充「完成」，同日补写不丢描述，打卡被拒原因统一，读侧口径全量对齐',
+    summary: [
+      '到期收尾改写 end_reason=expired + 执行日志 ended（不再写 done），记录页标签区分「完成 / 到期 / 打卡」；级联收尾不再把到期子计划当完成，父级保持进行中待回顾',
+      '同日再打卡保留首次 at（补写描述不改记录时刻）并新增 note_at；note 改为三态：undefined 不动已有描述、空串明确清空、非空覆盖 —— 快捷打卡与 AI 不带描述时不再清空用户已写内容',
+      '新增 checkinBlockReason() 单一判定：详情页 / 今日行动条 / 子计划列表 / 聊天卡直达 / AI 执行器共用同一份原因（计划不存在 / 已删除 / 已冷藏 / 已完成 / 已到期收尾）',
+      '去催促化：删除「今天还没打卡，连续性就保住了」这条建议规则；「打卡进度条会往前走一格」改为「今天这次就留下了」；回执文案「已打卡，今天完成」改为「已记录，今天这次算数」',
+      '读侧口径全量对齐：新增 endKindOf / isDonePlan / isExpiredPlan / planStatusLabel；计划卡片、看板、筛选、总览统计、聊天汇总表、搜索、CSV 导出、子计划标签、AI query_plan 与 AI 文本全部区分「已完成 / 已到期」，完成数与完成率不再把到期算成达成',
+      '已知限制（P1 解决）：到期后 30 天补记窗口尚未恢复；4.46 及以前自动收尾的存量计划没有 end_reason，升级后仍按「已完成」显示，无法回溯区分（本轮不做数据迁移）'
+    ],
+    categories: [
+      {
+        title: '计划打卡语义',
+        items: [
+          'utils/storage/plan.js：reconcilePlanStatus 到期分支改推 ended + end_reason=expired，已标记的跳过防重复日志；savePlan 中 status 2→非 2 的重开动作清掉 end_reason 与 done_at',
+          'utils/plan-recur.js：collectCascadeCompletions 把 end_reason=expired 的子计划视为「未结束」，避免一个循环项到期就把阶段与主计划一起关掉；新增 checkinBlockReason(plan) 纯函数',
+          'utils/plan-daily.js：collectPlanExecEvents 收集 ended 事件（kind 原样透传），记录流不再把到期读成完成',
+          'pages/plan/records.vue：kindLabel() 映射三种标签（完成/到期/打卡），补 rk-ended 明暗两套样式；补记调用改传 undefined 不动描述',
+          'store/executors/plan.js：note 缺省时不传描述；冷藏/已完成/到期收尾的失败文案改走 checkinBlockReason'
+        ]
+      },
+      {
+        title: '交互与文案',
+        items: [
+          'pages/plan/index.vue：快捷打卡与长按补写改走 note 三态；失败提示给具体原因；回执改「已记录，今天这次算数」',
+          'pages/plan/composables/usePlanCheckin.js / usePlanChildActions.js / usePlanNextStep.js：补记与快捷打卡不再传空串覆盖描述，阻断提示统一走 checkinBlockReason',
+          'utils/advice-rules.js：删除 plan-checkin 催促规则（空白不等于断签）；plan-today 文案不再暗示打卡会推进进度'
+        ]
+      },
+      {
+        title: '读侧语义统一',
+        items: [
+          'utils/plan-recur.js：新增 endKindOf / isDonePlan / isExpiredPlan / planStatusLabel 四个纯函数；utils/plan-summary.js 统计拆出 expired，分组新增「已到期」（expiredHidden 截断说明）',
+          '计划 UI：PlanCard 状态标签与样式区分「已到期」（不再删除线 + 降透明度冒充完成）；看板第三列改「已结束」并给到期卡加角标；筛选 chip 改「已结束」；总览与统计新增到期计数',
+          '其他读端：搜索索引 extra、CSV 导出（顺带修 status=0 误标「已完成」）、功能中心完成数、执行卡完成数、子计划标签与进度、AI 计划分析的子计划状态，全部走统一判定',
+          'AI：execQueryPlan 的 completed 过滤排除 expired 并在 message 注明「另有 N 个已到期（未确认完成）」；formatPlans 输出 [已到期]；usePlanForm 仅在真完成时连带关闭循环子计划'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/plan-recur.test.js：过期收尾断言改为 ended + end_reason，新增「到期子计划不触发父级级联」、checkinBlockReason、endKindOf/planStatusLabel、重开清 end_reason 用例；阶段截止后父级保持进行中的旧语义同步改写',
+          'tests/plan-action-log.test.js：新增 note 三态 5 例（保留/传 null/清空/执行器不清空/历史缺 at 与 note_at 不崩）',
+          'tests/plan-summary.test.js：新增「到期单独成组、不计完成/完成率」「已到期分组截断 expiredHidden」2 例；tests/executors.test.js：新增 completed 不含到期 + AI 文本 [已到期] 1 例',
+          'tests/backup.test.js：新增 CSV 计划状态文案 1 例（待开始/进行中/已完成/已到期，锁住 status=0 不再误标已完成）；tests/plan-daily.test.js：新增 ended 事件进入记录流 1 例',
+          '全量 117 文件 / 1645 用例全绿',
+          'H5 实测（HBuilderX 5.26 CLI 编译 → 静态服务 → headless Chrome 驱动真实构建产物）：到期计划列表显示「0 完成 · 1 到期」、记录页标「到期」；同日连点两次只留 1 条且描述/首次时刻不变；冷藏计划点打卡提示「计划已冷藏，先放一放」且不落库；已完成子计划不提供打卡入口'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.46.0',
     date: '2026-10-19',
     title: '关系回溯观察日志落成可填写文件（模板 + 合成示例 + CSV 表头），真实记录本地隔离（无代码行为变更）',

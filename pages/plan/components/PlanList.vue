@@ -4,12 +4,10 @@ import PlanCard from './PlanCard.vue'
 
 const props = defineProps({
 	filteredPlans: { type: Array, required: true },
-	statusMap: { type: Object, required: true },
 	priorityColors: { type: Object, required: true },
 	swipeItem: { type: String, default: null },
 	getSwipeOffset: { type: Function, default: () => '0px' }
 })
-
 const emit = defineEmits([
 	'go-detail', 'go-templates', 'go-new',
 	'touch-start', 'touch-move', 'touch-end',
@@ -59,7 +57,6 @@ const emit = defineEmits([
 				>
 					<PlanCard
 						:item="item"
-						:statusMap="statusMap"
 						:priorityColors="priorityColors"
 						@go-detail="emit('go-detail', $event)"
 					/>

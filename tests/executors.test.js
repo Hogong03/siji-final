@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDataStore } from '../store/data.js'
 import { resetStorage } from './setup.js'
+import { executeTool } from '../utils/ai/tools/executor.js'
 
 let store
 beforeEach(() => {
@@ -260,6 +261,24 @@ describe('计划 executor', () => {
     store.executeAction({ type: 'create_plan', payload: { title: '晚截止', deadline: '2026-06-01' } })
     const q = store.executeAction({ type: 'query_plan', payload: {} })
     expect(q.detail.items[0].title).toBe('早截止')
+  })
+
+  it('4.47.0：completed 不含到期收尾，AI 文本标「已到期」', () => {
+    uni.setStorageSync('plan_all', JSON.stringify([{
+      client_id: 'exp1', title: '每天听力', status: 1, parent_id: '',
+      recur_type: 'daily', recur_count: 1, deadline: '2020-01-01',
+      created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
+    }]))
+    // 读列表时 reconcile 会把它标成到期收尾（status=2 + end_reason=expired）
+    const done = store.executeAction({ type: 'query_plan', payload: { status: 'completed' } })
+    expect(done.success).toBe(true)
+    expect(done.detail.items).toHaveLength(0)
+    expect(done.message).toContain('已到期')
+
+    const all = store.executeAction({ type: 'query_plan', payload: { status: 'all' } })
+    expect(all.detail.items[0].end_reason).toBe('expired')
+    const text = executeTool(store, 'query_plan', { status: 'all' })
+    expect(text.text).toContain('[已到期]')
   })
 })
 

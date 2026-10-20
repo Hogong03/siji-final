@@ -45,6 +45,52 @@ export function isRecurring(plan) {
   return !(plan.is_deleted === 1 || plan.status === 2 || plan.frozen_at || plan.someday_at)
 }
 
+/**
+ * 打卡被拒的原因（4.47.0）
+ *
+ * 页面 / 聊天卡直达 / AI 执行器共用这一份判定，不再各自写「当前状态暂不能打卡」。
+ * 只判断计划状态，不判断补记窗口 —— 窗口由 isBackfillable 单独负责，
+ * 这样历史补记不会被这里的「已完成」口径误伤（除到期收尾外，口径保持不变）。
+ * @returns {string} 空串 = 可以打卡
+ */
+export function checkinBlockReason(plan) {
+  if (!plan) return '计划不存在'
+  if (plan.is_deleted === 1) return '计划已删除'
+  if (plan.frozen_at) return '计划已冷藏，先放一放'
+  if (plan.status === 2) {
+    return plan.end_reason === 'expired' ? '计划已到期收尾，不用再打卡' : '计划已完成，不用再打卡'
+  }
+  return ''
+}
+
+/**
+ * 终止态细分（4.47.0）：status=2 只表示「结束」，不表示「达成」
+ * @returns {'done'|'expired'|''}
+ */
+export function endKindOf(plan) {
+  if (!plan || plan.status !== 2) return ''
+  return plan.end_reason === 'expired' ? 'expired' : 'done'
+}
+
+/** 用户真正完成（排除到期收尾） */
+export function isDonePlan(plan) {
+  return endKindOf(plan) === 'done'
+}
+
+/** 到期收尾（日期到了自动结束，未确认达成） */
+export function isExpiredPlan(plan) {
+  return endKindOf(plan) === 'expired'
+}
+
+/** 读侧统一状态文案：2 分「已完成 / 已到期」，其余与状态机一致 */
+export function planStatusLabel(plan) {
+  if (!plan) return ''
+  if (plan.status === 0) return '待开始'
+  if (plan.status === 1) return '进行中'
+  if (plan.status === 2) return isExpiredPlan(plan) ? '已到期' : '已完成'
+  return '未知'
+}
+
 /** 时间戳 → YYYY-MM-DD（本地时区） */
 export function dateYmdOfTs(ts) {
   const d = new Date(ts)
@@ -360,8 +406,11 @@ export function collectCascadeCompletions(plans, maxRounds = MAX_CHAIN) {
       if (p.frozen_at || p.someday_at) return
       const kids = childrenOf.get(p.client_id) || []
       if (kids.length === 0) return
+      // 4.47.0：到期收尾（end_reason='expired'）不算「完成」，不能把父级一起关掉 ——
+      // 日期到了只代表这项循环该回顾了，不代表目标达成
       const allClosed = kids.every(k =>
-        (k.status === 2 || closed.has(k.client_id)) && !k.frozen_at && !k.someday_at)
+        (k.status === 2 || closed.has(k.client_id)) && !k.frozen_at && !k.someday_at &&
+        k.end_reason !== 'expired')
       if (!allClosed) return
       closed.add(p.client_id)
       out.push(p.client_id)

@@ -10,6 +10,7 @@
 	import SijiIcon from '@/components/common/SijiIcon.vue'
 	import { logPlanCheckIn } from '@/utils/storage.js'
 	import { checkinFeedback, streakOfPlanRecord } from '@/utils/checkin-feedback.js'
+	import { checkinBlockReason } from '@/utils/plan-recur.js'
 	import { usePlanList } from './composables/usePlanList.js'
 	import { usePlanSwipe } from './composables/usePlanSwipe.js'
 	import PlanOverview from './components/PlanOverview.vue'
@@ -18,7 +19,6 @@
 	import PlanList from './components/PlanList.vue'
 	import EmptyState from '@/components/common/EmptyState.vue'
 
-	const statusMap = { 0: '待开始', 1: '进行中', 2: '已完成' }
 	const priorityColors = { 0: '#A1A1AA', 1: '#E8A838', 2: '#EF4444' }
 
 	const viewMode = ref('list') // list / board
@@ -27,7 +27,7 @@
 	const boardColumns = computed(() => [
 		{ title: '待开始', status: 0, plans: filteredPlans.value.filter(p => p.status === 0) },
 		{ title: '进行中', status: 1, plans: filteredPlans.value.filter(p => p.status === 1) },
-		{ title: '已完成', status: 2, plans: filteredPlans.value.filter(p => p.status === 2) }
+		{ title: '已结束', status: 2, plans: filteredPlans.value.filter(p => p.status === 2) }
 	])
 
 	function changeStatus(plan, newStatus) {
@@ -94,25 +94,25 @@
 	function quickCheckIn(item) {
 		if (!item || !item.recurType) return
 		const before = streakOfPlan(item.client_id)
-		const rec = logPlanCheckIn(item.client_id, '')
+		const rec = logPlanCheckIn(item.client_id)
 		if (!rec) {
-			uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+			uni.showToast({ title: checkinBlockReason(planById(item.client_id)) || '当前状态暂不能打卡', icon: 'none' })
 			return
 		}
-		feedbackAfter(rec, before, '已打卡，今天完成')
+		feedbackAfter(rec, before, '已记录，今天这次算数')
 		setTimeout(() => loadPlans(), 60)
 	}
 
-	/** 3.5.2：今日行动条长按补写描述后打卡（描述为空等价于普通打卡） */
+	/** 3.5.2：今日行动条长按补写描述后打卡（描述为空等价于普通打卡，不动已有描述） */
 	function checkinWithNote(payload) {
 		if (!payload || !payload.clientId) return
 		const before = streakOfPlan(payload.clientId)
-		const rec = logPlanCheckIn(payload.clientId, payload.note || '')
+		const rec = logPlanCheckIn(payload.clientId, payload.note ? payload.note : undefined)
 		if (!rec) {
-			uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+			uni.showToast({ title: checkinBlockReason(planById(payload.clientId)) || '当前状态暂不能打卡', icon: 'none' })
 			return
 		}
-		feedbackAfter(rec, before, payload.note ? '已记录' : '已打卡，今天完成')
+		feedbackAfter(rec, before, payload.note ? '已记录' : '已记录，今天这次算数')
 		setTimeout(() => loadPlans(), 60)
 	}
 </script>
@@ -180,7 +180,6 @@
 		<PlanList
 			v-if="viewMode === 'list'"
 			:filteredPlans="filteredPlans"
-			:statusMap="statusMap"
 			:priorityColors="priorityColors"
 			:swipeItem="swipeItem"
 			:getSwipeOffset="getSwipeOffset"
@@ -208,6 +207,7 @@
 						<view v-for="item in col.plans" :key="item.client_id" class="board-card" @tap="goDetail(item.client_id)">
 							<view class="bc-priority" :style="{ background: priorityColors[item.priority] || '#999' }" />
 							<text class="bc-name">{{ item.title }}</text>
+							<text v-if="item.end_reason === 'expired'" class="bc-expired">到期</text>
 							<text v-if="item.description" class="bc-desc">{{ item.description.substring(0, 40) }}</text>
 							<view v-if="item.subtasks?.length" class="bc-subtasks">
 								<text class="bc-st-text">{{ item.subtasks.filter(s => s.done).length }}/{{ item.subtasks.length }} 子任务</text>
@@ -378,6 +378,15 @@
 	}
 
 	.bc-name { font-size: 26rpx; font-weight: 600; color: #18181B; display: block; }
+	.bc-expired {
+		display: inline-block;
+		margin-top: 4rpx;
+		padding: 2rpx 10rpx;
+		border-radius: 10rpx;
+		background: #F4F4F5;
+		font-size: 20rpx;
+		color: #A1A1AA;
+	}
 	.bc-desc { font-size: 22rpx; color: #71717A; margin-top: 4rpx; display: block; }
 	.bc-subtasks { margin-top: 6rpx; }
 	.bc-st-text { font-size: 20rpx; color: #A1A1AA; }
@@ -441,6 +450,7 @@
 		.bc-body { background: #18181B; }
 		.board-card { background: #27272A; }
 		.bc-name { color: #FAFAFA; }
+		.bc-expired { background: #3F3F46; color: #A1A1AA; }
 		.bc-desc { color: #A1A1AA; }
 		.bc-st-text { color: #71717A; }
 		.bc-arrow { background: #3F3F46; color: #FAFAFA; }
@@ -482,6 +492,7 @@
 		.bc-body { background: #18181B; }
 		.board-card { background: #27272A; }
 		.bc-name { color: #FAFAFA; }
+		.bc-expired { background: #3F3F46; color: #A1A1AA; }
 		.bc-desc { color: #A1A1AA; }
 		.bc-st-text { color: #71717A; }
 		.bc-arrow { background: #3F3F46; color: #FAFAFA; }

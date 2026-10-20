@@ -506,7 +506,7 @@ function goPlanDetail(clientId) {
 
 // ===== 计划汇总表（4.29.5 起每天首次弹；4.30.0 起受「提示与提醒」开关管）=====
 // 数据来自 utils/plan-summary.js（纯函数，统计口径与计划 Tab 的「计划总览」一致）
-const EMPTY_SUMMARY = { stats: {}, focus: [], weekBar: null, groups: [], doneHidden: 0 }
+const EMPTY_SUMMARY = { stats: {}, focus: [], weekBar: null, groups: [], doneHidden: 0, expiredHidden: 0 }
 const showPlanSummary = ref(false)
 const planSummaryData = ref(EMPTY_SUMMARY)
 

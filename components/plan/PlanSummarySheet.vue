@@ -20,7 +20,7 @@ import SijiIcon from '@/components/common/SijiIcon.vue'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  summary: { type: Object, default: () => ({ stats: {}, focus: [], weekBar: null, groups: [], doneHidden: 0 }) }
+  summary: { type: Object, default: () => ({ stats: {}, focus: [], weekBar: null, groups: [], doneHidden: 0, expiredHidden: 0 }) }
 })
 const emit = defineEmits(['close', 'go-plan', 'go-plan-list', 'disable-auto', 'open-notify'])
 
@@ -68,6 +68,7 @@ const smallLine = computed(() => {
   const s = stats.value
   const parts = [`共 ${s.total || 0} 项`]
   if ((s.total || 0) > 0) parts.push(`完成 ${s.completed || 0} · ${s.rate || 0}%`)
+  if ((s.expired || 0) > 0) parts.push(`到期 ${s.expired}`)
   if ((s.subTotal || 0) > 0) parts.push(`子计划 ${s.subDone || 0}/${s.subTotal}`)
   return parts.join(' · ')
 })
@@ -157,6 +158,9 @@ const smallLine = computed(() => {
 
         <view v-if="summary.doneHidden > 0" class="pss-more">
           <text class="pss-more-text">已完成另有 {{ summary.doneHidden }} 条较早记录未列出</text>
+        </view>
+        <view v-if="summary.expiredHidden > 0" class="pss-more">
+          <text class="pss-more-text">已到期另有 {{ summary.expiredHidden }} 条较早记录未列出</text>
         </view>
 
         <view class="pss-pad" />

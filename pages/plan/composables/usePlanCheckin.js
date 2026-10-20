@@ -13,7 +13,7 @@ import {
   getPlanList, logPlanCheckIn, removePlanCheckIn,
   getPlanCheckInStats, getPlanCheckInRecords
 } from '@/utils/storage.js'
-import { buildPlanIndex, backfillTargetOf, isBackfillable } from '@/utils/plan-recur.js'
+import { buildPlanIndex, backfillTargetOf, isBackfillable, checkinBlockReason } from '@/utils/plan-recur.js'
 import { monthGrid, monthTotals, shiftMonth, canGoNext, countsOf } from '@/utils/plan-heatmap.js'
 import { checkinFeedback, streakOfPlanRecord, streakKindOf } from '@/utils/checkin-feedback.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
@@ -141,13 +141,13 @@ export function usePlanCheckin({ isNew, planId, selfRecurType, selfRecurCount, i
     }
   }
 
-  /** 今天做了（带可选描述） */
+  /** 今天做了（带可选描述；描述为空 = 用户明确清空） */
   function submitCheckIn() {
     if (isNew.value || !planId.value) return
     const before = planStreak(planId.value)
     const rec = logPlanCheckIn(planId.value, checkinNote.value)
     if (!rec) {
-      uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+      uni.showToast({ title: checkinBlockReason(currentPlan()) || '当前状态暂不能打卡', icon: 'none' })
       return
     }
     reloadCheckins(rec)
@@ -155,14 +155,14 @@ export function usePlanCheckin({ isNew, planId, selfRecurType, selfRecurCount, i
     feedbackAfter(rec, before, checkinNote.value ? '已记录' : '已打卡')
   }
 
-  /** 补记昨天（漏了才出现，点一次即落库） */
+  /** 补记昨天（漏了才出现，点一次即落库；不传描述，避免覆盖已有内容） */
   function submitBackfill() {
     const date = backfillDate.value
     if (!date || isNew.value || !planId.value) return
     const before = planStreak(planId.value)
-    const rec = logPlanCheckIn(planId.value, '', date)
+    const rec = logPlanCheckIn(planId.value, undefined, date)
     if (!rec) {
-      uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+      uni.showToast({ title: checkinBlockReason(currentPlan()) || '当前状态暂不能打卡', icon: 'none' })
       return
     }
     reloadCheckins(rec)
@@ -211,9 +211,9 @@ export function usePlanCheckin({ isNew, planId, selfRecurType, selfRecurCount, i
       success: (res) => {
         if (!res.confirm) return
         const before = planStreak(planId.value)
-        const rec = logPlanCheckIn(planId.value, '', date)
+        const rec = logPlanCheckIn(planId.value, undefined, date)
         if (!rec) {
-          uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+          uni.showToast({ title: checkinBlockReason(currentPlan()) || '当前状态暂不能打卡', icon: 'none' })
           return
         }
         reloadCheckins(rec)

@@ -32,6 +32,22 @@ describe('usePlanChildActions：进度与子计划侧写操作', () => {
     expect(api.recurSummary.value.doneToday).toBe(0)
   })
 
+  it('4.47.0：到期收尾的子计划不计入完成进度，父计划也不会被改回进行中', async () => {
+    const form = formWith([
+      { client_id: 'e', title: 'E', status: 2, end_reason: 'expired' },
+      { client_id: 'a', title: 'A', status: 1 }
+    ], 1)
+    const api = mountChildren(form, 'p1')
+    expect(api.childProgress.value).toEqual({ total: 2, done: 0, pct: 0 })
+
+    const expiredParent = formWith([{ client_id: 'a', title: 'A', status: 1 }], 2)
+    expiredParent.value.end_reason = 'expired'
+    mountChildren(expiredParent, 'p1')
+    expiredParent.value.childPlans[0].status = 1
+    await nextTick()
+    expect(expiredParent.value.status).toBe(2)
+  })
+
   it('子计划全部完成时把主计划状态推到已完成（有循环子计划在跑则不推）', async () => {
     const form = formWith([{ client_id: 'a', title: 'A', status: 1 }], 1)
     mountChildren(form, 'p1')
@@ -81,7 +97,7 @@ describe('usePlanChildActions：进度与子计划侧写操作', () => {
     const form = formWith([], 1)
     const api = mountChildren(form, 'p1')
     api.checkinChild('c1')
-    expect(log.feedbacks).toContain('已打卡，今天完成')
+    expect(log.feedbacks).toContain('已记录，今天这次算数')
     const stored = getPlanList().find(p => p.client_id === 'c1')
     expect(stored.checkins.length).toBe(1)
   })

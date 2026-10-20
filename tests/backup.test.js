@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import './setup.js'
 import { resetStorage } from './setup.js'
 import {
-  exportBackup, exportBackupJson, parseBackup, importBackup
+  exportBackup, exportBackupJson, parseBackup, importBackup, exportCsv
 } from '@/utils/storage/export.js'
 import {
   buildBackupFileName,
@@ -296,5 +296,23 @@ describe('自动备份非 App 端降级（vitest 环境无 plus）', () => {
     expect(isAutoBackupEnabled()).toBe(true)
     global.uni.setStorageSync('siji_auto_backup', '0')
     expect(isAutoBackupEnabled()).toBe(false)
+  })
+})
+
+describe('exportCsv 计划状态文案（4.47.0）', () => {
+  beforeEach(() => { resetStorage() })
+
+  it('待开始/进行中/已完成/已到期四种文案，status=0 不再误标已完成', () => {
+    global.uni.setStorageSync('plan_all', JSON.stringify([
+      { client_id: 'p0', title: '待开始计划', status: 0, is_deleted: 0 },
+      { client_id: 'p1', title: '进行中计划', status: 1, is_deleted: 0 },
+      { client_id: 'p2', title: '完成计划', status: 2, is_deleted: 0 },
+      { client_id: 'p3', title: '到期计划', status: 2, end_reason: 'expired', is_deleted: 0 }
+    ]))
+    const csv = exportCsv('plan')
+    expect(csv).toContain(',待开始,')
+    expect(csv).toContain(',进行中,')
+    expect(csv).toContain(',已完成,')
+    expect(csv).toContain(',已到期,')
   })
 })

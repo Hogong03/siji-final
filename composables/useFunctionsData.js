@@ -10,6 +10,7 @@ import { getProfile, getFilledCount } from '@/utils/profile.js'
 import { getRelationsStats } from '@/utils/relations.js'
 import { getDecisionStats } from '@/utils/decisions.js'
 import { getSimulationStats } from '@/utils/simulation.js'
+import { isDonePlan } from '@/utils/plan-recur.js'
 
 export function useFunctionsData() {
   const dashboard = ref({
@@ -100,7 +101,7 @@ export function useFunctionsData() {
       monthExpense, monthIncome, balance: monthIncome - monthExpense,
       diaryCount: diaries.length, diaryThisWeek,
       planTotal: plans.length,
-      planCompleted: plans.filter(p => p.status === 2).length,
+      planCompleted: plans.filter(isDonePlan).length,
       planActive: plans.filter(p => p.status === 1).length,
       avgDailyExpense, todayExpense, yesterdayExpense
     }

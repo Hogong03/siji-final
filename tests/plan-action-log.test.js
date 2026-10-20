@@ -368,6 +368,59 @@ describe('3.4.1 B2: 打卡描述与明细', () => {
   })
 })
 
+describe('4.47.0: 同日补写不丢描述（note 三态）', () => {
+  function seedPlan(over = {}) {
+    const plan = { client_id: 'ci3', title: '每天背词', status: 1, parent_id: '', plan_count: 1, executions: [], created_at: Date.now(), updated_at: Date.now(), is_deleted: 0, ...over }
+    seedPlans([plan])
+    return plan
+  }
+
+  it('未传 note → 保留已有描述，首次打卡时刻不漂移', () => {
+    seedPlan()
+    const r1 = logPlanCheckIn('ci3', '读了 10 页')
+    const at1 = r1.checkins[0].at
+    expect(r1.checkins[0].note_at).toBeGreaterThan(0)
+    const noteAt1 = r1.checkins[0].note_at
+    const r2 = logPlanCheckIn('ci3') // 快捷打卡：不传描述
+    expect(r2.checkins).toHaveLength(1)
+    expect(r2.checkins[0].note).toBe('读了 10 页')
+    expect(r2.checkins[0].at).toBe(at1)
+    expect(r2.checkins[0].note_at).toBe(noteAt1)
+  })
+
+  it('传 null 与 undefined 等价：不动已有描述', () => {
+    seedPlan()
+    logPlanCheckIn('ci3', '读了 10 页')
+    const r = logPlanCheckIn('ci3', null)
+    expect(r.checkins[0].note).toBe('读了 10 页')
+  })
+
+  it('传空串 → 明确清空描述，记录时刻仍不变', () => {
+    seedPlan()
+    const r1 = logPlanCheckIn('ci3', '读了 10 页')
+    const at1 = r1.checkins[0].at
+    const r2 = logPlanCheckIn('ci3', '')
+    expect(r2.checkins[0].note).toBe('')
+    expect(r2.checkins[0].at).toBe(at1)
+  })
+
+  it('executor 不带 note 时不清空用户自己写的描述', () => {
+    seedPlan()
+    store.executeAction({ type: 'log_plan_checkin', payload: { client_id: 'ci3', note: '晨跑 20 分钟' } })
+    store.executeAction({ type: 'log_plan_checkin', payload: { client_id: 'ci3' } })
+    const p = getPlanList().find(x => x.client_id === 'ci3')
+    expect(p.checkins[0].note).toBe('晨跑 20 分钟')
+  })
+
+  it('历史数据无 note_at / at 缺失时不崩，仍能写入', () => {
+    seedPlan({ checkins: [{ date: '2026-01-01', note: '旧记录' }] })
+    const r = logPlanCheckIn('ci3', '新记录')
+    expect(r.checkins).toHaveLength(2)
+    expect(r.checkins.find(c => c.date === '2026-01-01').note).toBe('旧记录')
+    expect(r.checkins.filter(c => c.note === '新记录')).toHaveLength(1)
+  })
+})
+
 describe('3.4.1 B2: AI 子计划带时间', () => {
   it('create_plan subtasks 带 start_time/end_time → 子计划保留', () => {
     const r = store.executeAction({ type: 'create_plan', payload: { title: '一周恢复', subtasks: [{ title: '早睡', description: '23 点前睡', est_minutes: 5, start_time: '2026-09-10', end_time: '2026-09-10' }, { title: '散步', description: '出门走 20 分钟', est_minutes: 10, start_time: '2026-09-11' }] } })

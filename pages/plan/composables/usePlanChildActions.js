@@ -5,8 +5,8 @@
  * 依赖（打卡连续与回执）由调用方注入，本文件不直接创建 checkin 状态
  */
 import { computed, watch } from 'vue'
-import { getChildPlans, setPlanSomeday, setPlanRecur, logPlanCheckIn } from '@/utils/storage.js'
-import { recurTypeOf, satisfiedToday } from '@/utils/plan-recur.js'
+import { getChildPlans, setPlanSomeday, setPlanRecur, logPlanCheckIn, getPlanList } from '@/utils/storage.js'
+import { recurTypeOf, satisfiedToday, checkinBlockReason, isDonePlan, isExpiredPlan } from '@/utils/plan-recur.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
 
 export function usePlanChildActions({ form, isNew, planId, initialSnapshot, snapshotForm, planStreak, feedbackAfter, onSaved }) {
@@ -14,7 +14,7 @@ export function usePlanChildActions({ form, isNew, planId, initialSnapshot, snap
   const childProgress = computed(() => {
     const list = (form.value.childPlans || []).filter(c => !recurTypeOf(c))
     if (list.length === 0) return { total: 0, done: 0, pct: 0 }
-    const done = list.filter(c => c.status === 2).length
+    const done = list.filter(c => isDonePlan(c)).length
     return { total: list.length, done, pct: Math.round(done / list.length * 100) }
   })
 
@@ -26,12 +26,13 @@ export function usePlanChildActions({ form, isNew, planId, initialSnapshot, snap
   })
 
   watch(() => childProgress.value, (prog) => {
-    // 还有「在跑」的循环子计划时不自动收尾（等循环窗口结束由存储层级联收尾，或用户手动完成）
-    const openRecur = (form.value.childPlans || []).some(c => recurTypeOf(c) && c.status !== 2)
+    // 还有「在跑」的循环子计划时不自动收尾（到期收尾也算未完成，等用户回顾）
+    const openRecur = (form.value.childPlans || []).some(c => recurTypeOf(c) && (c.status !== 2 || isExpiredPlan(c)))
     if (prog.total > 0 && prog.done === prog.total && !openRecur && form.value.status !== 2) {
       form.value.status = 2
       uni.showToast({ title: '所有子计划已完成', icon: 'none' })
-    } else if (prog.total > 0 && prog.done < prog.total && form.value.status === 2) {
+    } else if (prog.total > 0 && prog.done < prog.total && form.value.status === 2 && !isExpiredPlan(form.value)) {
+      // 到期收尾是终态，不因为子计划没做完就自动改回进行中（是否重开由用户决定）
       form.value.status = 1
     }
   }, { deep: true })
@@ -69,15 +70,16 @@ export function usePlanChildActions({ form, isNew, planId, initialSnapshot, snap
   function checkinChild(clientId) {
     if (isNew.value || !planId.value) return
     const before = typeof planStreak === 'function' ? planStreak(clientId) : 0
-    const rec = logPlanCheckIn(clientId, '')
+    const rec = logPlanCheckIn(clientId)
     if (!rec) {
-      uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+      const target = getPlanList().find(p => p && p.client_id === clientId) || null
+      uni.showToast({ title: checkinBlockReason(target) || '当前状态暂不能打卡', icon: 'none' })
       return
     }
     refreshChildren()
     const fb = typeof feedbackAfter === 'function' ? feedbackAfter : null
-    if (fb) fb(rec, before, '已打卡，今天完成')
-    else uni.showToast({ title: '已打卡，今天完成', icon: 'none' })
+    if (fb) fb(rec, before, '已记录，今天这次算数')
+    else uni.showToast({ title: '已记录，今天这次算数', icon: 'none' })
   }
 
   /** 3.5.2：子计划卡内联改循环设置（每天 / 每周 N 次 / 取消循环） */

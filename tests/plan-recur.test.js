@@ -22,7 +22,12 @@ import {
   isBackfillable,
   backfillCandidates,
   MAX_BACKFILL_DAYS,
-  streakMilestoneOf
+  streakMilestoneOf,
+  checkinBlockReason,
+  endKindOf,
+  isDonePlan,
+  isExpiredPlan,
+  planStatusLabel
 } from '../utils/plan-recur.js'
 import { getPlanList, savePlan, setPlanRecur } from '../utils/storage.js'
 
@@ -150,7 +155,7 @@ describe('satisfiedToday', () => {
 })
 
 describe('存储读取：过期循环自动收尾', () => {
-  it('截止日已过的 daily 循环任务在 getPlanList 时自动置为完成', () => {
+  it('截止日已过的 daily 循环任务在 getPlanList 时置为「到期收尾」，不冒充完成', () => {
     const now = new Date()
     const past = new Date(now.getTime() - 2 * DAY)
     const pad = n => String(n).padStart(2, '0')
@@ -172,10 +177,29 @@ describe('存储读取：过期循环自动收尾', () => {
     savePlan(expired)
     const after = getPlanList().find(p => p.client_id === 'expired_plan')
     expect(after.status).toBe(2)
-    expect((after.executions || []).some(e => e.action === 'done')).toBe(true)
-    // 已完成不再重复写执行日志
+    expect(after.end_reason).toBe('expired')
+    expect((after.executions || []).some(e => e.action === 'ended')).toBe(true)
+    expect((after.executions || []).some(e => e.action === 'done')).toBe(false)
+    // 已收尾不再重复写执行日志
     const again = getPlanList().find(p => p.client_id === 'expired_plan')
-    expect((again.executions || []).filter(e => e.action === 'done')).toHaveLength(1)
+    expect((again.executions || []).filter(e => e.action === 'ended')).toHaveLength(1)
+  })
+
+  it('4.47.0：用户重开到期计划 → end_reason 与 done_at 被清掉', () => {
+    const pad = n => String(n).padStart(2, '0')
+    const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+    const past = new Date(Date.now() - 2 * DAY)
+    savePlan({
+      client_id: 'reopen_plan', title: '重开的计划', status: 1, recur_type: 'daily',
+      deadline: ymd(past), created_at: Date.now(), updated_at: Date.now(), is_deleted: 0
+    })
+    expect(getPlanList().find(p => p.client_id === 'reopen_plan').end_reason).toBe('expired')
+
+    savePlan({ client_id: 'reopen_plan', status: 1 })
+    const raw = JSON.parse(uni.getStorageSync('plan_all')).find(p => p.client_id === 'reopen_plan')
+    expect(raw.status).toBe(1)
+    expect(raw.end_reason).toBeUndefined()
+    expect(raw.done_at).toBeUndefined()
   })
 })
 
@@ -235,10 +259,54 @@ describe('collectCascadeCompletions：父级级联收尾', () => {
       { client_id: 'ghost', parent_id: 'root', status: 1, is_deleted: 1 }
     ])).toEqual(['root'])
   })
+
+  it('4.47.0：到期收尾的子计划不算结束，父级不收尾', () => {
+    expect(collectCascadeCompletions([
+      { client_id: 'root', status: 1 },
+      { client_id: 'a', parent_id: 'root', status: 2, end_reason: 'expired' },
+      { client_id: 'b', parent_id: 'root', status: 2 }
+    ])).toEqual([])
+  })
+})
+
+describe('checkinBlockReason：打卡被拒的单一原因来源（4.47.0）', () => {
+  it('可打卡返回空串；计划不存在 / 已删除 / 冷藏 / 已完成各有文案', () => {
+    expect(checkinBlockReason({ status: 1 })).toBe('')
+    expect(checkinBlockReason(null)).toBe('计划不存在')
+    expect(checkinBlockReason({ status: 1, is_deleted: 1 })).toContain('已删除')
+    expect(checkinBlockReason({ status: 1, frozen_at: 123 })).toContain('冷藏')
+    expect(checkinBlockReason({ status: 2 })).toContain('已完成')
+  })
+
+  it('到期收尾与用户完成分开说', () => {
+    expect(checkinBlockReason({ status: 2, end_reason: 'expired' })).toContain('到期')
+    expect(checkinBlockReason({ status: 2, end_reason: 'expired' })).not.toContain('已完成')
+    expect(checkinBlockReason({ status: 2, end_reason: '' })).toContain('已完成')
+  })
+})
+
+describe('endKindOf / planStatusLabel：读侧统一「完成 vs 到期」（4.47.0）', () => {
+  it('status=2 细分 done / expired，其余为空', () => {
+    expect(endKindOf({ status: 1 })).toBe('')
+    expect(endKindOf({ status: 2 })).toBe('done')
+    expect(endKindOf({ status: 2, end_reason: 'expired' })).toBe('expired')
+    expect(isDonePlan({ status: 2 })).toBe(true)
+    expect(isDonePlan({ status: 2, end_reason: 'expired' })).toBe(false)
+    expect(isExpiredPlan({ status: 2, end_reason: 'expired' })).toBe(true)
+    expect(isExpiredPlan({ status: 1 })).toBe(false)
+  })
+
+  it('状态文案：到期不叫已完成', () => {
+    expect(planStatusLabel({ status: 0 })).toBe('待开始')
+    expect(planStatusLabel({ status: 1 })).toBe('进行中')
+    expect(planStatusLabel({ status: 2 })).toBe('已完成')
+    expect(planStatusLabel({ status: 2, end_reason: 'expired' })).toBe('已到期')
+    expect(planStatusLabel(null)).toBe('')
+  })
 })
 
 describe('存储读取：循环项收尾后父级级联收尾', () => {
-  it('阶段截止后：循环叶子自动完成 → 阶段完成 → 主计划完成，且各只写一次', () => {
+  it('4.47.0：循环叶子到期收尾不算完成，阶段与主计划保持进行中（等回顾）', () => {
     const pad = n => String(n).padStart(2, '0')
     const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
     const past = new Date(Date.now() - 2 * DAY)
@@ -253,11 +321,13 @@ describe('存储读取：循环项收尾后父级级联收尾', () => {
 
     const list = getPlanList()
     expect(list.find(p => p.client_id === 'c6_leaf').status).toBe(2)
-    expect(list.find(p => p.client_id === 'c6_phase').status).toBe(2)
-    expect(list.find(p => p.client_id === 'c6_root').status).toBe(2)
+    expect(list.find(p => p.client_id === 'c6_leaf').end_reason).toBe('expired')
+    // 到期不是达成：父级不能被自动关掉
+    expect(list.find(p => p.client_id === 'c6_phase').status).toBe(1)
+    expect(list.find(p => p.client_id === 'c6_root').status).toBe(1)
 
     const again = getPlanList()
-    expect((again.find(p => p.client_id === 'c6_root').executions || []).filter(e => e.action === 'done')).toHaveLength(1)
+    expect((again.find(p => p.client_id === 'c6_leaf').executions || []).filter(e => e.action === 'ended')).toHaveLength(1)
   })
 
   it('阶段内仍有未完成的一次性子计划时，阶段与主计划保持进行中', () => {

@@ -20,7 +20,7 @@ const expanded = ref(false)
 			<view class="ftag" :class="{ active: filterStatus === -1 }" @tap="emit('update:filterStatus', -1)">全部</view>
 			<view class="ftag" :class="{ active: filterStatus === 1 }" @tap="emit('update:filterStatus', 1)">进行中</view>
 			<view class="ftag" :class="{ active: filterStatus === 0 }" @tap="emit('update:filterStatus', 0)">待开始</view>
-			<view class="ftag" :class="{ active: filterStatus === 2 }" @tap="emit('update:filterStatus', 2)">已完成</view>
+			<view class="ftag" :class="{ active: filterStatus === 2 }" @tap="emit('update:filterStatus', 2)">已结束</view>
 			<view class="filter-toggle" @tap="expanded = !expanded">
 				<text class="toggle-text">{{ expanded ? '收起' : '更多筛选' }}</text>
 				<text class="toggle-arrow" :class="{ open: expanded }">▾</text>

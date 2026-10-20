@@ -5,7 +5,7 @@
  * 任意时间组（someday_at）：今天不做，温和顺延，展示弱化，可随时安排回今天
  */
 import { computed, ref } from 'vue'
-import { recurTypeOf, recurCountOf, weeklyDoneOf, isCheckedToday, quotaSatisfied, weekDayCells } from '@/utils/plan-recur.js'
+import { recurTypeOf, recurCountOf, weeklyDoneOf, isCheckedToday, quotaSatisfied, weekDayCells, planStatusLabel } from '@/utils/plan-recur.js'
 import PlanWeekStrip from '@/components/plan/PlanWeekStrip.vue'
 
 const props = defineProps({
@@ -93,7 +93,8 @@ function childExtra(child) {
 function childStatusLabel(child) {
   const rt = recurTypeOf(child)
   if (rt && child.status !== 2) return '循环'
-  return props.statusMap[child.status] || '未知'
+  // 4.47.0：到期收尾显示「已到期」，不再说成已完成
+  return planStatusLabel(child) || props.statusMap[child.status] || '未知'
 }
 
 // 3.5.1：循环子计划的今日状态与打卡入口（不必进入子计划详情）

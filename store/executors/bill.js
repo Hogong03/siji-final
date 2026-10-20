@@ -2,6 +2,7 @@ import { saveBill, getBillList, getDiaryList, getPlanList, searchByIndex, update
 import { asyncSetStorageJSON, formatDateStr, normalizeDateStr } from '@/utils/store-helpers.js'
 import { logger } from '@/utils/logger.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
+import { isDonePlan, isExpiredPlan } from '@/utils/plan-recur.js'
 
 /**
  * Bill 相关 executor 工厂函数
@@ -235,7 +236,8 @@ export function createBillExecutors(ctx) {
     const diaries = getDiaryList(month).filter(d => d.is_deleted !== 1)
     const plans = getPlanList().filter(pl => pl.is_deleted !== 1)
     const activePlans = plans.filter(pl => pl.status === 1)
-    const completedPlans = plans.filter(pl => pl.status === 2)
+    const completedPlans = plans.filter(isDonePlan)
+    const expiredPlans = plans.filter(isExpiredPlan)
     const expenseBills = bills.filter(b => b.type === 'expense')
     const incomeBills = bills.filter(b => b.type === 'income')
     const totalExpense = expenseBills.reduce((s, b) => s + b.amount, 0)
@@ -261,6 +263,7 @@ export function createBillExecutors(ctx) {
         type: 'query_stat', month,
         billCount: bills.length, diaryCount: diaries.length,
         activePlanCount: activePlans.length, completedPlanCount: completedPlans.length,
+        expiredPlanCount: expiredPlans.length,
         totalExpense, totalIncome, netIncome: totalIncome - totalExpense,
         topCategory: topCategory ? topCategory[0] : '无',
         topCategoryAmount: topCategory ? topCategory[1] : 0,

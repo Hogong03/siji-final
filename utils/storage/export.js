@@ -5,6 +5,7 @@
  */
 
 import { getRawList } from './helpers.js'
+import { planStatusLabel } from '../plan-recur.js'
 
 /**
  * 导出全部数据为 JSON 对象
@@ -92,7 +93,7 @@ export function exportCsv(type) {
       escapeCsv(p.title || ''),
       escapeCsv(p.description || ''),
       p.priority || 2,
-      p.status === 1 ? '进行中' : '已完成',
+      planStatusLabel(p),
       p.deadline || ''
     ].join(','))
     return headers.join(',') + '\n' + rows.join('\n')

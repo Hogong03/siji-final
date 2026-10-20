@@ -35,10 +35,16 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 			<text class="os-item"><text class="os-num">{{ stats.total }}</text> 总计</text>
 			<text class="os-sep">·</text>
 			<text class="os-item"><text class="os-num">{{ stats.completed }}</text> 完成</text>
-			<text class="os-sep">·</text>
-			<text v-if="stats.weekCheckins > 0" class="os-item">
-				<text class="os-num">{{ stats.weekCheckins }}</text> 本周打卡<text v-if="stats.weekDays > 1" class="os-sub">（{{ stats.weekDays }} 天）</text>
-			</text>
+			<template v-if="stats.expired > 0">
+				<text class="os-sep">·</text>
+				<text class="os-item"><text class="os-num">{{ stats.expired }}</text> 到期</text>
+			</template>
+			<template v-if="stats.weekCheckins > 0">
+				<text class="os-sep">·</text>
+				<text class="os-item">
+					<text class="os-num">{{ stats.weekCheckins }}</text> 本周打卡<text v-if="stats.weekDays > 1" class="os-sub">（{{ stats.weekDays }} 天）</text>
+				</text>
+			</template>
 			<text v-if="stats.weekCheckins > 0 && stats.subTotal > 0" class="os-sep">·</text>
 			<text class="os-item" v-if="stats.subTotal > 0">
 				<text class="os-num">{{ stats.subDone }}/{{ stats.subTotal }}</text> 子计划

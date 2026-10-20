@@ -1,5 +1,6 @@
 import { savePlan, getPlanList, getChildPlans, deletePlan, updateIndex, savePlanTemplate, buildChildrenSpecsFromLegacy, convertSubtasksToChildPlans, logPlanCheckIn, getPlanCheckInStats } from '@/utils/storage.js'
 import { invalidatePromptCache } from '@/utils/ai/prompt-builder.js'
+import { checkinBlockReason, isExpiredPlan } from '@/utils/plan-recur.js'
 import { removePlanReminder } from '@/utils/reminder.js'
 import { inferHolidayFromText } from '@/utils/holidays.js'
 import { rangeFromText } from '@/utils/date-parse.js'
@@ -387,15 +388,14 @@ export function createPlanExecutors(ctx) {
     if (!plan) {
       return { success: false, message: '计划不存在', detail: null }
     }
-    if (plan.frozen_at) {
-      return { success: false, message: '计划已冷藏（先放一放），暂不打卡', detail: null }
-    }
-    if (plan.status === 2) {
-      return { success: false, message: '计划已完成，无需打卡', detail: null }
+    const blocked = checkinBlockReason(plan)
+    if (blocked) {
+      return { success: false, message: blocked, detail: null }
     }
     // 4.5.1：打卡也是写操作，统一失效提示词/画像缓存（提醒弹窗直达打卡走这里）
     invalidatePromptCache()
-    const noteText = typeof p.note === 'string' ? p.note.trim() : ''
+    // 4.47.0：note 未传 = 不动已有描述（AI 没提做了什么时不要清空用户自己写的）
+    const noteText = typeof p.note === 'string' ? p.note.trim() : undefined
     const before = getPlanCheckInStats(plan)
     if (before.todayDone) {
       const rec = logPlanCheckIn(clientId, noteText)
@@ -403,7 +403,7 @@ export function createPlanExecutors(ctx) {
       return {
         success: true,
         message: noteText ? '已更新今天的打卡描述' : '今天已打过卡，不重复记录',
-        detail: { type: 'plan', id: clientId, totalDays: st.days, todayDone: true, note: noteText }
+        detail: { type: 'plan', id: clientId, totalDays: st.days, todayDone: true, note: noteText || '' }
       }
     }
     const record = logPlanCheckIn(clientId, noteText)
@@ -411,9 +411,9 @@ export function createPlanExecutors(ctx) {
     return {
       success: true,
       message: noteText ? '已记录「今天做了」，描述：' + noteText : '已记录「今天做了」',
-      detail: { type: 'plan', id: clientId, totalDays: after.days, todayDone: after.todayDone, note: noteText }
-  }
+      detail: { type: 'plan', id: clientId, totalDays: after.days, todayDone: after.todayDone, note: noteText || '' }
     }
+  }
 
   function execDeletePlan(p) {
     if (!p.client_id && !p.id) {
@@ -435,9 +435,11 @@ export function createPlanExecutors(ctx) {
   // ==================== 查询操作 ====================
 
   function execQueryPlan(p) {
-    let list = getPlanList()
-    if (p.status === 'active') list = list.filter(pl => pl.status === 1)
-    else if (p.status === 'completed') list = list.filter(pl => pl.status === 2)
+    const all = getPlanList()
+    let list = all
+    if (p.status === 'active') list = all.filter(pl => pl.status === 1)
+    // 4.47.0：completed 只给「用户完成」，到期收尾不混进来（否则 AI 会把到期当目标达成）
+    else if (p.status === 'completed') list = all.filter(pl => pl.status === 2 && !isExpiredPlan(pl))
     const sorted = [...list].sort((a, b) => {
       const ad = a.due_date || a.deadline || ''
       const bd = b.due_date || b.deadline || ''
@@ -449,6 +451,10 @@ export function createPlanExecutors(ctx) {
     const items = sorted.slice(0, 5)
     let message = '共 ' + list.length + ' 个计划' + (p.status === 'active' ? '（进行中）' : p.status === 'completed' ? '（已完成）' : '')
     if (list.length > items.length) message += '，展示前 5 个'
+    const expiredCount = all.filter(isExpiredPlan).length
+    if (p.status === 'completed' && expiredCount > 0) {
+      message += '；另有 ' + expiredCount + ' 个已到期收尾（未确认完成，不计入完成）'
+    }
     return {
       success: true,
       message,

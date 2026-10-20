@@ -33,9 +33,11 @@ function reconcilePlanStatus(list) {
   raw.forEach(item => {
     if (!item || item.is_deleted === 1) return
     if (!shouldAutoCompleteRecurring(item, byId, nowTs)) return
+    if (item.end_reason === 'expired') return // 已标记过，防重复写日志
     item.status = 2
     item.done_at = nowTs
-    item.executions = pushExecLog(item.executions, 'done')
+    item.end_reason = 'expired' // 4.47.0：到期结束，不是用户完成
+    item.executions = pushExecLog(item.executions, 'ended')
     changed = true
   })
   const cascadeIds = collectCascadeCompletions(raw)
@@ -253,6 +255,10 @@ export function savePlan(plan) {
       // 4.26.0：完成即沉淀 —— 阶段/根计划完成自动写一条里程碑记录（幂等，只对阶段与根；
       // 检查点等更深层完成不写防刷屏；失败不影响计划保存）
       try { writePlanMilestoneIfNeeded(list, next) } catch (e) { /* ignore */ }
+    } else if (next.status !== 2 && old.status === 2) {
+      // 4.47.0：用户重开一个到期收尾的计划 → 清掉到期标记，否则列表一直显示「已到期」
+      delete next.end_reason
+      delete next.done_at
     }
     list[idx] = next
   } else {
@@ -266,8 +272,14 @@ export function savePlan(plan) {
 /**
  * 计划打卡（3.4.1 B：今日做了，轻记录）
  * 只追加 checkins，不动 status/plan_count/executions/done_at，也不刷 updated_at（打卡不是规划事件）；
- * 同一自然日幂等（同 date 覆盖，同日再打视为补写 note）；note=这次做了什么（可空）
- * 冷藏/已完成计划禁打卡；最多保留最近 500 条
+ * 同一自然日幂等；冷藏/已完成计划禁打卡；最多保留最近 500 条。
+ *
+ * note 三态（4.47.0，所有调用方必须遵守）：
+ *   undefined → 不动已有描述（快捷打卡走这条）
+ *   ''        → 用户明确清空描述
+ *   非空字符串 → 写入/覆盖描述
+ * 同一自然日再打卡时保留首次打卡的 at（补写描述不改记录时刻），note_at 只在描述真被改动时更新。
+ *
  * 3.5.4：dateStr 可选（'YYYY-MM-DD'）用于温和补记，只接受过去与今天，非法/未来日期回落到今天
  */
 export function logPlanCheckIn(clientId, note, dateStr) {
@@ -282,9 +294,21 @@ export function logPlanCheckIn(clientId, note, dateStr) {
   const wanted = typeof dateStr === 'string' ? dateStr.trim() : ''
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(wanted) && wanted <= today
   const date = valid ? wanted : today
-  const checkins = Array.isArray(record.checkins) ? record.checkins.filter(c => c && c.date !== date) : []
-  const noteText = typeof note === 'string' ? note.trim() : ''
-  checkins.push({ date: date, at: now.getTime(), note: noteText })
+  const prev = Array.isArray(record.checkins) ? record.checkins : []
+  const old = prev.find(c => c && c.date === date) || null
+  const noteProvided = note !== undefined && note !== null
+  const noteText = noteProvided ? String(note).trim() : ''
+  const oldNote = (old && old.note) || ''
+  // 未传描述 → 保留旧描述；传了（含空串）→ 以传入值为准
+  const nextNote = noteProvided ? noteText : oldNote
+  const noteChanged = noteProvided && nextNote !== oldNote
+  const checkins = prev.filter(c => c && c.date !== date)
+  checkins.push({
+    date: date,
+    at: (old && old.at) || now.getTime(),
+    note: nextNote,
+    note_at: noteChanged ? now.getTime() : ((old && old.note_at) || 0)
+  })
   checkins.sort((a, b) => (a.at || 0) - (b.at || 0))
   // 4.26.0：根计划体系下的第一次打卡 → 记录流自动出现「开始行动」（幂等，失败不影响打卡）
   const wasFirstCheckin = checkins.length === 1

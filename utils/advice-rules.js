@@ -71,17 +71,12 @@ const RULES = [
     key: 'plan-today',
     tone: 'nudge',
     title: '今天有 ' + s.plans.dueToday + ' 项到期',
-    desc: '做完顺手打个卡，进度条会往前走一格',
+    desc: '做完顺手记一下，今天这次就留下了',
     action: { type: 'nav', url: '/pages/plan/index' }
   } : null),
 
-  (s) => (s.plans.hasActive && !s.plans.checkedToday && (s.bucket === 'evening' || s.bucket === 'night') ? {
-    key: 'plan-checkin',
-    tone: 'nudge',
-    title: '今天还没打卡',
-    desc: '有 ' + s.plans.active + ' 项在办，打完卡今天的连续性就保住了',
-    action: { type: 'nav', url: '/pages/plan/index' }
-  } : null),
+  // 4.47.0：删掉「今天还没打卡，连续性就保住了」—— 打卡是行动证据不是连续签到，
+  // 用空白反过来催打卡与「允许空着」的产品口径冲突；真正的空白澄清留到 P1 的回顾里做
 
   (s) => (s.plans.soonCount > 0 ? {
     key: 'plan-soon',

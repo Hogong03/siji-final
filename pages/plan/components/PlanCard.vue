@@ -1,7 +1,8 @@
 <script setup>
-const props = defineProps({
+import { planStatusLabel, isDonePlan, isExpiredPlan } from '@/utils/plan-recur.js'
+
+defineProps({
 	item: { type: Object, required: true },
-	statusMap: { type: Object, required: true },
 	priorityColors: { type: Object, required: true }
 })
 
@@ -70,13 +71,13 @@ function formatEst(ds) {
 
 <template>
 	<view class="plan-card"
-		:class="{ 'card-done': item.status === 2, 'card-urg': item.priority === 2, 'card-imp': item.priority === 1, 'card-frozen': !!item.frozen_at }"
+		:class="{ 'card-done': isDonePlan(item), 'card-expired': isExpiredPlan(item), 'card-urg': item.priority === 2, 'card-imp': item.priority === 1, 'card-frozen': !!item.frozen_at }"
 		@tap="emit('go-detail', item.client_id)">
 		<!-- 标题行 -->
 		<view class="card-top">
 			<view class="priority-dot" :style="{ background: priorityColors[item.priority] || '#999' }" />
 			<text class="card-title">{{ item.title }}</text>
-			<text class="status-tag" :class="`status-${item.status}`">{{ statusMap[item.status] || '未知' }}</text>
+			<text class="status-tag" :class="['status-' + item.status, isExpiredPlan(item) ? 'status-expired' : '']">{{ planStatusLabel(item) }}</text>
 			<text v-if="item.frozen_at" class="frozen-tag">冷藏中</text>
 		</view>
 
@@ -119,6 +120,11 @@ function formatEst(ds) {
 		border-left-color: #E4E4E7;
 		.card-title { text-decoration: line-through; color: #A1A1AA; }
 	}
+	&.card-expired {
+		opacity: 0.75;
+		border-left-color: #A1A1AA;
+		.card-title { color: #71717A; }
+	}
 	&.card-urg { border-left-color: #EF4444; }
 	&.card-imp { border-left-color: #E8A838; }
 }
@@ -157,6 +163,7 @@ function formatEst(ds) {
 	&.status-0 { background: #F4F4F5; color: #71717A; }
 	&.status-1 { background: #18181B; color: #FFFFFF; }
 	&.status-2 { background: rgba(16, 185, 129, 0.12); color: #059669; }
+	&.status-expired { background: #F4F4F5; color: #A1A1AA; border: 1rpx solid #E4E4E7; }
 }
 
 .card-desc {
@@ -240,12 +247,14 @@ function formatEst(ds) {
 html.theme-dark {
 	.plan-card { background: #27272A; }
 	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #71717A; } }
+	.plan-card.card-expired { border-left-color: #71717A; .card-title { color: #A1A1AA; } }
 	.card-title { color: #FAFAFA; }
 	.card-desc { color: #A1A1AA; }
 	.status-tag {
 		&.status-0 { background: #3F3F46; color: #A1A1AA; }
 		&.status-1 { background: #FAFAFA; color: #18181B; }
 		&.status-2 { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+		&.status-expired { background: #3F3F46; color: #A1A1AA; border-color: #52525B; }
 	}
 	.st-kind { color: #71717A; }
 	.st-bar { background: #3F3F46; }
@@ -259,12 +268,14 @@ html.theme-dark {
 @media (prefers-color-scheme: dark) {
 	.plan-card { background: #27272A; }
 	.plan-card.card-done { border-left-color: #52525B; .card-title { color: #71717A; } }
+	.plan-card.card-expired { border-left-color: #71717A; .card-title { color: #A1A1AA; } }
 	.card-title { color: #FAFAFA; }
 	.card-desc { color: #A1A1AA; }
 	.status-tag {
 		&.status-0 { background: #3F3F46; color: #A1A1AA; }
 		&.status-1 { background: #FAFAFA; color: #18181B; }
 		&.status-2 { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+		&.status-expired { background: #3F3F46; color: #A1A1AA; border-color: #52525B; }
 	}
 	.st-kind { color: #71717A; }
 	.st-bar { background: #3F3F46; }

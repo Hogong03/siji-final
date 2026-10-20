@@ -3,6 +3,7 @@
  *
  * 从 ExecResultCard.vue 拆出 — 心情 emoji、优先级样式、进度计算等
  */
+import { isDonePlan } from '@/utils/plan-recur.js'
 
 export function priorityClass(priority) {
   if (priority === 'high' || priority === 3) return 'high'
@@ -24,7 +25,7 @@ export function planProgressPercent(detail) {
 
 export function planDoneCount(detail) {
   if (Array.isArray(detail.children) && detail.children.length > 0) {
-    return detail.children.filter(s => s.status === 2).length
+    return detail.children.filter(s => isDonePlan(s)).length
   }
   if (!detail.subtasks) return 0
   return detail.subtasks.filter(s => s.done).length

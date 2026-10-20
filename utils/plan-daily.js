@@ -105,7 +105,7 @@ export function collectDailySuggestions(plans, { limit = 3 } = {}) {
   return out.slice(0, max)
 }
 
-/** 聚合多条执行事件（打卡 + 完成），按时间倒序 — 执行记录页共用（3.4.3） */
+/** 聚合多条执行事件（打卡 + 完成 + 到期），按时间倒序 — 执行记录页共用（3.4.3 / 4.47.0） */
 export function collectPlanExecEvents(plans, { max = 300 } = {}) {
   const list = []
   const source = Array.isArray(plans) ? plans.filter(p => p && p.is_deleted !== 1) : []
@@ -126,11 +126,11 @@ export function collectPlanExecEvents(plans, { max = 300 } = {}) {
     }
     if (Array.isArray(p.executions)) {
       p.executions.forEach(e => {
-        if (e && e.action === 'done' && e.at) {
+        if (e && (e.action === 'done' || e.action === 'ended') && e.at) {
           list.push({
             at: e.at,
             date: '',
-            kind: 'done',
+            kind: e.action,
             title: p.title || '',
             note: '',
             planId: p.client_id

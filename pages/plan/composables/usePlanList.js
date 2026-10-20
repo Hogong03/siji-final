@@ -7,6 +7,7 @@ import { savePlan, deletePlan } from '@/utils/storage/plan.js'
 import { toPlanTs } from '@/utils/datetime.js'
 import { collectDailySuggestions } from '@/utils/plan-daily.js'
 import { weekCheckinSummary } from '@/utils/plan-heatmap.js'
+import { isDonePlan, isExpiredPlan } from '@/utils/plan-recur.js'
 
 export function usePlanList() {
   const allPlans = ref([])
@@ -23,7 +24,7 @@ export function usePlanList() {
     return list.map(p => {
       const kids = byParent[p.client_id]
       const childStats = kids && kids.length > 0
-        ? { total: kids.length, done: kids.filter(k => k.status === 2).length }
+        ? { total: kids.length, done: kids.filter(isDonePlan).length }
         : null
       return childStats ? { ...p, _childStats: childStats } : p
     })
@@ -95,7 +96,9 @@ export function usePlanList() {
     const all = allPlans.value.filter(p => !p.parent_id)
     const total = all.length
     const active = all.filter(p => p.status === 1).length
-    const completed = all.filter(p => p.status === 2).length
+    // 4.47.0：完成数只算「用户完成」，到期收尾单独计数（不能把日期到了说成目标达成）
+    const completed = all.filter(isDonePlan).length
+    const expired = all.filter(isExpiredPlan).length
     const pending = all.filter(p => p.status === 0).length
     const rate = total > 0 ? Math.round(completed / total * 100) : 0
 
@@ -120,7 +123,7 @@ export function usePlanList() {
     const week = weekCheckinSummary(allPlans.value)
 
     return {
-      total, active, completed, pending, rate, pHigh, pMid, pLow, overdue, subTotal, subDone,
+      total, active, completed, expired, pending, rate, pHigh, pMid, pLow, overdue, subTotal, subDone,
       weekCheckins: week.times, weekDays: week.days
     }
   })

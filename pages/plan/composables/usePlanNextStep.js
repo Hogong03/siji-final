@@ -6,7 +6,7 @@
  */
 import { ref, computed } from 'vue'
 import { getChildPlans, logPlanCheckIn } from '@/utils/storage.js'
-import { recurTypeOf, recurCountOf, weeklyDoneOf, weekDayCells } from '@/utils/plan-recur.js'
+import { recurTypeOf, recurCountOf, weeklyDoneOf, weekDayCells, checkinBlockReason } from '@/utils/plan-recur.js'
 
 export function usePlanNextStep({
   form, isNew, planId, selfRecurType,
@@ -63,11 +63,12 @@ export function usePlanNextStep({
     const target = nextStepItem.value
     if (!target) return
     if (target._isRecur && target.client_id) {
-      // 循环子计划：今天做了 → 打卡轻记录，不置完成
+      // 循环子计划：今天做了 → 打卡轻记录，不置完成（不传描述，避免覆盖已有内容）
       const before = planStreak(target.client_id)
-      const rec = logPlanCheckIn(target.client_id, '')
+      const rec = logPlanCheckIn(target.client_id)
       if (!rec) {
-        uni.showToast({ title: '当前状态暂不能打卡', icon: 'none' })
+        const child = (form.value.childPlans || []).find(c => c.client_id === target.client_id) || null
+        uni.showToast({ title: checkinBlockReason(child) || '当前状态暂不能打卡', icon: 'none' })
         return
       }
       form.value.childPlans = getChildPlans(planId.value)

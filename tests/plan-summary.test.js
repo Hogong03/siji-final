@@ -193,6 +193,35 @@ describe('buildPlanSummary：分组与明细', () => {
     expect(doneHidden).toBe(7)
   })
 
+  it('4.47.0：到期收尾单独成组、不计完成，状态文案为已到期', () => {
+    const plans = [
+      plan({ client_id: 'exp', status: 2, end_reason: 'expired', title: '到期的' }),
+      plan({ client_id: 'done', status: 2, title: '完成的' }),
+      plan({ client_id: 'run', status: 1, title: '在跑的' })
+    ]
+    const r = buildPlanSummary(plans, NOW)
+    expect(r.stats.completed).toBe(1)
+    expect(r.stats.expired).toBe(1)
+    expect(r.stats.rate).toBe(33) // 1/3，到期不计完成
+    const keys = r.groups.map(g => g.key)
+    expect(keys).toContain('expired')
+    expect(keys.indexOf('expired')).toBeLessThan(keys.indexOf('done'))
+    expect(r.groups.find(g => g.key === 'expired').items[0].statusText).toBe('已到期')
+    expect(r.groups.find(g => g.key === 'done').items[0].statusText).toBe('已完成')
+  })
+
+  it('已到期分组同样按 DONE_LIMIT 截断，其余进 expiredHidden', () => {
+    const plans = []
+    for (let i = 0; i < DONE_LIMIT + 3; i++) {
+      plans.push(plan({ client_id: 'e' + i, status: 2, end_reason: 'expired' }))
+    }
+    const r = buildPlanSummary(plans, NOW)
+    expect(r.groups.find(g => g.key === 'expired').items.length).toBe(DONE_LIMIT)
+    expect(r.expiredHidden).toBe(3)
+    expect(r.stats.completed).toBe(0)
+    expect(r.stats.expired).toBe(DONE_LIMIT + 3)
+  })
+
   it('空数据不炸：全 0 统计、无分组、无隐藏', () => {
     const r = buildPlanSummary([], NOW)
     expect(r.stats.total).toBe(0)
