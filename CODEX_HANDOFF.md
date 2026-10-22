@@ -2,7 +2,7 @@
 
 > 本文件供 AI 编码助手（Codex/Claude/Cursor 等）快速接手项目开发。
 > 包含项目架构、核心约定、代码风格、禁用项、关键模块索引。
-> 最后更新：2026-09-15
+> 最后更新：2026-10-22（仅同步路径与红线；版本号/测试数等易过期数字以 `docs/会话检查点.md` 为准）
 
 ---
 
@@ -15,7 +15,7 @@
 | 技术栈 | uni-app + Vue 3 (Composition API) + Pinia |
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 仓库 | `github.com/Hogong03/siji-private.git`（main 分支） |
-| 路径 | `C:\Users\c3798\Desktop\思迹` |
+| 路径 | `C:\Users\c3798\Desktop\siji\思迹`（2026-10-22 由桌面并入 `siji`） |
 | 代码量 | ~196 文件 / ~34,000 行（不含 node_modules/unpackage） |
 | 测试 | 89 文件 / 1239 用例，Vitest 框架（全绿，exit 0） |
 | 版本 | v4.10.0（AI 能力拆分：11 项能力按组开关；含 4.9.0 强化与 4.5.0 的上班打卡/进入单消息） |

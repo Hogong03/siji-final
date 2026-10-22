@@ -24,7 +24,7 @@
 
 ### 2.1 环境
 
-- HBuilderX 打开项目 `C:\Users\c3798\Desktop\思迹`
+- HBuilderX 打开项目 `C:\Users\c3798\Desktop\siji\思迹`（2026-10-22 起项目由桌面并入 siji 目录）
 - 运行前删除 `unpackage/dist` 缓存目录，避免旧编译残留
 - Android 真机：USB 调试连接后「运行到手机或模拟器」；H5：浏览器运行
 - 建议优先真机：App 端走 `chat-chunked` 分块流式，与 H5 的 fetch SSE 是两条独立链路，都必须覆盖
