@@ -42,7 +42,7 @@ beforeEach(() => {
   delete global.uni.requireNativePlugin
 })
 
-/** 最小 plus mock：够 isKeepAliveSupported 的类探测通过（importClass 不抛 = aar 在包里） */
+/** 最小 plus mock：Android 环境（4.48.2 起支持判据只看原生模块，importClass 不再参与判定） */
 function mockPlusAndroid(extra) {
   global.plus = Object.assign({
     os: { name: 'Android' },
@@ -173,7 +173,7 @@ describe('插件不可用时的降级（node 环境没有 plus）', () => {
 })
 
 describe('模块路径（4.35.2 正路：uni.requireNativePlugin）', () => {
-  it('类探测通过 + 模块可用 → start 走模块并带文案兜底', () => {
+  it('模块可用 → start 走模块并带文案兜底', () => {
     mockPlusAndroid()
     const calls = mockNativeModule()
     expect(isKeepAliveSupported()).toBe(true)
@@ -211,18 +211,29 @@ describe('模块路径（4.35.2 正路：uni.requireNativePlugin）', () => {
     expect(() => captured(null)).not.toThrow()
   })
 
-  it('requireNativePlugin 缺失 / 抛错 → 落反射兜底（mock 不全时安全返回 false）', () => {
-    // plus 只有类探测能力，没有 runtimeMainActivity → 反射路径内部 catch → false
+  it('模块缺失 → 不支持，不再用类探测误判（4.48.2 真机：标准基座类探测会过）', () => {
     mockPlusAndroid()
+    expect(isKeepAliveSupported()).toBe(false)
     expect(startKeepAlive()).toBe(false)
     expect(stopKeepAlive()).toBe(false)
+  })
 
-    // requireNativePlugin 抛错同样落兜底
+  it('模块探测抛错 → 不支持且不落反射（aar 都没进包，反射也起不来）', () => {
+    mockPlusAndroid()
     global.uni.requireNativePlugin = () => { throw new Error('bridge gone') }
-    __resetKeepAliveCache()
+    expect(isKeepAliveSupported()).toBe(false)
     expect(startKeepAlive()).toBe(false)
     delete global.uni.requireNativePlugin
     __resetKeepAliveCache()
+  })
+
+  it('开关关着时 syncKeepAlive 不探测插件（标准基座启动日志不再出现框架报错）', () => {
+    mockPlusAndroid()
+    let calls = 0
+    global.uni.requireNativePlugin = () => { calls++; return null }
+    const r = syncKeepAlive()
+    expect(r).toEqual({ on: false, supported: false, acted: false })
+    expect(calls).toBe(0)
   })
 
   it('requireNativePlugin 返回缺方法的对象 → 视为不可用，不调 start', () => {

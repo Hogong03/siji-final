@@ -12,6 +12,7 @@
 import { logger } from '../logger.js'
 import { formatDisplayTime, formatDuration, getPromptFlag } from './settings.js'
 import { probePushModule } from './push-probe.js'
+import { vibrateForReminder } from './vibrate.js'
 
 /**
  * 该设备是否需要运行时申请通知权限（纯函数，便于单测）
@@ -98,12 +99,11 @@ export function triggerReminder(plan, reminderCfg, isOverdue, handlers = null) {
   logger.log(`[reminder] Triggering: ${plan.title}`)
 
   // 前台：toast 轻提示 + 震动
-  // 3.10.0：震动单独兜住 —— 没震动权限 / 机型不支持时抛错，会把提示与推送一起带走
+  // 4.48.2：震动改走 vibrate.js 三级降级 —— 旧写法 uni.vibrate 不存在（官方只有
+  // vibrateShort/vibrateLong），真机每次提醒都有一条 failed 日志且从未震过
   // #ifdef APP-PLUS
-  try {
-    uni.vibrate({ type: 'medium' })
-  } catch (e) {
-    logger.warn('[reminder] vibrate failed:', e && e.message)
+  if (!vibrateForReminder()) {
+    logger.log('[reminder] 本端不支持震动，跳过')
   }
   // #endif
 

@@ -4,21 +4,25 @@
  * 目标：退到后台 / 从最近任务划掉后，进程尽量不被系统回收，从而让 60s 轮询提醒、
  * 回前台的增量结算继续有效；配合 4.22.0 的本地推送（进程真被杀也能到点弹通知）双保险。
  *
- * 实现方式（4.35.2 起双路径）：
+ * 实现方式（4.35.2 起双路径，4.48.2 修正可用性判据）：
  *   正路：uni.requireNativePlugin('siji-keepalive') → SijiKeepAliveModule
  *         （aar 里的原生模块，start/stop/isRunning；模块类为什么存在见 4.35.2 版本日志 ——
  *          HBuilderX 打包校验要求 plugins 非空且每条有 type/name/class）
  *   兜底：plus.android 反射构造 Intent → startForegroundService 拉起 Service
- *         （模块桥万一在某个基座上挂了，这条仍能工作；两条路径打的是同一个 Service）
+ *         （只在模块取到了、但 start 同步抛错时用；模块都取不到说明 aar 没进包，反射也起不来）
  *
  * 三条铁律（写错就是真机踩坑）：
- *  1. 插件没打进包（标准基座 / 旧包）时，importClass 会抛错 —— 必须 catch 并静默降级，
- *     否则启动即崩。判定结果缓存，避免每轮都抛异常。requireNativePlugin 只在类探测
- *     通过后才调（标准基座里连碰都不碰它）。
+ *  1. 「插件在不在基座里」只认 uni.requireNativePlugin 的返回值 —— plus.android.importClass
+ *     对缺失类不一定抛错（4.48.2 真机日志实证：标准基座里类探测通过，紧接着框架报
+ *     「当前运行的基座不包含原生插件」）。旧判据会把标准基座误判为支持，开关可点、
+ *     每次启动还多一条框架错误。
  *  2. startForegroundService 是 API 26+；26 以下只能 startService（模块和反射两条路径都判）。
  *  3. Android 14+ 前台服务必须在 manifest 里声明 foregroundServiceType（aar 里已声明
  *     specialUse）；渠道/通知被用户关掉时 Service 会自杀，这里不回滚开关 —— 用户关的是
  *     通知，不代表他不要后台常驻。
+ *
+ * 降噪：开关关着时 syncKeepAlive 不做任何插件探测（默认用户不该在启动日志里看到
+ * 「不包含原生插件」）；只有开关打开或设置页主动自查时才探测一次，结果缓存。
  *
  * 平台边界：仅 Android。iOS 无对应能力（H5 / 小程序 / iOS 全部走 no-op）。
  */
@@ -78,12 +82,45 @@ export function setKeepAliveOn(on) {
   return v
 }
 
-/* ─── 插件可用性探测（结果缓存）─── */
+/* ─── 原生模块探测（插件是否真的打进当前基座）─── */
 let supportedCache = null
+let moduleCache = null
+let moduleProbed = false
+/** 本进程内是否真的拉起过服务（开关关掉时据此收尾，避免无谓 stop） */
+let startedThisSession = false
 
 /**
- * 前台服务插件是否可用：App 端 + Android + aar 已打进包（Service 类能加载）。
- * 缓存结果，避免每轮 syncKeepAlive 都触发一次异常。
+ * 探测原生模块（uni.requireNativePlugin）。
+ * 这是「插件在不在基座里」的唯一可靠判据 —— 不能用 plus.android.importClass：
+ * 标准基座里它对缺失类不抛错，会把「不支持」误判成「支持」（4.48.2 真机日志实证）。
+ * 结果缓存，整个进程只探测一次，避免重复打基座级提示。
+ * @returns {{ start: Function, stop: Function } | null}
+ */
+function probeKeepAliveModule() {
+  if (moduleProbed) return moduleCache
+  moduleProbed = true
+  moduleCache = null
+  // #ifdef APP-PLUS
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.requireNativePlugin === 'function') {
+      const m = uni.requireNativePlugin(MODULE_NAME)
+      if (m && typeof m.start === 'function' && typeof m.stop === 'function') {
+        moduleCache = m
+      } else {
+        logger.log('[keepalive] 当前基座不含 siji-keepalive 原生插件，后台常驻跳过（标准基座属正常；云打包/自定义基座勾选本地插件后生效）')
+      }
+    }
+  } catch (e) {
+    moduleCache = null
+    logger.log('[keepalive] 原生模块探测失败，后台常驻跳过:', e && e.message)
+  }
+  // #endif
+  return moduleCache
+}
+
+/**
+ * 前台服务插件是否可用：App 端 + Android + 原生模块取得到。
+ * 缓存结果，避免每次 syncKeepAlive 都触发一次探测。
  */
 export function isKeepAliveSupported() {
   if (supportedCache !== null) return supportedCache
@@ -91,49 +128,18 @@ export function isKeepAliveSupported() {
   // #ifdef APP-PLUS
   try {
     if (typeof plus !== 'undefined' && plus.android && plus.os && plus.os.name === 'Android') {
-      // 类存在即说明 aar 打进包了；不存在会直接抛
-      plus.android.importClass(SERVICE_CLASS)
-      supportedCache = true
+      supportedCache = !!probeKeepAliveModule()
     }
   } catch (e) {
     supportedCache = false
-    logger.log('[keepalive] 前台服务插件未打进包，后台常驻不可用（需自定义基座/云打包勾选本地插件）')
   }
   // #endif
   return supportedCache
 }
 
-/* ─── 原生模块（正路入口）─── */
-let moduleCache = null
-let moduleProbed = false
-
-/**
- * 取原生模块句柄（uni.requireNativePlugin）。探测一次即缓存。
- * 前置条件：isKeepAliveSupported() —— 标准基座里 aar 类都不存在，
- * 根本不碰 requireNativePlugin（避免未知基座行为）。
- * @returns {{ start: Function, stop: Function } | null}
- */
+/** 取原生模块句柄（探测结果缓存） */
 function getKeepAliveModule() {
-  if (moduleProbed) return moduleCache
-  moduleProbed = true
-  moduleCache = null
-  // #ifdef APP-PLUS
-  try {
-    if (!isKeepAliveSupported()) return null
-    if (typeof uni !== 'undefined' && typeof uni.requireNativePlugin === 'function') {
-      const m = uni.requireNativePlugin(MODULE_NAME)
-      if (m && typeof m.start === 'function' && typeof m.stop === 'function') {
-        moduleCache = m
-      } else {
-        logger.warn('[keepalive] requireNativePlugin 返回异常，走 plus.android 反射兜底')
-      }
-    }
-  } catch (e) {
-    moduleCache = null
-    logger.warn('[keepalive] requireNativePlugin 抛错，走 plus.android 反射兜底:', e && e.message)
-  }
-  // #endif
-  return moduleCache
+  return probeKeepAliveModule()
 }
 
 /**
@@ -175,6 +181,7 @@ export function startKeepAlive(opts) {
         }
       })
       logger.log('[keepalive] 前台服务已启动（模块路径）')
+      startedThisSession = true
       return true
     } catch (e) {
       logger.warn('[keepalive] 模块路径异常，转反射兜底:', e && e.message)
@@ -204,6 +211,7 @@ function startKeepAliveByReflection(opts) {
       main.startService(intent)
     }
     logger.log('[keepalive] 前台服务已启动（反射路径）')
+    startedThisSession = true
     return true
   } catch (e) {
     logger.warn('[keepalive] 启动失败:', e && e.message)
@@ -231,6 +239,7 @@ export function stopKeepAlive() {
         }
       })
       logger.log('[keepalive] 前台服务已停止（模块路径）')
+      startedThisSession = false
       return true
     } catch (e) {
       logger.warn('[keepalive] 模块路径停止异常，转反射兜底:', e && e.message)
@@ -252,6 +261,7 @@ function stopKeepAliveByReflection() {
     intent.setClassName(String(main.getPackageName()), SERVICE_CLASS)
     main.stopService(intent)
     logger.log('[keepalive] 前台服务已停止（反射路径）')
+    startedThisSession = false
     return true
   } catch (e) {
     logger.warn('[keepalive] 停止失败:', e && e.message)
@@ -270,12 +280,14 @@ function stopKeepAliveByReflection() {
  */
 export function syncKeepAlive() {
   const on = isKeepAliveOn()
-  const supported = isKeepAliveSupported()
-  if (!shouldStartKeepAlive(on, supported)) {
-    // 开关关掉（或本端不支持）时确保没有残留服务
-    if (supported && !on) stopKeepAlive()
-    return { on, supported, acted: false }
+  // 开关关着：不探测插件（标准基座默认用户不该在启动日志里看到「不包含原生插件」）。
+  // 只有本进程拉起过、或之前已确认支持时才收尾。
+  if (!on) {
+    if (startedThisSession || supportedCache === true) stopKeepAlive()
+    return { on, supported: supportedCache === true, acted: false }
   }
+  const supported = isKeepAliveSupported()
+  if (!supported) return { on, supported: false, acted: false }
   const acted = startKeepAlive()
   return { on, supported, acted }
 }
@@ -315,9 +327,10 @@ export function openBatteryOptimizationSettings() {
   // #endif
 }
 
-/** 测试用：清掉探测缓存（类探测 + 模块探测） */
+/** 测试用：清掉探测缓存（支持判定 + 模块探测 + 会话内启动标记） */
 export function __resetKeepAliveCache() {
   supportedCache = null
   moduleCache = null
   moduleProbed = false
+  startedThisSession = false
 }

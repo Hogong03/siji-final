@@ -39,7 +39,9 @@ onMounted(() => {
   reminderToast.value = getPromptFlag('reminderToast')
   pushNotify.value = getReminderSettings().enabled !== false
   keepAlive.value = isKeepAliveOn()
-  keepAliveSupported.value = isKeepAliveSupported()
+  // 4.48.2：开关本来就关着时不做插件探测 —— 标准基座里探测会打一条框架级
+  // 「基座不包含原生插件」错误；等用户真去打开时再判，失败回滚并说明原因
+  keepAliveSupported.value = keepAlive.value ? isKeepAliveSupported() : true
 })
 
 /** uni switch 的 change 事件取新值（e.detail.value） */
@@ -59,9 +61,21 @@ function onPush(e) {
 /** 后台常驻开关（4.35.0，App 端）：开即拉起 Android 前台服务，关即停掉并移除常驻通知 */
 function onKeepAlive(e) {
   const on = !!(e && e.detail && e.detail.value)
-  keepAlive.value = setKeepAliveOn(on)
-  if (keepAlive.value) startKeepAlive()
-  else stopKeepAlive()
+  if (on) {
+    keepAlive.value = setKeepAliveOn(true)
+    if (!startKeepAlive()) {
+      // 标准基座 / 旧包没打进原生插件：回滚开关并把「不支持」的说明露出来
+      keepAlive.value = setKeepAliveOn(false)
+      keepAliveSupported.value = isKeepAliveSupported()
+      try {
+        uni.showToast({ title: '当前安装包不含后台常驻插件，需自定义基座或云打包', icon: 'none', duration: 3000 })
+      } catch (err) { /* toast 失败不影响开关 */ }
+      return
+    }
+  } else {
+    keepAlive.value = setKeepAliveOn(false)
+    stopKeepAlive()
+  }
   try {
     uni.showToast({ title: keepAlive.value ? '已开启后台常驻' : '已关闭后台常驻', icon: 'none' })
   } catch (err) { /* toast 失败不影响开关 */ }

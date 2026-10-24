@@ -6,6 +6,41 @@
 
 export const V430 = [
   {
+    version: '4.48.2',
+    date: '2026-10-24',
+    title: '修两处真机日志噪声：提醒震动用错 API 从未生效 + 标准基座误判后台常驻可用',
+    summary: [
+      '震动：notifier 原来调用不存在的 uni.vibrate（官方只有 uni.vibrateShort / vibrateLong），每次提醒都留一条「vibrate failed」，震动从未响过；新增 utils/reminder/vibrate.js 三级降级（vibrateShort → plus.device.vibrate → 静默 false），并加源码守卫禁止再写 uni.vibrate',
+      '后台常驻：可用性判据从 plus.android.importClass 改为 uni.requireNativePlugin 的返回值 —— 真机日志证明标准基座里 importClass 对缺失类不抛错，旧判据把标准基座误判为「支持」，导致开关可点、每次启动都打一条「当前运行的基座不包含原生插件」',
+      '降噪：开关关着时 syncKeepAlive 完全不探测插件，标准基座冷启动不再出现框架级报错；设置页也改成「开关本来开着才自查」，用户手动打开失败时回滚开关并提示需自定义基座/云打包；相关文案从 warn 降为 log 且写清「标准基座属正常」',
+      '测试：keepalive 21 → 23 例（新增标准基座误判、开关关着不探测两条），新增 tests/reminder-vibrate.test.js 5 例'
+    ],
+    categories: [
+      {
+        title: '提醒',
+        items: [
+          'utils/reminder/vibrate.js（新增）：vibrateForReminder 三级降级，可注入环境便于单测；有 uni.vibrateShort 时传 type=medium + fail 回调，缺失时退 plus.device.vibrate(120)',
+          'utils/reminder/notifier.js：triggerReminder 改调 vibrateForReminder，失败只记一条 log（不再让震动异常影响 toast 与推送）'
+        ]
+      },
+      {
+        title: '后台常驻',
+        items: [
+          'utils/keepalive.js：probeKeepAliveModule 成为唯一可用性判据（requireNativePlugin 返回带 start/stop 的对象），isKeepAliveSupported 直接复用；反射兜底只在模块已取到但 start 抛错时使用',
+          'utils/keepalive.js：syncKeepAlive 在开关关着时不再调用任何插件探测；新增 startedThisSession 记录本进程是否拉起过服务，避免无谓 stop；__resetKeepAliveCache 同步清理',
+          'pages/settings/sub/notify.vue：onMounted 只在开关本来开着时调 isKeepAliveSupported；onKeepAlive 打开失败时回滚开关、置为不支持并 toast 说明自定义基座/云打包'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/keepalive.test.js：21 → 23 例，新增「模块缺失→不支持（类探测会误判）」「开关关着不探测插件」；原「落反射兜底」用例改写为断言不落反射',
+          'tests/reminder-vibrate.test.js（新增 5 例）：vibrateShort 优先 / plus 兜底 / 抛错仍兜底 / 两端都不支持返回 false / 源码不再出现 uni.vibrate'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.48.1',
     date: '2026-10-24',
     title: '引导式表达实测校准：卡住时必须给「收一步」，主动提议时补可点短句',
