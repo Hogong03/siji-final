@@ -1,7 +1,13 @@
 /**
  * 聊天欢迎消息生成
  *
- * 根据当前时间、本月账单/计划/记录数据生成个性化欢迎语
+ * 根据当前时间与本月账单生成个性化欢迎语。
+ *
+ * 4.48.0 引导式表达：
+ *   - 收尾从「我都能帮忙」改成一句引导（今天想从哪儿开始 + 三个具体入口），
+ *     第一句就把选择权递回用户，而不是让他自己想说什么；
+ *   - 删掉「还有 N 个未完成计划」「本月只写了 N 篇记录」这类盘点缺口的提示
+ *     （PRODUCT_VISION 铁律 8：未完成信息只有用户主动问才出现）。
  */
 export function useWelcomeMessage() {
   function getWelcomeMessage() {
@@ -24,21 +30,11 @@ export function useWelcomeMessage() {
       if (expense > 0) tips.push(`本月已消费 ¥${expense.toFixed(2)}`)
     } catch (e) {}
 
-    try {
-      const plans = JSON.parse(uni.getStorageSync('plan_all') || '[]').filter(p => p.is_deleted !== 1 && p.status !== 2)
-      if (plans.length > 0) tips.push(`还有 ${plans.length} 个未完成计划`)
-    } catch (e) {}
-
-    try {
-      const diaries = JSON.parse(uni.getStorageSync(`diary_${month}`) || '[]').filter(d => d.is_deleted !== 1)
-      if (diaries.length > 0 && diaries.length < 3) tips.push(`本月写了 ${diaries.length} 篇记录`)
-    } catch (e) {}
-
     let msg = `${greeting}，我是思迹。`
     if (tips.length > 0) {
       msg += `\n\n${tips.join('、')}。`
     }
-    msg += '\n\n有什么想聊的，直接说就好。记账、写记录、做计划，我都能帮忙。'
+    msg += '\n\n今天想从哪儿开始？说一句就行：记一笔、写两句，或者把卡住的一件事拆成第一步。'
     return msg
   }
 

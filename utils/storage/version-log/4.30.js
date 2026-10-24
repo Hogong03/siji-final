@@ -6,6 +6,44 @@
 
 export const V430 = [
   {
+    version: '4.48.0',
+    date: '2026-10-24',
+    title: '引导式表达：从「问什么答什么」升级为「每次把下一步递到你手边」',
+    summary: [
+      '新增 utils/ai/guide.js 作为引导三式的单一事实源：收一步（把话收成 5 分钟内能做的一步）/ 深一句（追问一个具体感受或细节）/ 给两选（卡住时给两个具体选项）；写进系统提示词，JSON 兜底路径与 Agent 工具路径同时生效',
+      '引导边界写死在提示里：一条回复最多一句、不连续两轮同式、纯查询/刚执行完写操作/用户说「别问了」「先这样」时不给、低落时只留最轻的一句、宁缺毋滥；禁止「你应该 / 建议你 / 必须 / 为什么不 / 加油」',
+      '能力开关「引导追问」升级为「引导式表达」（id 仍是 guide_ask，老开关继续生效、默认开）；关掉后提示段与兜底短句一起消失，缓存随设置页写开关时失效',
+      '回复下方短句升级为引导型：已给一小步时给「好，现在开始 / 换个更小的」，提议记录或排计划时给一键可答的「好，记下来 / 先不用」，陪伴类回复不推进；规则从 chat-suggestion.js 收归 guide.js，AI suggestions 仍原样优先',
+      '欢迎语收尾改为引导（今天想从哪儿开始 + 记一笔 / 写两句 / 拆成第一步三个入口），并删掉「还有 N 个未完成计划」「本月只写了 N 篇记录」两处盘点缺口的提示（铁律 8：未完成信息只在用户主动问时出现）',
+      '新增 tests/ai-guide.test.js（17 例）与 2 条 AI 自检语料（提不起劲不劝不写库 / 不知道从哪开始不建大计划）'
+    ],
+    categories: [
+      {
+        title: 'AI 行为',
+        items: [
+          'utils/ai/guide.js（新增）：GUIDE_KINDS 三式、GUIDE_SECTION 提示段、buildGuideSection()、pickGuideChips()、hasGuideTail()、guideKindOf()、PRESSURE_WORDS；规则全部纯函数，无 UI 依赖',
+          'utils/ai/prompt-builder.js：guide_ask 开关打开时注入 buildGuideSection()，替换 4.11.0 的单句「记录后追问」；full / lite / agentMode 三条路径全覆盖（都经 buildSystemPrompt）',
+          'utils/ai/eval/cases.js：新增 guide-no-lecture（提不起劲：不建计划不写库，回复不得出现劝进词）与 guide-min-step（不知道从哪开始：不建大计划，回复不得说教）',
+          'utils/ai/chat-suggestion.js：兜底规则收归 guide.js，本文件只保留 mergeSuggestions 合并入口（AI 给了 suggestions 仍原样优先，最多 3 条）'
+        ]
+      },
+      {
+        title: '开关与文案',
+        items: [
+          'utils/ai/features.js：guide_ask 名称改「引导式表达」，描述改为「每次回复末尾留一句引导，把下一步递到你手边（不催）」；分组与默认值不变',
+          'composables/useWelcomeMessage.js：收尾改「今天想从哪儿开始？说一句就行：记一笔、写两句，或者把卡住的一件事拆成第一步」；删除未完成计划数与记录篇数两条压力提示，只保留本月支出这一条事实'
+        ]
+      },
+      {
+        title: '测试与语料',
+        items: [
+          'tests/ai-guide.test.js（新增 17 例）：三式齐全、压力词进禁止清单、三路径注入、开关关掉整段消失、chips 分支（提议/一小步/陪伴/失败/写操作后）、长度与伪建议约束、hasGuideTail / guideKindOf、欢迎语不盘点缺口',
+          'tests/chat-suggestion.test.js 原 11 例不改断言全绿：旧口径（账单/计划/长段分享/失败）与新增步进分支互不覆盖'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.47.0',
     date: '2026-10-20',
     title: '计划打卡语义校正：到期收尾不再冒充「完成」，同日补写不丢描述，打卡被拒原因统一，读侧口径全量对齐',

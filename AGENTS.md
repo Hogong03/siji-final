@@ -15,8 +15,8 @@
 | 三端 | H5 / App (Android+iOS) / 微信小程序 |
 | 路径 | `C:\Users\c3798\Desktop\siji\思迹`（2026-10-22 由桌面并入 `siji`；旧路径 `C:\Users\c3798\Desktop\思迹` 已不存在，旧会话要用目录联接才能续） |
 | 代码量 | 533 文件 / 89,192 行（pages 87 / components 48 / composables 29 / store 19 / utils 202 / tests 108 / docs 16 / site 10 / scripts 14） |
-| 测试 | 117 文件 / 1645 用例（4.47.0 实测），Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（exit 0，无日期相关失败用例）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
-| 版本 | v4.47.0（计划打卡语义校正：到期≠完成 + 读侧口径统一；P1「待回顾」五态与统一存储层已实现但**冻结未发布**，状态见 `docs/会话检查点.md`） |
+| 测试 | 121 文件 / 1708 用例（4.48.0 工作区实测：1707 通过 + 1 expected fail，含并行会话在途用例），Vitest，`NODE_OPTIONS=--max-old-space-size=4096` + `npx vitest run --maxWorkers=2` 实测全绿（无日期相关失败用例；PowerShell 会因 vite 配置 warning 把 stderr 当错误报 exit 1，以 `Test Files ... passed` 判定）；**vitest 4 必须 node 20**（nvm v20.19.4），系统默认 node 16 会报 `node:util styleText` 缺失 |
+| 版本 | v4.48.0（引导式表达：三式引导进提示词 + 引导型短句 + 欢迎语去催促；P1「待回顾」五态与统一存储层已实现但**冻结未发布**，状态见 `docs/会话检查点.md`） |
 
 ---
 
@@ -137,7 +137,8 @@
 - Agent 不做删除类破坏性操作：TOOL_DEFINITIONS 只注册 `delete_feedback`，且它必须登记在 `CONFIRM_TOOLS`（开了「AI 自动执行写操作」也要确认）；今后新增 delete_* 必须同步登记 CONFIRM_TOOLS
 - `CONFIRM_TOOLS` 当前为 `delete_feedback`（唯一破坏性工具）；动态确认阈值：create_bill/update_bill 的 amount >= 500（**兜底路径产出的记账同样过闸门**，4.8.2）
 - **年度维护**：`docs/AI维护清单.md`（节假日表 / 厂商模型复核 / 真实模型自检 / 提示词预算，每年 1 月执行）
-- **能力开关**：可选 AI 能力（联网/读网址/记忆/摘要/能量/下一步/周播报/引导追问/微光/人脉/演练/图片/语音转文字）统一在 `utils/ai/features.js` 注册表裁决（`isFeatureOn`/`isFeatureActive`）；新增可关能力 = 注册表加条目 + TOOL_FEATURE_MAP 映射 + 三处注入点接开关；写开关后必须 `invalidatePromptCache()`；**安全底座不可关**（确认闸门/白名单/撤销/记忆治理）
+- **能力开关**：可选 AI 能力（联网/读网址/记忆/摘要/能量/下一步/周播报/引导式表达/微光/人脉/演练/图片/语音转文字）统一在 `utils/ai/features.js` 注册表裁决（`isFeatureOn`/`isFeatureActive`）；新增可关能力 = 注册表加条目 + TOOL_FEATURE_MAP 映射 + 三处注入点接开关；写开关后必须 `invalidatePromptCache()`；**安全底座不可关**（确认闸门/白名单/撤销/记忆治理）
+- **引导式表达**（4.48.0）：改 AI「怎么说话」先看 `utils/ai/guide.js`（`GUIDE_SECTION` 提示段 + `pickGuideChips` 兜底短句，id 仍是 `guide_ask`）；改完跑 `tests/ai-guide.test.js` + AI 三件套。底线是不催、不盘点缺口、可以不给
 
 ---
 
@@ -158,7 +159,7 @@
 │   ├── files/          # 读文件（3.6.0）：file-types 类型判定 / local-io 三端本地读 / file-text 清洗截断 / doc-parse 文档解析后端 / picker 三端选文件
 │   ├── crypto.js       # API Key 加解密
 │   └── ...
-├── tests/              # 117 文件 1645 用例
+├── tests/              # 121 文件 1708 用例
 ├── site/               # 介绍网站（纯静态零依赖，双击 site/index.html 即开）
 ├── App.vue             # 根组件（全局 CSS 变量 + onErrorCaptured）
 ├── pages.json          # 页面路由（CRLF + UTF-8 BOM）
@@ -325,7 +326,7 @@ API Key 加密：XOR + Base64，salt `siji_2026_xor_key_!@#`。
 
 - HBuilder X 版本需 3.8.7+
 - 编译前删 `unpackage/dist` 缓存强制重编译
-- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 117 文件 / 1645 用例全绿（exit 0；**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
+- 测试必须带资源限制跑：$env:NODE_OPTIONS="--max-old-space-size=4096"; npx vitest run --maxWorkers=2 —— 直接 `npx vitest run` 会 OOM（op-claim-guard 测试也依赖它）；实测 121 文件 / 1708 用例（1707 通过 + 1 expected fail）全绿（**vitest 4 必须 node 20 —— `export PATH="/c/Users/c3798/AppData/Roaming/nvm/v20.19.4:$PATH"`，node 16 启动即报 node:util styleText 缺失**）
 - **模板标识符漏实现由 `tests/sfc-bindings.test.js` 双通道看守**（4.29.4 补齐）：`<script setup>` 走 compileScript(inlineTemplate) 的 `_ctx.x` 扫描；**options API 走 @babel/parser 解析 `export default {}` 收集 props/computed/methods/data/inject/setup 键名**再比对（旧版只查 script setup，EnterBriefing 的 `{{ dateLine }}` 因此漏网成 Vue warn）。**别用「名字在 script 里出现过」这类文本启发式** —— 注释里提一句就被骗过，实测抓不到 bug
 - **同一时段只跑一个 vitest 进程**（4.29.2 实证）：并发两个会报 `Errors 2 errors`、只跑 104/106 文件 / 1381/1412 用例，看着像回归其实是资源争抢。看到这个数字先确认没有并行进程，再谈问题
 - vitest 抓不到「import 了不存在的导出」：esbuild 互操作会把缺失的具名导出变成 `undefined`（只有 HBuilder X 的原生 ESM 才当场抛 `does not provide an export named`，表现为页面白屏）。动过模块导出后必须跑 `tests/module-exports.test.js`（静态核对 352 个源文件——utils/composables/store/pages/components 下的 js+vue——的具名 import；测试自身只断言 `>250`，数字漂了改这一行）（store / normalize / governance / context / profile-values / profile-link / monthly / auto-extract）：改哪一块进哪一块；`governance.js` 依赖 `store.js` 导出的 `persist` 与 `STORAGE_KEY`，这两个是模块间私有依赖，不进对外导出

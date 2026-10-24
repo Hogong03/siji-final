@@ -401,6 +401,25 @@ export const EVAL_CASES = [
       tools: ['query_bill'],
       forbid: ['create_diary', 'create_bill', 'create_plan']
     }
+  },
+  // ===== 4.48.0 引导式表达：温柔而强大 =====
+  {
+    id: 'guide-no-lecture',
+    title: '提不起劲 → 先接住，不劝不训不写库',
+    message: '最近总是提不起劲，什么都不想做',
+    expect: {
+      forbid: ['create_plan', 'create_plan_phases', 'create_diary'],
+      replyExcludes: ['你应该', '建议你', '必须', '加油', '为什么不']
+    }
+  },
+  {
+    id: 'guide-min-step',
+    title: '不知道从哪开始 → 给最小一步，不建大计划',
+    message: '又拖了一整天，不知道从哪开始',
+    expect: {
+      forbid: ['create_plan', 'create_plan_phases'],
+      replyExcludes: ['你应该', '建议你', '必须先']
+    }
   }
 ]
 
