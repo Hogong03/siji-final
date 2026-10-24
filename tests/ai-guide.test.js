@@ -39,6 +39,12 @@ describe('提示层：引导三式进 system prompt', () => {
     expect(GUIDE_SECTION).toContain('不深挖不布置任务')
   })
 
+  it('卡住时必须给「收一步」（真机实测：只说「不知道从哪开始」时模型只安慰、不给动作）', () => {
+    expect(GUIDE_SECTION).toContain('不知道从哪开始')
+    expect(GUIDE_SECTION).toContain('必须用「收一步」')
+    expect(GUIDE_SECTION).toContain('不许只安慰')
+  })
+
   it('压力词被明确写进禁止清单', () => {
     PRESSURE_WORDS.forEach(w => expect(GUIDE_SECTION).toContain(w))
     expect(GUIDE_SECTION).toContain('禁止')
@@ -73,6 +79,10 @@ describe('兜底层：chips 是用户能直接发出去的短句', () => {
 
   it('AI 提议排计划 → 短句换成排计划口径', () => {
     expect(pickGuideChips('要不要我帮你把这几个想法排成计划？')).toEqual(['好，帮我排一下', '先不用'])
+  })
+
+  it('AI 主动说「可以帮你记一笔」也给可点短句（真机实测：查询后主动提议记账）', () => {
+    expect(pickGuideChips('这周还没记过账。有收入的话可以帮你记一笔。')).toEqual(['好，记下来', '先不用'])
   })
 
   it('已经给了一小步 → 递上「现在开始 / 换个更小的」', () => {
