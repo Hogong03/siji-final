@@ -45,7 +45,7 @@ function handleDecline() {
 </script>
 
 <template>
-  <view class="disclaimer-wrap">
+  <view class="disclaimer-wrap page-enter">
     <!-- 顶部品牌 -->
     <view class="disclaimer-header">
       <text class="disclaimer-brand">思迹</text>

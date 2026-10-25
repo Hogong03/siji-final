@@ -122,7 +122,7 @@ function pickQuick(v) { hapticSelect(); budgetInput.value = String(v) }
 </script>
 
 <template>
-  <view class="bill-page">
+  <view class="bill-page page-enter">
     <!-- 概览卡片 -->
     <view class="summary-card">
       <view class="summary-row">

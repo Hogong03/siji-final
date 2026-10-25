@@ -169,7 +169,7 @@
 </script>
 
 <template>
-	<view class="functions-page">
+	<view class="functions-page page-enter">
 		<scroll-view class="func-scroll" scroll-y>
 
 			<!-- 搜索栏（点击跳转独立搜索页） -->

@@ -104,7 +104,7 @@ const dots = computed(() => {
 </script>
 
 <template>
-  <view class="lock-page" v-if="needPin">
+  <view class="lock-page page-enter" v-if="needPin">
     <view class="lock-container">
       <SijiIcon name="lock" size="xl" class="lock-icon" />
       <text class="lock-title">思迹</text>
