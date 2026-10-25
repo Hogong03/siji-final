@@ -42,7 +42,7 @@ function goSettings() {
 </script>
 
 <template>
-	<view class="ai-card">
+	<view class="ai-card panel-in">
 		<!-- 生成中：骨架屏 -->
 		<view v-if="loading" class="ai-card-loading">
 			<text class="ai-card-loading-text">{{ loadingText }}</text>
@@ -58,8 +58,8 @@ function goSettings() {
 				<text class="ai-card-error-text">{{ error }}</text>
 			</view>
 			<view class="ai-card-actions">
-				<view class="ai-card-act primary" @tap="emit('retry')"><text>重试</text></view>
-				<view class="ai-card-act" @tap="goSettings"><text>检查 API Key</text></view>
+				<view class="ai-card-act primary btn-tactile" @tap="emit('retry')"><text>重试</text></view>
+				<view class="ai-card-act btn-tactile" @tap="goSettings"><text>检查 API Key</text></view>
 			</view>
 		</template>
 

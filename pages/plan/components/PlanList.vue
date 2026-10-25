@@ -19,12 +19,12 @@ const emit = defineEmits([
 	<scroll-view class="plan-scroll" scroll-y @scroll="emit('touch-end', {})" :scroll-with-animation="false">
 		<EmptyState v-if="filteredPlans.length === 0" icon="plan" title="暂无计划" description="使用模板快速创建，或让 AI 帮你规划">
 			<view class="empty-actions">
-				<view class="empty-btn primary" @tap="emit('go-templates')">从模板创建</view>
-				<view class="empty-btn outline" @tap="emit('go-new')">自定义计划</view>
+				<view class="empty-btn primary btn-tactile" @tap="emit('go-templates')">从模板创建</view>
+				<view class="empty-btn outline btn-tactile" @tap="emit('go-new')">自定义计划</view>
 			</view>
 		</EmptyState>
 
-		<view v-else class="plan-list">
+		<view v-else class="plan-list card-list-stagger">
 			<view
 				v-for="item in filteredPlans"
 				:key="item.client_id"

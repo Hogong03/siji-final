@@ -35,9 +35,9 @@ const totalChanges = computed(() => {
 </script>
 
 <template>
-  <view class="detail-page" v-if="record">
+  <view class="detail-page page-enter" v-if="record">
     <!-- 版本头部 -->
-    <view class="version-header">
+    <view class="version-header panel-in">
       <view class="vh-top">
         <text class="vh-version">v{{ record.version }}</text>
         <text class="vh-date">{{ record.date }}</text>
@@ -47,14 +47,14 @@ const totalChanges = computed(() => {
     </view>
 
     <!-- 功能分类列表 -->
-    <view class="cat-list">
+    <view class="cat-list card-list-stagger">
       <view
         v-for="(cat, idx) in record.categories"
         :key="idx"
-        class="cat-card"
+        class="cat-card card-press"
       >
         <!-- 分类头部（可折叠） -->
-        <view class="cat-header" @tap="toggleCategory(idx)">
+        <view class="cat-header btn-tactile" @tap="toggleCategory(idx)">
           <view class="cat-left">
             <text class="cat-arrow" :class="{ expanded: expandedCategories[idx] }">›</text>
             <text class="cat-title">{{ cat.title }}</text>
@@ -69,7 +69,7 @@ const totalChanges = computed(() => {
             <text class="ci-text">{{ item }}</text>
           </view>
         </view>
-        <view class="cat-collapsed-hint" v-else @tap="toggleCategory(idx)">
+        <view class="cat-collapsed-hint btn-tactile" v-else @tap="toggleCategory(idx)">
           <text class="hint-text">{{ cat.items.length }} 项更新 · 点击展开</text>
         </view>
       </view>

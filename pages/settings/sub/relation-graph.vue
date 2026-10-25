@@ -1,22 +1,22 @@
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-back" @click="goBack"><text class="nav-back-icon">‹</text></view>
+        <view class="nav-back btn-tactile" @click="goBack"><text class="nav-back-icon">‹</text></view>
         <text class="nav-title">人脉</text>
-        <view class="nav-btn" @click="goRelationList"><text class="nav-btn-text">管理</text></view>
+        <view class="nav-btn btn-tactile" @click="goRelationList"><text class="nav-btn-text">管理</text></view>
       </view>
     </view>
 
     <scroll-view scroll-y class="main-scroll">
       <!-- 顶部提醒：久未联系 -->
-      <view v-if="staleList.length > 0" class="stale-banner">
+      <view v-if="staleList.length > 0" class="stale-banner panel-in">
         <view class="stale-dot"></view>
         <text class="stale-text">{{ staleList.length }} 人超过 {{ staleThreshold }} 天没联系了</text>
       </view>
 
       <!-- 概览数字 -->
-      <view class="overview-row">
+      <view class="overview-row panel-in">
         <view class="ov-item">
           <text class="ov-num">{{ relations.length }}</text>
           <text class="ov-label">总人数</text>
@@ -39,14 +39,14 @@
         <text class="empty-sub">点击右上角「管理」添加第一个人吧</text>
       </view>
 
-      <view v-for="group in grouped" :key="group.role" class="group-block">
+      <view v-for="group in grouped" :key="group.role" class="group-block panel-in">
         <view class="group-header">
           <text class="group-name">{{ group.role }}</text>
           <text class="group-count">{{ group.list.length }}</text>
         </view>
 
-        <view class="person-list">
-          <view v-for="r in group.list" :key="r.id" class="person-card" @click="goDetail(r.id)">
+        <view class="person-list card-list-stagger">
+          <view v-for="r in group.list" :key="r.id" class="person-card card-press" @click="goDetail(r.id)">
             <view class="avatar" :class="{ stale: daysSince(r) > staleThreshold }">
               <text class="avatar-text">{{ r.name.charAt(0) }}</text>
             </view>

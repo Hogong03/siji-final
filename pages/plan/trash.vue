@@ -5,6 +5,7 @@
 import { ref, computed, onMounted } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const PLAN_KEY = 'plan_all'
 
@@ -56,6 +57,7 @@ function restorePlan(plan) {
           uni.setStorageSync(PLAN_KEY, JSON.stringify(all))
         }
         loadDeleted()
+        hapticSuccess()
         uni.showToast({ title: '已恢复', icon: 'success' })
       }
     }
@@ -76,6 +78,7 @@ function purgePlan(plan) {
         all = all.filter(p => p.client_id !== plan.client_id && !childIds.includes(p.client_id))
         uni.setStorageSync(PLAN_KEY, JSON.stringify(all))
         loadDeleted()
+        hapticWarning()
         uni.showToast({ title: '已彻底删除', icon: 'success' })
       }
     }
@@ -94,6 +97,7 @@ function restoreAll() {
         all.forEach(p => { if (p.is_deleted === 1) { p.is_deleted = 0; p.updated_at = Date.now() } })
         uni.setStorageSync(PLAN_KEY, JSON.stringify(all))
         loadDeleted()
+        hapticSuccess()
         uni.showToast({ title: '已全部恢复', icon: 'success' })
       }
     }
@@ -102,7 +106,7 @@ function restoreAll() {
 </script>
 
 <template>
-  <view class="trash-page">
+  <view class="trash-page page-enter">
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="search-box">
@@ -115,7 +119,7 @@ function restoreAll() {
         />
         <text v-if="searchKeyword" class="search-clear" @tap="searchKeyword = ''">✕</text>
       </view>
-      <view v-if="deletedPlans.length > 0" class="restore-all" @tap="restoreAll">
+      <view v-if="deletedPlans.length > 0" class="restore-all btn-tactile" @tap="restoreAll">
         <text>全部恢复</text>
       </view>
     </view>
@@ -124,8 +128,8 @@ function restoreAll() {
     <scroll-view class="trash-scroll" scroll-y>
       <EmptyState v-if="filteredPlans.length === 0" icon="trash" title="回收站为空" description="删除的计划会出现在这里" />
 
-      <view v-else class="trash-list">
-        <view v-for="item in filteredPlans" :key="item.client_id" class="trash-card">
+      <view v-else class="trash-list card-list-stagger">
+        <view v-for="item in filteredPlans" :key="item.client_id" class="trash-card card-press">
           <view class="card-top">
             <view class="priority-dot" :style="{ background: priorityColors[item.priority] || '#999' }" />
             <text class="card-title">{{ item.title }}</text>
@@ -135,8 +139,8 @@ function restoreAll() {
             <text class="meta-text">删除于 {{ formatDate(item.updated_at) }}</text>
           </view>
           <view class="card-actions">
-            <view class="action-btn restore" @tap="restorePlan(item)">恢复</view>
-            <view class="action-btn purge" @tap="purgePlan(item)">彻底删除</view>
+            <view class="action-btn restore btn-tactile" @tap="restorePlan(item)">恢复</view>
+            <view class="action-btn purge btn-tactile" @tap="purgePlan(item)">彻底删除</view>
           </view>
         </view>
       </view>

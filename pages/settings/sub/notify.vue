@@ -93,11 +93,11 @@ function onBatteryOptimization() {
 </script>
 
 <template>
-  <view class="np-page">
+  <view class="np-page page-enter">
     <text class="np-intro">尽量少打扰。这里决定思迹什么时候主动跟你说话。</text>
 
     <text class="np-group">进入聊天页</text>
-    <view class="np-card">
+    <view class="np-card panel-in">
       <view class="np-row">
         <view class="np-row-main">
           <text class="np-row-title">计划汇总表</text>
@@ -122,7 +122,7 @@ function onBatteryOptimization() {
     </view>
 
     <text class="np-group">计划到点</text>
-    <view class="np-card">
+    <view class="np-card panel-in">
       <view class="np-row">
         <view class="np-row-main">
           <text class="np-row-title">应用内提醒</text>
@@ -141,7 +141,7 @@ function onBatteryOptimization() {
 
     <!-- #ifdef APP-PLUS -->
     <text class="np-group">后台运行</text>
-    <view class="np-card">
+    <view class="np-card panel-in">
       <view class="np-row">
         <view class="np-row-main">
           <text class="np-row-title">后台常驻</text>
@@ -154,7 +154,7 @@ function onBatteryOptimization() {
           @change="onKeepAlive"
         />
       </view>
-      <view v-if="keepAliveSupported" class="np-row np-row-tap" @click="onBatteryOptimization">
+      <view v-if="keepAliveSupported" class="np-row np-row-tap btn-tactile" @click="onBatteryOptimization">
         <view class="np-row-main">
           <text class="np-row-title">允许后台运行</text>
           <text class="np-row-desc">去系统「电池优化」把思迹设为不受限制（小米 / 华为 / OPPO 还需开自启动）</text>

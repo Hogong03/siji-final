@@ -10,8 +10,15 @@ import { collectPlanExecEvents } from '@/utils/plan-daily.js'
 import { collectDayCounts, monthGrid, monthTotals, shiftMonth, canGoNext } from '@/utils/plan-heatmap.js'
 import { backfillCandidates, buildPlanIndex, isBackfillable, recurTypeOf } from '@/utils/plan-recur.js'
 import PlanHeatmap from '@/components/plan/PlanHeatmap.vue'
+import { hapticLight, hapticSuccess } from '@/utils/haptic.js'
 
 const mode = ref('week') // week / month
+
+function setMode(v) {
+	if (mode.value === v) return
+	mode.value = v
+	hapticLight()
+}
 const events = ref([])
 const dayCounts = ref({})
 const planList = ref([])
@@ -52,6 +59,7 @@ const heatTotals = computed(() => monthTotals(heatYear.value, heatMonth.value, d
 const heatCanNext = computed(() => canGoNext(heatYear.value, heatMonth.value))
 
 function prevMonth() {
+	hapticLight()
 	const s = shiftMonth(heatYear.value, heatMonth.value, -1)
 	heatYear.value = s.year
 	heatMonth.value = s.month
@@ -60,6 +68,7 @@ function prevMonth() {
 
 function nextMonth() {
 	if (!heatCanNext.value) return
+	hapticLight()
 	const s = shiftMonth(heatYear.value, heatMonth.value, 1)
 	heatYear.value = s.year
 	heatMonth.value = s.month
@@ -188,6 +197,7 @@ function applyBackfill(item, date) {
 	}
 	loadEvents()
 	selectedDate.value = date
+	hapticSuccess()
 	uni.showToast({ title: '已补记 ' + date.slice(5), icon: 'none' })
 }
 
@@ -208,13 +218,13 @@ function goDetail(planId) {
 </script>
 
 <template>
-	<view class="records-page">
+	<view class="records-page page-enter">
 		<view class="rp-head">
 			<view class="rp-mode">
 				<view
 					v-for="opt in MODE_OPTIONS" :key="opt.value"
-					class="rp-chip" :class="{ active: mode === opt.value }"
-					@tap="mode = opt.value"
+					class="rp-chip chip-transition" :class="{ active: mode === opt.value }"
+					@tap="setMode(opt.value)"
 				>{{ opt.label }}</view>
 			</view>
 			<text class="rp-count">{{ totalCount() }} 次</text>
@@ -236,7 +246,7 @@ function goDetail(planId) {
 				@backfill-day="onBackfillDay"
 			/>
 			<!-- 3.5.4：选中某天的明细（再点一次热力格收起） -->
-			<view v-if="selectedDate" class="rp-day">
+			<view v-if="selectedDate" class="rp-day panel-in">
 				<view class="rp-date">
 					<text class="rp-date-text">{{ selectedLabel }}</text>
 					<text class="rp-date-count">{{ dayEvents.length }} 件</text>
@@ -246,7 +256,7 @@ function goDetail(planId) {
 				</view>
 				<view
 					v-for="item in dayEvents" :key="'d-' + item.at + '-' + item.planId + '-' + item.kind"
-					class="rp-item" @tap="goDetail(item.planId)"
+					class="rp-item card-press" @tap="goDetail(item.planId)"
 				>
 					<view class="rp-item-time">
 						<text class="rp-time-text">{{ item.timeText }}</text>
@@ -272,7 +282,7 @@ function goDetail(planId) {
 				</view>
 				<view
 					v-for="item in group.items" :key="item.at + '-' + item.planId + '-' + item.kind"
-					class="rp-item" @tap="goDetail(item.planId)"
+					class="rp-item card-press" @tap="goDetail(item.planId)"
 				>
 					<view class="rp-item-time">
 						<text class="rp-time-text">{{ item.timeText }}</text>

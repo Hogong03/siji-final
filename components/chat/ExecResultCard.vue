@@ -76,8 +76,8 @@ const execTypeClass = computed(() => {
   if (t === 'plan') return 'type-plan'
   if (t.startsWith('query_')) return 'type-query'
   return 'type-default'
-})
-
+})
+
 // 3.3 A：计划卡片「下一步」入口（第一条未完成且带 client_id 的子计划）
 const nextChild = computed(() => {
   const kids = props.message?.execResult?.detail?.children || []
@@ -111,7 +111,7 @@ const {
           <text v-else-if="r.detail?.type === 'diary'" class="exec-multi-sub">{{ r.detail.title }}</text>
           <text v-else-if="r.detail?.type === 'plan'" class="exec-multi-sub">{{ r.detail.title }}</text>
         </view>
-        <text v-if="canOpenRow(r)" class="exec-multi-arrow" @tap="$emit('confirm-action', { type: r.detail?.type ? ('create_' + r.detail.type) : '', payload: r.detail })">查看 →</text>
+        <text v-if="canOpenRow(r)" class="exec-multi-arrow btn-tactile" @tap="$emit('confirm-action', { type: r.detail?.type ? ('create_' + r.detail.type) : '', payload: r.detail })">查看 →</text>
       </view>
     </view>
   </template>
@@ -125,7 +125,7 @@ const {
           <text class="eti-text">{{ execTypeIcon }}</text>
         </view>
       </view>
-      <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
+      <text class="exec-jump-btn btn-tactile" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
     </view>
 
     <view class="exec-body">
@@ -142,7 +142,7 @@ const {
             <view class="bill-cat-tag" :class="message.execResult.detail.billType === 'income' ? 'income' : 'expense'">
               <text class="bct-text">{{ message.execResult.detail.category }}</text>
             </view>
-            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
+            <text class="exec-jump-btn btn-tactile" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
           </view>
           <view class="bill-meta-row" v-if="message.execResult.detail.bill_date || message.execResult.detail.note">
             <text class="bill-date" v-if="message.execResult.detail.bill_date">{{ message.execResult.detail.bill_date }}</text>
@@ -156,7 +156,7 @@ const {
         <view class="card-diary">
           <view class="diary-title-row">
             <text class="diary-title">{{ message.execResult.detail.title }}</text>
-            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
+            <text class="exec-jump-btn btn-tactile" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
           </view>
           <text class="diary-preview" v-if="diaryPreviewText">{{ diaryPreviewText }}</text>
           <text class="diary-date" v-if="message.execResult.detail.created_at">{{ formatTs(message.execResult.detail.created_at) }}</text>
@@ -169,13 +169,13 @@ const {
           <view class="plan-title-row">
             <view class="plan-priority-dot" :class="priorityClass(message.execResult.detail.priority)" />
             <text class="plan-title">{{ message.execResult.detail.title }}</text>
-            <text class="exec-jump-btn" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
+            <text class="exec-jump-btn btn-tactile" @tap="$emit('confirm-action', message.actionCard)">查看 →</text>
           </view>
           <text class="plan-desc" v-if="message.execResult.detail.description">{{ message.execResult.detail.description }}</text>
           <!-- 进度条（子计划优先，历史子任务兜底） -->
           <view class="plan-progress" v-if="planListCount(message.execResult.detail) > 0">
             <view class="plan-progress-bar">
-              <view class="plan-progress-fill" :style="{ width: planProgressPercent(message.execResult.detail) + '%' }" />
+              <view class="plan-progress-fill bar-grow" :style="{ width: planProgressPercent(message.execResult.detail) + '%' }" />
             </view>
             <text class="plan-progress-text">{{ planDoneCount(message.execResult.detail) }}/{{ planListCount(message.execResult.detail) }}</text>
           </view>
@@ -377,13 +377,13 @@ const {
     </view>
   </template>
   <!-- 标签选择面板 -->
-  <view v-if="showTagPanel" class="tag-panel-overlay" @tap.self="closeTagPanel">
-    <view class="tag-panel">
+  <view v-if="showTagPanel" class="tag-panel-overlay mask-in" @tap.self="closeTagPanel">
+    <view class="tag-panel sheet-panel">
       <text class="tp-title">选择标签</text>
       <view class="tp-current" v-if="currentTags().length > 0">
         <view
           v-for="t in currentTags()" :key="t"
-          class="tag-chip-item"
+          class="tag-chip-item btn-tactile"
           :style="{ background: tagColor(t) + '1a', color: tagColor(t), borderColor: tagColor(t) + '40' }"
           @tap="toggleTag(t)"
         >
@@ -394,7 +394,7 @@ const {
       <view class="tp-list">
         <view
           v-for="t in tagPanelTags" :key="t.name"
-          class="tp-item"
+          class="tp-item chip-transition"
           :class="{ selected: isTagOn(t.name) }"
           @tap="toggleTag(t.name)"
         >
@@ -414,9 +414,9 @@ const {
           maxlength="20"
           @confirm="createNewTag"
         />
-        <text class="tp-add" @tap="createNewTag">创建</text>
+        <text class="tp-add btn-tactile" @tap="createNewTag">创建</text>
       </view>
-      <view class="tp-done" @tap="closeTagPanel">完成</view>
+      <view class="tp-done btn-tactile" @tap="closeTagPanel">完成</view>
     </view>
   </view>
 </template>

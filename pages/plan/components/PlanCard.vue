@@ -112,6 +112,7 @@ function formatEst(ds) {
 	padding: 24rpx;
 	margin-bottom: 16rpx;
 	border-left: 6rpx solid transparent;
+	transition: transform 0.15s ease;
 
 	&:active { transform: scale(0.98); }
 

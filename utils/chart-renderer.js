@@ -4,41 +4,19 @@
  * 从 SijiChart.vue 拆出 — 纯 Canvas 2D 绘图函数，无 Vue 依赖
  * 支持：ring(环形) / bar(柱状) / line(折线) / gauge(仪表盘)
  *
- * 深色模式：由 props.dark 控制，坐标轴/文字/中心圆/填充等内部色随主题切换；
- * 数据系列色（props.colors / item.color）由调用方按主题传入。
+ * 深色模式（4.48.3）：
+ *  - 非数据色（轴 / 文字 / 空态 / 填充）统一走 chartPalette()，深色值按 WCAG 核过；
+ *  - 数据系列色（props.colors / item.color）统一过 seriesColor()，深色下低于 3:1 自动提亮，
+ *    调用方传错色（例如把浅色 #18181B 传进来）也不会画出隐形柱；
+ *  - 画布先铺一层 surface 底色再画内容：App 端原生画布底色不受控（白底/透明随版本变），
+ *    不铺底就会出现「深色卡片上一块白」或「白底上白柱」。
  */
+import { chartPalette, seriesColor, CHART_SURFACE } from './chart-theme.js'
 
-/**
- * 主题色板：canvas 内部非数据色
- * surface  环形图中心圆（与图表背后的卡片底色一致）
- * axis     坐标轴/空环/仪表盘轨道
- * text     环形/仪表盘中心主文字
- * subText  次级文字（“N 项”、仪表盘标签）
- * label    X 轴标签
- * areaFill 折线图填充区
- * dot      折线数据点填充（描边取系列色）
- */
-const PALETTE = {
-	light: {
-		surface: '#FFFFFF',
-		axis: '#E4E4E7',
-		text: '#18181B',
-		subText: '#71717A',
-		label: '#A1A1AA',
-		empty: '#A1A1AA',
-		areaFill: 'rgba(0,0,0,0.06)',
-		dot: '#FFFFFF'
-	},
-	dark: {
-		surface: '#27272A',
-		axis: '#3F3F46',
-		text: '#FAFAFA',
-		subText: '#A1A1AA',
-		label: '#71717A',
-		empty: '#71717A',
-		areaFill: 'rgba(255,255,255,0.08)',
-		dot: '#18181B'
-	}
+/** 系列色取值：colors 为空时退回浅色主色，再交给 seriesColor 归一 */
+function pickSeries(props, i) {
+	const list = (props.colors && props.colors.length) ? props.colors : ['#18181B']
+	return seriesColor(list[i % list.length], !!props.dark)
 }
 
 /**
@@ -51,21 +29,36 @@ const PALETTE = {
  */
 export function renderChart(ctx, type, props, canvasW, canvasH, rpx2px) {
 	const padding = { top: 16, right: 16, bottom: 28, left: 16 }
-	const P = props.dark ? PALETTE.dark : PALETTE.light
+	const P = chartPalette(!!props.dark)
+	// 入场动画进度 0→1；未传时按 1（一次性绘制，天然降级）
+	const progress = (props.progress === undefined || props.progress === null) ? 1 : Math.max(0, Math.min(1, props.progress))
 	ctx.clearRect(0, 0, canvasW + 32, canvasH + 32)
+	// 铺底：canvas 底色跟卡片一致，不依赖画布本身的透明/白色行为
+	ctx.setFillStyle(P.surface || CHART_SURFACE.light)
+	ctx.fillRect(0, 0, canvasW, canvasH)
 
 	switch (type) {
-		case 'ring': drawRing(ctx, canvasW, canvasH, padding, props, rpx2px, P); break
-		case 'bar': drawBar(ctx, canvasW, canvasH, padding, props, rpx2px, P); break
-		case 'line': drawLine(ctx, canvasW, canvasH, padding, props, rpx2px, P); break
-		case 'gauge': drawGauge(ctx, canvasW, canvasH, padding, props, rpx2px, P); break
+		case 'ring': drawRing(ctx, canvasW, canvasH, padding, props, rpx2px, P, progress); break
+		case 'bar': drawBar(ctx, canvasW, canvasH, padding, props, rpx2px, P, progress); break
+		case 'line': drawLine(ctx, canvasW, canvasH, padding, props, rpx2px, P, progress); break
+		case 'gauge': drawGauge(ctx, canvasW, canvasH, padding, props, rpx2px, P, progress); break
 	}
 
 	ctx.draw()
 }
 
+/** easeOutCubic：入场减速 */
+function easeOut(p) {
+	return 1 - Math.pow(1 - p, 3)
+}
+
+/** 限制到 0~1 */
+function clamp01(v) {
+	return v < 0 ? 0 : (v > 1 ? 1 : v)
+}
+
 // ==================== 环形图 ====================
-function drawRing(ctx, w, h, pad, props, rpx2px, P) {
+function drawRing(ctx, w, h, pad, props, rpx2px, P, progress) {
 	const cx = w / 2
 	const cy = h / 2
 	const radius = Math.min(w, h) / 2 - pad.top - 10
@@ -87,39 +80,53 @@ function drawRing(ctx, w, h, pad, props, rpx2px, P) {
 		return
 	}
 
-	let startAngle = -Math.PI / 2
+	// 入场：各扇形沿圆周顺序扫过（progress 0→1 扫满一圈）
+	const eased = easeOut(progress)
+	const baseStart = -Math.PI / 2
+	const drawEnd = baseStart + Math.PI * 2 * eased
+
+	let startAngle = baseStart
 	data.forEach((item, i) => {
 		const angle = (item.value / total) * Math.PI * 2
-		const color = item.color || props.colors[i % props.colors.length]
-
-		ctx.beginPath()
-		ctx.moveTo(cx, cy)
-		ctx.arc(cx, cy, radius, startAngle, startAngle + angle)
-		ctx.closePath()
-		ctx.setFillStyle(color)
-		ctx.fill()
-
-		startAngle += angle
+		const segEnd = startAngle + angle
+		const end = Math.min(segEnd, drawEnd)
+		if (end > startAngle) {
+			const color = item.color ? seriesColor(item.color, !!props.dark) : pickSeries(props, i)
+			ctx.beginPath()
+			ctx.moveTo(cx, cy)
+			ctx.arc(cx, cy, radius, startAngle, end)
+			ctx.closePath()
+			ctx.setFillStyle(color)
+			ctx.fill()
+		}
+		startAngle = segEnd
 	})
 
+	// 中心圆始终完整（遮住未完成扇形的径向边缘）
 	ctx.beginPath()
 	ctx.arc(cx, cy, innerRadius, 0, Math.PI * 2)
 	ctx.setFillStyle(P.surface)
 	ctx.fill()
 
-	ctx.setFillStyle(P.text)
-	ctx.setFontSize(rpx2px(36))
-	ctx.setTextAlign('center')
-	ctx.setTextBaseline('middle')
-	ctx.fillText(props.label || '', cx, cy - rpx2px(10))
+	// 中心文字随进度收尾淡入
+	const textAlpha = clamp01((progress - 0.55) / 0.45)
+	if (textAlpha > 0) {
+		ctx.setGlobalAlpha(textAlpha)
+		ctx.setFillStyle(P.text)
+		ctx.setFontSize(rpx2px(36))
+		ctx.setTextAlign('center')
+		ctx.setTextBaseline('middle')
+		ctx.fillText(props.label || '', cx, cy - rpx2px(10))
 
-	ctx.setFillStyle(P.subText)
-	ctx.setFontSize(rpx2px(22))
-	ctx.fillText(data.length + ' 项', cx, cy + rpx2px(20))
+		ctx.setFillStyle(P.subText)
+		ctx.setFontSize(rpx2px(22))
+		ctx.fillText(data.length + ' 项', cx, cy + rpx2px(20))
+		ctx.setGlobalAlpha(1)
+	}
 }
 
 // ==================== 柱状图 ====================
-function drawBar(ctx, w, h, pad, props, rpx2px, P) {
+function drawBar(ctx, w, h, pad, props, rpx2px, P, progress) {
 	const chartW = w - pad.left - pad.right
 	const chartH = h - pad.top - pad.bottom
 	const data = props.data
@@ -149,29 +156,35 @@ function drawBar(ctx, w, h, pad, props, rpx2px, P) {
 
 	data.forEach((item, i) => {
 		const x = pad.left + i * groupWidth
+		// 入场：每根（组）依次从基线生长，前 8 根有级联，easeOut 减速
+		const groupLocal = easeOut(clamp01((progress - i * 0.05) / 0.7))
 
 		if (props.groupMode && Array.isArray(item.values)) {
 			const subCount = item.values.length
 			const totalBarWidth = groupWidth - barGap * 2
 			const barW = (totalBarWidth - barGap * (subCount - 1)) / subCount
 
-			item.values.forEach((val, j) => {
-				const barH = (val / maxVal) * chartH
-				const bx = x + barGap + j * (barW + barGap)
-				const by = h - pad.bottom - barH
-				ctx.setFillStyle(props.colors[j % props.colors.length])
-				drawRoundRect(ctx, bx, by, barW, barH, 2)
-				ctx.fill()
-			})
+			if (groupLocal > 0) {
+				item.values.forEach((val, j) => {
+					const barH = (val / maxVal) * chartH * groupLocal
+					const bx = x + barGap + j * (barW + barGap)
+					const by = h - pad.bottom - barH
+					ctx.setFillStyle(pickSeries(props, j))
+					drawRoundRect(ctx, bx, by, barW, barH, 2)
+					ctx.fill()
+				})
+			}
 		} else {
 			const val = item.value || 0
-			const barH = (val / maxVal) * chartH
-			const barW = props.barWidth > 0 ? rpx2px(props.barWidth) : groupWidth * 0.5
-			const bx = x + (groupWidth - barW) / 2
-			const by = h - pad.bottom - barH
-			ctx.setFillStyle(item.color || props.colors[0])
-			drawRoundRect(ctx, bx, by, barW, barH, 2)
-			ctx.fill()
+			if (groupLocal > 0) {
+				const barH = (val / maxVal) * chartH * groupLocal
+				const barW = props.barWidth > 0 ? rpx2px(props.barWidth) : groupWidth * 0.5
+				const bx = x + (groupWidth - barW) / 2
+				const by = h - pad.bottom - barH
+				ctx.setFillStyle(item.color ? seriesColor(item.color, !!props.dark) : pickSeries(props, 0))
+				drawRoundRect(ctx, bx, by, barW, barH, 2)
+				ctx.fill()
+			}
 		}
 
 		if (props.showAxis && item.label) {
@@ -184,7 +197,7 @@ function drawBar(ctx, w, h, pad, props, rpx2px, P) {
 }
 
 // ==================== 折线图 ====================
-function drawLine(ctx, w, h, pad, props, rpx2px, P) {
+function drawLine(ctx, w, h, pad, props, rpx2px, P, progress) {
 	const chartW = w - pad.left - pad.right
 	const chartH = h - pad.top - pad.bottom
 	const data = props.data
@@ -196,6 +209,8 @@ function drawLine(ctx, w, h, pad, props, rpx2px, P) {
 
 	const maxVal = Math.max(...data.map(d => d.value || 0), 1)
 	const stepX = chartW / (data.length - 1)
+	const px = (i) => pad.left + i * stepX
+	const py = (i) => h - pad.bottom - ((data[i].value || 0) / maxVal) * chartH
 
 	if (props.showAxis) {
 		ctx.setStrokeStyle(P.axis)
@@ -206,43 +221,48 @@ function drawLine(ctx, w, h, pad, props, rpx2px, P) {
 		ctx.stroke()
 	}
 
-	// 填充区域
+	// 入场：折线从左到右「描绘」，数据点逐个出现
+	const eased = easeOut(progress)
+	const seg = data.length - 1
+	const drawSeg = seg * eased
+	const full = Math.floor(drawSeg)
+	const frac = drawSeg - full
+	const tailX = full >= seg ? px(seg) : px(full) + (px(full + 1) - px(full)) * frac
+	const tailY = full >= seg ? py(seg) : py(full) + (py(full + 1) - py(full)) * frac
+
+	// 填充区域（只填到当前描绘末端）
 	ctx.beginPath()
-	ctx.moveTo(pad.left, h - pad.bottom)
-	data.forEach((d, i) => {
-		const x = pad.left + i * stepX
-		const y = h - pad.bottom - ((d.value || 0) / maxVal) * chartH
-		ctx.lineTo(x, y)
-	})
-	ctx.lineTo(pad.left + (data.length - 1) * stepX, h - pad.bottom)
+	ctx.moveTo(px(0), h - pad.bottom)
+	for (let i = 0; i <= Math.min(full, seg); i++) {
+		ctx.lineTo(px(i), py(i))
+	}
+	if (full < seg) ctx.lineTo(tailX, tailY)
+	ctx.lineTo(tailX, h - pad.bottom)
 	ctx.closePath()
 	ctx.setFillStyle(P.areaFill)
 	ctx.fill()
 
 	// 折线
 	ctx.beginPath()
-	ctx.setStrokeStyle(props.colors[0])
+	ctx.setStrokeStyle(pickSeries(props, 0))
 	ctx.setLineWidth(2)
-	data.forEach((d, i) => {
-		const x = pad.left + i * stepX
-		const y = h - pad.bottom - ((d.value || 0) / maxVal) * chartH
-		if (i === 0) ctx.moveTo(x, y)
-		else ctx.lineTo(x, y)
-	})
+	ctx.moveTo(px(0), py(0))
+	for (let i = 1; i <= Math.min(full, seg); i++) {
+		ctx.lineTo(px(i), py(i))
+	}
+	if (full < seg) ctx.lineTo(tailX, tailY)
 	ctx.stroke()
 
-	// 数据点
-	data.forEach((d, i) => {
-		const x = pad.left + i * stepX
-		const y = h - pad.bottom - ((d.value || 0) / maxVal) * chartH
+	// 数据点（只画已描绘到的整数点）
+	for (let i = 0; i <= Math.min(full, seg); i++) {
 		ctx.beginPath()
-		ctx.arc(x, y, 3, 0, Math.PI * 2)
+		ctx.arc(px(i), py(i), 3, 0, Math.PI * 2)
 		ctx.setFillStyle(P.dot)
 		ctx.fill()
-		ctx.setStrokeStyle(props.colors[0])
+		ctx.setStrokeStyle(pickSeries(props, 0))
 		ctx.setLineWidth(2)
 		ctx.stroke()
-	})
+	}
 
 	// X 轴标签
 	if (props.showAxis) {
@@ -259,7 +279,7 @@ function drawLine(ctx, w, h, pad, props, rpx2px, P) {
 }
 
 // ==================== 仪表盘 ====================
-function drawGauge(ctx, w, h, pad, props, rpx2px, P) {
+function drawGauge(ctx, w, h, pad, props, rpx2px, P, progress) {
 	const cx = w / 2
 	const cy = h / 2 + rpx2px(10)
 	const radius = Math.min(w, h * 1.5) / 2 - pad.top - 10
@@ -269,6 +289,7 @@ function drawGauge(ctx, w, h, pad, props, rpx2px, P) {
 	const startAngle = Math.PI * 0.75
 	const endAngle = Math.PI * 2.25
 
+	// 轨道始终完整
 	ctx.beginPath()
 	ctx.arc(cx, cy, radius, startAngle, endAngle)
 	ctx.setStrokeStyle(P.axis)
@@ -276,10 +297,13 @@ function drawGauge(ctx, w, h, pad, props, rpx2px, P) {
 	ctx.setLineCap('round')
 	ctx.stroke()
 
-	const valAngle = startAngle + (val / 100) * (endAngle - startAngle)
+	// 入场：值弧随进度扫过
+	const eased = easeOut(progress)
+	const curVal = val * eased
+	const valAngle = startAngle + (curVal / 100) * (endAngle - startAngle)
 	ctx.beginPath()
 	ctx.arc(cx, cy, radius, startAngle, valAngle)
-	ctx.setStrokeStyle(props.colors[0])
+	ctx.setStrokeStyle(pickSeries(props, 0))
 	ctx.setLineWidth(lineWidth)
 	ctx.stroke()
 
@@ -287,7 +311,7 @@ function drawGauge(ctx, w, h, pad, props, rpx2px, P) {
 	ctx.setFontSize(rpx2px(40))
 	ctx.setTextAlign('center')
 	ctx.setTextBaseline('middle')
-	ctx.fillText(val + '%', cx, cy - rpx2px(10))
+	ctx.fillText(Math.round(curVal) + '%', cx, cy - rpx2px(10))
 
 	if (props.label) {
 		ctx.setFillStyle(P.subText)

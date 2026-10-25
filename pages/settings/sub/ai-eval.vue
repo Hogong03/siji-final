@@ -293,7 +293,7 @@ onShow(() => { copied.value = false })
 </script>
 
 <template>
-  <view class="ai-eval-page">
+  <view class="ai-eval-page page-enter">
     <view class="intro">
       <text class="intro-text">把历史反馈里的真实语料跑一遍，看 AI 选了什么工具、顺序对不对。干跑：写操作不落库、不联网，查询类照常读你的真实数据。会真实调用你配置的模型（{{ progress.total }} 条约 {{ progress.total }} 次请求）。</text>
       <text class="intro-note">✓ 通过　~ 靠前端兜底（模型没调工具，结果仍会落库）　× 未通过　– 跳过（缺数据前置）　! 请求出错</text>
@@ -315,16 +315,16 @@ onShow(() => { copied.value = false })
     <!-- 操作区 -->
     <view class="action-row">
       <view
-        class="btn btn-primary"
+        class="btn btn-primary btn-tactile"
         :class="{ disabled: running || !hasKey }"
         @tap="startEval"
       >
         <text class="btn-text">{{ running ? '正在跑…' : (hasResult ? '重新跑一遍' : '开始自检') }}</text>
       </view>
-      <view v-if="running" class="btn btn-plain" @tap="stopEval">
+      <view v-if="running" class="btn btn-plain btn-tactile" @tap="stopEval">
         <text class="btn-text">停止</text>
       </view>
-      <view v-if="hasResult && !running" class="btn btn-plain" @tap="copyFailures">
+      <view v-if="hasResult && !running" class="btn btn-plain btn-tactile" @tap="copyFailures">
         <text class="btn-text">{{ copied ? '已复制' : '复制失败明细' }}</text>
       </view>
     </view>
@@ -332,20 +332,20 @@ onShow(() => { copied.value = false })
     <!-- 进度 -->
     <view v-if="running" class="progress-wrap">
       <view class="progress-track">
-        <view class="progress-fill" :style="{ width: (progress.total ? Math.round(progress.done / progress.total * 100) : 0) + '%' }" />
+        <view class="progress-fill bar-grow" :style="{ width: (progress.total ? Math.round(progress.done / progress.total * 100) : 0) + '%' }" />
       </view>
       <text class="progress-text">已跑 {{ progress.done }}/{{ progress.total }}</text>
     </view>
 
     <!-- 汇总 -->
-    <view v-if="hasResult" class="summary">
+    <view v-if="hasResult" class="summary panel-in">
       <text class="summary-rate">{{ summary.rate }}%</text>
       <text class="summary-meta">通过 {{ summary.pass }}/{{ summary.scored }}<text v-if="summary.fail > 0"> · 未过 {{ summary.fail }}</text><text v-if="summary.fallback > 0"> · 靠兜底 {{ summary.fallback }}</text><text v-if="summary.skip > 0"> · 跳过 {{ summary.skip }}</text><text v-if="summary.error > 0"> · 出错 {{ summary.error }}</text> · 用时 {{ Math.round(summary.ms / 1000) }}s</text>
     </view>
 
     <!-- 结果列表 -->
-    <view v-if="hasResult" class="list">
-      <view v-for="row in rows" :key="row.id" class="row" @tap="toggleRow(row)">
+    <view v-if="hasResult" class="list card-list-stagger">
+      <view v-for="row in rows" :key="row.id" class="row card-press" @tap="toggleRow(row)">
         <view class="row-head">
           <text class="row-mark" :class="{ ok: row.status === CASE_STATUS.PASS, err: row.status === CASE_STATUS.ERROR || row.status === CASE_STATUS.SKIP, soft: row.status === CASE_STATUS.FALLBACK }">{{ statusMark(row) }}</text>
           <view class="row-body">

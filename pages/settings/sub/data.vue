@@ -338,22 +338,22 @@ function doExportDiag() {
 <template>
   <view class="sub-page">
     <!-- 数据备份 -->
-    <view class="card">
+    <view class="card panel-in">
       <view class="card-title"><SijiIcon name="export" size="sm" class="title-icon" /><text>数据备份</text></view>
       <text class="card-desc">全量备份：记录、账单、计划、记忆、画像、对话、关系等全部本地数据（不含 API Key 与应用锁）。微信粘贴超长文本会崩溃：优先「保存为文件」，跨微信发送请选「分份复制到剪贴板」</text>
-      <view class="btn-primary" @tap="doBackup">备份全部数据</view>
-      <view class="btn-outline btn-csv" @tap="doExportCsv">导出 CSV 报表（记录/账单/计划）</view>
+      <view class="btn-primary btn-tactile" @tap="doBackup">备份全部数据</view>
+      <view class="btn-outline btn-csv btn-tactile" @tap="doExportCsv">导出 CSV 报表（记录/账单/计划）</view>
     </view>
 
     <!-- 导出诊断包（元数据 + 错误日志，不含内容） -->
-    <view class="card">
+    <view class="card panel-in">
       <view class="card-title"><SijiIcon name="info" size="sm" class="title-icon" /><text>导出诊断包</text></view>
       <text class="card-desc">排查问题用：版本、平台、存储水位、会话规模（只数字量）、设置摘要与最近错误日志。不含 API Key、对话正文与记录内容。</text>
-      <view class="btn-outline" @tap="doExportDiag">复制诊断包到剪贴板</view>
+      <view class="btn-outline btn-tactile" @tap="doExportDiag">复制诊断包到剪贴板</view>
     </view>
 
     <!-- 从备份恢复 -->
-    <view class="card">
+    <view class="card panel-in">
       <view class="card-title"><SijiIcon name="download" size="sm" class="title-icon" /><text>恢复备份</text></view>
       <text class="card-desc">粘贴备份文本（跨设备时：微信传文件 → 复制 → 粘贴到此处）。全量备份覆盖当前数据；分域备份自动合并写入对应部分。</text>
       <textarea
@@ -363,12 +363,12 @@ function doExportDiag() {
         :maxlength="-1"
         auto-height
       />
-      <view class="btn-danger" @tap="doRestore">校验并恢复</view>
+      <view class="btn-danger btn-tactile" @tap="doRestore">校验并恢复</view>
     </view>
 
     <!-- 自动备份（App 端专属：写本机 _doc/siji-backup/，保留 3 份） -->
     <!-- #ifdef APP-PLUS -->
-    <view class="card">
+    <view class="card panel-in">
       <view class="card-title"><SijiIcon name="clock" size="sm" class="title-icon" /><text>自动备份</text></view>
       <view class="auto-row">
         <text class="auto-desc">每天自动备份到手机本机，保留最近 3 份</text>
@@ -376,11 +376,11 @@ function doExportDiag() {
           <view class="auto-knob" />
         </view>
       </view>
-      <view class="btn-outline" @tap="doAutoBackupNow">立即备份</view>
-      <view class="auto-list" v-if="autoBackups.length > 0">
+      <view class="btn-outline btn-tactile" @tap="doAutoBackupNow">立即备份</view>
+      <view class="auto-list card-list-stagger" v-if="autoBackups.length > 0">
         <text class="auto-list-title">本机备份（最新在前，点按恢复）</text>
         <view
-          class="auto-item"
+          class="auto-item card-press"
           v-for="item in autoBackups"
           :key="item.name"
           @tap="confirmRestoreAuto(item)"
@@ -394,17 +394,17 @@ function doExportDiag() {
     <!-- #endif -->
 
     <!-- 搜索索引 -->
-    <view class="card">
+    <view class="card panel-in">
       <view class="card-title"><SijiIcon name="search" size="sm" class="title-icon" /><text>搜索索引</text></view>
       <text class="card-desc">重建本地全文搜索索引，修复搜索异常</text>
-      <view class="btn-outline" @tap="doRebuild">重建索引</view>
+      <view class="btn-outline btn-tactile" @tap="doRebuild">重建索引</view>
     </view>
 
     <!-- 危险操作 -->
-    <view class="card danger-card">
+    <view class="card danger-card panel-in">
       <text class="card-title danger-title">⚠️ 清除数据</text>
       <text class="card-desc">删除所有本地记录、账单、计划和配置</text>
-      <view class="btn-danger" @tap="clearAll">清除所有本地数据</view>
+      <view class="btn-danger btn-tactile" @tap="clearAll">清除所有本地数据</view>
     </view>
   </view>
 </template>

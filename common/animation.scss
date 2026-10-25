@@ -146,3 +146,153 @@
     transform: translateY(-2rpx);
   }
 }
+
+/* ============================================================
+ * 4.47 灵动性专项：统一弹层 / 面板 / 反馈 / 入场动效
+ * 只动 transform / opacity，零阴影 / 零渐变 / 零毛玻璃；
+ * 深色模式无需额外处理（颜色由各页既有深色规则负责）。
+ * ============================================================ */
+
+/* ---------- 通用页面入场（页面根节点挂 .page-enter） ---------- */
+.page-enter {
+  animation: fadeInUp 0.28s ease both;
+}
+
+/* ---------- 遮罩淡入 ---------- */
+@keyframes sijiMaskIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.sheet-mask { animation: sijiMaskIn 0.22s ease both; }
+.mask-in    { animation: sijiMaskIn 0.2s ease both; }
+
+/* ---------- 底部面板上滑（bottom sheet） ---------- */
+@keyframes sijiSheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-panel { animation: sijiSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ---------- 居中弹窗弹出 ---------- */
+@keyframes sijiModalPop {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.modal-pop { animation: sijiModalPop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ---------- v-if 面板 / 卡片切换 ---------- */
+@keyframes sijiPanelIn {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.panel-in { animation: sijiPanelIn 0.24s ease both; }
+.fade-in-x { animation: sijiFadeIn 0.2s ease both; }
+@keyframes sijiFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------- 展开 / 折叠（高度过渡，容器给 max-height） ---------- */
+.collapse {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.24s ease;
+}
+
+/* ---------- 进度条生长（数据驱动 width）：入场从 0 起，数据变化由 transition 平滑跟进 ---------- */
+@keyframes sijiBarGrow {
+  from { width: 0; }
+}
+.bar-grow {
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: sijiBarGrow 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* ---------- 功能反馈：错误抖动 / 选中弹一下 ---------- */
+@keyframes sijiShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60%  { transform: translateX(-10rpx); }
+  40%, 80%  { transform: translateX(10rpx); }
+}
+.shake { animation: sijiShake 0.36s ease both; }
+
+@keyframes sijiPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.pop { animation: sijiPop 0.22s ease both; }
+
+/* ---------- 打卡 / 完成：打勾描边（SVG 线条） ---------- */
+@keyframes sijiCheck {
+  from { stroke-dashoffset: 48; }
+  to   { stroke-dashoffset: 0; }
+}
+.check-stroke {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: sijiCheck 0.3s ease 0.08s forwards;
+}
+
+/* ---------- 元素缩放淡入（成功图标 / 标记） ---------- */
+@keyframes sijiZoomIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.zoom-in { animation: sijiZoomIn 0.26s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ---------- 功能性 loading：三点（AI 生成 / 加载，非装饰） ---------- */
+@keyframes sijiDotPulse {
+  0%, 80%, 100% { opacity: 0.25; }
+  40%           { opacity: 1; }
+}
+.dot-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+}
+.dot-loading .dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: currentColor;
+  animation: sijiDotPulse 1s infinite ease-in-out both;
+}
+.dot-loading .dot:nth-child(2) { animation-delay: 0.16s; }
+.dot-loading .dot:nth-child(3) { animation-delay: 0.32s; }
+
+/* ---------- 网格 / 热力格级联淡入（容器挂 .grid-stagger，前 12 项） ---------- */
+.grid-stagger > * {
+  animation: sijiFadeIn 0.3s ease both;
+}
+.grid-stagger > *:nth-child(1)  { animation-delay: 0.00s; }
+.grid-stagger > *:nth-child(2)  { animation-delay: 0.02s; }
+.grid-stagger > *:nth-child(3)  { animation-delay: 0.04s; }
+.grid-stagger > *:nth-child(4)  { animation-delay: 0.06s; }
+.grid-stagger > *:nth-child(5)  { animation-delay: 0.08s; }
+.grid-stagger > *:nth-child(6)  { animation-delay: 0.10s; }
+.grid-stagger > *:nth-child(7)  { animation-delay: 0.12s; }
+.grid-stagger > *:nth-child(8)  { animation-delay: 0.14s; }
+.grid-stagger > *:nth-child(9)  { animation-delay: 0.16s; }
+.grid-stagger > *:nth-child(10) { animation-delay: 0.18s; }
+.grid-stagger > *:nth-child(11) { animation-delay: 0.20s; }
+.grid-stagger > *:nth-child(12) { animation-delay: 0.22s; }
+
+/* ---------- 图片 / 缩略图淡入 ---------- */
+.img-fade {
+  animation: sijiFadeIn 0.4s ease both;
+}
+
+/* ---------- FAB 悬浮按钮入场（弹性缩放；backwards 不抢占结束后的 :active 按压） ---------- */
+@keyframes sijiFabIn {
+  from { opacity: 0; transform: scale(0); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.fab-in {
+  animation: sijiFabIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* ---------- 可切换 chip / 标签的颜色过渡（选中态不再硬切） ---------- */
+.chip-transition {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}

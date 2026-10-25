@@ -16,6 +16,7 @@
 	import {
 		useFunctionsData
 	} from '@/composables/useFunctionsData.js'
+	import { hapticLight } from '@/utils/haptic.js'
 
 	// ─── Tab 切换 ───
 	const activeTab = ref('life') // 'life' | 'ai'
@@ -152,6 +153,13 @@
 	function switchTab(tab) {
 		if (activeTab.value === tab) return
 		activeTab.value = tab
+		hapticLight()
+	}
+
+	// ─── 「更多 AI 功能」展开 ───
+	function toggleMore() {
+		showMoreAI.value = !showMoreAI.value
+		hapticLight()
 	}
 
 	function formatAmount(val) {
@@ -205,7 +213,7 @@
 				</view>
 
 				<!-- 功能入口列表 -->
-				<view class="card-list">
+				<view class="card-list card-list-stagger">
 					<view v-for="card in funcEntries" :key="card.id" class="entry-card card-press"
 						@tap="goPage(card.listPage)">
 						<view class="entry-left">
@@ -250,7 +258,7 @@
 				</view>
 
 				<!-- 核心 AI 入口 -->
-				<view class="card-list">
+				<view class="card-list card-list-stagger">
 					<view v-for="entry in aiCoreEntries" :key="entry.id" class="entry-card card-press"
 						@tap="goSub(entry.route)">
 						<view class="entry-left">
@@ -267,11 +275,11 @@
 				</view>
 
 				<!-- 更多 AI 功能（低频管理项，默认收起） -->
-				<view class="more-toggle" @tap="showMoreAI = !showMoreAI">
+				<view class="more-toggle" @tap="toggleMore">
 					<text class="more-toggle-text">{{ showMoreAI ? '收起' : '更多 AI 功能' }}</text>
 					<text class="more-toggle-arrow" :class="{ open: showMoreAI }">›</text>
 				</view>
-				<view v-if="showMoreAI" class="card-list">
+				<view v-if="showMoreAI" class="card-list card-list-stagger panel-in">
 					<view v-for="entry in aiMoreEntries" :key="entry.id" class="entry-card card-press"
 						@tap="goSub(entry.route)">
 						<view class="entry-left">

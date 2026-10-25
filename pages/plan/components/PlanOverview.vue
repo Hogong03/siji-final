@@ -1,11 +1,17 @@
 <script setup>
 import SijiIcon from '@/components/common/SijiIcon.vue'
+import { useTheme } from '@/composables/useTheme.js'
+import { seriesColor } from '@/utils/chart-theme.js'
 
 defineProps({
 	stats: { type: Object, required: true },
 	priorityBar: { type: Array, default: () => [] }
 })
 const emit = defineEmits(['go-templates', 'go-stats'])
+
+const { isDark } = useTheme()
+/** 优先级色条：数据源给的是浅色硬编码，深色下近黑/深灰段会隐形，统一走 chart-theme 提亮 */
+function barColor(c) { return seriesColor(c, isDark.value) }
 </script>
 
 <template>
@@ -53,7 +59,7 @@ const emit = defineEmits(['go-templates', 'go-stats'])
 
 		<view v-if="priorityBar.length > 0" class="priority-bar">
 			<view v-for="p in priorityBar" :key="p.label" class="pb-segment"
-				:style="{ width: p.pct + '%', background: p.color }" />
+				:style="{ width: p.pct + '%', background: barColor(p.color) }" />
 		</view>
 		<view v-if="priorityBar.length > 0" class="pb-labels">
 			<!-- 4.18.1：收成行内紧凑小灰字（「紧急1 · 重要0 · 普通0」），不再 space-between 占一整行；

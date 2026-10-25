@@ -7,13 +7,19 @@
  *
  * 拆分：useBillList（数据+筛选+统计）+ useBillSwipe（左滑手势）
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { deleteBill, setMonthlyBudget } from '@/utils/storage.js'
 import { getCategoryInfo } from '@/utils/categories.js'
 import { useBillList } from './composables/useBillList.js'
 import { useBillSwipe } from './composables/useBillSwipe.js'
 import EmptyState from '@/components/common/EmptyState.vue'
+import CountUp from '@/components/common/CountUp.vue'
+import { useTheme } from '@/composables/useTheme.js'
+import { seriesColor } from '@/utils/chart-theme.js'
+import { hapticLight, hapticSelect, hapticSuccess } from '@/utils/haptic.js'
+
+const { isDark } = useTheme()
 
 const showTimePicker = ref(false)
 const showCatPicker = ref(false)
@@ -27,6 +33,14 @@ const {
   initMonths, loadBills, loadBudget, switchMonth,
   resetFilters, setFilterType, formatDateLabel
 } = useBillList()
+
+/** 预算进度条主色：深色卡片上 #18181B 等于隐形，统一交给 chart-theme 反白 */
+const budgetBarColor = computed(() => {
+  const used = stats.value?.budgetUsed || 0
+  if (used >= 100) return '#EF4444'
+  if (used >= 80) return '#E8A838'
+  return seriesColor('#18181B', isDark.value)
+})
 
 function handleDelete(bill) {
   const month = bill.bill_date ? bill.bill_date.substring(0, 7) : currentMonth.value
@@ -63,6 +77,7 @@ function goEdit(bill) {
   uni.navigateTo({ url: `/pages/bill/edit?id=${bill.client_id}&month=${month}` })
 }
 function goAdd(type) {
+  hapticLight()
   uni.navigateTo({ url: `/pages/bill/edit?type=${type || 'expense'}&month=${currentMonth.value === 'all' ? '' : currentMonth.value}` })
 }
 function goStats() {
@@ -85,8 +100,25 @@ function saveBudget() {
     setMonthlyBudget(currentMonth.value, val)
   }
   showBudgetSet.value = false
+  hapticSuccess()
   uni.showToast({ title: '预算已设置', icon: 'success' })
 }
+
+// ==================== 筛选 / 弹层反馈（4.47 灵动性） ====================
+function toggleTimePicker() {
+  showTimePicker.value = !showTimePicker.value
+  if (showTimePicker.value) showCatPicker.value = false
+  hapticLight()
+}
+function toggleCatPicker() {
+  showCatPicker.value = !showCatPicker.value
+  if (showCatPicker.value) showTimePicker.value = false
+  hapticLight()
+}
+function onSwitchMonth(key) { hapticLight(); switchMonth(key) }
+function onSetFilterType(t) { hapticLight(); setFilterType(t) }
+function onPickCategory(cat) { hapticSelect(); filterCategory.value = cat }
+function pickQuick(v) { hapticSelect(); budgetInput.value = String(v) }
 </script>
 
 <template>
@@ -96,19 +128,18 @@ function saveBudget() {
       <view class="summary-row">
         <view class="summary-item" @tap="setFilterType(0)">
           <text class="sum-label">支出</text>
-          <text class="sum-value expense">¥{{ stats.expense.toFixed(2) }}</text>
+          <CountUp class="sum-value expense" :value="stats.expense" :decimals="2" prefix="¥" />
         </view>
         <view class="summary-item" @tap="setFilterType(1)">
           <text class="sum-label">收入</text>
-          <text class="sum-value income">+¥{{ stats.income.toFixed(2) }}</text>
+          <CountUp class="sum-value income" :value="stats.income" :decimals="2" prefix="+¥" />
         </view>
       </view>
       <view class="balance-row">
         <view class="balance-divider" />
         <text class="balance-label">{{ stats.balance >= 0 ? '结余' : '超支' }}</text>
-        <text class="balance-num" :class="stats.balance >= 0 ? 'positive' : 'negative'">
-          {{ stats.balance >= 0 ? '+' : '' }}¥{{ stats.balance.toFixed(2) }}
-        </text>
+        <CountUp class="balance-num" :class="stats.balance >= 0 ? 'positive' : 'negative'"
+          :value="stats.balance" :decimals="2" :prefix="stats.balance >= 0 ? '+¥' : '¥'" />
         <view class="balance-divider" />
       </view>
       <!-- 预算进度 -->
@@ -119,7 +150,7 @@ function saveBudget() {
         </view>
         <view class="budget-bar-wrap">
           <view class="budget-bar" :class="{ pulse: stats.budgetUsed >= 100 }"
-            :style="{ width: Math.min(100, stats.budgetUsed) + '%', background: stats.budgetUsed >= 100 ? '#EF4444' : stats.budgetUsed >= 80 ? '#E8A838' : '#18181B' }" />
+            :style="{ width: Math.min(100, stats.budgetUsed) + '%', background: budgetBarColor }" />
         </view>
       </view>
       <view class="budget-set-hint" v-else-if="currentMonth !== 'all'" @tap="openBudgetSet">
@@ -145,11 +176,11 @@ function saveBudget() {
         <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
       </view>
       <view class="tool-btns">
-        <view class="tool-btn" @tap="showTimePicker = !showTimePicker">
+        <view class="tool-btn" @tap="toggleTimePicker">
           <text class="tool-label">{{ currentMonthLabel }}</text>
           <text class="tool-arrow" :class="{ up: showTimePicker }">▼</text>
         </view>
-        <view class="tool-btn" @tap="showCatPicker = !showCatPicker">
+        <view class="tool-btn" @tap="toggleCatPicker">
           <text class="tool-label">{{ filterType === -1 ? '全部' : filterType === 0 ? '支出' : '收入' }}</text>
           <text class="tool-arrow" :class="{ up: showCatPicker }">▼</text>
         </view>
@@ -160,24 +191,24 @@ function saveBudget() {
     </view>
 
     <!-- 时间选择 -->
-    <view class="picker-panel" v-if="showTimePicker">
+    <view class="picker-panel panel-in" v-if="showTimePicker">
       <scroll-view class="chip-scroll" scroll-x>
-        <view v-for="m in months" :key="m.key" class="chip" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key)">
+        <view v-for="m in months" :key="m.key" class="chip chip-transition" :class="{ active: currentMonth === m.key }" @tap="onSwitchMonth(m.key)">
           <text>{{ m.label }}</text>
         </view>
       </scroll-view>
     </view>
 
     <!-- 类型+分类选择 -->
-    <view class="picker-panel" v-if="showCatPicker">
+    <view class="picker-panel panel-in" v-if="showCatPicker">
       <view class="type-row">
-        <view class="type-chip" :class="{ active: filterType === -1 }" @tap="setFilterType(-1)">全部</view>
-        <view class="type-chip" :class="{ active: filterType === 0 }" @tap="setFilterType(0)">支出</view>
-        <view class="type-chip" :class="{ active: filterType === 1 }" @tap="setFilterType(1)">收入</view>
+        <view class="type-chip chip-transition" :class="{ active: filterType === -1 }" @tap="onSetFilterType(-1)">全部</view>
+        <view class="type-chip chip-transition" :class="{ active: filterType === 0 }" @tap="onSetFilterType(0)">支出</view>
+        <view class="type-chip chip-transition" :class="{ active: filterType === 1 }" @tap="onSetFilterType(1)">收入</view>
       </view>
       <scroll-view class="chip-scroll" scroll-x v-if="currentCategories.length > 0">
-        <view class="chip" :class="{ active: filterCategory === '' }" @tap="filterCategory = ''"><text>全部分类</text></view>
-        <view v-for="cat in currentCategories" :key="cat.key" class="chip" :class="{ active: filterCategory === cat.key }" @tap="filterCategory = cat.key">
+        <view class="chip chip-transition" :class="{ active: filterCategory === '' }" @tap="onPickCategory('')"><text>全部分类</text></view>
+        <view v-for="cat in currentCategories" :key="cat.key" class="chip chip-transition" :class="{ active: filterCategory === cat.key }" @tap="onPickCategory(cat.key)">
           <text>{{ cat.icon }} {{ cat.key }}</text>
         </view>
       </scroll-view>
@@ -196,7 +227,7 @@ function saveBudget() {
     <!-- 账单列表 -->
     <scroll-view class="bill-scroll" scroll-y>
       <EmptyState v-if="groupedBills.length === 0" icon="bill" title="暂无账单" />
-      <view v-else>
+      <view v-else class="card-list-stagger">
         <view v-for="group in groupedBills" :key="group.date" class="bill-group">
           <view class="date-header">
             <text class="date-label">{{ formatDateLabel(group.date) }}</text>
@@ -233,28 +264,28 @@ function saveBudget() {
     </scroll-view>
 
     <!-- FAB -->
-    <view class="fab-group">
+    <view class="fab-group fab-in">
       <view class="fab fab-income" @tap="goAdd('income')"><text class="fab-icon">+</text><text class="fab-label">收入</text></view>
       <view class="fab fab-expense" @tap="goAdd('expense')"><text class="fab-icon">+</text><text class="fab-label">支出</text></view>
     </view>
 
     <!-- 预算设置弹窗 -->
-    <view class="modal-mask" v-if="showBudgetSet" @tap="showBudgetSet = false">
-      <view class="modal-content" @tap.stop>
+    <view class="modal-mask mask-in" v-if="showBudgetSet" @tap="showBudgetSet = false">
+      <view class="modal-content modal-pop" @tap.stop>
         <text class="modal-title">设置月度预算</text>
         <view class="modal-input-row">
           <text class="modal-prefix">¥</text>
           <input class="modal-input" type="digit" :value="budgetInput" placeholder="输入预算金额" focus @input="(e) => budgetInput = e.detail.value" />
         </view>
         <view class="modal-quick">
-          <text class="quick-val" @tap="budgetInput = '1000'">¥1000</text>
-          <text class="quick-val" @tap="budgetInput = '2000'">¥2000</text>
-          <text class="quick-val" @tap="budgetInput = '3000'">¥3000</text>
-          <text class="quick-val" @tap="budgetInput = '5000'">¥5000</text>
+          <text class="quick-val btn-tactile" @tap="pickQuick(1000)">¥1000</text>
+          <text class="quick-val btn-tactile" @tap="pickQuick(2000)">¥2000</text>
+          <text class="quick-val btn-tactile" @tap="pickQuick(3000)">¥3000</text>
+          <text class="quick-val btn-tactile" @tap="pickQuick(5000)">¥5000</text>
         </view>
         <view class="modal-actions">
-          <view class="modal-btn cancel" @tap="showBudgetSet = false">取消</view>
-          <view class="modal-btn confirm" @tap="saveBudget">确定</view>
+          <view class="modal-btn cancel btn-tactile" @tap="showBudgetSet = false">取消</view>
+          <view class="modal-btn confirm btn-tactile" @tap="saveBudget">确定</view>
         </view>
       </view>
     </view>

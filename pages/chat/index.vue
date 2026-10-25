@@ -799,14 +799,14 @@ function handleWelcomeChip(text) {
 </script>
 
 <template>
-  <view class="chat-page">
+  <view class="chat-page page-enter">
     <!-- 极简导航栏 -->
     <view class="custom-nav" :class="{ 'nav-scrolled': navScrolled }" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-menu-btn" @tap="toggleConvList">
+        <view class="nav-menu-btn btn-tactile" @tap="toggleConvList">
           <SijiIcon name="menu" size="md" />
         </view>
-        <view class="nav-brand" @tap="toggleUnifiedSwitch">
+        <view class="nav-brand btn-tactile" @tap="toggleUnifiedSwitch">
           <text class="nav-title">{{ store.activeAgent?.name || '思迹' }}</text>
           <view class="nav-badge-unified">
             <image
@@ -817,17 +817,17 @@ function handleWelcomeChip(text) {
             <text class="nav-badge-text">{{ store.currentProviderName }} ▾</text>
           </view>
         </view>
-        <view class="nav-plan-btn" @tap="togglePlanSheet">
+        <view class="nav-plan-btn btn-tactile" @tap="togglePlanSheet">
           <SijiIcon name="plan" size="md" />
         </view>
-        <view class="nav-guide-btn" @tap="showGuideModal">
+        <view class="nav-guide-btn btn-tactile" @tap="showGuideModal">
           <text class="guide-icon">?</text>
         </view>
       </view>
     </view>
 
     <!-- 计划速览面板（4.22.0：底部弹出，聊天页不离开就能看有哪些计划） -->
-    <view v-if="showPlanSheet" class="plan-sheet-mask" @tap="togglePlanSheet" />
+    <view v-if="showPlanSheet" class="plan-sheet-mask mask-in" @tap="togglePlanSheet" />
     <view v-if="showPlanSheet" class="plan-sheet">
       <view class="plan-sheet-head">
         <text class="plan-sheet-title">我的计划</text>
@@ -849,14 +849,14 @@ function handleWelcomeChip(text) {
         </view>
       </scroll-view>
       <!-- 4.30.0：汇总表的稳定入口 —— 关掉每日自动弹出后仍能打开，也是「提示设置」的可达路径 -->
-      <view class="plan-sheet-footer" @tap="openSummaryFromSheet">
+      <view class="plan-sheet-footer btn-tactile" @tap="openSummaryFromSheet">
         <text class="plan-sheet-footer-text">查看计划汇总</text>
       </view>
       <!-- 4.35.0：建议的手动入口（自动弹被关掉或当天已弹过时，从这里也能看） -->
-      <view class="plan-sheet-footer" @tap="openAdviceFromSheet">
+      <view class="plan-sheet-footer btn-tactile" @tap="openAdviceFromSheet">
         <text class="plan-sheet-footer-text">看看建议</text>
       </view>
-      <view class="plan-sheet-footer" @tap="goPlanPage">
+      <view class="plan-sheet-footer btn-tactile" @tap="goPlanPage">
         <text class="plan-sheet-footer-text">打开计划页</text>
       </view>
     </view>
@@ -865,7 +865,7 @@ function handleWelcomeChip(text) {
     <!-- 会话 Agent 绑定提示（该会话由 X 进行 · 切换） -->
     <view v-if="showConvAgentHint" class="conv-agent-hint">
       <text class="conv-agent-hint-text">该会话由 {{ convAgentHintName }} 进行</text>
-      <view class="conv-agent-hint-btn" @tap="switchToConversationAgent">
+      <view class="conv-agent-hint-btn btn-tactile" @tap="switchToConversationAgent">
         <text class="conv-agent-hint-btn-text">切换</text>
       </view>
     </view>
@@ -882,7 +882,7 @@ function handleWelcomeChip(text) {
 
     <!-- 模拟模式标识条 -->
     <view v-if="simulationMode" class="sim-banner">
-      <view class="sim-banner-left" @tap="exitSimulation">
+      <view class="sim-banner-left btn-tactile" @tap="exitSimulation">
         <SijiIcon name="arrow-left" size="sm" />
         <text class="sim-banner-text">{{ simBannerTitle }} · 模拟中</text>
       </view>
@@ -1119,18 +1119,18 @@ function handleWelcomeChip(text) {
     />
 
     <!-- 对话行操作面板（自定义底部弹出，替代 uni.showActionSheet） -->
-    <view v-if="convActionVisible" class="conv-action-mask" @tap="closeConvAction">
-      <view class="conv-action-sheet" @tap.stop>
-        <view class="conv-action-item" @tap="onActionRename">
+    <view v-if="convActionVisible" class="conv-action-mask mask-in" @tap="closeConvAction">
+      <view class="conv-action-sheet sheet-panel" @tap.stop>
+        <view class="conv-action-item btn-tactile" @tap="onActionRename">
           <text class="conv-action-text">重命名</text>
         </view>
-        <view class="conv-action-item" @tap="onActionTag">
+        <view class="conv-action-item btn-tactile" @tap="onActionTag">
           <text class="conv-action-text">编辑标签</text>
         </view>
-        <view class="conv-action-item" @tap="onActionDelete">
+        <view class="conv-action-item btn-tactile" @tap="onActionDelete">
           <text class="conv-action-text danger">删除对话</text>
         </view>
-        <view class="conv-action-cancel" @tap="closeConvAction">
+        <view class="conv-action-cancel btn-tactile" @tap="closeConvAction">
           <text class="conv-action-cancel-text">取消</text>
         </view>
       </view>

@@ -234,22 +234,22 @@ onShow(() => { copied.value = false })
 </script>
 
 <template>
-  <view class="dev-feedback-page">
-    <view class="intro">
+  <view class="dev-feedback-page page-enter">
+    <view class="intro panel-in">
       <text class="intro-text">把聊天记录提取出来反馈给开发者，用于定位 Bug 或优化功能。导出内容不含图片本体与 API Key。</text>
     </view>
 
     <!-- 导出范围 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">导出范围</text>
       <view class="chip-row">
-        <view class="chip" :class="{ active: scope === 'auto' }" @tap="scope = 'auto'">
+        <view class="chip chip-transition" :class="{ active: scope === 'auto' }" @tap="scope = 'auto'">
           <text>自动选择（推荐）</text>
         </view>
-        <view class="chip" :class="{ active: scope === 'custom' }" @tap="enterCustom">
+        <view class="chip chip-transition" :class="{ active: scope === 'custom' }" @tap="enterCustom">
           <text>自由选择</text>
         </view>
-        <view class="chip" :class="{ active: scope === 'all' }" @tap="scope = 'all'">
+        <view class="chip chip-transition" :class="{ active: scope === 'all' }" @tap="scope = 'all'">
           <text>全部会话</text>
         </view>
       </view>
@@ -261,11 +261,11 @@ onShow(() => { copied.value = false })
       </view>
       <view v-if="scope === 'custom'" class="custom-panel">
         <view class="custom-toolbar">
-          <view class="custom-btn" @tap="selectAllCustom">全选</view>
-          <view class="custom-btn" @tap="clearCustom">清空</view>
+          <view class="custom-btn btn-tactile" @tap="selectAllCustom">全选</view>
+          <view class="custom-btn btn-tactile" @tap="clearCustom">清空</view>
         </view>
         <view v-if="(store.conversations || []).length > 0" class="conv-list">
-          <view v-for="c in store.conversations || []" :key="c.id" class="conv-item conv-item-expandable">
+          <view v-for="c in store.conversations || []" :key="c.id" class="conv-item conv-item-expandable card-press">
             <view class="conv-row">
               <view class="conv-check" :class="{ on: convSelected(c) }" @tap="toggleConv(c)">
                 <text class="conv-check-mark">{{ convSelected(c) ? '✓' : '' }}</text>
@@ -300,24 +300,24 @@ onShow(() => { copied.value = false })
     </view>
 
     <!-- 格式与选项 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">格式与选项</text>
       <view class="chip-row">
-        <view class="chip" :class="{ active: format === 'markdown' }" @tap="format = 'markdown'">
+        <view class="chip chip-transition" :class="{ active: format === 'markdown' }" @tap="format = 'markdown'">
           <text>Markdown（推荐）</text>
         </view>
-        <view class="chip" :class="{ active: format === 'json' }" @tap="format = 'json'">
+        <view class="chip chip-transition" :class="{ active: format === 'json' }" @tap="format = 'json'">
           <text>JSON</text>
         </view>
       </view>
-      <view class="option-row" @tap="includeActions = !includeActions">
+      <view class="option-row btn-tactile" @tap="includeActions = !includeActions">
         <text class="option-label">包含 AI 执行动作（记账/建计划等）</text>
         <text class="option-switch" :class="{ on: includeActions }">{{ includeActions ? '开' : '关' }}</text>
       </view>
     </view>
 
     <!-- 统计 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">导出统计</text>
       <view class="stat-row">
         <view class="stat-item">
@@ -336,7 +336,7 @@ onShow(() => { copied.value = false })
     </view>
 
     <!-- 预览 -->
-    <view class="section">
+    <view class="section panel-in">
       <view class="preview-header">
         <text class="section-title">预览</text>
         <text class="preview-hint">最多显示前 {{ previewLimit }} 字符</text>
@@ -348,11 +348,11 @@ onShow(() => { copied.value = false })
 
     <!-- 操作按钮 -->
     <view class="action-row">
-      <button class="btn-primary" :disabled="saving" @tap="copyOutput">
+      <button class="btn-primary btn-tactile" :disabled="saving" @tap="copyOutput">
         <SijiIcon name="copy" size="sm" color="#FFFFFF" />
         <text class="btn-text">{{ copied ? '已复制 ✓' : '复制到剪贴板' }}</text>
       </button>
-      <button class="btn-secondary" :disabled="saving" @tap="saveToFile">
+      <button class="btn-secondary btn-tactile" :disabled="saving" @tap="saveToFile">
         <SijiIcon name="download" size="sm" />
         <text class="btn-text">保存为文件</text>
       </button>

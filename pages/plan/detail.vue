@@ -207,7 +207,7 @@ function onSheetSave() {
 </script>
 
 <template>
-	<view class="detail-page">
+	<view class="detail-page page-enter">
 		<scroll-view class="detail-scroll" scroll-y>
 			<!-- 4.14 标题行：标题在左，「设置与工具」弹窗入口在右 -->
 			<view class="detail-head">
@@ -301,9 +301,9 @@ function onSheetSave() {
 
 		<!-- 底部操作栏 -->
 		<view class="bottom-bar safe-area-bottom">
-			<view v-if="!isNew" class="btn-freeze" @tap="toggleFrozen">{{ form.frozen_at ? '恢复计划' : '先放一放' }}</view>
-			<view v-if="!isNew" class="btn-delete" @tap="handleDelete">删除</view>
-			<view class="btn-save" @tap="handleSave">保存计划</view>
+			<view v-if="!isNew" class="btn-freeze btn-tactile" @tap="toggleFrozen">{{ form.frozen_at ? '恢复计划' : '先放一放' }}</view>
+			<view v-if="!isNew" class="btn-delete btn-tactile" @tap="handleDelete">删除</view>
+			<view class="btn-save btn-tactile" @tap="handleSave">保存计划</view>
 		</view>
 
 		<!-- 4.13 计划设置与工具弹窗（底部抽屉：表单字段 + AI 工具） -->
@@ -368,7 +368,7 @@ function onSheetSave() {
 					<view class="sheet-pad" />
 				</scroll-view>
 				<view class="sheet-footer">
-					<view class="sheet-save" @tap="onSheetSave"><text>保存计划</text></view>
+					<view class="sheet-save btn-tactile" @tap="onSheetSave"><text>保存计划</text></view>
 				</view>
 			</view>
 		</view>

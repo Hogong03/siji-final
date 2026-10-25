@@ -13,6 +13,7 @@ import { getBillList, saveBill, deleteBill } from '@/utils/storage.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, DANGER_COLOR } from '@/utils/categories.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import { hapticLight, hapticSelect, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 /* ---- 状态 ---- */
 const isEdit = ref(false)
@@ -51,10 +52,26 @@ function onSwitchType(type) {
   if (billType.value === type) return
   billType.value = type
   category.value = currentCategories.value[0]?.key || ''
+  hapticSelect()
 }
 
 function tapQuickNote(qn) {
   note.value = note.value ? `${note.value} ${qn}` : qn
+  hapticLight()
+}
+
+// 数字键盘：统一处理 + 触感
+function onPadKey(key) {
+  if (key === 'del') {
+    amount.value = amount.value.slice(0, -1)
+  } else if (key === '.') {
+    if (amount.value.includes('.')) return
+    amount.value += '.'
+  } else {
+    if (amount.value.includes('.') && (amount.value.split('.')[1] || '').length >= 2) return
+    amount.value = amount.value === '0' ? key : amount.value + key
+  }
+  hapticLight()
 }
 
 /* ---- 生命周期 ---- */
@@ -144,6 +161,7 @@ function handleSave() {
     is_deleted: 0
   }
   saveBill(bill)
+  hapticSuccess()
   uni.showToast({ title: isEdit.value ? '已更新' : '已保存', icon: 'success' })
   setTimeout(() => safeNavigateBack(), 800)
 }
@@ -163,6 +181,7 @@ function handleDelete() {
     success: (res) => {
       if (res.confirm) {
         deleteBill(editId.value, editMonth.value)
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => safeNavigateBack(), 800)
       }
@@ -172,7 +191,7 @@ function handleDelete() {
 </script>
 
 <template>
-  <view class="edit-page">
+  <view class="edit-page page-enter">
     <!-- 类型切换 + 金额显示 -->
     <view class="type-switch">
       <view class="ts-btn" :class="{ active: billType === 'expense', expense: billType === 'expense' }" @tap="onSwitchType('expense')">支出</view>
@@ -209,8 +228,8 @@ function handleDelete() {
     <!-- 数字键盘 -->
     <view class="num-pad">
       <view v-for="key in ['1','2','3','4','5','6','7','8','9','.','0','del']" :key="key"
-        class="np-key" :class="{ 'np-del': key === 'del' }"
-        @tap="key === 'del' ? amount = amount.slice(0, -1) : (key === '.' && amount.includes('.') ? null : (amount.includes('.') && (amount.split('.')[1]||'').length >= 2 ? null : (amount === '0' && key !== '.' ? amount = key : amount += key)))">
+        class="np-key btn-tactile" :class="{ 'np-del': key === 'del' }"
+        @tap="onPadKey(key)">
         <text v-if="key !== 'del'" class="np-text">{{ key }}</text>
         <text v-else class="np-icon">⌫</text>
       </view>
@@ -223,8 +242,8 @@ function handleDelete() {
     </view>
 
     <!-- 日期选择面板 -->
-    <view class="dp-mask" v-if="showDatePicker" @tap="showDatePicker = false">
-      <view class="dp-content" @tap.stop>
+    <view class="dp-mask mask-in" v-if="showDatePicker" @tap="showDatePicker = false">
+      <view class="dp-content sheet-panel" @tap.stop>
         <text class="dp-title">选择日期</text>
         <view class="dp-quick-row">
           <view class="dp-quick" @tap="quickDate(0)">今天</view>
@@ -375,9 +394,9 @@ function handleDelete() {
   background: #FFFFFF;
   border-radius: 12rpx;
   text-align: center;
-  transition: background 0.1s ease;
+  transition: background 0.1s ease, transform 0.12s ease;
 
-  &:active { background: #E4E4E7; }
+  &:active { background: #E4E4E7; transform: scale(0.95); }
   &.np-del { background: rgba(0, 0, 0, 0.04); }
 
   .np-text { font-size: 36rpx; font-weight: 600; color: #18181B; }

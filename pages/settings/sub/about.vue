@@ -44,10 +44,10 @@
 </script>
 
 <template>
-	<view class="about-page">
+	<view class="about-page page-enter">
 		<!-- Tab 导航 -->
 		<view class="tab-bar">
-			<view v-for="t in tabs" :key="t.id" class="tab-item" :class="{ active: activeTab === t.id }"
+			<view v-for="t in tabs" :key="t.id" class="tab-item chip-transition btn-tactile" :class="{ active: activeTab === t.id }"
 				@tap="activeTab = t.id">
 				<SijiIcon :name="t.iconName" size="xs"
 					:color="activeTab === t.id ? '#18181B' : '#A1A1AA'" />
@@ -57,8 +57,8 @@
 
 		<scroll-view class="about-scroll" scroll-y>
 			<!-- ===== 关于思迹 ===== -->
-			<view v-if="activeTab === 'about'" class="content-section">
-				<view class="hero">
+			<view v-if="activeTab === 'about'" class="content-section card-list-stagger">
+				<view class="hero panel-in">
 					<text class="hero-name">思迹</text>
 					<text class="hero-version">v1.2.0</text>
 					<text class="hero-tagline">AI 生活助手 · 对话记录每一天</text>
@@ -74,7 +74,7 @@
 					</text>
 				</view>
 
-				<view class="card disclaimer-card" @tap="uni.navigateTo({ url: '/pages/disclaimer/index' })">
+				<view class="card disclaimer-card card-press" @tap="uni.navigateTo({ url: '/pages/disclaimer/index' })">
 					<view class="disclaimer-link">
 						<SijiIcon name="info" size="sm" color="#71717A" />
 						<text class="disclaimer-link-text">用户协议与免责声明</text>
@@ -82,7 +82,7 @@
 					</view>
 				</view>
 
-				<view class="features-grid">
+				<view class="features-grid grid-stagger">
 					<view class="feat-item">
 						<SijiIcon name="ai" size="lg" color="#18181B" />
 						<text class="feat-label">AI 对话</text>
@@ -122,7 +122,7 @@
 			</view>
 
 			<!-- ===== AI 对话 ===== -->
-			<view v-if="activeTab === 'chat'" class="content-section">
+			<view v-if="activeTab === 'chat'" class="content-section card-list-stagger">
 				<view class="section-title">思迹 AI · 对话即操作</view>
 
 				<view class="card">
@@ -208,7 +208,7 @@
 			</view>
 
 			<!-- ===== AI 助手 ===== -->
-			<view v-if="activeTab === 'assistant'" class="content-section">
+			<view v-if="activeTab === 'assistant'" class="content-section card-list-stagger">
 				<view class="section-title">AI 助手 · 让 AI 更懂你</view>
 
 				<view class="card">
@@ -245,7 +245,7 @@
 			</view>
 
 			<!-- ===== 记录 ===== -->
-			<view v-if="activeTab === 'diary'" class="content-section">
+			<view v-if="activeTab === 'diary'" class="content-section card-list-stagger">
 				<view class="section-title">记录 · 记录每一天</view>
 
 				<view class="card">
@@ -276,7 +276,7 @@
 			</view>
 
 			<!-- ===== 记账 ===== -->
-			<view v-if="activeTab === 'bill'" class="content-section">
+			<view v-if="activeTab === 'bill'" class="content-section card-list-stagger">
 				<view class="section-title">记账 · 收支清清楚楚</view>
 
 				<view class="card">
@@ -313,7 +313,7 @@
 			</view>
 
 			<!-- ===== 计划 ===== -->
-			<view v-if="activeTab === 'plan'" class="content-section">
+			<view v-if="activeTab === 'plan'" class="content-section card-list-stagger">
 				<view class="section-title">计划 · 任务与模板</view>
 
 				<view class="card">

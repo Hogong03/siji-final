@@ -84,7 +84,7 @@ function handleDelete(item) {
   <view class="feedback-page">
     <scroll-view class="feedback-scroll" scroll-y>
     <!-- 统计概览 -->
-    <view class="stats-bar">
+    <view class="stats-bar panel-in">
       <view class="stat-item">
         <text class="stat-num">{{ stats.total }}</text>
         <text class="stat-label">条反馈</text>
@@ -107,11 +107,11 @@ function handleDelete(item) {
     </view>
 
     <!-- 反馈列表 -->
-    <view v-else class="feedback-list">
+    <view v-else class="feedback-list card-list-stagger">
       <view
         v-for="item in list"
         :key="item.client_id"
-        class="feedback-card"
+        class="feedback-card card-press"
         @tap="goEdit(item)"
         @touchstart="pressDelete($event, item)"
         @touchmove="press.onTouchMove($event)"
@@ -150,7 +150,7 @@ function handleDelete(item) {
     </scroll-view>
 
     <!-- FAB 新建（放在 scroll-view 外面） -->
-    <view class="fab" @tap="goAdd">
+    <view class="fab fab-in btn-tactile" @tap="goAdd">
       <text class="fab-icon">+</text>
     </view>
   </view>

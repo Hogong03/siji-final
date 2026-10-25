@@ -72,7 +72,7 @@ function onNoteInput(e) {
 				<text class="ns-title">{{ nextStep._self ? planTitle : nextStep.title }}</text>
 				<text class="ns-meta">{{ metaText }}</text>
 			</view>
-			<view class="ns-btn" @tap="emit('complete-next-step')">
+			<view class="ns-btn btn-tactile" @tap="emit('complete-next-step')">
 				<text>{{ buttonText }}</text>
 			</view>
 		</view>
@@ -84,12 +84,12 @@ function onNoteInput(e) {
 					<text class="ci-label">{{ todayDone ? '今日已打卡' : '打卡' }}</text>
 					<text class="ci-sub">{{ checkinSummary }}</text>
 				</view>
-				<view class="ci-btn" :class="{ done: todayDone }" @tap.stop="emit('toggle-checkin-input')">
+				<view class="ci-btn btn-tactile" :class="{ done: todayDone }" @tap.stop="emit('toggle-checkin-input')">
 					<text>{{ todayDone ? '补写描述' : '今天做了' }}</text>
 				</view>
 			</view>
 			<!-- 3.5.4：漏了昨天才给「补记」，点一次即可，不追问 -->
-			<view v-if="selfRecurType && backfillDate" class="ci-backfill" @tap.stop="emit('submit-backfill')">
+			<view v-if="selfRecurType && backfillDate" class="ci-backfill btn-tactile" @tap.stop="emit('submit-backfill')">
 				<text>补记 {{ backfillDate.slice(5) }}（昨天漏了）</text>
 			</view>
 			<!-- 3.5.2：周任务周历（本周七天，一眼看出哪几天做了） -->
@@ -108,7 +108,7 @@ function onNoteInput(e) {
 					:auto-height="true"
 					@input="onNoteInput"
 				/>
-				<view class="ci-save" @tap.stop="emit('submit-checkin')"><text>{{ todayDone ? '更新' : '记录' }}</text></view>
+				<view class="ci-save btn-tactile" @tap.stop="emit('submit-checkin')"><text>{{ todayDone ? '更新' : '记录' }}</text></view>
 			</view>
 			<!-- 4.12：打卡记录折叠（默认收起，长按撤销的提示随之隐藏） -->
 			<view v-if="checkinRecords.length" class="ci-records-fold" @tap="recordsOpen = !recordsOpen">
@@ -152,7 +152,7 @@ function onNoteInput(e) {
 				/>
 				<view v-if="calDayText" class="cal-day-row">
 					<text class="cal-day-text">{{ calDayText }}</text>
-					<view v-if="calDayChecked" class="cal-undo" @tap.stop="emit('remove-checkin', calSelected)">
+					<view v-if="calDayChecked" class="cal-undo btn-tactile" @tap.stop="emit('remove-checkin', calSelected)">
 						<text>撤销这天</text>
 					</view>
 				</view>

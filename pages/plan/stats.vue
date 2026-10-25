@@ -18,26 +18,23 @@
 
 import { computed, onMounted } from 'vue'
 import SijiChart from '@/components/common/SijiChart.vue'
+import CountUp from '@/components/common/CountUp.vue'
 import { usePlanStats } from './composables/usePlanStats.js'
 import { useTheme } from '@/composables/useTheme.js'
+import { seriesColor, seriesColors } from '@/utils/chart-theme.js'
+import { hapticLight } from '@/utils/haptic.js'
 
 const { isDark } = useTheme()
-// 图表系列色：深色下近黑柱体/弧段隐形，反白
-const trendColors = computed(() => isDark.value ? ['#FAFAFA', '#71717A'] : ['#18181B', '#A1A1AA'])
-const singleBarColor = computed(() => isDark.value ? ['#FAFAFA'] : ['#18181B'])
+// 图表系列色 / 图例 / 进度条统一走 chart-theme：深色下低于 3:1 自动提亮，
+// 与 canvas 内 seriesColor 同一套口径（页面层不再各写一份深色映射表）
+const trendColors = computed(() => seriesColors(['#18181B', '#A1A1AA'], isDark.value))
+const singleBarColor = computed(() => seriesColors(['#18181B'], isDark.value))
 
-// 环形图色板随主题映射（数据源 composable 给的是浅色硬编码，这里在页面层归一）
-const RING_COLOR_DARK = {
-  '#D35D5D': '#F87171',
-  '#E8A838': '#FBBF24',
-  '#999': '#71717A',
-  '#18181B': '#FAFAFA',
-  '#52525B': '#A1A1AA',
-  '#A1A1AA': '#71717A'
-}
+function chartColor(c) { return seriesColor(c, isDark.value) }
+
+// 数据源 composable 给的是浅色硬编码，渲染前在页面层归一（图表与图例共用同一份色）
 function darkRing(list) {
-  if (!isDark.value) return list
-  return list.map(d => ({ ...d, color: RING_COLOR_DARK[d.color] || d.color }))
+  return list.map(d => ({ ...d, color: chartColor(d.color) }))
 }
 
 const {
@@ -49,6 +46,12 @@ const {
 
 onMounted(() => { loadPlans() })
 
+function setRange(v) {
+  if (timeRange.value === v) return
+  timeRange.value = v
+  hapticLight()
+}
+
 const rangeOptions = [
   { label: '全部', value: 'all' },
   { label: '本月', value: 'month' },
@@ -57,10 +60,10 @@ const rangeOptions = [
 
 function heatmapColor(count) {
   if (isDark.value) {
-    // 深色：0 次用暗灰，越活跃越亮
-    if (count === 0) return '#27272A'
-    if (count === 1) return '#3F3F46'
-    if (count <= 2) return '#52525B'
+    // 深色：空格不再等于卡片底色（否则整片格子看起来"缺了一块"），最低档也留出网格感
+    if (count === 0) return '#3F3F46'
+    if (count === 1) return '#52525B'
+    if (count <= 2) return '#71717A'
     if (count <= 4) return '#A1A1AA'
     return '#FAFAFA'
   }
@@ -73,15 +76,15 @@ function heatmapColor(count) {
 </script>
 
 <template>
-  <view class="stats-page">
-    <scroll-view class="stats-scroll" scroll-y>
+  <view class="stats-page page-enter">
+    <scroll-view class="stats-scroll card-list-stagger" scroll-y>
       <!-- 时间范围选择 -->
       <view class="range-bar">
         <view
           v-for="opt in rangeOptions" :key="opt.value"
-          class="range-item"
+          class="range-item chip-transition"
           :class="{ active: timeRange === opt.value }"
-          @tap="timeRange = opt.value"
+          @tap="setRange(opt.value)"
         >
           {{ opt.label }}
         </view>
@@ -92,19 +95,19 @@ function heatmapColor(count) {
         <text class="card-title">计划总览</text>
         <view class="overview-grid">
           <view class="og-item">
-            <text class="og-num">{{ overview.total }}</text>
+            <CountUp class="og-num" :value="Number(overview.total) || 0" :decimals="0" />
             <text class="og-label">总计划</text>
           </view>
           <view class="og-item">
-            <text class="og-num">{{ overview.active }}</text>
+            <CountUp class="og-num" :value="Number(overview.active) || 0" :decimals="0" />
             <text class="og-label">进行中</text>
           </view>
           <view class="og-item">
-            <text class="og-num">{{ overview.completed }}</text>
+            <CountUp class="og-num" :value="Number(overview.completed) || 0" :decimals="0" />
             <text class="og-label">已完成</text>
           </view>
           <view class="og-item">
-            <text class="og-num">{{ overview.rate }}%</text>
+            <CountUp class="og-num" :value="Number(overview.rate) || 0" :decimals="0" suffix="%" />
             <text class="og-label">完成率</text>
           </view>
         </view>
@@ -119,7 +122,7 @@ function heatmapColor(count) {
           </view>
           <view class="legend-side">
             <view v-for="p in priorityDist" :key="p.label" class="mini-legend">
-              <view class="mini-dot" :style="{ background: p.color }" />
+              <view class="mini-dot" :style="{ background: chartColor(p.color) }" />
               <text class="mini-label">{{ p.label }}</text>
               <text class="mini-val">{{ p.count }} ({{ p.pct }}%)</text>
             </view>
@@ -136,7 +139,7 @@ function heatmapColor(count) {
           </view>
           <view class="legend-side">
             <view v-for="s in statusDist" :key="s.label" class="mini-legend">
-              <view class="mini-dot" :style="{ background: s.color }" />
+              <view class="mini-dot" :style="{ background: chartColor(s.color) }" />
               <text class="mini-label">{{ s.label }}</text>
               <text class="mini-val">{{ s.count }} ({{ s.pct }}%)</text>
             </view>
@@ -180,8 +183,8 @@ function heatmapColor(count) {
         <text class="card-title">各优先级完成率</text>
         <view class="pc-list">
           <view v-for="p in priorityCompletion" :key="p.label" class="pc-row">
-            <view class="pc-left"><view class="pc-dot" :style="{ background: p.color }" /><text class="pc-label">{{ p.label }}</text></view>
-            <view class="pc-bar-wrap"><view class="pc-bar" :style="{ width: p.completionRate + '%', background: p.color }" /></view>
+            <view class="pc-left"><view class="pc-dot" :style="{ background: chartColor(p.color) }" /><text class="pc-label">{{ p.label }}</text></view>
+            <view class="pc-bar-wrap"><view class="pc-bar bar-grow" :style="{ width: p.completionRate + '%', background: chartColor(p.color) }" /></view>
             <text class="pc-text">{{ p.done }}/{{ p.total }} ({{ p.completionRate }}%)</text>
           </view>
         </view>
@@ -193,7 +196,7 @@ function heatmapColor(count) {
         <view class="tag-stats-list">
           <view v-for="t in tagStats" :key="t.label" class="ts-row">
             <text class="ts-label">{{ t.label }}</text>
-            <view class="ts-bar-wrap"><view class="ts-bar" :style="{ width: t.rate + '%' }" /></view>
+            <view class="ts-bar-wrap"><view class="ts-bar bar-grow" :style="{ width: t.rate + '%' }" /></view>
             <text class="ts-text">{{ t.done }}/{{ t.total }} ({{ t.rate }}%)</text>
           </view>
         </view>
@@ -221,16 +224,16 @@ function heatmapColor(count) {
       <!-- ⑩ 活跃度热力图（新增） -->
       <view class="card">
         <text class="card-title">近30天活跃度</text>
-        <view class="heatmap">
+        <view class="heatmap grid-stagger">
           <view v-for="d in heatmapData" :key="d.date" class="hm-cell" :style="{ background: heatmapColor(d.count) }">
-            <text class="hm-day" :style="{ color: isDark ? (d.count > 2 ? '#18181B' : '#71717A') : (d.count > 2 ? '#FAFAFA' : '#71717A') }">{{ d.day }}</text>
+            <text class="hm-day" :style="{ color: isDark ? (d.count > 2 ? '#18181B' : '#A1A1AA') : (d.count > 2 ? '#FAFAFA' : '#71717A') }">{{ d.day }}</text>
           </view>
         </view>
         <view class="hm-legend">
           <text class="hm-label">少</text>
-          <view v-if="isDark" class="hm-scale" style="background:#27272A" />
           <view v-if="isDark" class="hm-scale" style="background:#3F3F46" />
           <view v-if="isDark" class="hm-scale" style="background:#52525B" />
+          <view v-if="isDark" class="hm-scale" style="background:#71717A" />
           <view v-if="isDark" class="hm-scale" style="background:#A1A1AA" />
           <view v-if="isDark" class="hm-scale" style="background:#FAFAFA" />
           <view v-if="!isDark" class="hm-scale" style="background:#E4E4E7" />

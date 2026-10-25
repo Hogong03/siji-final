@@ -85,9 +85,9 @@ function goDetail(version) {
 </script>
 
 <template>
-  <view class="version-page">
+  <view class="version-page page-enter">
     <!-- 当前运行版本 -->
-    <view class="current-banner">
+    <view class="current-banner panel-in">
       <view class="current-left">
         <text class="current-label">当前运行</text>
         <text class="current-version">v{{ runningVersion }}</text>
@@ -97,7 +97,7 @@ function goDetail(version) {
     </view>
 
     <!-- 跑的是旧构建时直说，并给出下一步 -->
-    <view v-if="runningOutdated" class="outdated-hint">
+    <view v-if="runningOutdated" class="outdated-hint panel-in">
       <text class="outdated-hint-text">你正在运行旧构建（v{{ runningVersion }}）。在 HBuilder X 里删掉 unpackage/dist 重新编译，并覆盖安装到手机后再看这里 → 显示 v{{ latestVersion }} 才算更新成功。</text>
     </view>
 
@@ -105,7 +105,7 @@ function goDetail(version) {
     <view class="version-list">
       <view v-for="group in groups" :key="group.major" class="version-group">
         <!-- 分组折叠头 -->
-        <view class="group-head" @tap="toggleGroup(group.major)">
+        <view class="group-head btn-tactile" @tap="toggleGroup(group.major)">
           <view class="g-caret" :class="{ open: isOpen(group.major) }">
             <text>›</text>
           </view>
@@ -117,11 +117,11 @@ function goDetail(version) {
         </view>
 
         <!-- 组内版本卡片 -->
-        <view v-if="isOpen(group.major)" class="group-body">
+        <view v-if="isOpen(group.major)" class="group-body card-list-stagger">
           <view
             v-for="item in visibleItems(group)"
             :key="item.version"
-            class="v-card"
+            class="v-card card-press"
             :class="{ latest: item.version === latestVersion }"
             @tap="goDetail(item.version)"
           >
@@ -143,7 +143,7 @@ function goDetail(version) {
           </view>
 
           <!-- 组内展开全部 -->
-          <view v-if="group.items.length > PREVIEW_COUNT" class="group-more" @tap="toggleAll(group.major)">
+          <view v-if="group.items.length > PREVIEW_COUNT" class="group-more btn-tactile" @tap="toggleAll(group.major)">
             <text>{{ isAllExpanded(group.major) ? '收起' : '展开全部' }}</text>
           </view>
         </view>

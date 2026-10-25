@@ -15,8 +15,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { getBillList, getDiaryList } from '@/utils/storage.js'
 import SijiChart from '@/components/common/SijiChart.vue'
+import CountUp from '@/components/common/CountUp.vue'
 import { EXPENSE_CATEGORIES } from '@/utils/categories.js'
 import { useTheme } from '@/composables/useTheme.js'
+import { seriesColors } from '@/utils/chart-theme.js'
+import { hapticLight, hapticSelect } from '@/utils/haptic.js'
 
 const { isDark } = useTheme()
 // 图表系列色：深色下近黑柱体隐形，反白
@@ -72,8 +75,22 @@ function loadData() {
 }
 
 function switchMode(mode) {
+  if (viewMode.value === mode) return
   viewMode.value = mode
+  hapticLight()
   loadData()
+}
+
+// 4.47 灵动性：趋势区间 / 分类趋势切换反馈
+function setTrendRange(r) {
+  if (trendRange.value === r) return
+  trendRange.value = r
+  hapticLight()
+}
+function pickCatTrend(cat) {
+  if (selectedCatTrend.value === cat) return
+  selectedCatTrend.value = cat
+  hapticSelect()
 }
 
 // ==================== 总览 ====================
@@ -110,7 +127,7 @@ const expenseChange = computed(() => {
 const pieColors = ['#18181B', '#3F3F46', '#71717A', '#A1A1AA', '#F4F4F5', '#E8A838', '#D35D5D', '#5B8BD4', '#8BC34A', '#FF9800', '#9C27B0', '#607D8B', '#795548', '#00BCD4', '#E91E63', '#AB47BC']
 // 深色下中性色块提亮，避免近黑扇区隐形
 const darkPieColors = ['#FAFAFA', '#D4D4D8', '#A1A1AA', '#71717A', '#52525B', '#FBBF24', '#F87171', '#60A5FA', '#86EFAC', '#FDBA74', '#C084FC', '#7DD3FC', '#A8A29E', '#22D3EE', '#F472B6', '#D8B4FE']
-const activePieColors = computed(() => isDark.value ? darkPieColors : pieColors)
+const activePieColors = computed(() => isDark.value ? seriesColors(darkPieColors, true) : pieColors)
 
 const expenseByCategory = computed(() => {
   const map = {}
@@ -264,7 +281,7 @@ function formatDate(ts) {
 </script>
 
 <template>
-  <view class="stats-page">
+  <view class="stats-page page-enter">
     <!-- 顶部 -->
     <view class="month-header">
       <text class="month-title">{{ viewMode === 'year' ? currentMonth.split('-')[0] + '年' : currentMonth }} 收支统计</text>
@@ -273,8 +290,8 @@ function formatDate(ts) {
 
     <!-- 模式切换 -->
     <view class="mode-switch">
-      <text class="mode-btn" :class="{ active: viewMode === 'month' }" @tap="switchMode('month')">月度</text>
-      <text class="mode-btn" :class="{ active: viewMode === 'year' }" @tap="switchMode('year')">年度</text>
+      <text class="mode-btn chip-transition" :class="{ active: viewMode === 'month' }" @tap="switchMode('month')">月度</text>
+      <text class="mode-btn chip-transition" :class="{ active: viewMode === 'year' }" @tap="switchMode('year')">年度</text>
     </view>
 
     <scroll-view class="stats-scroll" scroll-y>
@@ -283,7 +300,7 @@ function formatDate(ts) {
         <view class="ov-hero">
           <text class="ov-hero-label">{{ viewMode === 'year' ? '总支出' : '本月支出' }}</text>
           <view class="ov-hero-main">
-            <text class="ov-hero-value">¥{{ totalExpense.toFixed(2) }}</text>
+            <CountUp class="ov-hero-value" :value="totalExpense" :decimals="2" prefix="¥" />
             <text class="ov-sub" v-if="expenseChange !== null" :class="parseFloat(expenseChange) > 0 ? 'up' : 'down'">
               环比 {{ parseFloat(expenseChange) > 0 ? '↑' : '↓' }} {{ Math.abs(parseFloat(expenseChange)) }}%
             </text>
@@ -292,23 +309,22 @@ function formatDate(ts) {
         <view class="ov-mini-row">
           <view class="ov-mini">
             <text class="ov-label">总收入</text>
-            <text class="ov-mini-value">¥{{ totalIncome.toFixed(2) }}</text>
+            <CountUp class="ov-mini-value" :value="totalIncome" :decimals="2" prefix="¥" />
           </view>
           <view class="ov-mini">
             <text class="ov-label">结余</text>
-            <text class="ov-mini-value" :class="balance >= 0 ? 'positive' : 'negative'">
-              {{ balance >= 0 ? '+' : '' }}¥{{ balance.toFixed(2) }}
-            </text>
+            <CountUp class="ov-mini-value" :class="balance >= 0 ? 'positive' : 'negative'"
+              :value="balance" :decimals="2" :prefix="balance >= 0 ? '+¥' : '¥'" />
           </view>
           <view class="ov-mini">
             <text class="ov-label">日均支出</text>
-            <text class="ov-mini-value">¥{{ avgDailyExpense.toFixed(2) }}</text>
+            <CountUp class="ov-mini-value" :value="avgDailyExpense" :decimals="2" prefix="¥" />
           </view>
         </view>
       </view>
 
       <!-- 消费洞察 -->
-      <view class="insights-card" v-if="insights.length > 0">
+      <view class="insights-card panel-in" v-if="insights.length > 0">
         <text class="insights-title">📊 消费洞察</text>
         <view class="insight-item" v-for="(ins, i) in insights" :key="i">
           <text class="insight-dot">·</text>
@@ -321,13 +337,13 @@ function formatDate(ts) {
         <view class="chart-header">
           <text class="chart-title">消费趋势</text>
           <view class="range-switch" v-if="viewMode === 'month'">
-            <text class="range-btn" :class="{ active: trendRange === 'week' }" @tap="trendRange = 'week'">近7天</text>
-            <text class="range-btn" :class="{ active: trendRange === 'month' }" @tap="trendRange = 'month'">近30天</text>
+            <text class="range-btn chip-transition" :class="{ active: trendRange === 'week' }" @tap="setTrendRange('week')">近7天</text>
+            <text class="range-btn chip-transition" :class="{ active: trendRange === 'month' }" @tap="setTrendRange('month')">近30天</text>
           </view>
         </view>
         <view class="trend-summary">
-          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#FAFAFA' : '#18181B' }" /><text class="ts-label">支出</text><text class="ts-value">¥{{ trendTotalExpense.toFixed(0) }}</text></view>
-          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#71717A' : '#A1A1AA' }" /><text class="ts-label">收入</text><text class="ts-value">¥{{ trendTotalIncome.toFixed(0) }}</text></view>
+          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#FAFAFA' : '#18181B' }" /><text class="ts-label">支出</text><CountUp class="ts-value" :value="trendTotalExpense" :decimals="0" prefix="¥" /></view>
+          <view class="ts-item"><view class="ts-dot" :style="{ background: isDark ? '#71717A' : '#A1A1AA' }" /><text class="ts-label">收入</text><CountUp class="ts-value" :value="trendTotalIncome" :decimals="0" prefix="¥" /></view>
         </view>
         <SijiChart type="bar" :dark="isDark" :data="trendData.map(d => ({ label: d.label, values: [d.expense, d.income] }))" :group-mode="true" :colors="trendColors" :height="180" />
       </view>
@@ -344,7 +360,7 @@ function formatDate(ts) {
       <!-- ③ Top 5 -->
       <view class="chart-card" v-if="top5Expense.length > 0">
         <text class="chart-title">Top 5 消费</text>
-        <view class="top5-list">
+        <view class="top5-list slide-in-left-stagger">
           <view v-for="(item, i) in top5Expense" :key="item.client_id" class="top5-row">
             <text class="top5-rank">{{ i + 1 }}</text>
             <view class="top5-body">
@@ -364,7 +380,7 @@ function formatDate(ts) {
           <view class="ring-section">
             <SijiChart type="ring" :dark="isDark" :data="expenseByCategory.map(c => ({ value: c.amount, color: c.color }))" label="支出" :height="240" />
           </view>
-          <view class="legend-list">
+          <view class="legend-list card-list-stagger">
             <view v-for="cat in expenseByCategory" :key="cat.name" class="legend-row">
               <view class="legend-left">
                 <view class="legend-dot" :style="{ background: cat.color }" />
@@ -384,8 +400,8 @@ function formatDate(ts) {
         <text class="chart-title">分类趋势</text>
         <scroll-view class="cat-trend-scroll" scroll-x>
           <view class="cat-trend-list">
-            <view class="cat-trend-chip" :class="{ active: selectedCatTrend === '' }" @tap="selectedCatTrend = ''"><text>不选</text></view>
-            <view v-for="cat in EXPENSE_CATEGORIES" :key="cat.key" class="cat-trend-chip" :class="{ active: selectedCatTrend === cat.key }" @tap="selectedCatTrend = cat.key">
+            <view class="cat-trend-chip chip-transition" :class="{ active: selectedCatTrend === '' }" @tap="pickCatTrend('')"><text>不选</text></view>
+            <view v-for="cat in EXPENSE_CATEGORIES" :key="cat.key" class="cat-trend-chip chip-transition" :class="{ active: selectedCatTrend === cat.key }" @tap="pickCatTrend(cat.key)">
               <text>{{ cat.icon }} {{ cat.key }}</text>
             </view>
           </view>
@@ -404,7 +420,7 @@ function formatDate(ts) {
           <view class="ring-section">
             <SijiChart type="ring" :dark="isDark" :data="incomeByCategory.map(c => ({ value: c.amount, color: c.color }))" label="收入" :height="240" />
           </view>
-          <view class="legend-list">
+          <view class="legend-list card-list-stagger">
             <view v-for="cat in incomeByCategory" :key="cat.name" class="legend-row">
               <view class="legend-left">
                 <view class="legend-dot" :style="{ background: cat.color }" />

@@ -75,7 +75,7 @@ const smallLine = computed(() => {
 </script>
 
 <template>
-  <view v-if="show" class="pss-mask" @tap="emit('close')">
+  <view v-if="show" class="pss-mask mask-in" @tap="emit('close')">
     <view class="pss-sheet" :class="{ show: active }" @tap.stop>
       <!-- 头部：标题 + 最要紧的一句 + 关闭 -->
       <view class="pss-head">
@@ -94,7 +94,7 @@ const smallLine = computed(() => {
           <text class="pss-focus-title">今日焦点</text>
           <view
             v-for="f in focus" :key="f.clientId"
-            class="pss-focus-row" @tap="emit('go-plan', f.clientId)"
+            class="pss-focus-row list-item-tactile" @tap="emit('go-plan', f.clientId)"
           >
             <view class="pss-focus-dot" :class="f.tone" />
             <text class="pss-focus-name">{{ f.title }}</text>
@@ -143,7 +143,7 @@ const smallLine = computed(() => {
           <view v-if="isOpen(g.key)">
             <view
               v-for="it in g.items" :key="it.clientId"
-              class="pss-row" @tap="emit('go-plan', it.clientId)"
+              class="pss-row list-item-tactile" @tap="emit('go-plan', it.clientId)"
             >
               <view class="pss-row-dot" :style="{ background: it.priorityColor }" />
               <view class="pss-row-main">
@@ -167,7 +167,7 @@ const smallLine = computed(() => {
       </scroll-view>
 
       <view class="pss-foot">
-        <view class="pss-btn" @tap="emit('go-plan-list')">
+        <view class="pss-btn btn-tactile" @tap="emit('go-plan-list')">
           <text class="pss-btn-text">去计划页</text>
         </view>
         <view class="pss-foot-links">

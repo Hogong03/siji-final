@@ -13,6 +13,7 @@ import { onReady } from '@dcloudio/uni-app'
 import { getCurrentInstance } from 'vue'
 import { buildMonthlyReport } from '@/utils/report-data.js'
 import { useTheme } from '@/composables/useTheme.js'
+import { hapticLight, hapticSuccess } from '@/utils/haptic.js'
 
 const { isDark } = useTheme()
 
@@ -34,6 +35,7 @@ const titleText = computed(() => `思迹 · ${month.value} 月报告`)
 function pad2(n) { return String(n).padStart(2, '0') }
 
 function stepMonth(d) {
+  hapticLight()
   let m = month.value + d
   let y = year.value
   if (m < 1) { m = 12; y-- } else if (m > 12) { m = 1; y++ }
@@ -241,6 +243,7 @@ async function saveImage() {
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
+      hapticSuccess()
       uni.showToast({ title: '已开始下载', icon: 'none' })
     } catch (e) {
       uni.showToast({ title: '保存失败', icon: 'none' })
@@ -265,11 +268,11 @@ function goBack() {
 </script>
 
 <template>
-  <view class="report-page">
+  <view class="report-page page-enter">
     <!-- 自定义导航栏 -->
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-back" @tap="goBack">
+        <view class="nav-back btn-tactile" @tap="goBack">
           <text class="nav-back-icon">‹</text>
         </view>
         <text class="nav-title">月度报告</text>
@@ -279,24 +282,25 @@ function goBack() {
 
     <!-- 选月 -->
     <view class="month-bar">
-      <view class="month-btn" @tap="prevMonth"><text>‹</text></view>
+      <view class="month-btn btn-tactile" @tap="prevMonth"><text>‹</text></view>
       <text class="month-label">{{ monthLabel }}</text>
-      <view class="month-btn" @tap="nextMonth"><text>›</text></view>
+      <view class="month-btn btn-tactile" @tap="nextMonth"><text>›</text></view>
     </view>
 
-    <!-- 长图画布（750x1100 逻辑尺寸，按屏宽缩放显示） -->
+    <!-- 长图画布（750x1100 逻辑尺寸，按屏宽缩放显示）；翻月重挂触发淡入 -->
     <view class="canvas-wrap">
       <canvas
+        :key="year + '-' + month"
         id="report-canvas"
         type="2d"
-        class="report-canvas"
+        class="report-canvas fade-in-x"
         :style="{ width: '690rpx', height: '1012rpx' }"
       ></canvas>
     </view>
 
     <!-- 保存 -->
     <view class="save-area safe-area-bottom">
-      <view class="save-btn" @tap="saveImage"><text>{{ saving ? '生成中…' : '保存图片' }}</text></view>
+      <view class="save-btn btn-tactile" @tap="saveImage"><text>{{ saving ? '生成中…' : '保存图片' }}</text></view>
     </view>
   </view>
 </template>

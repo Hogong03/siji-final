@@ -7,6 +7,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getDeletedBills, restoreBill, purgeBill } from '@/utils/storage.js'
 import { getCategoryInfo, DANGER_COLOR } from '@/utils/categories.js'
+import { hapticLight, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const allList = ref([])
 const currentMonth = ref('')
@@ -43,9 +44,15 @@ function loadData() {
 }
 
 function switchMonth(key) {
+  hapticLight()
   currentMonth.value = key
   loadData()
   showTimePicker.value = false
+}
+
+function togglePicker() {
+  showTimePicker.value = !showTimePicker.value
+  hapticLight()
 }
 
 function clearSearch() { searchKeyword.value = '' }
@@ -80,6 +87,7 @@ function handleRestore(item) {
       if (res.confirm) {
         const monthKey = item.bill_date ? item.bill_date.substring(0, 7) : currentMonth.value
         restoreBill(item.client_id, monthKey)
+        hapticSuccess()
         uni.showToast({ title: '已恢复', icon: 'success' })
         loadData()
       }
@@ -97,6 +105,7 @@ function handlePurge(item) {
       if (res.confirm) {
         const monthKey = item.bill_date ? item.bill_date.substring(0, 7) : currentMonth.value
         purgeBill(item.client_id, monthKey)
+        hapticWarning()
         uni.showToast({ title: '已彻底删除', icon: 'success' })
         loadData()
       }
@@ -106,7 +115,7 @@ function handlePurge(item) {
 </script>
 
 <template>
-  <view class="trash-page">
+  <view class="trash-page page-enter">
     <!-- 工具栏 -->
     <view class="toolbar">
       <view class="search-input-wrap">
@@ -115,7 +124,7 @@ function handlePurge(item) {
         <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
       </view>
       <view class="tool-btns">
-        <view class="tool-btn" @tap="showTimePicker = !showTimePicker">
+        <view class="tool-btn" @tap="togglePicker">
           <text class="tool-label">{{ currentMonthLabel }}</text>
           <text class="tool-arrow" :class="{ up: showTimePicker }">▼</text>
         </view>
@@ -123,9 +132,9 @@ function handlePurge(item) {
     </view>
 
     <!-- 时间选择 -->
-    <view class="picker-panel" v-if="showTimePicker">
+    <view class="picker-panel panel-in" v-if="showTimePicker">
       <scroll-view class="chip-scroll" scroll-x>
-        <view v-for="m in months" :key="m.key" class="chip" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key)">
+        <view v-for="m in months" :key="m.key" class="chip chip-transition" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key)">
           <text>{{ m.label }}</text>
         </view>
       </scroll-view>
@@ -144,8 +153,8 @@ function handlePurge(item) {
     </view>
 
     <!-- 列表 -->
-    <scroll-view v-else class="trash-scroll" scroll-y>
-      <view v-for="item in filteredList" :key="item.client_id" class="trash-card">
+    <scroll-view v-else class="trash-scroll card-list-stagger" scroll-y>
+      <view v-for="item in filteredList" :key="item.client_id" class="trash-card card-press">
         <view class="card-header">
           <text class="card-date">{{ formatDate(item.bill_date || item.created_at) }}</text>
           <view class="card-amount">
@@ -161,8 +170,8 @@ function handlePurge(item) {
           <text class="card-note" v-if="item.note || item.remark">{{ item.note || item.remark }}</text>
         </view>
         <view class="card-actions">
-          <view class="btn-restore" @tap="handleRestore(item)">恢复</view>
-          <view class="btn-purge" @tap="handlePurge(item)">彻底删除</view>
+          <view class="btn-restore btn-tactile" @tap="handleRestore(item)">恢复</view>
+          <view class="btn-purge btn-tactile" @tap="handlePurge(item)">彻底删除</view>
         </view>
       </view>
       <view style="height: 60rpx;"></view>

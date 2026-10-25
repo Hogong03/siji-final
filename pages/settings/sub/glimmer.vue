@@ -44,7 +44,7 @@ onShow(load)
 </script>
 
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <view class="head">
       <view class="head-row">
         <SijiIcon name="sun" size="lg" color="#B45309" />
@@ -60,14 +60,14 @@ onShow(load)
         <text class="empty-hint">去和思迹聊聊今天的小事，比如「今天出门晒了会儿太阳」</text>
       </view>
 
-      <view v-else class="list">
-        <view v-for="g in items" :key="g.id || (g.date + ':' + (g.kind || 'moment'))" class="row">
+      <view v-else class="list card-list-stagger">
+        <view v-for="g in items" :key="g.id || (g.date + ':' + (g.kind || 'moment'))" class="row card-press">
           <view class="row-head">
             <view class="row-head-left">
               <text class="row-date">{{ fmtDate(g.date) }}</text>
               <text class="row-kind" :class="{ win: g.kind === 'win' }">{{ g.kind === 'win' ? '成果' : '微光' }}</text>
             </view>
-            <view class="row-del" @tap="removeOne(g)">
+            <view class="row-del btn-tactile" @tap="removeOne(g)">
               <SijiIcon name="trash" size="sm" color="#A1A1AA" />
             </view>
           </view>

@@ -26,15 +26,15 @@ describe('AiToolPanel AI 功能面板', () => {
 	it('图片/语音受能力开关门控，文件/更多始终显示', () => {
 		expect(panelSrc).toMatch(/v-if="visionOn"[\s\S]*?pick\('image'\)/)
 		expect(panelSrc).toMatch(/v-if="voiceOn"[\s\S]*?pick\('voice'\)/)
-		// 文件、更多项无 v-if 门控
-		const fileItem = panelSrc.match(/class="ai-tool-item" @tap="pick\('file'\)"/)
-		const moreItem = panelSrc.match(/class="ai-tool-item" @tap="pick\('more'\)"/)
+		// 文件、更多项无 v-if 门控（类名允许附加 btn-tactile 等动效类）
+		const fileItem = panelSrc.match(/class="ai-tool-item[^"]*" @tap="pick\('file'\)"/)
+		const moreItem = panelSrc.match(/class="ai-tool-item[^"]*" @tap="pick\('more'\)"/)
 		expect(fileItem).not.toBeNull()
 		expect(moreItem).not.toBeNull()
 	})
 
 	it('点击遮罩关闭面板', () => {
-		expect(panelSrc).toContain('class="ai-tool-mask"')
+		expect(panelSrc).toMatch(/class="ai-tool-mask[^"]*"/)
 		expect(panelSrc).toContain("@tap=\"emit('close')\"")
 	})
 

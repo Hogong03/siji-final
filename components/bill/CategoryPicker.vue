@@ -9,10 +9,13 @@ defineProps({
   quickNotes: { type: Array, default: () => [] }
 })
 
+import { hapticSelect } from '@/utils/haptic.js'
+
 const emit = defineEmits(['update:modelValue', 'select-quick-note'])
 
 function selectCategory(cat) {
   emit('update:modelValue', cat)
+  hapticSelect()
 }
 
 function tapQuickNote(qn) {

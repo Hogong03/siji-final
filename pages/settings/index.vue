@@ -119,7 +119,7 @@ function go(target) {
 </script>
 
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <scroll-view class="scroll" scroll-y>
 
       <!-- ===== AI 配置 ===== -->
@@ -236,7 +236,7 @@ function go(target) {
         <view
           v-for="opt in themeOptions"
           :key="opt.id"
-          class="theme-sheet-row"
+          class="theme-sheet-row btn-tactile"
           :class="{ active: themeMode === opt.id }"
           @tap="chooseTheme(opt.id)"
         >
@@ -251,7 +251,7 @@ function go(target) {
             <view
               v-for="fs in FONT_SCALES"
               :key="fs.id"
-              class="font-size-opt"
+              class="font-size-opt chip-transition"
               :class="{ active: currentFontScaleId === fs.id }"
               :style="chipStyle(fs)"
               @tap="chooseFontScale(fs.id)"
@@ -260,7 +260,7 @@ function go(target) {
             </view>
           </view>
         </view>
-        <view class="theme-sheet-cancel" @tap="showThemeSheet = false">
+        <view class="theme-sheet-cancel btn-tactile" @tap="showThemeSheet = false">
           <text class="theme-sheet-cancel-text">取消</text>
         </view>
       </view>

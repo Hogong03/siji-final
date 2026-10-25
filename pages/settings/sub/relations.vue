@@ -1,17 +1,17 @@
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <!-- 自定义导航栏：左侧返回 + 标题 + 右侧「自己」/「关系图」 -->
     <view class="custom-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="nav-content">
-        <view class="nav-back" @tap="goBack">
+        <view class="nav-back btn-tactile" @tap="goBack">
           <text class="nav-back-icon">‹</text>
         </view>
         <text class="nav-title">关系图谱</text>
         <view class="nav-actions">
-          <view class="nav-btn" @tap="goProfile">
+          <view class="nav-btn btn-tactile" @tap="goProfile">
             <text class="nav-btn-text">自己</text>
           </view>
-          <view class="nav-btn" @tap="goGraph">
+          <view class="nav-btn btn-tactile" @tap="goGraph">
             <text class="nav-btn-text">关系图</text>
           </view>
         </view>
@@ -48,17 +48,13 @@
     </view>
 
     <!-- 关系列表 -->
-    <scroll-view scroll-y class="list-area" @scrolltolower="loadMore">
-      <view v-if="filteredList.length === 0" class="empty">
-        <text class="empty-icon">👥</text>
-        <text class="empty-text">关系图谱为空</text>
-        <text class="empty-hint">在对话中提到人物即可自动收录</text>
-      </view>
+    <scroll-view scroll-y class="list-area card-list-stagger" @scrolltolower="loadMore">
+      <EmptyState v-if="filteredList.length === 0" icon="sparkle" title="关系图谱为空" desc="在对话中提到人物即可自动收录" />
 
       <view
         v-for="item in filteredList"
         :key="item.id"
-        class="relation-card"
+        class="relation-card card-press"
         @tap="goDetail(item.id)"
       >
         <view class="card-header">
@@ -77,11 +73,11 @@
         </view>
         <!-- 操作按钮区 -->
         <view class="card-actions" @tap.stop>
-          <view class="action-btn" @tap="handleEdit(item)">
+          <view class="action-btn btn-tactile" @tap="handleEdit(item)">
             <text class="action-icon">✏️</text>
             <text class="action-text">编辑</text>
           </view>
-          <view class="action-btn" @tap="handleDelete(item)">
+          <view class="action-btn btn-tactile" @tap="handleDelete(item)">
             <text class="action-icon">🗑️</text>
             <text class="action-text">删除</text>
           </view>
@@ -90,11 +86,11 @@
     </scroll-view>
 
     <!-- 新增按钮 -->
-    <view class="fab" @tap="showAddForm = true">+</view>
+    <view class="fab fab-in btn-tactile" @tap="showAddForm = true">+</view>
 
     <!-- 新增/编辑弹窗 -->
-    <view v-if="showAddForm" class="modal-mask" @tap="closeForm">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showAddForm" class="modal-mask mask-in" @tap="closeForm">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">{{ editMode ? '编辑人物' : '收录人物' }}</text>
 
         <!-- 模板快选（仅新建模式显示） -->
@@ -163,6 +159,8 @@ import { getAllRelations, findRelationsByName, createRelation, updateRelation, d
 import { RELATION_TEMPLATES, buildRelationForm, applyRelationTemplate } from '@/utils/relation-templates.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 import SocialQuotaBar from '@/components/common/SocialQuotaBar.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import { hapticLight, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const statusBarHeight = ref(20)
 try {
@@ -251,6 +249,7 @@ function handleSubmit() {
     createRelation(payload, { trustScore: true })
     uni.showToast({ title: '已收录', icon: 'success' })
   }
+  hapticSuccess()
   showAddForm.value = false
   editMode.value = false
   editingId.value = null
@@ -284,6 +283,7 @@ function handleDelete(item) {
     success: (res) => {
       if (res.confirm) {
         deleteRelation(item.id)
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
         loadData()
       }
@@ -292,6 +292,7 @@ function handleDelete(item) {
 }
 
 function closeForm() {
+  hapticLight()
   showAddForm.value = false
   editMode.value = false
   editingId.value = null

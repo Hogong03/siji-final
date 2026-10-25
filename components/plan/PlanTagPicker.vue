@@ -77,15 +77,15 @@ watch(() => props.visible, (v) => {
 </script>
 
 <template>
-  <view class="tag-picker-overlay" v-if="visible" @tap.self="close">
-    <view class="tag-picker">
+  <view class="tag-picker-overlay mask-in" v-if="visible" @tap.self="close">
+    <view class="tag-picker sheet-panel">
       <text class="tp-title">选择标签</text>
 
       <!-- 当前计划标签 -->
       <view class="tp-current" v-if="selectedTags.length > 0">
         <view
           v-for="t in selectedTags" :key="t"
-          class="tag-chip"
+          class="tag-chip btn-tactile"
           :style="{ background: tagColor(t) + '1a', color: tagColor(t), borderColor: tagColor(t) }"
           @tap="removeTag(t)"
         >
@@ -98,7 +98,7 @@ watch(() => props.visible, (v) => {
       <view class="tp-list">
         <view
           v-for="t in allUsedTags" :key="t.name"
-          class="tp-item"
+          class="tp-item chip-transition"
           :class="{ selected: isTagSelected(t.name) }"
           @tap="toggleTag(t.name)"
         >
@@ -120,10 +120,10 @@ watch(() => props.visible, (v) => {
           maxlength="20"
           @confirm="addNewTag"
         />
-        <text class="tp-add" @tap="addNewTag">创建</text>
+        <text class="tp-add btn-tactile" @tap="addNewTag">创建</text>
       </view>
 
-      <view class="tp-done" @tap="close">完成</view>
+      <view class="tp-done btn-tactile" @tap="close">完成</view>
     </view>
   </view>
 </template>

@@ -18,10 +18,17 @@
 	import PlanFilter from './components/PlanFilter.vue'
 	import PlanList from './components/PlanList.vue'
 	import EmptyState from '@/components/common/EmptyState.vue'
+	import { hapticLight, hapticSelect } from '@/utils/haptic.js'
 
 	const priorityColors = { 0: '#A1A1AA', 1: '#E8A838', 2: '#EF4444' }
 
 	const viewMode = ref('list') // list / board
+
+	function setViewMode(mode) {
+		if (viewMode.value === mode) return
+		viewMode.value = mode
+		hapticLight()
+	}
 
 	// 看板视图分组
 	const boardColumns = computed(() => [
@@ -31,6 +38,7 @@
 	])
 
 	function changeStatus(plan, newStatus) {
+		hapticSelect()
 		quickToggleStatus(plan, newStatus)
 	}
 
@@ -53,6 +61,7 @@
 	}
 
 	function goNew() {
+		hapticLight()
 		uni.navigateTo({ url: '/pages/plan/detail?id=new' })
 	}
 
@@ -118,7 +127,7 @@
 </script>
 
 <template>
-	<view class="plan-page" @tap="closeSwipe">
+	<view class="plan-page page-enter" @tap="closeSwipe">
 		<!-- 概览卡（含模板/统计入口） -->
 		<PlanOverview :stats="stats" :priorityBar="priorityBar"
 			@go-templates="goTemplates" @go-stats="goStats" />
@@ -163,8 +172,8 @@
 
 		<!-- 视图切换 -->
 		<view class="view-switcher" @tap.stop>
-			<view class="vs-item" :class="{ active: viewMode === 'list' }" @tap="viewMode = 'list'">列表</view>
-			<view class="vs-item" :class="{ active: viewMode === 'board' }" @tap="viewMode = 'board'">看板</view>
+			<view class="vs-item chip-transition" :class="{ active: viewMode === 'list' }" @tap="setViewMode('list')">列表</view>
+			<view class="vs-item chip-transition" :class="{ active: viewMode === 'board' }" @tap="setViewMode('board')">看板</view>
 		</view>
 
 		<!-- 重置筛选 -->
@@ -179,6 +188,7 @@
 		<!-- 列表视图 -->
 		<PlanList
 			v-if="viewMode === 'list'"
+			class="panel-in"
 			:filteredPlans="filteredPlans"
 			:priorityColors="priorityColors"
 			:swipeItem="swipeItem"
@@ -196,15 +206,15 @@
 		/>
 
 		<!-- 看板视图 -->
-		<scroll-view v-if="viewMode === 'board'" class="board-scroll" scroll-x :show-scrollbar="false">
+		<scroll-view v-if="viewMode === 'board'" class="board-scroll panel-in" scroll-x :show-scrollbar="false">
 			<view class="board-row">
 				<view v-for="col in boardColumns" :key="col.status" class="board-col">
 					<view class="bc-header">
 						<text class="bc-title">{{ col.title }}</text>
 						<text class="bc-count">{{ col.plans.length }}</text>
 					</view>
-					<scroll-view class="bc-body" scroll-y>
-						<view v-for="item in col.plans" :key="item.client_id" class="board-card" @tap="goDetail(item.client_id)">
+					<scroll-view class="bc-body card-list-stagger" scroll-y>
+						<view v-for="item in col.plans" :key="item.client_id" class="board-card card-press" @tap="goDetail(item.client_id)">
 							<view class="bc-priority" :style="{ background: priorityColors[item.priority] || '#999' }" />
 							<text class="bc-name">{{ item.title }}</text>
 							<text v-if="item.end_reason === 'expired'" class="bc-expired">到期</text>
@@ -213,8 +223,8 @@
 								<text class="bc-st-text">{{ item.subtasks.filter(s => s.done).length }}/{{ item.subtasks.length }} 子任务</text>
 							</view>
 							<view class="bc-actions">
-								<view v-if="col.status < 2" class="bc-arrow" @tap.stop="changeStatus(item, col.status + 1)">→</view>
-								<view v-if="col.status > 0" class="bc-arrow" @tap.stop="changeStatus(item, col.status - 1)">←</view>
+								<view v-if="col.status < 2" class="bc-arrow btn-tactile" @tap.stop="changeStatus(item, col.status + 1)">→</view>
+								<view v-if="col.status > 0" class="bc-arrow btn-tactile" @tap.stop="changeStatus(item, col.status - 1)">←</view>
 							</view>
 						</view>
 						<view v-if="col.plans.length === 0" class="bc-empty">无</view>
@@ -225,7 +235,7 @@
 		</scroll-view>
 
 		<!-- 新建浮动按钮 -->
-		<view class="fab" @tap="goNew">
+		<view class="fab fab-in" @tap="goNew">
 			<text class="fab-icon">+</text>
 		</view>
 	</view>
@@ -414,7 +424,6 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 100;
-		animation: fabIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
 		&:active {
 			transform: scale(0.9);
@@ -424,18 +433,6 @@
 			font-size: 52rpx;
 			color: #FFFFFF;
 			font-weight: 300;
-		}
-	}
-
-	@keyframes fabIn {
-		from {
-			opacity: 0;
-			transform: scale(0);
-		}
-
-		to {
-			opacity: 1;
-			transform: scale(1);
 		}
 	}
 

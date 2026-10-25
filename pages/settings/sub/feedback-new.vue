@@ -172,13 +172,13 @@ function handleCancel() {
     </view>
 
     <!-- 评分 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">评分</text>
       <view class="rating-row">
         <view
           v-for="star in 5"
           :key="star"
-          class="star"
+          class="star btn-tactile"
           :class="{ active: star <= rating }"
           @tap="rating = star"
         >
@@ -189,13 +189,13 @@ function handleCancel() {
     </view>
 
     <!-- 分类选择 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">分类</text>
       <view class="category-row">
         <view
           v-for="cat in categories"
           :key="cat.label"
-          class="category-chip"
+          class="category-chip chip-transition"
           :class="{ active: category === cat.label }"
           @tap="selectCategory(cat.label)"
         >
@@ -206,7 +206,7 @@ function handleCancel() {
     </view>
 
     <!-- 反馈内容 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">反馈内容</text>
       <textarea
         v-model="content"
@@ -219,7 +219,7 @@ function handleCancel() {
     </view>
 
     <!-- 联系方式 -->
-    <view class="section">
+    <view class="section panel-in">
       <text class="section-title">联系方式（可选）</text>
       <input
         v-model="contact"
@@ -231,10 +231,10 @@ function handleCancel() {
 
     <!-- 提交按钮 -->
     <view class="submit-row">
-      <button class="submit-btn" :disabled="submitting" @tap="handleSubmit">
+      <button class="submit-btn btn-tactile" :disabled="submitting" @tap="handleSubmit">
         {{ submitting ? '提交中...' : (isEditing ? '更新反馈' : '提交反馈') }}
       </button>
-      <button class="cancel-btn" @tap="handleCancel">取消</button>
+      <button class="cancel-btn btn-tactile" @tap="handleCancel">取消</button>
     </view>
   </view>
 </template>

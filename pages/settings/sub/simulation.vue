@@ -1,16 +1,16 @@
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <view class="header">
       <text class="header-title">情景模拟</text>
       <text class="header-desc">选择场景模式，AI 将扮演对应角色与你推演</text>
     </view>
 
     <!-- 三种模式卡片 -->
-    <view class="mode-list">
+    <view class="mode-list card-list-stagger">
       <view
         v-for="m in modes"
         :key="m.id"
-        class="mode-card"
+        class="mode-card card-press"
         :class="{ active: selectedMode === m.id }"
         @tap="selectMode(m.id)"
       >
@@ -30,7 +30,7 @@
     </view>
 
     <!-- 选中模式的配置表单 -->
-    <view v-if="selectedMode" class="config-section">
+    <view v-if="selectedMode" class="config-section panel-in">
       <text class="section-title">{{ currentMode.title }} · 场景设置</text>
 
       <!-- 关系人物选择（社交/关系处理模式） -->
@@ -40,7 +40,7 @@
           <view
             v-for="(r, i) in relations"
             :key="r.id"
-            class="relation-chip"
+            class="relation-chip chip-transition"
             :class="{ on: relationIdx === i }"
             @tap="selectRelation(i)"
           >{{ r.name }}</view>
@@ -63,14 +63,14 @@
         <input v-model="form.goal" class="form-input" :placeholder="currentMode.goalPlaceholder" />
       </view>
 
-      <view class="btn-start" :class="{ disabled: !canStart }" @tap="startSimulation">
+      <view class="btn-start btn-tactile" :class="{ disabled: !canStart }" @tap="startSimulation">
         <text class="btn-text">开始演练</text>
       </view>
     </view>
 
     <!-- 历史演练记录（默认折叠） -->
-    <view v-if="simulations.length > 0" class="history-section">
-      <view class="history-header" @tap="historyExpanded = !historyExpanded">
+    <view v-if="simulations.length > 0" class="history-section panel-in">
+      <view class="history-header btn-tactile" @tap="historyExpanded = !historyExpanded">
         <text class="section-title">历史演练 · {{ simulations.length }}</text>
         <text class="history-toggle">{{ historyExpanded ? '收起' : '展开' }}</text>
       </view>
@@ -79,12 +79,12 @@
         <text
           v-for="t in filterTabs"
           :key="t.id"
-          class="filter-tab"
+          class="filter-tab chip-transition"
           :class="{ on: activeFilter === t.id }"
           @tap="activeFilter = t.id"
         >{{ t.label }} {{ t.count }}</text>
       </view>
-      <view v-for="sim in filteredSims" :key="sim.id" class="sim-card">
+      <view v-for="sim in filteredSims" :key="sim.id" class="sim-card card-press">
         <view class="sim-top" @tap="resumeSim(sim)">
           <view class="sim-left">
             <text class="sim-mode-tag">{{ getModeTitle(sim.mode) }}</text>

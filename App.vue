@@ -248,6 +248,11 @@
 </script>
 
 <style lang="scss">
+	/* 4.47 灵动性：全局接入微动效系统（按压/交错入场/弹层/反馈等）。
+	   必须在 App.vue 非 scoped 样式里引入，切勿放进 vite additionalData，
+	   否则 .card-list-stagger > * 这类选择器会被 scoped 作用域打断。 */
+	@import './common/animation.scss';
+
 	/* ==================== 全局样式 ==================== */
 
 	/* 基础排版：页面底色统一 #F4F4F5（对话/阅读/表单页在各自 scoped 中覆盖为白底） */
@@ -356,19 +361,7 @@
 		padding-bottom: env(safe-area-inset-bottom);
 	}
 
-	/* ─── 子页面入场动画 ─── */
-	@keyframes fadeInUp {
-		from {
-			opacity: 0;
-			transform: translateY(20rpx);
-		}
-
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
+	/* ─── 子页面入场动画（fadeInUp 关键帧由 common/animation.scss 统一提供） ─── */
 	.sub-page,
 	.agent-page,
 	.agent-add-page,

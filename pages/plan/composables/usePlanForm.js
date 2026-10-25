@@ -18,6 +18,7 @@ import { recurTypeOf, recurCountOf, isExpiredPlan } from '@/utils/plan-recur.js'
 import { buildTimeStrip } from '@/utils/plan-time.js'
 import { buildChildPlanForm } from '@/utils/plan-child.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import { hapticLight, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 /** 空表单（新建时的初值） */
 export function emptyPlanForm() {
@@ -286,6 +287,7 @@ export function usePlanForm({ saveChildren } = {}) {
     }
     invalidatePromptCache()
     saved.value = true
+    hapticLight()
     uni.showToast({ title: frozen ? '已先放一放' : '已恢复计划', icon: 'none' })
   }
 
@@ -295,6 +297,7 @@ export function usePlanForm({ saveChildren } = {}) {
       return
     }
     persistForm()
+    hapticSuccess()
     uni.showToast({ title: '已保存', icon: 'success' })
     setTimeout(() => {
       safeNavigateBack({ fallback: '/pages/functions/index' })
@@ -310,6 +313,7 @@ export function usePlanForm({ saveChildren } = {}) {
           deletePlan(planId.value)
           removePlanReminder(planId.value)
           saved.value = true
+          hapticWarning()
           uni.showToast({ title: '已删除', icon: 'success' })
           setTimeout(() => {
             safeNavigateBack({ fallback: '/pages/functions/index' })

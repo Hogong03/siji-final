@@ -123,7 +123,7 @@ onShow(() => {
 </script>
 
 <template>
-	<view class="read-page">
+	<view class="read-page page-enter">
 		<!-- 封面头部 -->
 		<view class="read-head">
 			<view class="head-meta">
@@ -131,7 +131,7 @@ onShow(() => {
 				<text v-if="isSeed" class="seed-badge">{{ SEED_BADGE }}</text>
 				<text v-for="t in tags" :key="t" class="meta-tag">#{{ t }}</text>
 				<text v-if="activeSection" class="meta-section">{{ activeSection.index }}/{{ activeSection.total }} {{ activeSection.title }}</text>
-				<view class="head-edit" @tap="goEdit"><text>编辑</text></view>
+				<view class="head-edit btn-tactile" @tap="goEdit"><text>编辑</text></view>
 			</view>
 			<text class="head-title">{{ title }}</text>
 		</view>
@@ -155,7 +155,7 @@ onShow(() => {
 						class="read-section"
 						:class="{ 'is-chapter': !!sec.title }"
 					 :style="readBodyStyle">
-						<view v-if="sec.title" class="chapter-head">
+						<view v-if="sec.title" class="chapter-head fade-in-x">
 							<text class="chapter-no">{{ sectionNumbers[sec.key] }}</text>
 							<text class="chapter-title">{{ sec.title }}</text>
 						</view>
@@ -206,13 +206,13 @@ onShow(() => {
 		</view>
 
 		<!-- 回到顶部 -->
-		<view v-if="showTopBtn" class="to-top" @tap="backToTop">
+		<view v-if="showTopBtn" class="to-top btn-tactile" @tap="backToTop">
 			<text class="to-top-text">↑</text>
 		</view>
 
 		<!-- 底部进度条 -->
 		<view class="read-progress">
-			<view class="read-progress-fill" :style="{ width: readProgress + '%' }" />
+			<view class="read-progress-fill bar-grow" :style="{ width: readProgress + '%' }" />
 		</view>
 	</view>
 </template>

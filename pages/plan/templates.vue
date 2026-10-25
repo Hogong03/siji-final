@@ -16,6 +16,7 @@ import { getPlanTemplates, savePlanTemplate, deletePlanTemplate, ensureDefaultTe
 import { useAppStore } from '@/store/index.js'
 import { generateEntityId } from '@/utils/uuid.js'
 import { useTemplateAI } from './composables/useTemplateAI.js'
+import { hapticLight, hapticSelect, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const store = useAppStore()
 const templates = ref([])
@@ -69,6 +70,7 @@ function useTemplate(tpl) {
     success(res) {
       if (res.confirm) {
         const plan = store.createPlanFromTemplate(tpl)
+        hapticSuccess()
         uni.showToast({ title: '计划已创建', icon: 'success' })
         setTimeout(() => {
           uni.redirectTo({ url: `/pages/plan/detail?clientId=${plan.client_id}` })
@@ -78,9 +80,19 @@ function useTemplate(tpl) {
   })
 }
 
+function setCategory(v) {
+  if (activeCategory.value === v) return
+  activeCategory.value = v
+  hapticLight()
+}
+
+function openAI() { showAI.value = true; hapticLight() }
+function openCustom() { showCustom.value = true; editingTemplate.value = null; hapticLight() }
+function onGenerate() { if (!aiLoading.value) { hapticSelect(); generateAI() } }
+
 function saveAIGenerated() {
   const tpl = saveAIPreview()
-  if (tpl) loadTemplates()
+  if (tpl) { loadTemplates(); hapticSuccess() }
   showAI.value = false
 }
 
@@ -105,6 +117,7 @@ function saveCustom(data) {
   loadTemplates()
   showCustom.value = false
   editingTemplate.value = null
+  hapticSuccess()
   uni.showToast({ title: isEdit ? '模板已更新' : '模板已保存', icon: 'success' })
 }
 
@@ -121,6 +134,7 @@ function removeTemplate(tpl) {
       if (res.confirm) {
         deletePlanTemplate(tpl.client_id)
         loadTemplates()
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
       }
     }
@@ -134,14 +148,14 @@ function closeCustomForm() {
 </script>
 
 <template>
-  <view class="tpl-page">
+  <view class="tpl-page page-enter">
     <!-- 顶部操作 -->
     <view class="top-bar">
-      <view class="top-btn ai-btn" @tap="showAI = true">
+      <view class="top-btn ai-btn btn-tactile" @tap="openAI">
         <SijiIcon name="ai" size="md" class="tb-icon" />
         <text class="tb-text">AI 定制模板</text>
       </view>
-      <view class="top-btn" @tap="showCustom = true; editingTemplate = null">
+      <view class="top-btn btn-tactile" @tap="openCustom">
         <SijiIcon name="edit" size="md" class="tb-icon" />
         <text class="tb-text">自定义模板</text>
       </view>
@@ -158,9 +172,9 @@ function closeCustomForm() {
         <view class="cat-row">
           <view
             v-for="cat in categories" :key="cat.value"
-            class="cat-item"
+            class="cat-item chip-transition"
             :class="{ active: activeCategory === cat.value }"
-            @tap="activeCategory = cat.value"
+            @tap="setCategory(cat.value)"
           >{{ cat.label }}</view>
         </view>
       </scroll-view>
@@ -175,7 +189,7 @@ function closeCustomForm() {
         <text class="empty-text">{{ searchKeyword || activeCategory !== 'all' ? '没有匹配的模板' : '还没有模板，试试 AI 定制吧' }}</text>
       </view>
 
-      <view v-else class="tpl-grid">
+      <view v-else class="tpl-grid grid-stagger">
         <TemplateCard
           v-for="tpl in filteredTemplates" :key="tpl.client_id"
           :template="tpl"
@@ -189,8 +203,8 @@ function closeCustomForm() {
     </scroll-view>
 
     <!-- AI 定制弹窗 -->
-    <view v-if="showAI" class="modal-mask" @tap="showAI = false">
-      <view class="modal-content ai-modal" @tap.stop>
+    <view v-if="showAI" class="modal-mask mask-in" @tap="showAI = false">
+      <view class="modal-content ai-modal modal-pop" @tap.stop>
         <view class="modal-header">
           <view class="modal-title"><SijiIcon name="ai" size="sm" /><text>AI 定制模板</text></view>
           <text class="modal-close" @tap="showAI = false">✕</text>
@@ -207,14 +221,17 @@ function closeCustomForm() {
           <view class="ai-examples">
             <text class="ex-label">试试这些：</text>
             <view class="ex-tags">
-              <text class="ex-tag" @tap="aiInput = '一个月减脂5斤的训练和饮食计划'">减脂计划</text>
-              <text class="ex-tag" @tap="aiInput = '准备跳槽换工作的两周计划'">跳槽准备</text>
-              <text class="ex-tag" @tap="aiInput = '学习Python数据分析的30天计划'">学Python</text>
+              <text class="ex-tag btn-tactile" @tap="aiInput = '一个月减脂5斤的训练和饮食计划'">减脂计划</text>
+              <text class="ex-tag btn-tactile" @tap="aiInput = '准备跳槽换工作的两周计划'">跳槽准备</text>
+              <text class="ex-tag btn-tactile" @tap="aiInput = '学习Python数据分析的30天计划'">学Python</text>
             </view>
           </view>
           <view class="ai-btn-row">
-            <view class="gen-btn" :class="{ loading: aiLoading }" @tap="!aiLoading && generateAI()">
-              <template v-if="aiLoading">AI 思考中...</template>
+            <view class="gen-btn" :class="{ loading: aiLoading }" @tap="onGenerate">
+              <template v-if="aiLoading">
+                <view class="dot-loading"><view class="dot" /><view class="dot" /><view class="dot" /></view>
+                <text>AI 思考中</text>
+              </template>
               <template v-else><SijiIcon name="sparkle" size="sm" /> 生成模板</template>
             </view>
           </view>
@@ -236,8 +253,8 @@ function closeCustomForm() {
             </view>
           </view>
           <view class="preview-actions">
-            <view class="pa-btn discard" @tap="aiPreview = null">重新生成</view>
-            <view class="pa-btn confirm" @tap="saveAIGenerated">保存模板</view>
+            <view class="pa-btn discard btn-tactile" @tap="aiPreview = null">重新生成</view>
+            <view class="pa-btn confirm btn-tactile" @tap="saveAIGenerated">保存模板</view>
           </view>
         </scroll-view>
       </view>

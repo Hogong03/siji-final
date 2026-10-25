@@ -423,11 +423,11 @@ function handleExport() {
 <template>
   <view class="profile-page">
     <!-- 顶部开关 -->
-    <view class="header-card" :class="{ 'header-enabled': enabled }">
+    <view class="header-card panel-in" :class="{ 'header-enabled': enabled }">
       <view class="header-left">
         <view class="header-title-row">
           <view class="header-title">个人信息</view>
-          <view v-if="enabled" class="rel-link" @tap.stop="goRelations">
+          <view v-if="enabled" class="rel-link btn-tactile" @tap.stop="goRelations">
             <SijiIcon name="heart" :size="13" />
             <text>关系图谱 · {{ relationsStats.total }}人</text>
           </view>
@@ -442,14 +442,14 @@ function handleExport() {
     <!-- 完整度进度条 -->
     <view v-if="enabled" class="progress-wrap">
       <view class="progress-bar">
-        <view class="progress-fill" :style="{ width: fillPercent + '%' }" />
+        <view class="progress-fill bar-grow" :style="{ width: fillPercent + '%' }" />
       </view>
     </view>
 
     <!-- 人生六维概览 -->
-    <view v-if="enabled" class="life-wheel">
+    <view v-if="enabled" class="life-wheel panel-in">
       <view class="lw-title">人生六维</view>
-      <view class="lw-dims">
+      <view class="lw-dims grid-stagger">
         <view v-for="d in LIFE_DIMENSIONS" :key="d.label" class="lw-dim" :class="{ 'dim-on': d.filled }">
           <view class="dot" />
           <text class="lw-label">{{ d.label }}</text>
@@ -458,7 +458,7 @@ function handleExport() {
     </view>
 
     <!-- 画像卡片列表 -->
-    <view v-for="card in profile.cards" :key="card.id" class="profile-card" :class="'card-' + card.id">
+    <view v-for="card in profile.cards" :key="card.id" class="profile-card card-press" :class="'card-' + card.id">
       <!-- 卡片头部 -->
       <view class="card-header" :class="{ collapsed: isCardCollapsed(card.id) }">
         <view class="card-title-wrap">

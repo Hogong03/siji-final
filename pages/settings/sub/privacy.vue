@@ -55,7 +55,7 @@ function submit() {
 
 <template>
   <view class="sub-page">
-    <view class="card">
+    <view class="card panel-in">
       <text class="card-title">应用锁</text>
       <text class="card-desc">
         {{ enabled ? '已开启，打开应用时需验证 PIN' : '未开启，建议设置以保护隐私' }}
@@ -66,28 +66,28 @@ function submit() {
           <SijiIcon v-else name="unlock" size="xs" class="badge-icon" />
           <text>{{ enabled ? '已开启' : '未开启' }}</text>
         </view>
-        <text class="action-btn" @tap="toggle">{{ enabled ? '关闭应用锁' : '设置 PIN' }}</text>
+        <text class="action-btn btn-tactile" @tap="toggle">{{ enabled ? '关闭应用锁' : '设置 PIN' }}</text>
       </view>
     </view>
 
     <!-- PIN Dialog -->
-    <view class="pin-overlay" v-if="showDialog" @tap.self="showDialog = false">
-      <view class="pin-dialog">
+    <view class="pin-overlay mask-in" v-if="showDialog" @tap.self="showDialog = false">
+      <view class="pin-dialog modal-pop">
         <text class="pin-title">{{ mode === 'set' ? (step === 1 ? '设置密码' : '确认密码') : '验证密码' }}</text>
         <text class="pin-error" v-if="error">{{ error }}</text>
         <text class="pin-sub" v-else>请输入 4-6 位数字密码</text>
         <text class="pin-mask">{{ '•'.repeat(input.length) }}</text>
 
         <view class="pin-pad">
-          <view v-for="n in 9" :key="n" class="pin-key" @tap="pressKey(String(n))"><text>{{ n }}</text></view>
+          <view v-for="n in 9" :key="n" class="pin-key btn-tactile" @tap="pressKey(String(n))"><text>{{ n }}</text></view>
           <view class="pin-key empty" />
-          <view class="pin-key" @tap="pressKey('0')"><text>0</text></view>
-          <view class="pin-key" @tap="delKey"><text>⌫</text></view>
+          <view class="pin-key btn-tactile" @tap="pressKey('0')"><text>0</text></view>
+          <view class="pin-key btn-tactile" @tap="delKey"><text>⌫</text></view>
         </view>
 
         <view class="pin-actions">
-          <text class="pin-cancel" @tap="showDialog = false">取消</text>
-          <text class="pin-confirm" @tap="submit">确定</text>
+          <text class="pin-cancel btn-tactile" @tap="showDialog = false">取消</text>
+          <text class="pin-confirm btn-tactile" @tap="submit">确定</text>
         </view>
       </view>
     </view>

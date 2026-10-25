@@ -59,7 +59,7 @@ function handleActivate(agent) {
       </view>
       <view
         v-for="agent in store.agents.filter(a => a.builtin)" :key="agent.id"
-        class="agent-card"
+        class="agent-card card-press"
         :class="{ active: store.activeAgentId === agent.id }"
         @tap="handleActivate(agent)"
       >
@@ -74,13 +74,13 @@ function handleActivate(agent) {
         </view>
         <view v-else class="agent-meta" @tap.stop>
           <view class="agent-tag"><text class="tag-text">默认</text></view>
-          <text class="action-btn" @tap="goView(agent)">详情</text>
+          <text class="action-btn btn-tactile" @tap="goView(agent)">详情</text>
         </view>
       </view>
 
       <!-- Agent 模板：点击创建 -->
       <view class="section-label tpl-label">Agent 模板（点击创建）</view>
-      <view class="template-grid">
+      <view class="template-grid grid-stagger">
         <view
           v-for="tpl in PRESET_TEMPLATES" :key="tpl.name"
           class="template-card"
@@ -95,7 +95,7 @@ function handleActivate(agent) {
       <!-- 我的 Agent -->
       <view class="section-header my-header">
         <text class="section-label">我的 Agent</text>
-        <text class="section-add-btn" @tap="goAdd">＋ 从空白创建</text>
+        <text class="section-add-btn btn-tactile" @tap="goAdd">＋ 从空白创建</text>
       </view>
       <EmptyState
         v-if="!store.customAgents.length"
@@ -105,7 +105,7 @@ function handleActivate(agent) {
       />
       <view
         v-for="agent in store.customAgents" :key="agent.id"
-        class="agent-card"
+        class="agent-card card-press"
         :class="{ active: store.activeAgentId === agent.id }"
         @tap="handleActivate(agent)"
       >
@@ -120,13 +120,13 @@ function handleActivate(agent) {
           <text class="badge-text">使用中</text>
         </view>
         <view v-else class="agent-actions" @tap.stop>
-          <text class="action-btn" @tap="goEdit(agent)">编辑</text>
-          <text class="action-btn delete" @tap="handleDelete(agent)">删除</text>
+          <text class="action-btn btn-tactile" @tap="goEdit(agent)">编辑</text>
+          <text class="action-btn delete btn-tactile" @tap="handleDelete(agent)">删除</text>
         </view>
       </view>
 
       <!-- 说明 -->
-      <view class="tips-card">
+      <view class="tips-card panel-in">
         <view class="tips-title"><SijiIcon name="tip" size="sm" class="tips-icon" /><text>关于 Agent</text></view>
         <text class="tips-text">• 模板创建的 Agent 是自定义助手，可随时编辑或删除</text>
         <text class="tips-text">• 系统提示词决定 Agent 的性格和行为</text>

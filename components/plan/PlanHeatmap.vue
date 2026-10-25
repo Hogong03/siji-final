@@ -3,6 +3,8 @@
  * 打卡热力月视图（3.5.3）
  * 展示某个月的打卡强度（0/1/2/3+ 四档），支持翻月；数据由 utils/plan-heatmap.js 计算
  */
+import { hapticLight } from '@/utils/haptic.js'
+
 const props = defineProps({
   year: { type: Number, required: true },
   month: { type: Number, required: true },
@@ -26,6 +28,7 @@ let longPressAt = 0
 function onDotTap(cell) {
   if (!cell || cell.isFuture) return
   if (Date.now() - longPressAt < LONG_PRESS_GUARD_MS) return
+  hapticLight()
   emit('select-day', cell.date)
 }
 
@@ -45,11 +48,11 @@ function canBackfill(cell) {
 <template>
   <view class="heatmap" :class="{ flat }">
     <view class="hm-head">
-      <view v-if="!hideNav" class="hm-nav" @tap="emit('prev')">
+      <view v-if="!hideNav" class="hm-nav btn-tactile" @tap="emit('prev')">
         <text>‹ 上月</text>
       </view>
       <text class="hm-title">{{ year }} 年 {{ month + 1 }} 月</text>
-      <view v-if="!hideNav" class="hm-nav" :class="{ disabled: !canNext }" @tap="canNext && emit('next')">
+      <view v-if="!hideNav" class="hm-nav btn-tactile" :class="{ disabled: !canNext }" @tap="canNext && emit('next')">
         <text>下月 ›</text>
       </view>
     </view>
@@ -58,7 +61,7 @@ function canBackfill(cell) {
       <text v-for="w in WEEK_LABELS" :key="w" class="hm-weekday">{{ w }}</text>
     </view>
 
-    <view v-for="(week, wi) in weeks" :key="wi" class="hm-week">
+    <view v-for="(week, wi) in weeks" :key="wi" class="hm-week grid-stagger">
       <view
         v-for="(cell, ci) in week" :key="ci"
         class="hm-cell"
@@ -245,7 +248,17 @@ html.theme-dark {
   .heatmap.flat { background: transparent; }
   .hm-title { color: #FAFAFA; }
   .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #71717A; } }
-  .hm-dot { background: #3F3F46; &.today { border-color: #FAFAFA; } }
+  // 4.48.3：深色下这层底灰会盖掉 lv-1/2/3 的活跃色（特异性高于基线 .hm-dot.lv-N），
+  // 整片格子被抹成同一个灰 = 看不出哪几天有活动。三级必须在这里显式重述。
+  .hm-dot {
+    background: #3F3F46;
+
+    &.lv-1 { background: rgba(16, 185, 129, 0.30); }
+    &.lv-2 { background: rgba(16, 185, 129, 0.62); }
+    &.lv-3 { background: #10B981; }
+    &.future { background: transparent; }
+    &.today { border-color: #FAFAFA; }
+  }
   .hm-dot.lv-2 .hm-day, .hm-dot.lv-3 .hm-day { color: #18181B; }
   .hm-total { color: #A1A1AA; }
 }
@@ -259,7 +272,17 @@ html.theme-dark {
   .heatmap.flat { background: transparent; }
   .hm-title { color: #FAFAFA; }
   .hm-nav { background: #3F3F46; color: #A1A1AA; &.disabled { color: #71717A; } }
-  .hm-dot { background: #3F3F46; &.today { border-color: #FAFAFA; } }
+  // 4.48.3：深色下这层底灰会盖掉 lv-1/2/3 的活跃色（特异性高于基线 .hm-dot.lv-N），
+  // 整片格子被抹成同一个灰 = 看不出哪几天有活动。三级必须在这里显式重述。
+  .hm-dot {
+    background: #3F3F46;
+
+    &.lv-1 { background: rgba(16, 185, 129, 0.30); }
+    &.lv-2 { background: rgba(16, 185, 129, 0.62); }
+    &.lv-3 { background: #10B981; }
+    &.future { background: transparent; }
+    &.today { border-color: #FAFAFA; }
+  }
   .hm-dot.lv-2 .hm-day, .hm-dot.lv-3 .hm-day { color: #18181B; }
   .hm-total { color: #A1A1AA; }
 }

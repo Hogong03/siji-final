@@ -291,10 +291,16 @@
   border-radius: 16rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
-  &:active { background: #F4F4F5; }
+  transition: transform 0.15s ease;
+  &:active { background: #F4F4F5; transform: scale(0.985); }
   &.pinned {
     border-left: 6rpx solid #18181B;
   }
+}
+
+/* 骨架加载区 */
+.diary-loading {
+  padding: 24rpx;
 }
 .card-header {
   display: flex;
@@ -502,6 +508,8 @@
   justify-content: center;
   z-index: 100;
   box-shadow: none;
+  transition: transform 0.15s ease;
+  &:active { transform: scale(0.9); }
 }
 .fab-icon {
   color: #FFFFFF;

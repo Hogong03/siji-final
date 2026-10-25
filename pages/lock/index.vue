@@ -5,6 +5,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { verifyPin, isLocked, getLockRemain, hasPin } from '@/utils/pin.js'
 import { useAppStore } from '@/store/index.js'
+import { hapticLight, hapticWarning } from '@/utils/haptic.js'
 
 const store = useAppStore()
 const pinInput = ref('')
@@ -54,6 +55,7 @@ function startLockTimer() {
 function pressKey(num) {
   if (locked.value) return
   if (pinInput.value.length >= 6) return
+  hapticLight()
   pinInput.value += num
 
   // 输满 4 位自动验证
@@ -82,8 +84,10 @@ function verify() {
     locked.value = true
     lockRemain.value = result.remain
     startLockTimer()
+    hapticWarning()
     errorMsg.value = `错误次数过多，请等待 ${result.remain} 秒`
   } else {
+    hapticWarning()
     errorMsg.value = `PIN 错误，还剩 ${result.attemptsLeft} 次机会`
   }
 
@@ -111,12 +115,12 @@ const dots = computed(() => {
         <view
           v-for="(filled, i) in dots" :key="i"
           class="pin-dot"
-          :class="{ filled }"
+          :class="{ filled, pop: filled }"
         />
       </view>
 
-      <!-- 错误提示 -->
-      <text class="error-msg" v-if="errorMsg">{{ errorMsg }}</text>
+      <!-- 错误提示：每次出错重挂触发抖动 -->
+      <text :key="errorMsg" class="error-msg shake" v-if="errorMsg">{{ errorMsg }}</text>
 
       <!-- 锁定提示 -->
       <view class="lock-timer" v-if="locked">

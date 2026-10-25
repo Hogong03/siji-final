@@ -17,9 +17,11 @@ import { debounce } from '@/utils/debounce.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import Skeleton from '@/components/common/Skeleton.vue'
 import { useAppStore } from '@/store/index.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { ref as vueRef } from 'vue'
+import { hapticLight, hapticSelect } from '@/utils/haptic.js'
 
 // 4.15：长按结果「提取待办 → 创建计划」（复用记录 AI 的提取核心）
 const { extractTodosFromAnyText, extractingTodos } = useDiaryAI(vueRef({ content: '' }))
@@ -133,6 +135,7 @@ function doSearch() {
 }
 
 function tapHistory(kw) {
+  hapticLight()
   searchInput.value = kw
   doSearch()
 }
@@ -186,18 +189,27 @@ function tapConvResult(msg) {
 }
 
 function switchType(type) {
+  if (typeFilter.value === type) return
+  hapticSelect()
   typeFilter.value = type
   if (keyword.value) doSearch()
 }
 
 function switchTime(days) {
+  if (timeRange.value === days) return
+  hapticLight()
   timeRange.value = days
   if (keyword.value) doSearch()
+}
+
+function toggleTimeFilter() {
+  hapticLight()
+  showTimeFilter.value = !showTimeFilter.value
 }
 </script>
 
 <template>
-  <view class="search-page">
+  <view class="search-page page-enter">
     <!-- 搜索栏（紧凑） -->
     <view class="search-bar">
       <view class="search-input-wrap">
@@ -213,7 +225,7 @@ function switchTime(days) {
         />
         <text v-if="searchInput" class="clear-icon" @tap="searchInput = ''; doSearch()">✕</text>
       </view>
-      <text class="cancel-btn" @tap="safeNavigateBack()">取消</text>
+      <text class="cancel-btn btn-tactile" @tap="safeNavigateBack()">取消</text>
     </view>
 
     <!-- 筛选栏（4.15：类型常驻，时间收进「时间」开关） -->
@@ -222,20 +234,20 @@ function switchTime(days) {
         <text
           v-for="t in [{v:'all',l:'全部'},{v:'diary',l:'记录'},{v:'bill',l:'账单'},{v:'plan',l:'计划'}]"
           :key="t.v"
-          class="filter-chip" :class="{ active: typeFilter === t.v }"
+          class="filter-chip chip-transition" :class="{ active: typeFilter === t.v }"
           @tap="switchType(t.v)"
         >{{ t.l }}</text>
       </view>
       <view class="filter-group filter-group-right">
         <text
-          class="filter-chip filter-toggle" :class="{ active: timeRange !== 0 }"
-          @tap="showTimeFilter = !showTimeFilter"
+          class="filter-chip filter-toggle chip-transition" :class="{ active: timeRange !== 0 }"
+          @tap="toggleTimeFilter"
         >{{ timeRange !== 0 ? timeLabel : '时间' }} ▾</text>
         <template v-if="showTimeFilter">
           <text
             v-for="t in [{v:0,l:'全部'},{v:7,l:'7天'},{v:30,l:'30天'}]"
             :key="t.v"
-            class="filter-chip" :class="{ active: timeRange === t.v }"
+            class="filter-chip chip-transition" :class="{ active: timeRange === t.v }"
             @tap="switchTime(t.v)"
           >{{ t.l }}</text>
         </template>
@@ -243,15 +255,15 @@ function switchTime(days) {
     </view>
 
     <!-- 搜索历史 -->
-    <view class="history-section" v-if="showHistory && searchHistory.length > 0">
+    <view class="history-section panel-in" v-if="showHistory && searchHistory.length > 0">
       <view class="section-header">
         <text class="section-title">搜索历史</text>
-        <text class="clear-link" @tap="clearHistory">清空</text>
+        <text class="clear-link btn-tactile" @tap="clearHistory">清空</text>
       </view>
       <view class="history-tags">
         <text
           v-for="h in searchHistory" :key="h"
-          class="history-tag"
+          class="history-tag chip-transition btn-tactile"
           @tap="tapHistory(h)"
         >{{ h }}</text>
       </view>
@@ -265,9 +277,9 @@ function switchTime(days) {
       <!-- 结果统计 -->
       <text class="result-count" v-if="!loading && totalCount > 0">共 {{ totalCount }} 条</text>
 
-      <!-- 加载中 -->
+      <!-- 加载中：骨架 -->
       <view class="loading-state" v-if="loading">
-        <text class="loading-text">搜索中...</text>
+        <Skeleton type="list" :rows="4" />
       </view>
 
       <!-- 无结果 -->
@@ -278,7 +290,7 @@ function switchTime(days) {
         <view
           v-for="group in groupedResults"
           :key="group.type"
-          class="result-group"
+          class="result-group panel-in"
         >
           <view class="group-header">
             <view class="group-dot" :style="{ background: typeMeta[group.type].color }" />
@@ -286,10 +298,10 @@ function switchTime(days) {
             <text class="group-count">{{ group.items.length }}</text>
           </view>
 
-          <view class="group-list">
+          <view class="group-list card-list-stagger">
             <view
               v-for="item in group.items" :key="item.id"
-              class="result-item"
+              class="result-item card-press"
               @tap="tapResult(item)"
               @longpress="onResultLongPress(item)"
             >
@@ -309,16 +321,16 @@ function switchTime(days) {
         </view>
 
         <!-- 对话搜索结果（次要内容，默认只露 3 条） -->
-        <view v-if="!loading && convResults.length > 0" class="result-group">
+        <view v-if="!loading && convResults.length > 0" class="result-group panel-in">
           <view class="group-header">
             <view class="group-dot" :style="{ background: typeMeta.conversation.color }" />
             <text class="group-title">{{ typeMeta.conversation.label }}</text>
             <text class="group-count">{{ convResults.length }}</text>
           </view>
-          <view class="group-list">
+          <view class="group-list card-list-stagger">
             <view
               v-for="msg in visibleConvResults" :key="msg.convId + '-' + msg.messageIndex"
-              class="result-item"
+              class="result-item card-press"
               @tap="tapConvResult(msg)"
             >
               <view class="item-main">
@@ -332,7 +344,7 @@ function switchTime(days) {
           </view>
           <view
             v-if="convResults.length > 3"
-            class="conv-expand"
+            class="conv-expand btn-tactile"
             @tap="showAllConv = !showAllConv"
           >
             <text class="conv-expand-text">{{ showAllConv ? '收起对话结果' : `展开全部对话（${convResults.length - 3} 条）` }}</text>

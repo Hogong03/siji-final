@@ -334,7 +334,7 @@ function cancelIntegratePreview() {
 <template>
   <view class="memory-page">
     <!-- 顶部开关 -->
-    <view class="switch-card">
+    <view class="switch-card panel-in">
       <view class="switch-info">
         <text class="switch-title">长期记忆</text>
         <text class="switch-desc">AI 自动记住你的偏好、重要事件和事实</text>
@@ -343,36 +343,36 @@ function cancelIntegratePreview() {
     </view>
 
     <!-- 统计精简为一行 -->
-    <view class="stats-row" v-if="enabled">
+    <view class="stats-row panel-in" v-if="enabled">
       <text class="stats-summary">{{ stats.total }} 条记忆</text>
-      <text class="stats-toggle" @tap="showFilter = !showFilter">{{ showFilter ? '收起筛选' : '筛选' }}</text>
-      <text class="stats-toggle" @tap="openGovernance">治理</text>
+      <text class="stats-toggle btn-tactile" @tap="showFilter = !showFilter">{{ showFilter ? '收起筛选' : '筛选' }}</text>
+      <text class="stats-toggle btn-tactile" @tap="openGovernance">治理</text>
       <text class="stats-structured" v-if="stats.structured && (stats.structured.entities + stats.structured.relations + stats.structured.events) > 0">结构化 {{ stats.structured.entities }}实体/{{ stats.structured.relations }}关系/{{ stats.structured.events }}事件</text>
     </view>
 
     <template v-if="enabled">
       <!-- 视图分段（3.2 M2）：隐藏项只在「已整合」出现 -->
       <view class="scope-bar">
-        <view class="filter-chip" :class="{ active: viewMode === 'all' }" @tap="viewMode = 'all'">
+        <view class="filter-chip chip-transition" :class="{ active: viewMode === 'all' }" @tap="viewMode = 'all'">
           <text>全部</text>
         </view>
-        <view class="filter-chip" :class="{ active: viewMode === 'unadopted' }" @tap="viewMode = 'unadopted'">
+        <view class="filter-chip chip-transition" :class="{ active: viewMode === 'unadopted' }" @tap="viewMode = 'unadopted'">
           <text>未整合</text>
         </view>
-        <view class="filter-chip" :class="{ active: viewMode === 'adopted' }" @tap="viewMode = 'adopted'">
+        <view class="filter-chip chip-transition" :class="{ active: viewMode === 'adopted' }" @tap="viewMode = 'adopted'">
           <text>已整合</text>
         </view>
       </view>
 
       <!-- 筛选标签（可折叠） -->
       <scroll-view v-if="showFilter" class="filter-bar" scroll-x>
-        <view class="filter-chip" :class="{ active: filter === 'all' }" @tap="filter = 'all'">
+        <view class="filter-chip chip-transition" :class="{ active: filter === 'all' }" @tap="filter = 'all'">
           <text>全部</text>
         </view>
         <view
           v-for="(label, cat) in categoryLabels"
           :key="cat"
-          class="filter-chip"
+          class="filter-chip chip-transition"
           :class="{ active: filter === cat }"
           @tap="filter = cat"
         >
@@ -381,11 +381,11 @@ function cancelIntegratePreview() {
       </scroll-view>
 
       <!-- 记忆列表 -->
-      <scroll-view class="memory-list" scroll-y>
+      <scroll-view class="memory-list card-list-stagger" scroll-y>
         <view
           v-for="item in filteredMemories"
           :key="item.id"
-          class="memory-item"
+          class="memory-item card-press"
           :class="{ 'selecting': integrateMode }"
         >
           <view v-if="integrateMode" class="select-badge" :class="{ selected: isSelected(item.id) }" @tap="toggleSelect(item)">
@@ -401,9 +401,9 @@ function cancelIntegratePreview() {
             </view>
             <text class="memory-content" selectable="true" user-select="true">{{ item.content }}</text>
             <view class="memory-actions">
-              <text v-if="item.hidden" class="action-btn edit" @tap="handleRestoreHidden(item)">恢复显示</text>
-              <text class="action-btn edit" @tap="openEditModal(item)">编辑</text>
-              <text class="action-btn del" @tap="handleDelete(item.id)">删除</text>
+              <text v-if="item.hidden" class="action-btn edit btn-tactile" @tap="handleRestoreHidden(item)">恢复显示</text>
+              <text class="action-btn edit btn-tactile" @tap="openEditModal(item)">编辑</text>
+              <text class="action-btn del btn-tactile" @tap="handleDelete(item.id)">删除</text>
             </view>
           </view>
         </view>
@@ -445,8 +445,8 @@ function cancelIntegratePreview() {
     </view>
 
     <!-- 整合预览弹窗 -->
-    <view v-if="showIntegratePreview" class="modal-overlay" @tap="cancelIntegratePreview">
-      <view class="modal-content integrate-modal" @tap.stop>
+    <view v-if="showIntegratePreview" class="modal-overlay mask-in" @tap="cancelIntegratePreview">
+      <view class="modal-content integrate-modal sheet-panel" @tap.stop>
         <text class="modal-title">整合预览 · 共 {{ integratePreview.length }} 条</text>
         <text class="modal-sub">分组已存在则直接填入或修改，不存在将自动新建</text>
         <scroll-view scroll-y class="integrate-list">
@@ -463,10 +463,10 @@ function cancelIntegratePreview() {
           </view>
         </scroll-view>
         <view class="modal-actions">
-          <view class="modal-btn cancel" @tap="cancelIntegratePreview">
+          <view class="modal-btn cancel btn-tactile" @tap="cancelIntegratePreview">
             <text>取消</text>
           </view>
-          <view class="modal-btn ok" @tap="confirmIntegrate">
+          <view class="modal-btn ok btn-tactile" @tap="confirmIntegrate">
             <text>确定整合</text>
           </view>
         </view>
@@ -474,8 +474,8 @@ function cancelIntegratePreview() {
     </view>
 
     <!-- 记忆治理弹窗（3.2 M2） -->
-    <view v-if="showGovernance" class="modal-overlay" @tap="showGovernance = false">
-      <view class="modal-content integrate-modal" @tap.stop>
+    <view v-if="showGovernance" class="modal-overlay mask-in" @tap="showGovernance = false">
+      <view class="modal-content integrate-modal sheet-panel" @tap.stop>
         <text class="modal-title">记忆治理 · {{ governanceItems.length }} 项</text>
         <text class="modal-sub">勾选后确定执行：重复合并、超期隐藏、other 归类</text>
         <scroll-view scroll-y class="integrate-list">
@@ -495,10 +495,10 @@ function cancelIntegratePreview() {
           </view>
         </scroll-view>
         <view class="modal-actions">
-          <view class="modal-btn cancel" @tap="showGovernance = false">
+          <view class="modal-btn cancel btn-tactile" @tap="showGovernance = false">
             <text>取消</text>
           </view>
-          <view class="modal-btn ok" @tap="confirmGovernance">
+          <view class="modal-btn ok btn-tactile" @tap="confirmGovernance">
             <text>确定</text>
           </view>
         </view>
@@ -506,8 +506,8 @@ function cancelIntegratePreview() {
     </view>
 
     <!-- 添加/编辑弹窗 -->
-    <view v-if="showAddModal" class="modal-overlay" @tap="showAddModal = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showAddModal" class="modal-overlay mask-in" @tap="showAddModal = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">{{ editingId ? '编辑记忆' : '添加记忆' }}</text>
 
         <view class="modal-cat-row">
@@ -531,10 +531,10 @@ function cancelIntegratePreview() {
         />
 
         <view class="modal-actions">
-          <view class="modal-btn cancel" @tap="showAddModal = false">
+          <view class="modal-btn cancel btn-tactile" @tap="showAddModal = false">
             <text>取消</text>
           </view>
-          <view class="modal-btn ok" @tap="handleSave">
+          <view class="modal-btn ok btn-tactile" @tap="handleSave">
             <text>保存</text>
           </view>
         </view>

@@ -144,7 +144,7 @@ function childWeekCells(child) {
     <!-- 进度条 -->
     <view v-if="progress.total > 0" class="subplan-bar-row">
       <view class="subplan-bar">
-        <view class="subplan-bar-fill" :style="{ width: progress.pct + '%' }" />
+        <view class="subplan-bar-fill bar-grow" :style="{ width: progress.pct + '%' }" />
       </view>
       <text class="subplan-bar-text">{{ progress.pct }}%</text>
     </view>
@@ -154,7 +154,7 @@ function childWeekCells(child) {
     </view>
 
     <!-- 今日组：待做与已完成 -->
-    <view v-if="todayList.length" class="child-plan-list">
+    <view v-if="todayList.length" class="child-plan-list card-list-stagger">
       <view
         v-for="child in todayList" :key="child.client_id"
         class="child-plan-card"
@@ -200,7 +200,7 @@ function childWeekCells(child) {
           <view class="cr-row">
             <view
               v-for="opt in recurOptions" :key="opt.value"
-              class="cr-item" :class="{ active: draftType === opt.value }"
+              class="cr-item chip-transition" :class="{ active: draftType === opt.value }"
               @tap.stop="draftType = opt.value"
             >
               <text>{{ opt.label }}</text>
@@ -210,7 +210,7 @@ function childWeekCells(child) {
             <text class="cr-hint">每周</text>
             <view
               v-for="n in recurCountOptions" :key="n"
-              class="cr-item cr-count" :class="{ active: Number(draftCount) === n }"
+              class="cr-item cr-count chip-transition" :class="{ active: Number(draftCount) === n }"
               @tap.stop="draftCount = n"
             >
               <text>{{ n }}</text>
@@ -231,7 +231,7 @@ function childWeekCells(child) {
         <text class="sd-title">任意时间 · {{ somedayList.length }}</text>
         <text class="sd-sub">今天不做，想做了再安排回来</text>
       </view>
-      <view class="child-plan-list">
+      <view class="child-plan-list card-list-stagger">
         <view
           v-for="child in somedayList" :key="child.client_id"
           class="child-plan-card som-card"
@@ -416,7 +416,15 @@ function childWeekCells(child) {
     background: rgba(16, 185, 129, 0.1);
     border-color: rgba(16, 185, 129, 0.3);
     color: #059669;
+    /* 打卡/达标瞬间弹一下（无 fill，播完交还控制权，不影响按压） */
+    animation: sijiCpCheckPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+}
+
+@keyframes sijiCpCheckPop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
 
 .cp-status {

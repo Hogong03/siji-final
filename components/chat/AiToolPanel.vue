@@ -23,7 +23,7 @@ function pick(action) {
 
 <template>
 	<view v-if="show">
-		<view class="ai-tool-mask" @tap="emit('close')" />
+		<view class="ai-tool-mask mask-in" @tap="emit('close')" />
 		<view class="ai-tool-sheet">
 			<view class="ai-tool-head">
 				<text class="ai-tool-title">AI 工具</text>
@@ -31,21 +31,21 @@ function pick(action) {
 			</view>
 
 			<view class="ai-tool-grid">
-				<view v-if="visionOn" class="ai-tool-item" @tap="pick('image')">
+				<view v-if="visionOn" class="ai-tool-item btn-tactile" @tap="pick('image')">
 					<view class="ai-tool-icon">
 						<SijiIcon name="image" size="lg" />
 					</view>
 					<text class="ai-tool-label">图片识别</text>
 				</view>
 
-				<view class="ai-tool-item" @tap="pick('file')">
+				<view class="ai-tool-item btn-tactile" @tap="pick('file')">
 					<view class="ai-tool-icon">
 						<SijiIcon name="file" size="lg" />
 					</view>
 					<text class="ai-tool-label">文件读取</text>
 				</view>
 
-				<view v-if="voiceOn" class="ai-tool-item" @tap="pick('voice')">
+				<view v-if="voiceOn" class="ai-tool-item btn-tactile" @tap="pick('voice')">
 					<view class="ai-tool-icon">
 						<view class="mic-glyph">
 							<view class="mic-body" />
@@ -55,7 +55,7 @@ function pick(action) {
 					<text class="ai-tool-label">语音转文字</text>
 				</view>
 
-				<view class="ai-tool-item" @tap="pick('more')">
+				<view class="ai-tool-item btn-tactile" @tap="pick('more')">
 					<view class="ai-tool-icon">
 						<SijiIcon name="settings" size="lg" />
 					</view>

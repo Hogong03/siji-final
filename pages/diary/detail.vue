@@ -17,6 +17,7 @@ import { useTheme } from '@/composables/useTheme.js'
 import AiToolButton from '@/components/ai/AiToolButton.vue'
 import AiResultCard from '@/components/ai/AiResultCard.vue'
 import { feedProfileFromText } from '@/composables/useProfileFeed.js'
+import { hapticLight, hapticSelect, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 // 深色模式检测（标签圆点兜底色等 JS 注入色需要）
 const { isDark } = useTheme()
@@ -81,7 +82,7 @@ const MOOD_OPTIONS = [
   { value: 4, face: '🙂', label: '不错' },
   { value: 5, face: '😄', label: '很好' },
 ]
-function setMood(v) { form.value.mood = form.value.mood === v ? null : v }
+function setMood(v) { hapticLight(); form.value.mood = form.value.mood === v ? null : v }
 
 const { generating, Rewriting, extractingTodos, analyzingEmotion,
   summaryError, emotionError,
@@ -140,6 +141,8 @@ function applyTypeDefaults() {
 }
 
 function selectType(key) {
+  if (recordType.value === key) return
+  hapticSelect()
   recordType.value = key
   showTypePicker.value = false
   applyTypeDefaults()
@@ -203,6 +206,7 @@ function loadDiary() {
 function goRelated(r) { uni.navigateTo({ url: `/pages/diary/detail?clientId=${r.client_id}&month=${r.month}` }) }
 function handlePin() {
   isPinned.value = togglePinDiary(diaryId.value, month.value)
+  hapticLight()
   uni.showToast({ title: isPinned.value ? '已置顶' : '已取消置顶', icon: 'none' })
 }
 
@@ -235,6 +239,7 @@ async function handleSave() {
     pinned: isPinned.value, created_at: createdAt, updated_at: Date.now(), is_deleted: 0
   })
   initialSnapshot.value = snapshotNow()
+  hapticSuccess()
   uni.showToast({ title: '已保存', icon: 'success' })
   // 4.15：开关开启时，保存后自动从记录提取个人信息喂画像（确认后写入，静默失败）
   feedProfileFromText(text)
@@ -243,7 +248,7 @@ async function handleSave() {
 
 function handleDelete() {
   uni.showModal({ title: '删除记录', content: '确定要删除？删除后可在回收站恢复。', success(res) {
-    if (res.confirm) { deleteDiary(diaryId.value, month.value); uni.showToast({ title: '已删除', icon: 'success' }); setTimeout(() => { goBack() }, 800) }
+    if (res.confirm) { deleteDiary(diaryId.value, month.value); hapticWarning(); uni.showToast({ title: '已删除', icon: 'success' }); setTimeout(() => { goBack() }, 800) }
   }})
 }
 
@@ -264,10 +269,10 @@ const emotionLabel = computed(() => {
 </script>
 
 <template>
-  <view class="detail-page" :class="'type-' + recordType">
+  <view class="detail-page page-enter" :class="'type-' + recordType">
     <!-- 记录类型选择器（新建时） -->
-    <view class="type-picker-overlay" v-if="showTypePicker && isNew" @tap.self="goBack">
-      <view class="type-picker">
+    <view class="type-picker-overlay mask-in" v-if="showTypePicker && isNew" @tap.self="goBack">
+      <view class="type-picker modal-pop">
         <text class="tp-title">选择记录类型</text>
         <view class="tp-grid">
           <view
@@ -281,7 +286,7 @@ const emotionLabel = computed(() => {
             <text class="tp-type-desc">{{ t.desc }}</text>
           </view>
         </view>
-        <text class="tp-cancel" @tap="closeTypePicker">取消</text>
+        <text class="tp-cancel btn-tactile" @tap="closeTypePicker">取消</text>
       </view>
     </view>
 
@@ -390,7 +395,7 @@ const emotionLabel = computed(() => {
             :class="{ active: form.mood === m.value }"
             @tap="setMood(m.value)"
           >
-            <text class="mood-face">{{ m.face }}</text>
+            <text class="mood-face" :class="{ pop: form.mood === m.value }">{{ m.face }}</text>
             <text class="mood-label">{{ m.label }}</text>
           </view>
         </view>
@@ -446,14 +451,14 @@ const emotionLabel = computed(() => {
     </scroll-view>
 
     <!-- 标签选择器 -->
-    <view class="tag-picker-overlay" v-if="showTagPicker" @tap.self="showTagPicker = false">
-      <view class="tag-picker">
+    <view class="tag-picker-overlay mask-in" v-if="showTagPicker" @tap.self="showTagPicker = false">
+      <view class="tag-picker sheet-panel">
         <text class="tp-title">选择标签</text>
         <view class="tp-current" v-if="form.tags.length > 0">
-          <view v-for="t in form.tags" :key="t" class="tag-chip" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @tap="removeTag(t)"><text>{{ t }}</text><text class="tc-close">✕</text></view>
+          <view v-for="t in form.tags" :key="t" class="tag-chip btn-tactile" :style="{ color: tagColor(t), borderColor: tagColor(t) }" @tap="removeTag(t)"><text>{{ t }}</text><text class="tc-close">✕</text></view>
         </view>
         <view class="tp-list">
-          <view v-for="t in filteredTagList" :key="t.name" class="tp-item" :class="{ selected: isTagSelected(t.name) }" @tap="toggleTag(t.name)">
+          <view v-for="t in filteredTagList" :key="t.name" class="tp-item chip-transition" :class="{ selected: isTagSelected(t.name) }" @tap="toggleTag(t.name)">
             <text class="tp-dot" :style="{ background: isTagSelected(t.name) ? t.color : (isDark ? '#3F3F46' : '#E4E4E7') }">{{ isTagSelected(t.name) ? '✓' : '' }}</text>
             <text class="tp-name">{{ t.name }}</text>
             <text class="tp-count">{{ t.count }}</text>
@@ -461,17 +466,17 @@ const emotionLabel = computed(() => {
         </view>
         <view class="tp-input-row">
           <input v-model="newTagInput" class="tp-input" placeholder="新标签..." maxlength="20" @confirm="addNewTag" />
-          <text class="tp-add" @tap="addNewTag">创建</text>
+          <text class="tp-add btn-tactile" @tap="addNewTag">创建</text>
         </view>
-        <view class="tp-done" @tap="showTagPicker = false">完成</view>
+        <view class="tp-done btn-tactile" @tap="showTagPicker = false">完成</view>
       </view>
     </view>
 
     <!-- 底部操作栏 -->
     <view class="bottom-bar safe-area-bottom" v-if="!showTypePicker || !isNew">
-      <text v-if="!isNew" class="bar-btn" @tap="handlePin">{{ isPinned ? '📌' : '📍' }}</text>
-      <text v-if="!isNew" class="bar-btn bar-delete" @tap="handleDelete">删除</text>
-      <view class="bar-save" @tap="handleSave"><text>保存</text></view>
+      <text v-if="!isNew" class="bar-btn btn-tactile" @tap="handlePin">{{ isPinned ? '📌' : '📍' }}</text>
+      <text v-if="!isNew" class="bar-btn bar-delete btn-tactile" @tap="handleDelete">删除</text>
+      <view class="bar-save btn-tactile" @tap="handleSave"><text>保存</text></view>
     </view>
   </view>
 </template>

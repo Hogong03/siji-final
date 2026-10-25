@@ -1,8 +1,8 @@
 ﻿<template>
-  <view class="page">
+  <view class="page page-enter">
     <view v-if="decision" class="detail-content">
       <!-- 头部 -->
-      <view class="hero">
+      <view class="hero panel-in">
         <text class="hero-title">{{ decision.title }}</text>
         <view class="hero-meta">
           <text class="meta-category">{{ decision.category }}</text>
@@ -13,13 +13,13 @@
       </view>
 
       <!-- 选项分析 -->
-      <view v-if="decision.options && decision.options.length > 0" class="section">
+      <view v-if="decision.options && decision.options.length > 0" class="section panel-in">
         <text class="section-title">选项分析</text>
         <view v-for="opt in decision.options" :key="opt.name" class="option-item">
           <view class="option-header">
             <text class="option-name">{{ opt.name }}</text>
             <view class="weight-bar">
-              <view class="weight-fill" :style="{ width: (opt.weight * 10) + '%' }"></view>
+              <view class="weight-fill bar-grow" :style="{ width: (opt.weight * 10) + '%' }"></view>
             </view>
             <text class="weight-num">{{ opt.weight }}</text>
           </view>
@@ -35,7 +35,7 @@
       </view>
 
       <!-- 利益相关方 -->
-      <view v-if="decision.stakeholders && decision.stakeholders.length > 0" class="section">
+      <view v-if="decision.stakeholders && decision.stakeholders.length > 0" class="section panel-in">
         <text class="section-title">利益相关方</text>
         <view class="tag-wrap">
           <text v-for="s in decision.stakeholders" :key="s" class="tag">{{ s }}</text>
@@ -43,7 +43,7 @@
       </view>
 
       <!-- 考虑因素 -->
-      <view v-if="decision.factors && decision.factors.length > 0" class="section">
+      <view v-if="decision.factors && decision.factors.length > 0" class="section panel-in">
         <text class="section-title">考虑因素</text>
         <view class="tag-wrap">
           <text v-for="f in decision.factors" :key="f" class="tag tag-alt">{{ f }}</text>
@@ -51,31 +51,31 @@
       </view>
 
       <!-- 最终决定 -->
-      <view v-if="decision.decision" class="section section-decision">
+      <view v-if="decision.decision" class="section section-decision panel-in">
         <text class="section-title">最终决定</text>
         <text class="decision-text">{{ decision.decision }}</text>
         <text v-if="decision.reasoning" class="decision-reasoning">{{ decision.reasoning }}</text>
       </view>
 
       <!-- 复盘 -->
-      <view v-if="decision.review_notes" class="section section-review">
+      <view v-if="decision.review_notes" class="section section-review panel-in">
         <text class="section-title">复盘</text>
         <text class="review-text">{{ decision.review_notes }}</text>
       </view>
 
       <!-- 操作按钮 -->
       <view class="actions">
-        <button v-if="decision.status === 'thinking'" class="btn-action" @tap="showDecideForm = true">记录决定</button>
-        <button v-if="decision.status === 'decided' && !decision.review_notes" class="btn-action" @tap="showReviewForm = true">复盘</button>
-        <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
+        <button v-if="decision.status === 'thinking'" class="btn-action btn-tactile" @tap="showDecideForm = true">记录决定</button>
+        <button v-if="decision.status === 'decided' && !decision.review_notes" class="btn-action btn-tactile" @tap="showReviewForm = true">复盘</button>
+        <button class="btn-action btn-danger btn-tactile" @tap="handleDelete">删除</button>
       </view>
     </view>
 
     <view v-else class="empty"><text>决策记录不存在</text></view>
 
     <!-- 记录决定弹窗 -->
-    <view v-if="showDecideForm" class="modal-mask" @tap="showDecideForm = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showDecideForm" class="modal-mask mask-in" @tap="showDecideForm = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">记录决定</text>
         <view class="form-item">
           <text class="form-label">你的决定</text>
@@ -93,8 +93,8 @@
     </view>
 
     <!-- 复盘弹窗 -->
-    <view v-if="showReviewForm" class="modal-mask" @tap="showReviewForm = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showReviewForm" class="modal-mask mask-in" @tap="showReviewForm = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">决策复盘</text>
         <view class="form-item">
           <text class="form-label">结果如何？</text>
@@ -118,6 +118,7 @@ import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getDecisionById, updateDecision, deleteDecision, reviewDecision } from '@/utils/decisions.js'
 import { safeNavigateBack } from '@/utils/nav-helper.js'
+import { hapticLight, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const decisionId = ref('')
 const decision = ref(null)
@@ -153,6 +154,7 @@ function handleDecide() {
     reasoning: decideForm.value.reasoning.trim()
   })
   uni.showToast({ title: '已记录', icon: 'success' })
+  hapticSuccess()
   showDecideForm.value = false
   loadData()
 }
@@ -164,6 +166,7 @@ function handleReview() {
   }
   reviewDecision(decisionId.value, reviewForm.value.review_notes.trim(), reviewForm.value.outcome.trim())
   uni.showToast({ title: '复盘已保存', icon: 'success' })
+  hapticSuccess()
   showReviewForm.value = false
   loadData()
 }
@@ -175,6 +178,7 @@ function handleDelete() {
     success: (res) => {
       if (res.confirm) {
         deleteDecision(decisionId.value)
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => safeNavigateBack(), 800)
       }

@@ -82,8 +82,9 @@ defineProps({
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.06);
   border: 2rpx solid transparent;
+  transition: background-color 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  &.done { background: #10B981; }
+  &.done { background: #10B981; transform: scale(1.12); }
   &.today { border-color: $text-primary; }
   &.future { background: rgba(0, 0, 0, 0.03); }
 }

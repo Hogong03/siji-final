@@ -18,6 +18,7 @@ const emit = defineEmits(['tap'])
 		:class="{ loading, disabled }"
 		@tap="() => { if (!loading && !disabled) emit('tap') }"
 	>
+		<view v-if="loading" class="dot-loading"><view class="dot" /><view class="dot" /><view class="dot" /></view>
 		<text class="ai-btn-text">{{ loading ? (loadingLabel || label + '中…') : label }}</text>
 	</view>
 </template>
@@ -31,10 +32,12 @@ const emit = defineEmits(['tap'])
 	padding: 16rpx 22rpx;
 	border-radius: 14rpx;
 	background: #F4F4F5;
+	color: #18181B;
 	transition: all 0.15s ease;
 
-	&:active { background: #E4E4E7; }
-	&.loading { opacity: 0.65; }
+	&:active { background: #E4E4E7; transform: scale(0.96); }
+	&.loading { opacity: 0.7; }
+	&.loading:active { transform: none; }
 	&.disabled { opacity: 0.4; }
 }
 .ai-btn-text {
@@ -46,14 +49,14 @@ const emit = defineEmits(['tap'])
 
 /* #ifndef MP-WEIXIN */
 html.theme-dark {
-	.ai-btn { background: #3F3F46; }
+	.ai-btn { background: #3F3F46; color: #FAFAFA; }
 	.ai-btn:active { background: #52525B; }
 	.ai-btn-text { color: #FAFAFA; }
 }
 /* #endif */
 /* #ifdef MP-WEIXIN */
 @media (prefers-color-scheme: dark) {
-	.ai-btn { background: #3F3F46; }
+	.ai-btn { background: #3F3F46; color: #FAFAFA; }
 	.ai-btn:active { background: #52525B; }
 	.ai-btn-text { color: #FAFAFA; }
 }

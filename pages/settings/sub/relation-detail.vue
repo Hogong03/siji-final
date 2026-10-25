@@ -1,8 +1,8 @@
 <template>
-  <view class="page">
+  <view class="page page-enter">
     <view v-if="relation" class="detail-content">
       <!-- 人物头部 -->
-      <view class="hero">
+      <view class="hero panel-in">
         <view class="hero-avatar">{{ relation.name.charAt(0) }}</view>
         <view class="hero-info">
           <text class="hero-name">{{ relation.name }}</text>
@@ -15,7 +15,7 @@
       </view>
 
       <!-- 特征标签 -->
-      <view v-if="relation.traits && relation.traits.length > 0" class="section">
+      <view v-if="relation.traits && relation.traits.length > 0" class="section panel-in">
         <text class="section-title">性格特征</text>
         <view class="tag-wrap">
           <text v-for="t in relation.traits" :key="t" class="tag">{{ t }}</text>
@@ -23,7 +23,7 @@
       </view>
 
       <!-- 偏好 -->
-      <view v-if="relation.preferences && relation.preferences.length > 0" class="section">
+      <view v-if="relation.preferences && relation.preferences.length > 0" class="section panel-in">
         <text class="section-title">沟通偏好</text>
         <view class="tag-wrap">
           <text v-for="p in relation.preferences" :key="p" class="tag tag-alt">{{ p }}</text>
@@ -31,21 +31,21 @@
       </view>
 
       <!-- 备注 -->
-      <view v-if="relation.notes" class="section">
+      <view v-if="relation.notes" class="section panel-in">
         <text class="section-title">备注</text>
         <text class="section-text">{{ relation.notes }}</text>
       </view>
 
       <!-- 回一条：三条可延后不消失的草稿 -->
-      <view class="section">
+      <view class="section panel-in">
         <ReplyDrafts :relation="relation" />
       </view>
 
       <!-- 互动记录 -->
-      <view class="section">
+      <view class="section panel-in">
         <view class="section-header">
           <text class="section-title">互动记录（{{ interactions.length }}）</text>
-          <text class="add-btn" @tap="showInteractionForm = true">+ 记录</text>
+          <text class="add-btn btn-tactile" @tap="showInteractionForm = true">+ 记录</text>
         </view>
 
         <view v-if="interactions.length === 0" class="empty-mini">暂无互动记录</view>
@@ -61,11 +61,11 @@
       </view>
 
       <!-- 操作按钮 -->
-      <view class="section actions-card">
+      <view class="section actions-card panel-in">
         <view class="actions">
-          <button class="btn-action" @tap="startSimulation">模拟演练</button>
-          <button class="btn-action" @tap="openEditForm">编辑</button>
-          <button class="btn-action btn-danger" @tap="handleDelete">删除</button>
+          <button class="btn-action btn-tactile" @tap="startSimulation">模拟演练</button>
+          <button class="btn-action btn-tactile" @tap="openEditForm">编辑</button>
+          <button class="btn-action btn-danger btn-tactile" @tap="handleDelete">删除</button>
         </view>
       </view>
     </view>
@@ -75,8 +75,8 @@
     </view>
 
     <!-- 编辑弹窗 -->
-    <view v-if="showEditForm" class="modal-mask" @tap="showEditForm = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showEditForm" class="modal-mask mask-in" @tap="showEditForm = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">编辑人物</text>
         <view class="form-item">
           <text class="form-label">姓名 *</text>
@@ -116,8 +116,8 @@
     </view>
 
     <!-- 互动记录弹窗 -->
-    <view v-if="showInteractionForm" class="modal-mask" @tap="showInteractionForm = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showInteractionForm" class="modal-mask mask-in" @tap="showInteractionForm = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">记录互动</text>
         <view class="form-item">
           <text class="form-label">场景</text>
@@ -151,6 +151,7 @@ import { getRelationById, getInteractions, logInteraction, deleteRelation, updat
 import { safeNavigateBack } from '@/utils/nav-helper.js'
 import ReplyDrafts from '@/components/relation/ReplyDrafts.vue'
 import { useTheme } from '@/composables/useTheme.js'
+import { hapticLight, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 
 const { isDark } = useTheme()
 
@@ -208,12 +209,14 @@ function handleLogInteraction() {
     emotion: interactionForm.value.emotion
   })
   uni.showToast({ title: '已记录', icon: 'success' })
+  hapticSuccess()
   showInteractionForm.value = false
   interactionForm.value = { scene: '', content: '', result: '', emotion: '' }
   loadData()
 }
 
 function openEditForm() {
+  hapticLight()
   const r = relation.value
   editForm.value = {
     name: r.name || '',
@@ -259,11 +262,13 @@ function handleEdit() {
   // trustScore：手动编辑是亲密度唯一的合法写入路径（4.38.0）
   updateRelation(relationId.value, updates, { trustScore: true })
   uni.showToast({ title: '已保存', icon: 'success' })
+  hapticSuccess()
   showEditForm.value = false
   loadData()
 }
 
 function startSimulation() {
+  hapticLight()
   uni.navigateTo({
     url: `/pages/settings/sub/simulation?relation_id=${relationId.value}&name=${encodeURIComponent(relation.value.name)}`
   })
@@ -276,6 +281,7 @@ function handleDelete() {
     success: (res) => {
       if (res.confirm) {
         deleteRelation(relationId.value)
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
         setTimeout(() => safeNavigateBack(), 800)
       }

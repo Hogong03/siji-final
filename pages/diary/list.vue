@@ -15,6 +15,8 @@ function moodFace(item) {
   return (n >= 1 && n <= 5) ? MOOD_FACES[n] : ''
 }
 import EmptyState from '@/components/common/EmptyState.vue'
+import Skeleton from '@/components/common/Skeleton.vue'
+import { hapticLight, hapticSelect } from '@/utils/haptic.js'
 import { useDiaryList } from '@/composables/useDiaryList.js'
 
 const {
@@ -49,15 +51,21 @@ function goDetail(item) {
   const month = formatMonthOf(item.created_at)
   uni.navigateTo({ url: `/pages/diary/detail?clientId=${item.client_id}&month=${month}` })
 }
-function goNew() { uni.navigateTo({ url: '/pages/diary/detail?id=new' }) }
-function goTrash() { uni.navigateTo({ url: '/pages/diary/trash' }) }
+function goNew() { hapticLight(); uni.navigateTo({ url: '/pages/diary/detail?id=new' }) }
+function goTrash() { hapticLight(); uni.navigateTo({ url: '/pages/diary/trash' }) }
 /** 月度报告长图（4.11.0）：自定义导航页 */
-function goReport() { uni.navigateTo({ url: '/pages/stats/report' }) }
+function goReport() { hapticLight(); uni.navigateTo({ url: '/pages/stats/report' }) }
 
-function toggleFilter() { showFilter.value = !showFilter.value }
+function toggleFilter() { hapticLight(); showFilter.value = !showFilter.value }
 function closeFilter() { showFilter.value = false }
-function toggleTimePicker() { showTimePicker.value = !showTimePicker.value }
+function toggleTimePicker() { hapticLight(); showTimePicker.value = !showTimePicker.value }
 function clearSearch() { searchKeyword.value = '' }
+/** 视图切换：独立函数方便统一触感；三视图容器用 :key 重挂重放入场 */
+function setViewMode(v) {
+  if (viewMode.value === v) return
+  viewMode.value = v
+  hapticSelect()
+}
 
 /** 点回顾卡：进阅读页（章节版式 + 目录尺） */
 function openReview(r) {
@@ -97,7 +105,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 </script>
 
 <template>
-  <view class="diary-page">
+  <view class="diary-page page-enter">
     <!-- 工具栏：搜索 + 筛选 + 时间 + 回收站 一行 -->
     <view class="toolbar">
       <view class="search-input-wrap">
@@ -112,50 +120,50 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <text v-if="searchKeyword" class="search-clear" @tap="clearSearch">✕</text>
       </view>
       <view class="tool-btns">
-        <view class="tool-btn" @tap="toggleTimePicker">
+        <view class="tool-btn btn-tactile" @tap="toggleTimePicker">
           <text class="tool-label">{{ currentMonthLabel }}</text>
           <text class="tool-arrow" :class="{ up: showTimePicker }">▼</text>
         </view>
-        <view class="tool-btn tool-filter" @tap="toggleFilter">
+        <view class="tool-btn tool-filter btn-tactile" @tap="toggleFilter">
           <text>⚙</text>
           <view class="filter-dot" v-if="hasActiveFilter"></view>
         </view>
-        <view class="tool-btn" @tap="goReport"><text class="tool-label">月报</text></view>
-        <view class="tool-btn" @tap="goTrash"><text>🗑</text></view>
+        <view class="tool-btn btn-tactile" @tap="goReport"><text class="tool-label">月报</text></view>
+        <view class="tool-btn btn-tactile" @tap="goTrash"><text>🗑</text></view>
       </view>
     </view>
 
     <!-- 标签条（4.4.0）：默认只露一个「全部」，点开铺开所有标签；点「排序」可调位置 -->
     <scroll-view v-if="quickTags.length > 0" class="quick-tags" scroll-x>
-      <view class="quick-tag" :class="{ active: !filterTag && !showAllTags }" @tap="tapAll">
+      <view class="quick-tag chip-transition" :class="{ active: !filterTag && !showAllTags }" @tap="tapAll">
         <text>{{ showAllTags ? '收起' : '全部' }}</text>
       </view>
       <template v-if="showAllTags">
         <view
           v-for="t in quickTags" :key="'q'+t.name"
-          class="quick-tag"
+          class="quick-tag chip-transition"
           :class="{ active: filterTag === t.name && !sortMode, sorting: sortMode }"
         >
-          <view v-if="sortMode" class="tag-move" :class="{ disabled: !canMove(t.name, -1) }" @tap.stop="moveTag(t.name, -1)"><text>‹</text></view>
+          <view v-if="sortMode" class="tag-move btn-tactile" :class="{ disabled: !canMove(t.name, -1) }" @tap.stop="moveTag(t.name, -1)"><text>‹</text></view>
           <text v-if="!sortMode" @tap="toggleTag(t.name)">#{{ t.name }}</text>
           <text v-else class="tag-name-static">#{{ t.name }}</text>
-          <view v-if="sortMode" class="tag-move" :class="{ disabled: !canMove(t.name, 1) }" @tap.stop="moveTag(t.name, 1)"><text>›</text></view>
+          <view v-if="sortMode" class="tag-move btn-tactile" :class="{ disabled: !canMove(t.name, 1) }" @tap.stop="moveTag(t.name, 1)"><text>›</text></view>
         </view>
-        <view class="quick-tag sort-toggle" @tap="toggleSortMode">
+        <view class="quick-tag sort-toggle btn-tactile" @tap="toggleSortMode">
           <text>{{ sortMode ? '完成' : '排序' }}</text>
         </view>
       </template>
     </scroll-view>
 
     <!-- 回顾卡：每天一次，把旧记录推回眼前（4.2.0） ← flomo 的每日回顾 -->
-    <view v-if="reviewRecords.length > 0" class="review-card">
+    <view v-if="reviewRecords.length > 0" class="review-card panel-in">
       <view class="review-head">
         <text class="review-label">翻一翻</text>
-        <view class="review-close" @tap="dismissReview"><text>×</text></view>
+        <view class="review-close btn-tactile" @tap="dismissReview"><text>×</text></view>
       </view>
       <view
         v-for="r in reviewRecords" :key="r.id"
-        class="review-item"
+        class="review-item list-item-tactile"
         @tap="openReview(r)"
       >
         <text class="review-why">{{ r.why }}</text>
@@ -164,9 +172,9 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     </view>
 
     <!-- 时间选择（展开式） -->
-    <view class="time-picker" v-if="showTimePicker">
+    <view class="time-picker panel-in" v-if="showTimePicker">
       <scroll-view class="time-chips" scroll-x>
-        <view v-for="m in months" :key="m.key" class="time-chip" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key); showTimePicker = false">
+        <view v-for="m in months" :key="m.key" class="time-chip chip-transition" :class="{ active: currentMonth === m.key }" @tap="switchMonth(m.key); showTimePicker = false">
           <text>{{ m.label }}</text>
         </view>
       </scroll-view>
@@ -180,7 +188,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     </view>
 
     <!-- 高级筛选面板（遮罩 + 下滑面板） -->
-    <view class="filter-overlay" v-if="showFilter" @tap="closeFilter"></view>
+    <view class="filter-overlay mask-in" v-if="showFilter" @tap="closeFilter"></view>
     <view class="filter-panel" :class="{ show: showFilter }">
       <view class="fp-header">
         <text class="fp-title">筛选</text>
@@ -201,9 +209,9 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       <view class="fp-section">
         <text class="fp-section-label">视图</text>
         <view class="fp-view-row">
-          <text class="fp-view-btn" :class="{ active: viewMode === 'list' }" @tap="viewMode = 'list'">列表</text>
-          <text class="fp-view-btn" :class="{ active: viewMode === 'timeline' }" @tap="viewMode = 'timeline'">时间线</text>
-          <text class="fp-view-btn" :class="{ active: viewMode === 'calendar' }" @tap="viewMode = 'calendar'" v-if="currentMonth !== 'all'">日历</text>
+          <text class="fp-view-btn chip-transition" :class="{ active: viewMode === 'list' }" @tap="setViewMode('list')">列表</text>
+          <text class="fp-view-btn chip-transition" :class="{ active: viewMode === 'timeline' }" @tap="setViewMode('timeline')">时间线</text>
+          <text class="fp-view-btn chip-transition" :class="{ active: viewMode === 'calendar' }" @tap="setViewMode('calendar')" v-if="currentMonth !== 'all'">日历</text>
         </view>
       </view>
 
@@ -211,14 +219,14 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       <view class="fp-section">
         <text class="fp-section-label">分页</text>
         <view class="fp-view-row">
-          <text class="fp-view-btn" :class="{ active: !paginationEnabled }" @tap="setPagination(false)">不分页</text>
-          <text class="fp-view-btn" :class="{ active: paginationEnabled }" @tap="setPagination(true)">分页</text>
+          <text class="fp-view-btn chip-transition" :class="{ active: !paginationEnabled }" @tap="setPagination(false)">不分页</text>
+          <text class="fp-view-btn chip-transition" :class="{ active: paginationEnabled }" @tap="setPagination(true)">分页</text>
         </view>
         <view class="fp-view-row" v-if="paginationEnabled">
           <text class="fp-page-size-label">每页</text>
           <text
             v-for="n in [10, 20, 50]" :key="n"
-            class="fp-view-btn fp-size-btn"
+            class="fp-view-btn fp-size-btn chip-transition"
             :class="{ active: pageSize === n }"
             @tap="setPageSize(n)"
           >{{ n }} 条</text>
@@ -252,15 +260,15 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     </view>
 
     <!-- 内容区 -->
-    <view v-if="loading" class="loading-hint">加载中...</view>
+    <view v-if="loading" class="diary-loading"><Skeleton type="list" :rows="5" /></view>
 
     <EmptyState v-else-if="diaries.length === 0" icon="diary" title="还没有记录" desc="点 + 写一篇吧" action-text="写记录" @action="goNew" />
 
     <EmptyState v-else-if="filteredDiaries.length === 0" icon="search" title="没有匹配的记录" :desc="searchKeyword ? `搜索「${searchKeyword}」无结果` : '当前筛选无结果'" />
 
     <!-- 日历视图 -->
-    <scroll-view v-else-if="viewMode === 'calendar'" class="diary-scroll calendar-scroll" scroll-y>
-      <view class="calendar-grid">
+    <scroll-view v-else-if="viewMode === 'calendar'" :key="'cal-' + viewMode" class="diary-scroll calendar-scroll panel-in" scroll-y>
+      <view class="calendar-grid grid-stagger">
         <view v-for="(w, i) in weekDays" :key="i" class="cal-weekday">{{ w }}</view>
         <view v-for="(cell, i) in calendarDays" :key="i" class="cal-cell" :class="{ empty: cell.empty, today: cell.isToday }">
           <template v-if="!cell.empty">
@@ -272,60 +280,64 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       </view>
       <view v-for="cell in calendarDays.filter(c => !c.empty && c.count > 0)" :key="'cal-' + cell.day" class="cal-day-records">
         <text class="cal-day-label">{{ cell.day }}日 · {{ cell.count }}篇 · {{ cell.words }}字</text>
-        <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r)">
-          <text v-if="moodFace(r)" class="card-mood">{{ moodFace(r) }}</text>
-          <text v-if="isSeedRecord(r)" class="seed-badge">{{ SEED_BADGE }}</text>
-          <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
-          <text class="card-preview" v-if="r.content">{{ firstSentence(r.content) }}</text>
-          <view v-if="getItemTags(r).length > 0" class="tag-row">
-            <text v-for="t in getItemTags(r)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
+        <view class="diary-card-list card-list-stagger">
+          <view v-for="r in cell.records" :key="r.client_id" class="diary-card cal-card" @tap="goDetail(r)">
+            <text v-if="moodFace(r)" class="card-mood">{{ moodFace(r) }}</text>
+            <text v-if="isSeedRecord(r)" class="seed-badge">{{ SEED_BADGE }}</text>
+            <text class="card-title">{{ r.title || r.content?.substring(0, 30) || '无标题' }}</text>
+            <text class="card-preview" v-if="r.content">{{ firstSentence(r.content) }}</text>
+            <view v-if="getItemTags(r).length > 0" class="tag-row">
+              <text v-for="t in getItemTags(r)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
+            </view>
           </view>
         </view>
       </view>
     </scroll-view>
 
     <!-- 列表视图 -->
-    <scroll-view v-else-if="viewMode === 'list'" class="diary-scroll" scroll-y>
+    <scroll-view v-else-if="viewMode === 'list'" :key="'list-' + viewMode" class="diary-scroll panel-in" scroll-y>
       <view v-if="filteredDiaries.length > 0 && pagedDiaries.length === 0" class="pg-empty">
         <text class="pg-empty-text">本页暂无内容</text>
       </view>
-      <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item)">
-        <view class="card-photo" v-if="item.images && item.images.length > 0">
-          <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
-          <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
-        </view>
-        <view class="card-header">
-          <text class="card-date">{{ formatDate(item.created_at) }}</text>
-          <text v-if="item.pinned" class="pin-badge">📌</text>
-          <text v-if="item.category" class="cat-badge">{{ item.category }}</text>
-        </view>
-        <text v-if="moodFace(item)" class="card-mood">{{ moodFace(item) }}</text>
-        <text v-if="isSeedRecord(item)" class="seed-badge">{{ SEED_BADGE }}</text>
-        <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
-        <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
-        <view v-if="getItemTags(item).length > 0" class="tag-row">
-          <text v-for="t in getItemTags(item)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
+      <view class="diary-list card-list-stagger">
+        <view v-for="item in pagedDiaries" :key="item.client_id" class="diary-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item)">
+          <view class="card-photo" v-if="item.images && item.images.length > 0">
+            <image :src="item.images[0]" mode="aspectFill" class="card-photo-img" />
+            <text class="card-photo-count" v-if="item.images.length > 1">{{ item.images.length }}</text>
+          </view>
+          <view class="card-header">
+            <text class="card-date">{{ formatDate(item.created_at) }}</text>
+            <text v-if="item.pinned" class="pin-badge">📌</text>
+            <text v-if="item.category" class="cat-badge">{{ item.category }}</text>
+          </view>
+          <text v-if="moodFace(item)" class="card-mood">{{ moodFace(item) }}</text>
+          <text v-if="isSeedRecord(item)" class="seed-badge">{{ SEED_BADGE }}</text>
+          <text class="card-title">{{ item.title || item.content?.substring(0, 30) || '无标题' }}</text>
+          <text class="card-preview" v-if="item.content">{{ firstSentence(item.content) }}</text>
+          <view v-if="getItemTags(item).length > 0" class="tag-row">
+            <text v-for="t in getItemTags(item)" :key="t" class="tag" :style="{ color: tagColor(t) }">#{{ t }}</text>
+          </view>
         </view>
       </view>
       <view style="height: 120rpx;"></view>
       <!-- 分页栏（仅分页开启时显示；空页也保留页码，允许"每一页不必有内容"） -->
       <view v-if="paginationEnabled" class="pagination-bar">
-        <view class="pg-btn" :class="{ disabled: page <= 1 }" @tap="prevPage">‹</view>
+        <view class="pg-btn btn-tactile" :class="{ disabled: page <= 1 }" @tap="prevPage">‹</view>
         <view class="pg-info" @tap.stop>
           <text
             v-for="p in visiblePages"
             :key="p"
-            class="pg-page"
+            class="pg-page btn-tactile"
             :class="{ active: page === p }"
             @tap="goPage(p)"
           >{{ p }}</text>
         </view>
-        <view class="pg-btn" :class="{ disabled: page >= pageCount }" @tap="nextPage">›</view>
+        <view class="pg-btn btn-tactile" :class="{ disabled: page >= pageCount }" @tap="nextPage">›</view>
       </view>
     </scroll-view>
 
     <!-- 时间线视图 -->
-    <scroll-view v-else class="diary-scroll timeline-scroll" scroll-y>
+    <scroll-view v-else :key="'tl-' + viewMode" class="diary-scroll timeline-scroll panel-in card-list-stagger" scroll-y>
       <view v-for="group in timelineGroups" :key="group.date" class="timeline-group">
         <view class="timeline-date">{{ group.date }}</view>
         <view v-for="item in group.items" :key="item.client_id" class="diary-card timeline-card" :class="{ pinned: item.pinned, 'has-photo': item.images && item.images.length > 0 }" @tap="goDetail(item)">
@@ -346,7 +358,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     </scroll-view>
 
     <!-- FAB -->
-    <view class="fab" @tap="goNew"><text class="fab-icon">+</text></view>
+    <view class="fab fab-in" @tap="goNew"><text class="fab-icon">+</text></view>
   </view>
 </template>
 

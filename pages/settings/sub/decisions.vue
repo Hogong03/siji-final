@@ -1,28 +1,24 @@
 ﻿<template>
-  <view class="page">
+  <view class="page page-enter">
     <!-- 状态筛选 -->
     <view class="filter-bar">
       <text
         v-for="tab in tabs"
         :key="tab.value"
-        class="filter-tab"
+        class="filter-tab chip-transition"
         :class="{ active: currentTab === tab.value }"
-        @tap="currentTab = tab.value"
+        @tap="onTabTap(tab.value)"
       >{{ tab.label }} ({{ getCount(tab.value) }})</text>
     </view>
 
     <!-- 决策列表 -->
-    <scroll-view scroll-y class="list-area">
-      <view v-if="filteredList.length === 0" class="empty">
-        <text class="empty-icon">🤔</text>
-        <text class="empty-text">暂无决策记录</text>
-        <text class="empty-hint">在对话中说"帮我做个决策"即可开始</text>
-      </view>
+    <scroll-view scroll-y class="list-area card-list-stagger">
+      <EmptyState v-if="filteredList.length === 0" icon="sparkle" title="暂无决策记录" desc="在对话中说「帮我做个决策」即可开始" />
 
       <view
         v-for="item in filteredList"
         :key="item.id"
-        class="decision-card"
+        class="decision-card card-press"
         @tap="goDetail(item.id)"
       >
         <view class="card-top">
@@ -33,18 +29,18 @@
 
         <!-- 操作按钮区 -->
         <view class="card-actions" @tap.stop>
-          <text class="action-btn edit-btn" @tap="handleEdit(item)">编辑</text>
-          <text class="action-btn delete-btn" @tap="handleDelete(item)">删除</text>
+          <text class="action-btn edit-btn btn-tactile" @tap="handleEdit(item)">编辑</text>
+          <text class="action-btn delete-btn btn-tactile" @tap="handleDelete(item)">删除</text>
         </view>
       </view>
     </scroll-view>
 
     <!-- 新增按钮 -->
-    <view class="fab" @tap="openAddForm">+</view>
+    <view class="fab fab-in btn-tactile" @tap="openAddForm">+</view>
 
     <!-- 新增/编辑弹窗 -->
-    <view v-if="showAddForm" class="modal-mask" @tap="showAddForm = false">
-      <view class="modal-content" @tap.stop>
+    <view v-if="showAddForm" class="modal-mask mask-in" @tap="showAddForm = false">
+      <view class="modal-content sheet-panel" @tap.stop>
         <text class="modal-title">{{ editMode ? '编辑决策' : '记录决策' }}</text>
 
         <view class="form-item">
@@ -90,6 +86,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import EmptyState from '@/components/common/EmptyState.vue'
+import { hapticLight, hapticSelect, hapticSuccess, hapticWarning } from '@/utils/haptic.js'
 import {
   getAllDecisions, getDecisionsByStatus, createDecision, getDecisionStats, getPendingReviews,
   updateDecision, deleteDecision
@@ -126,6 +124,12 @@ onShow(() => {
 
 watch(currentTab, () => { applyFilter() })
 
+function onTabTap(v) {
+  if (currentTab.value === v) return
+  hapticSelect()
+  currentTab.value = v
+}
+
 function loadData() {
   allList.value = getAllDecisions()
   stats.value = getDecisionStats()
@@ -161,6 +165,7 @@ function onCatChange(e) {
 }
 
 function openAddForm() {
+  hapticLight()
   editMode.value = false
   editingId.value = null
   resetForm()
@@ -185,6 +190,7 @@ function handleAdd() {
     emotion: form.value.emotion.trim()
   })
   uni.showToast({ title: '已创建', icon: 'success' })
+  hapticSuccess()
   showAddForm.value = false
   resetForm()
   loadData()
@@ -229,6 +235,7 @@ function handleSave() {
     emotion: form.value.emotion.trim()
   })
   uni.showToast({ title: '已保存', icon: 'success' })
+  hapticSuccess()
   showAddForm.value = false
   editMode.value = false
   editingId.value = null
@@ -244,6 +251,7 @@ function handleDelete(item) {
     success: (res) => {
       if (res.confirm) {
         deleteDecision(item.id)
+        hapticWarning()
         uni.showToast({ title: '已删除', icon: 'success' })
         loadData()
       }

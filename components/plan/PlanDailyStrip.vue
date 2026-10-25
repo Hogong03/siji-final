@@ -58,7 +58,7 @@ function saveNote(item) {
 		<view v-if="!items.length" class="dc-empty">
 			<text class="dc-empty-text">今天没有待做的小事，歇着也行；想动了再来计划页看看。</text>
 		</view>
-		<view v-else class="dc-list">
+		<view v-else class="dc-list card-list-stagger">
 			<view v-for="(item, index) in items" :key="item.client_id" class="dc-block">
 				<view
 					class="dc-item" @tap="goItem(item.client_id)" @longpress.stop="openNote(item)"

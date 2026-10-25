@@ -100,8 +100,8 @@ function handleSave() {
 </script>
 
 <template>
-  <view v-if="visible" class="modal-mask" @tap="handleClose">
-    <view class="modal-content" @tap.stop>
+  <view v-if="visible" class="modal-mask mask-in" @tap="handleClose">
+    <view class="modal-content sheet-panel" @tap.stop>
       <view class="modal-header">
         <view class="modal-title"><SijiIcon name="edit" size="sm" /><text>自定义模板</text></view>
         <text class="modal-close" @tap="handleClose">✕</text>
@@ -188,7 +188,7 @@ function handleSave() {
       </scroll-view>
 
       <view class="modal-footer">
-        <view class="mf-btn save" @tap="handleSave">保存模板</view>
+        <view class="mf-btn save btn-tactile" @tap="handleSave">保存模板</view>
       </view>
     </view>
   </view>

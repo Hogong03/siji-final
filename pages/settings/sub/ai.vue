@@ -442,19 +442,19 @@ function goKeyGuide() {
 <template>
   <view class="ai-page">
     <!-- 没有 Key 的引导入口（显眼但不抢位：厂商列表上方一行文字链） -->
-    <view class="guide-link-row" @tap="goKeyGuide">
+    <view class="guide-link-row btn-tactile" @tap="goKeyGuide">
       <text class="guide-link-text">没有 Key？按引导申请 →</text>
     </view>
 
     <!-- 厂商列表 -->
-    <view class="provider-list">
+    <view class="provider-list card-list-stagger">
       <view
         v-for="p in providerList" :key="p.id"
-        class="provider-card"
+        class="provider-card card-press"
         :class="{ expanded: expandedProvider === p.id }"
       >
         <!-- 厂商头部 -->
-        <view class="provider-header" @tap="selectProvider(p.id)">
+        <view class="provider-header btn-tactile" @tap="selectProvider(p.id)">
           <image
             :src="getProviderLogo(p.id)"
             mode="aspectFit"
@@ -489,8 +489,8 @@ function goKeyGuide() {
                 :placeholder="p.keyPlaceholder || 'sk-...'"
                 :maxlength="200"
               />
-              <text class="key-action save" @tap="saveProviderKey">保存</text>
-              <text class="key-action test" @tap="testConnection">{{ testingKey ? '...' : '测试' }}</text>
+              <text class="key-action save btn-tactile" @tap="saveProviderKey">保存</text>
+              <text class="key-action test btn-tactile" @tap="testConnection">{{ testingKey ? '...' : '测试' }}</text>
             </view>
           </view>
 
@@ -503,7 +503,7 @@ function goKeyGuide() {
           <!-- 模型选择 -->
           <view class="config-section" v-if="currentModels.length > 0">
             <text class="config-label">选择模型</text>
-            <view class="model-grid">
+            <view class="model-grid grid-stagger">
               <view
                 v-for="m in currentModels" :key="m.id"
                 class="model-item"
@@ -537,7 +537,7 @@ function goKeyGuide() {
                 placeholder="留空则使用上方预设模型"
                 :maxlength="100"
               />
-              <text class="key-action save" @tap="saveCustomModel">设置</text>
+              <text class="key-action save btn-tactile" @tap="saveCustomModel">设置</text>
             </view>
           </view>
 
@@ -547,7 +547,7 @@ function goKeyGuide() {
           </view>
 
           <!-- 应用按钮 -->
-          <view class="apply-btn" v-if="needApply && store.aiProvider !== editingProvider" @tap="applyProvider">
+          <view class="apply-btn btn-tactile" v-if="needApply && store.aiProvider !== editingProvider" @tap="applyProvider">
             <text>切换至 {{ p.name }}</text>
           </view>
         </view>
@@ -555,12 +555,12 @@ function goKeyGuide() {
     </view>
 
     <!-- 添加自定义厂商 -->
-    <view class="add-custom-btn" @tap="startAddCustomProvider" v-if="!showCustomForm">
+    <view class="add-custom-btn btn-tactile" @tap="startAddCustomProvider" v-if="!showCustomForm">
       <text>+ 添加自定义厂商</text>
     </view>
 
     <!-- 自定义厂商表单 -->
-    <view class="custom-form" v-if="showCustomForm">
+    <view class="custom-form panel-in" v-if="showCustomForm">
       <view class="form-title">添加自定义 AI 厂商</view>
       <text class="form-hint">适用于不在预设列表中的 AI 服务商，需填写兼容 OpenAI 格式的 API 地址</text>
 
@@ -585,8 +585,8 @@ function goKeyGuide() {
       </view>
 
       <view class="form-actions">
-        <button class="btn-cancel" @tap="showCustomForm = false">取消</button>
-        <button class="btn-save" @tap="saveCustomProvider">保存并切换</button>
+        <button class="btn-cancel btn-tactile" @tap="showCustomForm = false">取消</button>
+        <button class="btn-save btn-tactile" @tap="saveCustomProvider">保存并切换</button>
       </view>
     </view>
 

@@ -97,21 +97,21 @@ function goBack() {
 </script>
 
 <template>
-	<view class="key-guide-page">
+	<view class="key-guide-page page-enter">
 		<!-- 顶部说明 -->
-		<view class="intro">
+		<view class="intro panel-in">
 			<text class="intro-text">思迹的 AI 能力由你自己申请的厂商 Key 驱动：Key 加密后只保存在本机，对话数据不上传任何服务器。</text>
 		</view>
 
 		<!-- 四家厂商卡 -->
-		<view v-for="p in guideList" :key="p.id" class="guide-card">
+		<view v-for="p in guideList" :key="p.id" class="guide-card panel-in">
 			<view class="guide-head">
 				<image :src="p.logo" mode="aspectFit" class="guide-logo" />
 				<view class="guide-info">
 					<text class="guide-name">{{ p.name }}</text>
 					<text class="guide-sell">{{ p.sell }}</text>
 				</view>
-				<view class="guide-open" @tap="openConsole(p)">
+				<view class="guide-open btn-tactile" @tap="openConsole(p)">
 					<text class="guide-open-text">打开申请页</text>
 				</view>
 			</view>
@@ -122,12 +122,12 @@ function goBack() {
 		</view>
 
 		<!-- 已拿到 Key -->
-		<view class="have-key">
+		<view class="have-key panel-in">
 			<text class="have-key-title">已拿到 Key？</text>
 			<view class="provider-chips">
 				<view
 					v-for="p in guideList" :key="p.id"
-					class="chip"
+					class="chip chip-transition"
 					:class="{ active: selected === p.id }"
 					@tap="selected = p.id"
 				>
@@ -141,7 +141,7 @@ function goBack() {
 				:placeholder="currentPlaceholder"
 				:maxlength="200"
 			/>
-			<view class="verify-btn" :class="{ disabled: verifying || !keyInput.trim() }" @tap="verifyAndSave">
+			<view class="verify-btn btn-tactile" :class="{ disabled: verifying || !keyInput.trim() }" @tap="verifyAndSave">
 				<text class="verify-btn-text">{{ verifying ? '验证中…' : '验证并保存' }}</text>
 			</view>
 			<text v-if="verifyError" class="verify-error">{{ verifyError }}</text>
@@ -149,7 +149,7 @@ function goBack() {
 		</view>
 
 		<!-- 暂不配置 -->
-		<view class="skip-row" @tap="goBack">
+		<view class="skip-row btn-tactile" @tap="goBack">
 			<text class="skip-text">暂不配置，先逛逛</text>
 		</view>
 	</view>

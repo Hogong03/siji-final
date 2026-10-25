@@ -101,15 +101,15 @@ function saveAgent() {
     <scroll-view class="form-scroll" scroll-y>
       <view class="edit-form">
         <!-- 页面引导 -->
-        <view class="form-intro">
+        <view class="form-intro panel-in">
           <text class="intro-title">{{ viewMode ? 'Agent 详情' : (editMode === 'edit' ? '编辑 Agent' : '创建新 Agent') }}</text>
           <text class="intro-sub">选择头像、设置名称,编写系统提示词定义 Agent 人设</text>
         </view>
 
         <!-- 头像选择 -->
-        <view class="form-section">
+        <view class="form-section panel-in">
           <text class="form-label">头像</text>
-          <view v-if="!viewMode" class="avatar-grid">
+          <view v-if="!viewMode" class="avatar-grid grid-stagger">
             <view
               v-for="opt in ICON_OPTIONS" :key="opt.id"
               class="avatar-option"
@@ -127,7 +127,7 @@ function saveAgent() {
         </view>
 
         <!-- 名称 -->
-        <view class="form-section">
+        <view class="form-section panel-in">
           <text class="form-label">名称</text>
           <input
             v-if="!viewMode"
@@ -140,7 +140,7 @@ function saveAgent() {
         </view>
 
         <!-- 描述 -->
-        <view class="form-section">
+        <view class="form-section panel-in">
           <text class="form-label">描述</text>
           <text class="form-hint">简短介绍这个 Agent 的角色定位,在列表中展示</text>
           <textarea
@@ -156,18 +156,18 @@ function saveAgent() {
         </view>
 
         <!-- 开场引导（切换 Agent 后可一键发送的示例；只读展示，由模板/AI 预置） -->
-        <view v-if="editForm.starts.length" class="form-section">
+        <view v-if="editForm.starts.length" class="form-section panel-in">
           <text class="form-label">开场引导</text>
           <text class="form-hint">切换到此 Agent 时显示在输入框上方，点击即可发送</text>
           <view class="start-chips">
-            <view v-for="(s, si) in editForm.starts" :key="si" class="start-chip">
+            <view v-for="(s, si) in editForm.starts" :key="si" class="start-chip chip-transition">
               <text class="start-chip-text">{{ s }}</text>
             </view>
           </view>
         </view>
 
         <!-- 系统提示词 -->
-        <view class="form-section">
+        <view class="form-section panel-in">
           <text class="form-label">系统提示词(人设)</text>
           <text class="form-hint">定义 Agent 的性格、语气和行为规则。留空则使用思迹默认助手人设。</text>
           <textarea
@@ -190,10 +190,10 @@ function saveAgent() {
     <!-- 固定底部操作栏 -->
     <view class="form-actions-bar">
       <view class="form-actions">
-        <button v-if="viewMode" class="btn-cancel" @tap="safeNavigateBack()">返回</button>
+        <button v-if="viewMode" class="btn-cancel btn-tactile" @tap="safeNavigateBack()">返回</button>
         <template v-else>
-          <button class="btn-cancel" @tap="safeNavigateBack()">取消</button>
-          <button class="btn-save" @tap="saveAgent">保存</button>
+          <button class="btn-cancel btn-tactile" @tap="safeNavigateBack()">取消</button>
+          <button class="btn-save btn-tactile" @tap="saveAgent">保存</button>
         </template>
       </view>
     </view>
