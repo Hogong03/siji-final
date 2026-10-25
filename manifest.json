@@ -37,6 +37,12 @@
             }
         },
         "distribute" : {
+            "apple" : {
+                "defaultTheme" : "auto"
+            },
+            "google" : {
+                "defaultNightMode" : "auto"
+            },
             "android" : {
                 "permissions" : [
                     "<uses-permission android:name=\"android.permission.INTERNET\"/>",

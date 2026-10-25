@@ -33,3 +33,26 @@ describe('App 分支在无 plus 环境的底线行为', () => {
     expect(getThemeMode()).toBe('system')
   })
 })
+
+describe('refreshSystemTheme：system 档 onShow 兜底（4.49.0）', () => {
+  it('导出存在，system 档调用不抛错（node 无 uni/plus 静默退化）', async () => {
+    const mod = await import('../utils/theme.js')
+    expect(typeof mod.refreshSystemTheme).toBe('function')
+    setThemeMode('system')
+    expect(() => mod.refreshSystemTheme()).not.toThrow()
+    expect(getThemeMode()).toBe('system')
+  })
+
+  it('手动档下调用不改写 isDark（兜底只作用于 system 档）', async () => {
+    const mod = await import('../utils/theme.js')
+    setThemeMode('dark')
+    const before = mod.isDark.value
+    expect(before).toBe(true)
+    mod.refreshSystemTheme()
+    expect(mod.isDark.value).toBe(true)
+    expect(getThemeMode()).toBe('dark')
+    setThemeMode('system')
+  })
+})
+
+

@@ -355,6 +355,22 @@ function getThemeMode() {
 }
 
 /**
+ * system 档下重读系统主题并应用（4.49.0 兜底）。
+ * 场景：App 端 uni.onThemeChange 因基座限制未触发时（iOS 标准基座官方不支持，
+ * 需要自定义基座/云打包才生效），页面 onShow / 回到前台仍能按当前系统态重算一遍，
+ * 保证「切系统后回到 App 即跟随」。手动档（light/dark）不动；幂等：系统态未变零副作用。
+ */
+function refreshSystemTheme() {
+  if (mode !== 'system') return
+  const dark = readSystemDark()
+  if (dark !== isDark.value) {
+    isDark.value = dark
+    applyClass()
+    setNativeBars()
+  }
+}
+
+/**
  * 初始化：App.vue onLaunch 调一次。
  * 读存储 → 算 isDark → 挂监听 → 应用。重复调用安全（幂等）。
  */
@@ -382,5 +398,6 @@ export {
   setThemeMode,
   getThemeMode,
   applyTheme,
+  refreshSystemTheme,
   normalizeMode
 }
