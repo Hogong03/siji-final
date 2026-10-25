@@ -269,7 +269,7 @@ function goDetail(id) {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .page { min-height: 100vh; background: #FAFAFA; }
 
 .filter-bar {

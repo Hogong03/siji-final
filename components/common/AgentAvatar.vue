@@ -64,7 +64,7 @@ const iconSrc = computed(() => normalizeAgentIcon(props.icon))
   </view>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .agent-avatar {
   display: flex;
   align-items: center;

@@ -187,7 +187,7 @@ function handleDelete() {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .page { min-height: 100vh; background: #FAFAFA; }
 .detail-content { padding: 24rpx; }
 

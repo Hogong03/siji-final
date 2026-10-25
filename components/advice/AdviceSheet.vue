@@ -91,7 +91,7 @@ function onGo(item) {
 	</view>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .adv-mask {
 	position: fixed;
 	left: 0;
