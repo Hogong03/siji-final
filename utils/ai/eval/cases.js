@@ -247,6 +247,25 @@ export const EVAL_CASES = [
     }
   },
   {
+    id: 'weather-realtime-search',
+    title: '问明天天气 → 必须联网搜索，禁止只承诺不查（4.49.0）',
+    message: '明天的天气怎么样？',
+    expect: {
+      tools: ['web_search'],
+      forbid: ['create_diary', 'create_bill', 'create_plan']
+    }
+  },
+  {
+    id: 'weather-followup-ellipsis',
+    title: '「查一下」承接上文天气 → 补全意图并联网搜索（4.49.0 多轮）',
+    message: '明天的天气怎么样？',
+    turns: ['明天的天气怎么样？', '查一下'],
+    expect: {
+      tools: ['web_search'],
+      forbid: ['create_diary', 'create_bill', 'create_plan']
+    }
+  },
+  {
     id: 'long-form-article',
     title: '长文：要一篇 1000 字的文章并存成记录（顺带测各家输出上限）',
     message: '帮我写一篇文章，主题是「低落的时候怎么让自己动起来」，1000 字左右，写完存成记录',

@@ -2,6 +2,7 @@
  * prompt-actions.js — Action schema + 闲聊模式判定
  * 从 prompt-builder.js 拆分，降低单文件体积
  */
+import { isWebSearchAvailable } from './search-config.js'
 
 /**
  * 核心 action schema（始终注入，已压缩字段注释）
@@ -132,6 +133,19 @@ export const BEHAVIOR_RULES = [
   '用户说「本周焦点：X」或回答周一「定本周焦点」问询 → set_week_focus 存下；周内对话出现与焦点相关的取舍时，可以提一句本周焦点帮他回到主线上；周报会自动对照上周焦点'
 ]
 
+/** 联网搜索规则（4.49.0）：可用 / 不可用两版。
+ *  web_search 工具按 Key 门控注入（agent-transport 的 buildToolList），未注入时提示词还在
+ *  指示「调用 web_search」，模型只能口头承诺或幻觉出一个 web_search JSON action ——
+ *  天气查询「帮你查一下」却没真查的根因。不可用版改成「如实告知无法联网」。 */
+const SEARCH_RULE_AVAILABLE = [
+  '- 用户问实时/最新信息（新闻、政策、天气、热点等）或本地数据回答不了时，调用 web_search 联网搜索，再基于结果回答。',
+  '- 禁止只承诺不执行：答天气/新闻/实时信息必须实际调用 web_search 拿到结果再回答；只回「帮你查一下/好的，我查查」而没有工具调用 = 没查，那是骗用户。'
+].join('\n')
+
+const SEARCH_RULE_UNAVAILABLE = [
+  '- 用户问实时/最新信息（新闻、政策、天气、热点等）时，当前未配置联网搜索，如实告知用户暂时无法联网查询；禁止假装能查，禁止只回「帮你查一下」这类承诺。'
+].join('\n')
+
 /** Agent 工具说明（模块级常量：3.5.11 从 agent-loop.js 移入，agent-loop 仍原样 re-export） */
 /** Agent 工具说明（模块级导出：M1 回归测试直接断言文本，勿内联进函数） */
 export const AGENT_TOOL_INSTRUCTION = `
@@ -154,8 +168,20 @@ export const AGENT_TOOL_INSTRUCTION = `
 - 体验反馈可直接增删改查：create_feedback/update_feedback/delete_feedback/query_feedback
 - 用户问之前/上次/以前说过什么、是不是说过 XX → 调用 query_conversations 检索历史会话，命中多条按时间倒序简述并注明会话标题。
 - 所有工具调用完成后，用自然语言总结回答用户。
-- 用户问实时/最新信息（新闻、政策、天气、热点等）或本地数据回答不了时，调用 web_search 联网搜索，再基于结果回答。
+${SEARCH_RULE_AVAILABLE}
 - 用户发来网址、转发文章链接、要你总结/分析某个页面时，先调用 read_url 读正文再回答；给了多个网址就逐个读。
 - 若用户消息是纯闲聊，不调用任何工具，直接回复。
 - 多步任务（多条记录/多个计划/一批修改）先在心里列出要做哪几步，再按步骤连续调用工具完成，不要挤用户分多次说。
 - 工具返回失败（参数错误/找不到目标）时必须换参数、或先 query_* 定位后重试一次，禁止把失败信息当结论回复用户。`
+
+/** 联网搜索不可用时的工具说明（与可用版仅差 web_search 规则段） */
+export const AGENT_TOOL_INSTRUCTION_NO_SEARCH = AGENT_TOOL_INSTRUCTION.replace(SEARCH_RULE_AVAILABLE, SEARCH_RULE_UNAVAILABLE)
+
+/**
+ * 按当前联网搜索可用性返回工具说明（4.49.0）
+ * 不可用时不再指示模型调用 web_search —— 工具没注入，指示只会诱导口头承诺或幻觉 JSON action。
+ * @returns {string}
+ */
+export function buildAgentToolInstruction() {
+  return isWebSearchAvailable() ? AGENT_TOOL_INSTRUCTION : AGENT_TOOL_INSTRUCTION_NO_SEARCH
+}

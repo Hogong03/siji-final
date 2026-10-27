@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AI 响应解析器 — 容错处理，支持单意图/复合意图/撤销
  *
  * 从 utils/api.js 拆分，减少单文件体积
@@ -123,8 +123,19 @@ export function parseAiResponse(raw, conversationId) {
   // JSON 解析成功但 reply 为空 → 兜底
   let reply = parsed.reply || parsed.message || parsed.content || ''
   if (!reply.trim()) {
-    logger.warn('[思迹] AI 返回 JSON 但 reply 为空:', raw.substring(0, 200))
-    reply = '抱歉，我没能理解，能换个方式说说吗？'
+    // 4.49.0：区分「模型没理解」与「模型给了动作但没写文案」。
+    // 实测（天气会话）：模型返回 {"reply":"","action":{"type":"web_search"}}，reply 为空
+    // 被替换成「抱歉，我没能理解」—— 错误归因，用户以为模型听不懂，实际是动作走了别的路径。
+    // 有动作时不误报「没理解」，给中性文案，执行结果会接在后面。
+    const hasAction = !!(parsed.action && parsed.action.type && parsed.action.type !== 'none') ||
+      (Array.isArray(parsed.actions) && parsed.actions.some(a => a && a.type && a.type !== 'none'))
+    if (hasAction) {
+      logger.warn('[思迹] AI 返回 JSON 但 reply 为空（带 action，交给执行层补文案）:', raw.substring(0, 200))
+      reply = '好的，正在处理~'
+    } else {
+      logger.warn('[思迹] AI 返回 JSON 但 reply 为空:', raw.substring(0, 200))
+      reply = '抱歉，我没能理解，能换个方式说说吗？'
+    }
   }
 
   // 清洗 reply 中的 markdown 代码块（AI 有时会违反禁令）

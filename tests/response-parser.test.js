@@ -64,4 +64,19 @@ describe('response-parser.js', () => {
     expect(result.reply).toBe('已记账')
     expect(result.action.type).toBe('create_bill')
   })
+
+  // 4.49.0：天气会话实测 —— 模型返回 {"reply":"","action":{"type":"web_search"}}，
+  // 旧逻辑把空 reply 换成「抱歉，我没能理解」，把「动作走了别的路径」误报成「模型没听懂」。
+  it('JSON 有 action 但 reply 为空 — 不再误报「我没能理解」', () => {
+    const json = JSON.stringify({ reply: '', action: { type: 'web_search', payload: { query: '南昌 明天 天气' } } })
+    const result = parseAiResponse(json, 'conv_001')
+    expect(result.reply).not.toContain('没能理解')
+    expect(result.reply).toContain('处理')
+    expect(result.action.type).toBe('web_search')
+  })
+
+  it('JSON 无 action 且 reply 为空 — 保留「我没能理解」兜底', () => {
+    const result = parseAiResponse(JSON.stringify({ reply: '' }), 'conv_001')
+    expect(result.reply).toBe('抱歉，我没能理解，能换个方式说说吗？')
+  })
 })

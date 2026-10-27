@@ -20,7 +20,7 @@ import { getProvider } from './providers.js'
 import { buildChatMessages } from './chat-helpers.js'
 import { executeTool, QUERY_TOOLS, needsConfirmation, TOOL_LABELS, getTruncateLimit, parseToolArgs, argErrorResult } from './tools.js'
 import { parseAiResponse } from './response-parser.js'
-import { AGENT_TOOL_INSTRUCTION } from './prompt-actions.js'
+import { AGENT_TOOL_INSTRUCTION, buildAgentToolInstruction } from './prompt-actions.js'
 import { executeWebSearch } from './tools/web-search.js'
 import { executeReadUrl } from './tools/read-url.js'
 import { resolveInteractionTarget } from '../relations.js'
@@ -33,11 +33,15 @@ const MAX_ROUNDS = 5          // 最多工具调用轮数，防死循环
  * 强操作意图正则（4.10.5）：命中即视为「这条消息应该调工具」。
  * 来源是 4.10.4 自检 GLM-5.3 Flash 实测的三类零工具失败：不点名打卡 / 口头问花费 / 一句多意图。
  * 只收指令式动词，不收领域名词 —— 「今天下班去江边走了走」这类叙述不能命中，否则闲聊会被误纠偏。
+ *
+ * 4.49.0 补实时信息查询：天气会话实测「明天的天气怎么样？」零工具只回「帮你查一下」（承诺不执行），
+ * 而 STRONG_ACTION_RE 当时只有「查一下」这类动词、接不住问句。补的是**问句结构**（天气怎么样/什么天气/
+ * 多少度/最新消息），不是裸领域名词 —— 「今天天气还行，就是想随便聊两句」这类闲聊仍不命中。
  */
-export const STRONG_ACTION_RE = /(打个?卡|记一笔|记一下|记账|帮我记|记个待办|写个记录|写一篇|写篇|存成|存为|花了多少|查一下|查账|查下|改一下|改成|改到|删掉|删除|撤销|撤回|创建计划|新建计划|建个计划)/
+export const STRONG_ACTION_RE = /(打个?卡|记一笔|记一下|记账|帮我记|记个待办|写个记录|写一篇|写篇|存成|存为|花了多少|查一下|查账|查下|改一下|改成|改到|删掉|删除|撤销|撤回|创建计划|新建计划|建个计划|天气预报|(?:天气|气温|温度)(?:怎么样|怎样|如何|好不好|冷不冷|热不热|几点|多少度|多少)|(?:什么|啥)(?:天气|气温|温度)|(?:今天|明天|后天|最近|现在)(?:多少度|几度)|最新.{0,6}(?:消息|新闻|动态|政策|发布|进展))/
 
 /** 纠偏轮追问文案（4.10.5）：与写入失败自检同款 [系统] 前缀 */
-export const AGENT_NUDGE_TEXT = '[系统] 你刚才没有调用任何工具就直接回复了，但用户这条消息包含数据操作意图（如记账、记录、打卡、查询、修改）。请立即调用对应工具完成操作，拿到结果后再总结回答；只有确认消息与任何数据操作无关时，才允许直接回复。'
+export const AGENT_NUDGE_TEXT = '[系统] 你刚才没有调用任何工具就直接回复了，但用户这条消息包含数据操作或实时信息查询意图（如记账、记录、打卡、查询、天气/新闻联网搜索、修改）。请立即调用对应工具完成操作，拿到结果后再总结回答；只有确认消息与任何数据操作无关时，才允许直接回复。'
 
 /** 干跑时也要拦住的联网工具：跑批不该产生真实网络请求（工具选择与它们的内容无关） */
 const NETWORK_TOOLS = new Set(['web_search', 'read_url'])
@@ -77,7 +81,8 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
   const baseMessages = buildChatMessages(message, chatHistory, cfg, { lite: false })
 
   // system prompt 追加工具说明，让 AI 明确"要先查数据再回答"
-  const toolInstruction = AGENT_TOOL_INSTRUCTION
+  // 4.49.0：按联网搜索可用性取说明 —— 不可用时不再指示模型调用 web_search（工具没注入）
+  const toolInstruction = buildAgentToolInstruction()
 
   const messages = [
     { ...baseMessages[0], content: baseMessages[0].content + toolInstruction },
@@ -126,6 +131,45 @@ export async function runAgentLoop(store, message, conversationId, cfg, history,
       const result = parseAiResponse(content, conversationId)
       const hasJsonAction = !!(result.action && result.action.type) ||
         (Array.isArray(result.actions) && result.actions.length > 0)
+
+      // 4.49.0：模型把联网工具写成 JSON action（{"reply":"","action":{"type":"web_search"}}）时，
+      // web_search/read_url 不在 ACTION_MAP —— 交给 autoExecutor 会被当未知类型静默丢弃
+      // （天气会话「查一下 → 抱歉，我没能理解」的根因）。这里按工具路径执行并把结果回传，继续循环。
+      // 只在「这一轮全是联网动作」时接管，混了写动作就让老路径处理，避免吞掉写操作。
+      const jsonActions = (Array.isArray(result.actions) && result.actions.length > 0)
+        ? result.actions
+        : (result.action ? [result.action] : [])
+      const jsonNetworkActions = jsonActions.filter(a => a && (a.type === 'web_search' || a.type === 'read_url'))
+      if (jsonNetworkActions.length > 0 && jsonNetworkActions.length === jsonActions.length) {
+        logger.warn('[AgentLoop] 联网工具被写成 JSON action，按工具执行:', jsonNetworkActions.map(a => a.type).join(','))
+        const synCalls = jsonNetworkActions.map((a, i) => ({
+          id: `json_net_${rounds}_${i}`,
+          type: 'function',
+          function: { name: a.type, arguments: JSON.stringify(a.payload || {}) }
+        }))
+        messages.push({ role: 'assistant', content: content || '', tool_calls: synCalls })
+        for (let i = 0; i < jsonNetworkActions.length; i++) {
+          const fnName = jsonNetworkActions[i].type
+          const fnArgs = jsonNetworkActions[i].payload || {}
+          let toolResult
+          if (dryRun && NETWORK_TOOLS.has(fnName)) toolResult = dryRunResult(fnName, fnArgs)
+          else if (fnName === 'web_search') toolResult = await executeWebSearch(fnArgs.query)
+          else toolResult = await executeReadUrl(fnArgs.url)
+          toolCalls.push({ name: fnName, args: fnArgs })
+          execResults.push({
+            name: fnName, ok: toolResult.ok,
+            message: toolResult.message || null,
+            detail: toolResult.detail || null,
+            confirm: false
+          })
+          let resultText = toolResult.text || '（无返回）'
+          const truncateLimit = getTruncateLimit(fnName)
+          if (resultText.length > truncateLimit) resultText = resultText.substring(0, truncateLimit) + '…（已截断）'
+          messages.push({ role: 'tool', tool_call_id: synCalls[i].id, content: resultText })
+        }
+        continue
+      }
+
       // 4.10.5 纠偏轮：强操作意图的原话，模型却零工具直接回闲聊（GLM-5.3 Flash 实测三类：
       // 不点名打卡 / 口头问花费 / 一句多意图）→ 追问一轮要求先调工具。
       // 只纠一次（nudged）；回复里已带可执行 action 的走 JSON 路径不纠；

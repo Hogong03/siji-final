@@ -6,6 +6,46 @@
 
 export const V430 = [
   {
+    version: '4.49.0',
+    date: '2026-10-28',
+    title: '修天气查询只承诺不执行：联网工具被写成 JSON action 时按工具真执行，空 reply 不再误报「没理解」',
+    summary: [
+      '根因三条：① 模型把 web_search 写成 JSON action 时它不在 ACTION_MAP，autoExecutor 当未知类型静默丢弃，搜索根本没发出去；② response-parser 把「有 action 但 reply 为空」误报成「抱歉，我没能理解」；③ 提示词无条件指示模型调用 web_search，但工具按 Key 门控未注入，模型只能口头承诺或幻觉 JSON action',
+      'agent-loop：零工具轮里识别「全是联网动作」的 JSON action（web_search/read_url），按工具路径真执行并把结果回传模型续一轮；混着写动作不接管，避免吞掉写操作',
+      'response-parser：有 action 时改用中性文案「好的，正在处理~」，只在真正无动作时才说「我没能理解」',
+      'STRONG_ACTION_RE 补实时信息问句（天气怎么样/什么天气/多少度/最新消息），纠偏轮能把「只承诺不查」逼回工具调用；闲聊式天气描述仍不命中',
+      '提示词加「禁止只承诺不执行」硬规则，并按 isWebSearchAvailable() 门控：联网不可用时换成「如实告知无法联网」，不再指示模型调用不存在的工具',
+      '语料 34 → 36（天气必须 web_search + 「查一下」多轮承接天气），新增 tests/agent-weather-search.test.js 6 例、response-parser +2、agent-nudge +1'
+    ],
+    categories: [
+      {
+        title: 'AI 行为',
+        items: [
+          'utils/ai/agent-loop.js：零工具轮（callList.length===0）新增联网动作接管 —— parseAiResponse 产出的动作全是 web_search/read_url 时，合成 tool_calls 并按工具路径执行（dryRun 走占位结果），tool 结果回传后 continue，模型基于搜索结果给最终回复；混有写动作时保持原样交给 JSON 路径',
+          'utils/ai/agent-loop.js：STRONG_ACTION_RE 增加实时信息问句结构（天气预报 / 天气怎么样 / 什么天气 / 今天多少度 / 最新消息），只收问句不收裸领域名词，「今天天气还行」这类闲聊仍不命中',
+          'utils/ai/agent-loop.js：AGENT_NUDGE_TEXT 补「天气/新闻联网搜索」场景，纠偏轮不再只覆盖记账记录类',
+          'utils/ai/agent-loop.js：工具说明改用 buildAgentToolInstruction()（按联网可用性取完整版/无搜索版）'
+        ]
+      },
+      {
+        title: '提示词与解析',
+        items: [
+          'utils/ai/prompt-actions.js：AGENT_TOOL_INSTRUCTION 增加硬规则「禁止只承诺不执行：答天气/新闻/实时信息必须实际调用 web_search 拿到结果再回答」；新增 AGENT_TOOL_INSTRUCTION_NO_SEARCH（联网不可用时如实告知）与 buildAgentToolInstruction()',
+          'utils/ai/response-parser.js：JSON 解析成功但 reply 为空时先看有无 action —— 有动作给「好的，正在处理~」（执行结果会接在后面），无动作才保留「抱歉，我没能理解」'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/agent-weather-search.test.js（新增 6 例）：JSON action web_search 真执行并续轮 / 第二轮带 assistant(tool_calls)+tool 结果 / 干跑不发请求 / 混合动作不接管 / 提示词门控两态',
+          'tests/response-parser.test.js +2 例：有 action 空 reply 不再误报没理解；无 action 仍保留兜底',
+          'tests/agent-nudge.test.js +1 例：实时信息问句命中、闲聊式天气描述不命中',
+          'utils/ai/eval/cases.js +2 条语料（weather-realtime-search / weather-followup-ellipsis，后者多轮验证「查一下」承接上文）'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.48.2',
     date: '2026-10-24',
     title: '修两处真机日志噪声：提醒震动用错 API 从未生效 + 标准基座误判后台常驻可用',

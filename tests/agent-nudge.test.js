@@ -52,6 +52,17 @@ describe('STRONG_ACTION_RE 边界', () => {
     expect(STRONG_ACTION_RE.test('今天下班去江边走了走，风很舒服')).toBe(false)
     expect(STRONG_ACTION_RE.test('今天和阿伟聊了项目排期的事，聊得还行')).toBe(false)
   })
+
+  it('4.49.0 实时信息问句命中（天气/新闻），闲聊式天气描述仍不命中', () => {
+    expect(STRONG_ACTION_RE.test('明天的天气怎么样？')).toBe(true)
+    expect(STRONG_ACTION_RE.test('明天什么天气')).toBe(true)
+    expect(STRONG_ACTION_RE.test('今天多少度')).toBe(true)
+    expect(STRONG_ACTION_RE.test('天气预报一下明天')).toBe(true)
+    expect(STRONG_ACTION_RE.test('最近有什么新的大模型发布？要最新的消息')).toBe(true)
+    // 叙述/寒暄不能因为出现「天气」二字就被纠偏
+    expect(STRONG_ACTION_RE.test('今天天气还行，就是想随便聊两句')).toBe(false)
+    expect(STRONG_ACTION_RE.test('周末天气好的话想去爬山')).toBe(false)
+  })
 })
 
 describe('纠偏轮行为', () => {
