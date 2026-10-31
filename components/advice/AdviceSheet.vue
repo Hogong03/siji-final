@@ -11,7 +11,7 @@
  * 且**必须是 html.theme-dark 前缀 + 嵌套写法**（H5/App 一份、MP 的 @media 一份，一比一配对），
  * 扁平写法会被 tests/theme-mode.test.js 的守卫判为缺口。
  */
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import SijiIcon from '@/components/common/SijiIcon.vue'
 
 const props = defineProps({
@@ -25,6 +25,15 @@ const emit = defineEmits(['close', 'go', 'disable-auto', 'open-notify'])
 
 /** 入场动画开关：先挂载再置位，否则 translateY(100%) → 0 的过渡不会触发 */
 const active = ref(false)
+/** 当前展开依据的方向 id（同一时刻只展开一条） */
+const expanded = ref('')
+
+/** M3：方向卡（五层过滤后的 2~3 条）；为空时回落旧版列表 */
+const dirs = computed(() => (props.advice && Array.isArray(props.advice.directions) ? props.advice.directions : []))
+
+function toggleEvidence(id) {
+	expanded.value = expanded.value === id ? '' : id
+}
 
 watch(() => props.show, (v) => {
 	if (v) setTimeout(() => { active.value = true }, 20)
@@ -57,8 +66,24 @@ function onGo(item) {
 					<text class="adv-focus-text">{{ advice.focus }}</text>
 				</view>
 
-				<!-- 建议列表 -->
-				<view v-if="advice.items && advice.items.length" class="adv-list">
+				<!-- M3：方向卡（带依据与第一步） -->
+				<view v-if="dirs.length" class="adv-list">
+					<view v-for="d in dirs" :key="d.id" class="adv-card">
+						<view class="adv-card-head" @tap="onGo(d)">
+							<text class="adv-card-title">{{ d.title }}</text>
+							<SijiIcon v-if="d.action" name="chevron-right" size="sm" />
+						</view>
+						<text class="adv-card-why">{{ d.why }}</text>
+						<text v-if="d.firstStep" class="adv-card-step">先做：{{ d.firstStep }}</text>
+						<view class="adv-card-foot">
+							<text class="adv-card-evidence" @tap.stop="toggleEvidence(d.id)">{{ expanded === d.id ? '收起依据' : '看依据' }}</text>
+						</view>
+						<text v-if="expanded === d.id && d.evidence" class="adv-card-ref">{{ d.evidence.text }}（{{ d.evidence.ref }}）</text>
+					</view>
+				</view>
+
+				<!-- 建议列表（旧版单条提醒，方向为空时回落） -->
+				<view v-else-if="advice.items && advice.items.length" class="adv-list">
 					<view
 						v-for="it in advice.items"
 						:key="it.key"
@@ -230,6 +255,64 @@ function onGo(item) {
 	line-height: 1.5;
 }
 
+.adv-card {
+	padding: 24rpx 0;
+	border-bottom: 1rpx solid #F4F4F5;
+}
+
+.adv-card:last-child {
+	border-bottom: none;
+}
+
+.adv-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.adv-card-title {
+	flex: 1;
+	font-size: 30rpx;
+	font-weight: 600;
+	color: #18181B;
+}
+
+.adv-card-why {
+	display: block;
+	font-size: 24rpx;
+	color: #71717A;
+	margin-top: 8rpx;
+	line-height: 1.5;
+}
+
+.adv-card-step {
+	display: block;
+	font-size: 24rpx;
+	color: #18181B;
+	margin-top: 6rpx;
+}
+
+.adv-card-foot {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8rpx;
+}
+
+.adv-card-evidence {
+	font-size: 22rpx;
+	color: #A1A1AA;
+}
+
+.adv-card-ref {
+	display: block;
+	margin-top: 8rpx;
+	padding: 12rpx 16rpx;
+	font-size: 22rpx;
+	color: #71717A;
+	background: #FAFAFA;
+	border-radius: 10rpx;
+}
+
 .adv-empty {
 	padding: 60rpx 0;
 	display: flex;
@@ -318,6 +401,31 @@ html.theme-dark {
 		color: #A1A1AA;
 	}
 
+	.adv-card {
+		border-bottom-color: #27272A;
+	}
+
+	.adv-card-title {
+		color: #FAFAFA;
+	}
+
+	.adv-card-why {
+		color: #A1A1AA;
+	}
+
+	.adv-card-step {
+		color: #FAFAFA;
+	}
+
+	.adv-card-evidence {
+		color: #71717A;
+	}
+
+	.adv-card-ref {
+		color: #A1A1AA;
+		background: #27272A;
+	}
+
 	.adv-empty-text {
 		color: #A1A1AA;
 	}
@@ -388,6 +496,31 @@ html.theme-dark {
 
 	.adv-item-desc {
 		color: #A1A1AA;
+	}
+
+	.adv-card {
+		border-bottom-color: #27272A;
+	}
+
+	.adv-card-title {
+		color: #FAFAFA;
+	}
+
+	.adv-card-why {
+		color: #A1A1AA;
+	}
+
+	.adv-card-step {
+		color: #FAFAFA;
+	}
+
+	.adv-card-evidence {
+		color: #71717A;
+	}
+
+	.adv-card-ref {
+		color: #A1A1AA;
+		background: #27272A;
 	}
 
 	.adv-empty-text {

@@ -345,9 +345,9 @@ export function renderContextPacket(packet) {
   const f = packet.facts || {}
 
   const p = f.plans || {}
-  if (p.active || p.overdue || p.dueToday) {
+  // M3：删掉「进行中 N」—— 它与「用户近期数据」的月度概览重复，且是背景不是当下该做的事
+  if (p.overdue || p.dueToday || p.checkedToday) {
     const segs = []
-    if (p.active) segs.push('进行中 ' + intOf(p.active))
     if (p.overdue) segs.push('逾期 ' + intOf(p.overdue) + (p.overdueMaxDays ? '（最久 ' + intOf(p.overdueMaxDays) + ' 天）' : ''))
     if (p.dueToday) segs.push('今天到期 ' + intOf(p.dueToday))
     if (p.checkedToday) segs.push('今天已打卡')

@@ -24,6 +24,9 @@
 import { collectSnapshot, RELATION_STALE_DAYS } from './context-pack.js'
 import { timeBucket, ymdOf, buildAdviceSignature } from './advice-context.js'
 import { collectAdvice, pickAdviceFocus, ADVICE_LIMIT } from './advice-rules.js'
+import { buildCandidates } from './advice-candidates.js'
+import { filterCandidates } from './advice-select.js'
+import { pickForPanel } from './advice-timing.js'
 
 /** 4.51.0：取数已平移，此处只做再导出，保持对外 API 不变（tests/advice.test.js 直接 import collectSnapshot） */
 export { collectSnapshot, RELATION_STALE_DAYS }
@@ -49,6 +52,29 @@ export function buildAdviceGreeting(now = Date.now()) {
 }
 
 /**
+ * 多来源候选 → 五层过滤 → 方向（M3）
+ * 只返回最终要展示的 2~3 条；不足下限时 items 为空（沉默是合法结果）。
+ * @param {{ snapshot?: Object, now?: number, loops?: Array, goals?: Array, energy?: string, coolingDown?: Function }} [opts]
+ */
+export function buildDirections(opts = {}) {
+  const now = Number.isFinite(opts.now) ? opts.now : Date.now()
+  const cands = buildCandidates(opts.snapshot || {}, { now, loops: opts.loops, goals: opts.goals })
+  const filtered = filterCandidates(cands, { now, coolingDown: opts.coolingDown })
+  const timing = pickForPanel(filtered.items, { energy: opts.energy })
+  return {
+    items: timing.items,
+    reason: timing.reason,
+    stats: {
+      considered: cands.length,
+      available: filtered.items.length,
+      droppedNoRef: filtered.droppedNoRef,
+      droppedDup: filtered.droppedDup,
+      droppedCooldown: filtered.droppedCooldown
+    }
+  }
+}
+
+/**
  * 生成一份完整建议（供面板渲染）
  * @param {{ now?: number, env?: Object, deps?: Object, limit?: number }} [opts]
  */
@@ -57,6 +83,7 @@ export function buildAdvice(opts = {}) {
   const env = opts.env || {}
   const snapshot = collectSnapshot(now, env, opts.deps || {})
   const items = collectAdvice(snapshot, { limit: opts.limit || ADVICE_LIMIT })
+  const dir = buildDirections({ snapshot, now, loops: opts.loops, goals: opts.goals, energy: opts.energy, coolingDown: opts.coolingDown })
   return {
     ymd: ymdOf(now),
     bucket: snapshot.bucket,
@@ -65,6 +92,9 @@ export function buildAdvice(opts = {}) {
     greeting: buildAdviceGreeting(now),
     focus: pickAdviceFocus(items),
     items,
+    directions: dir.items,
+    directionsReason: dir.reason,
+    directionsStats: dir.stats,
     env: snapshot.env,
     snapshot,
     signature: buildAdviceSignature({

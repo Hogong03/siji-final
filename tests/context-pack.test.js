@@ -102,9 +102,9 @@ describe('M1 情境包：构建与渲染', () => {
       now: NOW,
       deps: deps({ plans: PLANS, bills: BILLS, budget: 3000, diaries: DIARIES, profile: PROFILE })
     }))
-    expect(text).toContain('计划：进行中 3')
     expect(text).toContain('逾期 1')
     expect(text).toContain('今天到期 1')
+    expect(text).not.toContain('进行中')
     expect(text).toContain('记录：近 7 天 2 篇')
     expect(text).toContain('账单：本月 2 笔 ¥5700')
     expect(text).toContain('方向：')

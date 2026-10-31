@@ -14,6 +14,7 @@ import { buildTracebackContext, detectTracebackIntent } from '@/utils/relation-t
 import { buildDecisionsContext } from '@/utils/decisions.js'
 import { buildPlanContext } from '@/utils/plan-context.js'
 import { energyScan } from '@/utils/energy-context.js'
+import { setLastEnergy } from '@/utils/energy-state.js'
 import { buildProgressDigest } from '@/utils/progress-digest.js'
 import { buildContextPacket, renderContextPacket } from '@/utils/context-pack.js'
 import { buildVisionMessage } from '@/utils/image.js'
@@ -112,6 +113,8 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
   // 4.10.0：能力开关 —— 关掉「能量感知」时按中等档处理（不降载、不抑制点破）
   const energyOn = isFeatureOn('energy')
   const energy = energyOn ? energyScan(userMessage, history) : { level: 'medium', text: '' }
+  // M3：把最近一次能量判定留给建议面板 —— 面板是进应用时开的，那时还没有新消息
+  setLastEnergy(energy.level)
   if (energy.text) {
     system += energy.text
   }

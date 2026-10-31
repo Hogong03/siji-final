@@ -35,6 +35,7 @@ import { buildPlanSummary, shouldShowPlanSummary, markPlanSummaryShown } from '@
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { getPromptFlag, setPromptFlag } from '@/utils/reminder/settings.js'
 import { buildAdvice, shouldShowAdvice, markAdviceShown } from '@/utils/advice.js'
+import { recordShown as recordAdviceShown, recordAccepted as recordAdviceAccepted, recordSilence } from '@/utils/advice-feedback.js'
 import { isDark } from '@/utils/theme.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { ref as vueRef } from 'vue'
@@ -611,6 +612,13 @@ function currentAdviceEnv() {
 	}
 }
 
+/** M3：记一次方向曝光（冷却按 id 算） */
+function markDirectionsShown(built) {
+	;(built && built.directions ? built.directions : []).forEach((d) => {
+		if (d && d.id) recordAdviceShown(d.id)
+	})
+}
+
 /** 手动/自动打开建议面板（打开即记一次，避免同签名反复弹） */
 function openAdvice() {
 	let built = EMPTY_ADVICE
@@ -622,6 +630,7 @@ function openAdvice() {
 	adviceData.value = built
 	showAdvice.value = true
 	markAdviceShown(Date.now(), built.signature)
+	markDirectionsShown(built)
 }
 
 function closeAdvice() {
@@ -661,6 +670,7 @@ function onLoopDismiss() {
 
 function goAdvice(item) {
 	closeAdvice()
+	if (item && item.id) recordAdviceAccepted(item.id)
 	const a = item && item.action
 	if (!a) return
 	if (a.type === 'nav' && a.url) {
@@ -695,12 +705,18 @@ function maybeShowAdvice() {
 	}
 	const decision = shouldShowAdvice(Date.now(), built.signature, getPromptFlag('advice'))
 	if (!decision.show) return
+	// M3：方向不足下限时不弹（沉默是合法结果，不为了弹而凑数）
+	if (!built.directions || built.directions.length === 0) {
+		recordSilence(built.directionsReason || 'empty')
+		return
+	}
 	setTimeout(() => {
 		if (showOnboarding.value || showPlanSummary.value || showAdvice.value) return
 		if (!getPromptFlag('advice')) return
 		adviceData.value = built
 		showAdvice.value = true
 		markAdviceShown(Date.now(), built.signature)
+		markDirectionsShown(built)
 	}, 900)
 }
 
