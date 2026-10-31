@@ -439,6 +439,25 @@ export const EVAL_CASES = [
       forbid: ['create_plan', 'create_plan_phases'],
       replyExcludes: ['你应该', '建议你', '必须先']
     }
+  },
+  // ===== 4.51.0 M2 开放事项：想法不转待办、能查悬着的事 =====
+  {
+    id: 'open-loop-idea-not-plan',
+    title: '「我想学 RAG」是想法，不是待办 —— 不许建计划',
+    message: '我想学 RAG，但是今天下班以后不太想学',
+    expect: {
+      forbid: ['create_plan', 'create_plan_phases', 'create_diary'],
+      replyExcludes: ['你应该', '加油']
+    }
+  },
+  {
+    id: 'open-loop-query',
+    title: '问「有哪些悬着的事」→ 查开放事项，不新建',
+    message: '我有哪些悬着还没定的事？',
+    expect: {
+      tools: ['query_open_loops'],
+      forbid: ['create_plan', 'create_diary']
+    }
   }
 ]
 

@@ -33,6 +33,17 @@ import { recognizeImage } from '@/utils/ai/vision-bridge.js'
 import { TOOL_LABELS } from '@/utils/ai/tools.js'
 import { buildFileContext, composeFileMessage } from '@/utils/files/file-text.js'
 import { extractSelfName, shouldAutoCapture } from '@/utils/profile-autocapture.js'
+import { detectCandidates } from '@/utils/open-loops-rules.js'
+import {
+  createFromCandidate,
+  transitionLoop,
+  getAllLoops,
+  isDismissed,
+  markDismissed,
+  recordShown,
+  recordAccepted,
+  recordRejected
+} from '@/utils/open-loops.js'
 
 export function useChatEngine() {
   const store = useAppStore()
@@ -50,6 +61,8 @@ export function useChatEngine() {
   const pendingActions = ref([])
   const pendingReply = ref('')
   const currentSuggestions = ref([])
+  /** M2：待确认的开放事项候选（对话内联卡的数据源） */
+  const loopCandidate = ref(null)
   const sendStage = ref('idle')
   const sendElapsedMs = ref(0)
   let _sendTimer = null
@@ -476,6 +489,23 @@ export function useChatEngine() {
         } catch (e) { logger.warn('记忆提取失败', e) }
       }
 
+      // M2：开放事项候选 —— 只在这里「认出」并弹卡，落库必须等用户点确认
+      if (!simulationMode.value && !needConfirm && !loopCandidate.value) {
+        try {
+          const cands = detectCandidates(message, { loops: getAllLoops() })
+          const c = cands[0]
+          if (c && !isDismissed(c.title)) {
+            const convId = store.activeConversationId || ''
+            loopCandidate.value = Object.assign({}, c, {
+              idem: convId + ':' + c.rule + ':' + c.title,
+              conversation_id: convId,
+              at: Date.now()
+            })
+            recordShown()
+          }
+        } catch (e) { logger.warn('[OpenLoop] 候选识别失败', e) }
+      }
+
       store.persistHistory()
       _triggerSummary(store)
 
@@ -526,6 +556,31 @@ export function useChatEngine() {
     isSending.value = false
   }
 
+  /** M2：确认开放事项（可带用户改过的标题）；返回 {ok, created|merged|duplicate|loop} */
+  function confirmLoop(payload = {}) {
+    const c = loopCandidate.value
+    if (!c) return { ok: false, reason: 'no-candidate' }
+    const title = String((payload && payload.title) || c.title || '').trim()
+    let r
+    if (c.mode === 'pause' || c.mode === 'resume') {
+      r = transitionLoop(c.loopId, c.mode === 'pause' ? 'paused' : 'open')
+    } else {
+      r = createFromCandidate(Object.assign({}, c, { title }))
+    }
+    loopCandidate.value = null
+    if (r && r.ok) recordAccepted()
+    return r
+  }
+
+  /** M2：用户点「不用了」——记下来，7 天内同一标题不再问 */
+  function dismissLoop() {
+    const c = loopCandidate.value
+    loopCandidate.value = null
+    if (!c) return
+    markDismissed(c.title)
+    recordRejected()
+  }
+
   /** 确认待执行操作 */
   function handleConfirmAction() {
     _handleConfirmAction(store, pendingAction, pendingActions, pendingReply)
@@ -538,6 +593,7 @@ export function useChatEngine() {
 
   return {
     isSending, stopSignal, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
+    loopCandidate, confirmLoop, dismissLoop,
     simulationMode,
     getWelcomeMessage, handleSend, handleStop, handleRetry,
     handleConfirmAction, handleCancelAction, initSimulation

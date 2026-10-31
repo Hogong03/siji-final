@@ -67,6 +67,10 @@ Agent:
 - delete_glimmer: {date,kind?} needConfirm=true  // kind=win/moment 可选：同日成果与小事并存后，带了只删那一条
 - query_glimmers: {days?}  // 查看微光本与成果记录（默认近 30 天）
 
+悬着的事（开放事项）:
+- query_open_loops: {status?:"open"|"paused"|"done"|"dropped"|"all",kind?,keyword?}  // 用户问「我有哪些没定的事/之前说的事/手上悬着什么」时查，只读
+- update_open_loop: {id?,title?,status?:"open"|"paused"|"done"|"dropped",next_hint?,plan_id?}  // 只在用户明确说「先放一放/这个做完了/重新开始」时改；用户没说的不要改。新建不在此列：由用户在确认卡上点确认，禁止自行创建
+
 联动:
 - query_combined: {keyword?,date_range?,types:["diary","bill"]}  // 跨类型查询记录和账单
 

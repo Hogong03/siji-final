@@ -16,6 +16,7 @@ import { GLIMMER_TOOLS } from './glimmer.js'
 import { WEB_SEARCH_TOOL } from './web-search.js'
 import { READ_URL_TOOL } from './read-url.js'
 import { AGENT_TOOLS } from './agent.js'
+import { OPEN_LOOP_TOOLS } from './open-loop.js'
 
 export const TOOL_DEFINITIONS = [
   ...DIARY_TOOLS,
@@ -30,6 +31,7 @@ export const TOOL_DEFINITIONS = [
   ...CONVERSATION_TOOLS,
   ...GLIMMER_TOOLS,
   ...AGENT_TOOLS,
+  ...OPEN_LOOP_TOOLS,
   WEB_SEARCH_TOOL, // D2 联网搜索（agent-loop 按搜索后端门控执行）
   READ_URL_TOOL,   // 3.6.0 读网址（agent-loop 独立网络分支执行）
 ]
@@ -47,6 +49,7 @@ export const QUERY_TOOLS = new Set([
   'query_decision', 'query_combined', 'get_profile', 'summarize_diaries',
   'query_feedback', 'query_feedback_stats', 'query_tags',
   'query_conversations',  // 3.2 M3 旧话检索（只读）
+  'query_open_loops',      // 4.51.0 M2 开放事项（只读）
   'query_glimmers',        // 3.4 M2 微光本（只读）
   'web_search', // D2 联网搜索（只读，agent-loop 独立执行）
   'read_url'    // 3.6.0 读网址（只读，agent-loop 独立执行）
@@ -96,6 +99,8 @@ export const TOOL_LABELS = {
   create_agent: '创建 Agent',
   create_glimmer: '收微光',
   query_glimmers: '查看微光本',
+  query_open_loops: '查看悬着的事',
+  update_open_loop: '更新悬着的事',
   undo_last: '撤销上一步'
 }
 

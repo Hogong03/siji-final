@@ -154,6 +154,27 @@ describe('M1 情境包：构建与渲染', () => {
     expect(text).toContain('方向：')
   })
 
+  it('悬着的事：最多 3 条，一行 ≤60 字', () => {
+    const loops = [
+      { id: 'l1', title: 'RAG 项目', status: 'open', last_at: NOW - 9 * DAY_MS },
+      { id: 'l2', title: '学 Python', status: 'open', last_at: NOW - 2 * DAY_MS },
+      { id: 'l3', title: '整理作品集', status: 'open', last_at: NOW - 1 * DAY_MS },
+      { id: 'l4', title: '第四条不该出现', status: 'open', last_at: NOW }
+    ]
+    const text = renderContextPacket(buildContextPacket({ now: NOW, deps: deps(), loops }))
+    expect(text).toContain('悬着：')
+    expect(text).toContain('RAG 项目（9 天）')
+    expect(text).not.toContain('第四条')
+    const line = text.split('\n').find((l) => l.startsWith('悬着：'))
+    expect(line.length).toBeLessThanOrEqual(60)
+  })
+
+  it('very_low 能量不注入悬着的事', () => {
+    const loops = [{ id: 'l1', title: 'RAG 项目', status: 'open', last_at: NOW - 9 * DAY_MS }]
+    const text = renderContextPacket(buildContextPacket({ now: NOW, energyLevel: 'very_low', deps: deps(), loops }))
+    expect(text).toBe('')
+  })
+
   it('人脉计数用统一口径常量', () => {
     expect(RELATION_STALE_DAYS).toBe(30)
     const old = new Date(NOW - 40 * DAY_MS).getTime()

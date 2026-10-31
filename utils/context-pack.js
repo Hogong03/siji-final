@@ -20,6 +20,7 @@ import { getPlanList, getBillList, getMonthlyBudget, getDiariesBetween } from '.
 import { collectPlanAlerts } from './plan-alerts.js'
 import { getAllRelations, getAllInteractions } from './relations.js'
 import { getProfile } from './profile.js'
+import { getOpenLoops } from './open-loops.js'
 import { weekCheckinDays } from './plan-heatmap.js'
 import { timeBucket, bucketLabel, isWeekend } from './advice-context.js'
 
@@ -228,7 +229,13 @@ export function collectSnapshot(now = Date.now(), env = {}, deps = {}) {
 
 // ==================== 情境包 ====================
 
-/** 画像里的长期方向（只取 portrait 卡；没有返回空数组） */
+/** 未闭环事项：最多 3 条，带「悬了几天」；open 才有 */
+export const PENDING_LIMIT = 3
+/** 悬着行渲染上限（字） */
+export const PENDING_LINE_MAX = 60
+
+/**
+ * 画像里的长期方向（只取 portrait 卡；没有返回空数组） */
 function readGoals(getProfileFn) {
   try {
     const p = (getProfileFn || getProfile)() || {}
@@ -263,6 +270,7 @@ export function buildContextPacket(opts = {}) {
   const snap = collectSnapshot(now, opts.env || {}, deps)
   const goals = readGoals(deps.profile)
   const muted = opts.energyLevel === 'very_low'
+  const pending = muted ? [] : readPending(opts.loops, now)
 
   const facts = {
     plans: snap.plans,
@@ -283,13 +291,26 @@ export function buildContextPacket(opts = {}) {
     facts,
     goals,
     muted,
-    // 4.51.0 M1 只有事实层；开放事项与主题聚合分别在 M2 / M3 接入，这里先留空数组
-    pending: [],
+    // 4.51.0 M1 只有事实层；M2 接入开放事项；主题聚合留给 M3
+    pending,
     threads: [],
-    empty: snap.empty && goals.length === 0
+    empty: snap.empty && goals.length === 0 && pending.length === 0
   }
 
   return packet
+}
+
+/** 未闭环事项（可注入测试数据；默认读存储） */
+function readPending(injected, now) {
+  const src = Array.isArray(injected) ? injected : getOpenLoops(PENDING_LIMIT)
+  return src
+    .filter((l) => l && l.title && (l.status == null || l.status === 'open'))
+    .slice(0, PENDING_LIMIT)
+    .map((l) => ({
+      id: l.id,
+      title: String(l.title).slice(0, 20),
+      days: Math.max(0, Math.floor((now - (l.last_at || now)) / DAY_MS))
+    }))
 }
 
 /** 数字千分位不必要，直接取整省钱 */
@@ -346,6 +367,17 @@ export function renderContextPacket(packet) {
 
   const r = f.relation || {}
   if (r.stale) lines.push('人脉：' + intOf(r.stale) + ' 人超过 ' + RELATION_STALE_DAYS + ' 天未联系')
+
+  const pend = Array.isArray(packet.pending) ? packet.pending : []
+  if (pend.length) {
+    let line = '悬着：'
+    for (const item of pend) {
+      const seg = (line === '悬着：' ? '' : ' · ') + item.title + '（' + intOf(item.days) + ' 天）'
+      if ((line + seg).length > PENDING_LINE_MAX) break
+      line += seg
+    }
+    if (line !== '悬着：') lines.push(line)
+  }
 
   if (Array.isArray(packet.goals) && packet.goals.length) {
     let g = packet.goals.join('；')

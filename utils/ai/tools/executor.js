@@ -210,6 +210,14 @@ function formatToolResult(name, detail) {
       const lines = items.map(g => (g.date || '') + '：' + (g.content || ''))
       return '微光本（近 ' + (detail.days || 30) + ' 天，共 ' + items.length + ' 条）：\n' + lines.join('\n')
     }
+    case 'query_open_loops': {
+      const d = detail || {}
+      const items = Array.isArray(d.items) ? d.items : []
+      if (items.length === 0) return '没有记录在案的悬着的事'
+      const label = { idea: '想法', topic: '话题', plan: '打算', commitment: '承诺' }
+      const lines = items.map((l) => `• ${l.title}（${label[l.kind] || '事项'}，${l.days} 天前提到${l.next_hint ? '，' + l.next_hint : ''}）`)
+      return '悬着的事（' + items.length + ' 条）：\n' + lines.join('\n')
+    }
     case 'log_plan_checkin': {
       const d = detail || {}
       const total = d.totalDays || 0

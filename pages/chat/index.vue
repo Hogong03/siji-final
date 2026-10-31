@@ -19,6 +19,7 @@ import UnifiedSwitcher from '@/components/chat/UnifiedSwitcher.vue'
 import OnboardingGuide from '@/components/chat/OnboardingGuide.vue'
 import PlanSummarySheet from '@/components/plan/PlanSummarySheet.vue'
 import AdviceSheet from '@/components/advice/AdviceSheet.vue'
+import OpenLoopCard from '@/components/chat/OpenLoopCard.vue'
 import { useChatEngine } from '@/composables/useChatEngine.js'
 import { useScrollControl } from '@/composables/useScrollControl.js'
 import { useConversationManager } from '@/composables/useConversationManager.js'
@@ -46,7 +47,7 @@ const inputAreaRef = ref(null)
 // ===== 聊天核心逻辑 =====
 const {
   isSending, sendStage, sendElapsedMs, pendingAction, pendingActions, pendingReply, currentSuggestions,
-  simulationMode,
+  simulationMode, loopCandidate, confirmLoop, dismissLoop,
   getWelcomeMessage, handleSend: engineSend, handleStop: engineStop, handleRetry: engineRetry,
   handleConfirmAction, handleCancelAction, initSimulation
 } = useChatEngine()
@@ -641,6 +642,23 @@ function openAdviceNotifySettings() {
 }
 
 /** 点一条建议：跳页 / 开引导 / 预填话术 */
+/** M2：确认 / 放弃开放事项候选（对话内联卡） */
+function onLoopConfirm(payload) {
+	const r = confirmLoop(payload)
+	if (!r || !r.ok) {
+		const msg = r && r.reason === 'capacity' ? '悬着的事已满 200 条，先整理几条' : '这次没记上，稍后再试'
+		uni.showToast({ title: msg, icon: 'none' })
+		return
+	}
+	const tip = r.duplicate ? '已经记过了' : r.merged ? '记下了，进度也更新了' : '记下了'
+	uni.showToast({ title: tip, icon: 'none' })
+}
+
+function onLoopDismiss() {
+	dismissLoop()
+	uni.showToast({ title: '好，不记了', icon: 'none' })
+}
+
 function goAdvice(item) {
 	closeAdvice()
 	const a = item && item.action
@@ -949,6 +967,14 @@ function handleWelcomeChip(text) {
               </view>
             </view>
           </view>
+          <!-- M2：开放事项确认卡（对话内联；点确认才落库） -->
+          <OpenLoopCard
+            v-if="loopCandidate && !simulationMode"
+            :key="loopCandidate.idem"
+            :candidate="loopCandidate"
+            @confirm="onLoopConfirm"
+            @dismiss="onLoopDismiss"
+          />
           <!-- 无 Key 引导卡：一个 Key 都没配时引导去连接（有 resume 卡时放它上面） -->
           <view v-if="noKeyGuideVisible" class="no-key-card">
             <view class="no-key-icon">

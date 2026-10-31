@@ -24,6 +24,7 @@ import { createFeedbackExecutors } from './executors/feedback.js'
 import { createAgentExecutors } from './executors/agent.js'
 import { createGlimmerExecutors } from './executors/glimmer.js'
 import { createWeekFocusExecutors } from './executors/week-focus.js'
+import { createOpenLoopExecutors } from './executors/open-loop.js'
 
 export const useDataStore = defineStore('data', () => {
   // ==================== 撤销栈 ====================
@@ -65,6 +66,7 @@ export const useDataStore = defineStore('data', () => {
   const { execCreateAgent } = createAgentExecutors()
   const { execCreateGlimmer, execQueryGlimmers, execDeleteGlimmer } = createGlimmerExecutors()
   const { execSetWeekFocus, execGetWeekFocus } = createWeekFocusExecutors()
+  const { execQueryOpenLoops, execUpdateOpenLoop } = createOpenLoopExecutors()
 
   // ==================== AI 自动执行分发器（Map 路由）====================
   const ACTION_MAP = {
@@ -118,6 +120,8 @@ export const useDataStore = defineStore('data', () => {
     set_week_focus:       execSetWeekFocus,
     get_week_focus:       execGetWeekFocus,
     delete_glimmer:       execDeleteGlimmer,
+    query_open_loops:     execQueryOpenLoops,
+    update_open_loop:     execUpdateOpenLoop,
     create_agent:         execCreateAgent,
   }
 
