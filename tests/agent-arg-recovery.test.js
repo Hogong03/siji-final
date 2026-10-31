@@ -63,7 +63,7 @@ function scriptedLoop(rounds, store) {
     }))
     return { message: { role: 'assistant', content: '', tool_calls: toolCalls }, id: 'm' + round }
   }
-  const cfg = { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: 'k', _mockResponder: responder }
+  const cfg = { provider: 'deepseek', model: 'deepseek-flash', apiKey: 'k', _mockResponder: responder }
   return runAgentLoop(store, '把记录改一下', 'conv_x', cfg, []).then(result => ({ result, seen }))
 }
 

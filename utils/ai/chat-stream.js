@@ -28,7 +28,7 @@ import { simulatedStream } from './chat-simulated.js'
  */
 export function chatRequestStream(message, conversationId, config, onChunk, history) {
   const cfg = typeof config === 'string'
-    ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
+    ? { provider: 'deepseek', model: 'deepseek-flash', apiKey: config }
     : (config || getDefaultConfig())
 
   // API Key 为空 — 直接走离线降级，不发无意义请求

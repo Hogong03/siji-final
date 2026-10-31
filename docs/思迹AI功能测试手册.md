@@ -35,10 +35,10 @@
 
 | 厂商 | 用途 |
 |---|---|
-| DeepSeek | 默认对话模型、实验视觉模型 deepseek-v4-flash-vision-exp |
-| 智谱 GLM | GLM-5.3 强制思考、glm-5.3-flash 视觉、Web Search、语音识别 |
-| 通义千问 | qwen3.8 系列、qwen3.5-omni-plus 视觉、语音识别 |
-| Moonshot | Kimi K3（effort 推理）、kimi-k2.7-code |
+| DeepSeek | 默认对话模型 deepseek-flash（V4.1 Flash，原生视觉） |
+| 智谱 GLM | GLM-5.3 强制思考、glm-5.3-flash / glm-5.3-flashx 视觉、Web Search、语音识别 |
+| 通义千问 | qwen3.8-max / 3.7-plus / 3.8-flash / 3.8-omni-flash（全线原生视觉）、语音识别 |
+| Moonshot | Kimi K3.1 Pro（effort 推理）、Kimi K3 |
 
 ### 2.3 版本与日志
 
@@ -75,9 +75,9 @@
 
 | 编号 | 场景 | 操作步骤 | 预期结果 |
 |---|---|---|---|
-| TC-001 | 默认模型对话 | 设置确认模型为 deepseek-v4-flash；发送“你好，介绍一下你自己” | 正常回复；打字机逐字输出；结束后 loading 消失 |
+| TC-001 | 默认模型对话 | 设置确认模型为 deepseek-flash；发送“你好，介绍一下你自己” | 正常回复；打字机逐字输出；结束后 loading 消失 |
 | TC-002 | 流式打字机 | 发送 300 字以上的生成请求（如“写一段 300 字的周末计划”） | 内容逐字/逐段出现而非一次性；可点击停止，停止后内容保留 |
-| TC-003 | 四厂商矩阵 | 分别切到智谱 glm-5.3、通义 qwen3.8-flash、Moonshot kimi-k3、DeepSeek 各发一条问候 | 各厂商均正常流式回复，无报错 |
+| TC-003 | 四厂商矩阵 | 分别切到智谱 glm-5.3、通义 qwen3.8-flash、Moonshot kimi-k3.1-pro、DeepSeek deepseek-flash 各发一条问候 | 各厂商均正常流式回复，无报错 |
 | TC-004 | 多轮上下文 | 同一会话连续问 5 轮（如先“我叫小明”再“我叫什么？”） | 第 2 轮能引用前文；历史记录重进会话后上下文仍连续 |
 | TC-005 | 长对话截断 | 连续发 20 条消息触发历史截断 | 回复正常；不报错；不重复历史内容 |
 | TC-006 | 回复不重复 | 任意模型发送一条带数据的请求（如“帮我总结今天”） | 回复全文只出现一次；无整段重复（2.3.3 回归点） |
@@ -95,7 +95,7 @@
 | TC-012 | 截图转记账 | 发送微信转账截图（金额 25 元），文字“帮我把这个记下来” | 识别金额/对方；提示创建账单（create_bill）并确认 |
 | TC-013 | 对局结算识别 | 发送王者结算截图，文字“记录一下这把” | 识别战绩信息；提示创建记录（create_diary） |
 | TC-014 | 非视觉模型自动切换 | 主模型选 glm-5.2（非视觉），发图 | 自动切换到 glm-5.3-flash 识别成功；日志出现 Auto-switch model |
-| TC-015 | 视觉模型矩阵 | 分别用 deepseek-v4-flash-vision-exp、glm-5.3-flash、qwen3.5-omni-plus、kimi-k3 各发同一张图 | 四个视觉模型均能识别；无 400/权限错误 |
+| TC-015 | 视觉模型矩阵 | 分别用 deepseek-flash、glm-5.3-flash、qwen3.8-omni-flash、kimi-k3.1-pro 各发同一张图 | 四个视觉模型均能识别；无 400/权限错误 |
 | TC-016 | 识别失败错误透出 | 使用会拒绝图片的模型/损坏图片 | 显示“请求失败：HTTP xxx: 具体原因”，不得显示“刚才走神了”（2.3.2 回归点） |
 | TC-017 | 大图与长截图 | 发送 >1024px 长截图 | 自动压缩后识别成功；请求不超时 |
 | TC-018 | OPPO 相册 HEIC | 用相机默认格式拍照后直接选图发送 | 压缩为 JPEG 后识别成功（如失败记录具体错误） |
@@ -224,7 +224,7 @@
 |---|---|---|---|
 | TC-060 | GLM-5.3 强制思考 | 智谱选 glm-5.3，发送“1+1 等于几，请认真思考” | 请求体含 thinking.enabled + reasoning_effort；回复正常（2.3.1 回归点） |
 | TC-061 | GLM-5.3-Flash 视觉思考 | 用 glm-5.3-flash 发图 | 视觉识别正常；请求含思考参数 |
-| TC-062 | Kimi K3 effort 推理 | Moonshot 选 kimi-k3 发送复杂问题 | 请求体只有顶层 reasoning_effort、无 thinking 对象；回复正常 |
+| TC-062 | Kimi K3.1 Pro effort 推理 | Moonshot 选 kimi-k3.1-pro 发送复杂问题 | 请求体只有顶层 reasoning_effort、无 thinking 对象；回复正常 |
 | TC-063 | 工具轮推理档位 | 触发一次记账（工具调用） | 工具轮请求 reasoning_effort=high；最终回复轮为 low（看日志） |
 | TC-064 | 结构化输出 | DeepSeek 发送“帮我记一笔” | 请求含 response_format json_object；回复 JSON 可解析；无格式错误 |
 
@@ -256,7 +256,7 @@
 | TC-091 | 厂商切换 | 切厂商后发送 | 自动选中该厂商默认模型；Key 独立保存 |
 | TC-092 | 自定义模型 | 输入自定义模型 ID 并保存 | 发送使用自定义模型；列表显示自定义项 |
 | TC-093 | 自定义厂商 | 添加自定义厂商（endpoint/key/model） | 可对话；可在列表切换 |
-| TC-094 | 旧模型 ID 迁移 | 手动把存储的模型 ID 改为 kimi-k2.5/qwen-turbo 后重启 | 自动迁移到 kimi-k3/qwen3.8-flash；无报错（2.3.1 回归点） |
+| TC-094 | 旧模型 ID 迁移 | 手动把存储的模型 ID 改为 kimi-k2.5 / qwen-turbo / deepseek-v4-flash / kimi-k2.7-code 后重启 | 自动迁移到 kimi-k3 / qwen3.8-flash / deepseek-flash / kimi-k3.1-pro；无报错（4.50.0 回归点） |
 | TC-095 | 连接测试 | 设置页点“连接测试” | 返回成功/失败及原因；失败原因可读 |
 
 ## 5. 版本与反馈（P2）
@@ -288,7 +288,7 @@
 | R-03 | 错误真实透出（2.3.2） | 构造 400（模型不存在） | 显示“请求失败：HTTP 400: …”；无“走神” |
 | R-04 | 400 自动降级重试（2.3.2） | 触发 400+json 场景 | 日志见 retry without it；最终成功或显示真实错误 |
 | R-05 | 4xx 不盲重试（2.3.2） | 构造 400 | 只请求 1 次；直接显示错误 |
-| R-06 | 新模型列表（2.3.1） | 设置页查看模型列表 | 可见 glm-5.3/5.3-flash、qwen3.8-*、kimi-k3、deepseek-v4-* |
+| R-06 | 新模型列表（4.50.0） | 设置页查看模型列表 | 可见 deepseek-flash/V4 Pro、glm-5.3/5.3-flash/5.3-flashx、qwen3.8-max/3.7-plus/3.8-flash/3.8-omni-flash、kimi-k3.1-pro/K3.1 Pro 高速版/K3 |
 | R-07 | 旧模型迁移（2.3.1） | 存储旧 ID 后重启 | 自动映射新模型；可正常对话 |
 | R-08 | GLM-5.3/K3 推理参数（2.3.1） | 两模型各发一条 | 请求参数正确；回复正常 |
 | R-09 | 基础对话无回归 | 默认模型发“你好” | 正常回复；无报错 |
@@ -305,8 +305,8 @@
 
 | 用例 | 平台 | 模型 | 结果 | 实际表现 | 问题定位/备注 |
 |---|---|---|---|---|---|
-| TC-001 | Android | deepseek-v4-flash | 通过 | 正常流式回复 | - |
-| TC-010 | Android | deepseek-v4-flash-vision-exp | 失败 | 回复整段重复 2 次 | chunked 重发未去重（已修，复测） |
+| TC-001 | Android | deepseek-flash | 通过 | 正常流式回复 | - |
+| TC-010 | Android | deepseek-flash | 通过 | V4.1 Flash 原生视觉（旧 vision-exp 已下线） | - |
 | TC-042 | Android | glm-5.3 | 通过 | 显示 HTTP 400 具体原因 | - |
 
 结果取值：通过 / 失败 / 阻塞

@@ -51,7 +51,7 @@ describe('runAgentChat：只有真的跑过工具才认 agent 模式（3.7.3 真
   function cfgWith(responder) {
     return {
       provider: 'deepseek',
-      model: 'deepseek-v4-flash',
+      model: 'deepseek-flash',
       // 纯 mock 夹具：_mockResponder 接管请求，这个 key 不会发往任何服务
       apiKey: 'mock-' + 'key-for-tests',
       temperature: 0,

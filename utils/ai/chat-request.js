@@ -32,14 +32,14 @@ export function clearAllChatTimers() {
 
 /**
  * 生成对话标题（轻量级，不阻塞主流程）
- * 使用 cheapest model（deepseek-v4-flash），5s 超时
+ * 使用 cheapest model（deepseek-flash），5s 超时
  * @param {string} firstUserMessage - 首条用户消息
  * @param {object} cfg - { provider, apiKey } 可选，用于获取 API Key
  * @returns {Promise<string>} 生成的标题文本
  */
 export function chatRequest(message, contextType, conversationId, config, history, _skipRateLimit = false) {
   const cfg = typeof config === 'string'
-    ? { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: config }
+    ? { provider: 'deepseek', model: 'deepseek-flash', apiKey: config }
     : (config || getDefaultConfig())
 
   return chatRequestWithRetry(message, conversationId, cfg, _skipRateLimit ? 1 : 0, history)
@@ -336,7 +336,7 @@ export async function generateConversationTitle(firstUserMessage, cfg) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${cfg.apiKey}`
       },
-      data: { model: getProviderDefaultModel(cfg.provider) || 'deepseek-v4-flash', messages, temperature: 0.1, max_tokens: 20 },
+      data: { model: getProviderDefaultModel(cfg.provider) || 'deepseek-flash', messages, temperature: 0.1, max_tokens: 20 },
       timeout: 5000,
       success(res) {
         clearTimeout(timer)

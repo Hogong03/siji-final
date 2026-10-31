@@ -72,7 +72,7 @@ export function checkVisionSupport(imageData, cfg, store) {
   if (!supportsVision(cfg.provider)) {
     delete cfg.image
     const p = getProvider(cfg.provider)
-    return `${p.name}不支持图片识别。请切到 DeepSeek(V4 Flash)、Moonshot(K2.5/2.6/2.7)、智谱 GLM(GLM-4V Flash)或通义千问(Qwen VL)后重试。`
+    return `${p.name}不支持图片识别。请切到 DeepSeek(V4.1 Flash)、Moonshot(Kimi K3/K3.1)、智谱 GLM(GLM-5.3 Flash/FlashX)或通义千问(Qwen3.8)后重试。`
   }
   if (!getProvider(cfg.provider).visionModels?.includes(cfg.model)) {
     const visionModel = getProviderVisionModel(cfg.provider)

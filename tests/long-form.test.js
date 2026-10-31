@@ -28,7 +28,7 @@ describe('输出上限：四家厂商都声明，请求体都带', () => {
   })
 
   it('非流式请求体带上 max_tokens', () => {
-    const req = buildProviderRequest('deepseek', 'deepseek-v4-flash', [{ role: 'user', content: 'hi' }], 'k', 0.7)
+    const req = buildProviderRequest('deepseek', 'deepseek-flash', [{ role: 'user', content: 'hi' }], 'k', 0.7)
     expect(req.data.max_tokens).toBe(PROVIDER_MAX_TOKENS.deepseek)
   })
 

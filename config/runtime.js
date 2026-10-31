@@ -15,8 +15,8 @@ export const RUNTIME_CONFIG = {
     streamThrottle: 33,       // 流式渲染节流 ms (~30fps)
     maxStreamTimeout: 90000,  // 流式总超时 ms
     staleTimerMs: 30000,      // 流式 stale 检测 ms
-    titleModel: 'deepseek-v4-flash', // 标题生成模型
-    fallbackModel: 'deepseek-v4-flash' // 兜底模型
+    titleModel: 'deepseek-flash', // 标题生成模型（V4.1 Flash，2026-10 起官方模型名）
+    fallbackModel: 'deepseek-flash' // 兜底模型
   },
 
   // 存储与持久化

@@ -10,10 +10,11 @@
 
 ## 2. 厂商模型与能力（utils/ai/providers.js）
 
-- [ ] 四家厂商的模型名单复核：下线的模型移除，新模型补 capability（`structured` / `supportsStreamStructuredOutput` / `asrModels`）
+- [x] 四家厂商的模型名单复核：下线的模型移除，新模型补 capability（`structured` / `supportsStreamStructuredOutput` / `asrModels`）—— **2026-10-31 提前执行（4.50.0）**：DeepSeek 换 `deepseek-flash`（V4.1 Flash，原生视觉）、智谱补 `glm-5.3-flashx`、通义换 3.8 线全视觉、Moonshot 换 K3.1 线并移除 K2
 - [ ] `PROVIDER_MAX_TOKENS` 复核：对照官方文档；实测手段 = 跑自检语料 `long-form-article`（要求 1000 字文章 + 落库 ≥600 字）
 - [ ] capability 位与真实行为一致性抽查（4.8.2 教训：qwen ASR url 模式曾挂着 `supportsAsr:true`，客户端选中必败）
-- [ ] 跑 `tests/providers-capabilities.test.js` + `tests/long-form.test.js` 全绿
+- [x] 跑 `tests/providers-capabilities.test.js` + `tests/long-form.test.js` 全绿 —— 2026-10-31 通过（12 + 8 例）
+- [ ] **待实测（4.50.0 登记，未改行为）**：通义 `json_object` 结构化输出（官方文档已支持，项目侧能力位仍 false，怕流式空回复）；DeepSeek V4.1 流式 + `response_format` 是否仍空回复（`streamNoResponseFormat` 暂保持 true）；智谱 `glm-4-flash` 裸 ID 是否仍可用（现登记带日期的 `glm-4-flash-250414`）
 
 ## 3. AI 效果自检（utils/ai/eval/）
 
@@ -40,3 +41,4 @@
 | 日期 | 执行人 | 覆盖项 | 结果 | 备注 |
 |---|---|---|---|---|
 | 2026-10-02 | ZCode | 首建清单 | — | 2027 年初首次执行：补 2028 农历表 + 厂商复核 |
+| 2026-10-31 | DSH | 2（厂商模型与能力） | 完成 | 4.50.0：四家模型名单按官方文档（DeepSeek changelog / 智谱文档 / 阿里云 Model Studio / Kimi platform）刷新，旧 ID 全部登记 `MODEL_MIGRATION`；能力位 `supportsContextCache` 四家均改为自动命中。**未复测项见第 2 节最后一条**（通义 json_object、DeepSeek V4.1 流式 response_format、裸 `glm-4-flash`） |

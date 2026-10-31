@@ -528,7 +528,7 @@ function goKeyGuide() {
           <!-- 自定义模型 -->
           <view class="config-section">
             <text class="config-label">自定义模型名称</text>
-            <text class="config-hint">输入厂商支持的模型 ID（如 glm-5.2、kimi-k2.7-code 等）</text>
+            <text class="config-hint">输入厂商支持的模型 ID（如 glm-5.3-flashx、kimi-k3.1-pro 等）</text>
             <view class="key-input-row">
               <input
                 v-model="customModelInput"

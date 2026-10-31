@@ -60,7 +60,7 @@ describe('P2：混合轮不静默丢弃', () => {
       }
       return { message: { role: 'assistant', content: '已确认' }, id: 'mock2' }
     }
-    const cfg = { provider: 'deepseek', model: 'deepseek-v4-flash', apiKey: 'mock-' + 'key', temperature: 0, _mockResponder: responder }
+    const cfg = { provider: 'deepseek', model: 'deepseek-flash', apiKey: 'mock-' + 'key', temperature: 0, _mockResponder: responder }
     const result = await runAgentChat(makeStore(), '看下这月账单，再把五千块房租记上', 'conv_mix', cfg, [])
     // 查询执行了、结果进了 execResults（模型与用户都看得见）
     expect(result.execResults.some(r => r.name === 'query_bill' && r.ok)).toBe(true)

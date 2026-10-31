@@ -6,6 +6,66 @@
 
 export const V430 = [
   {
+    version: '4.50.0',
+    date: '2026-10-31',
+    title: 'AI 库更新到 2026-10：四厂商模型清单刷新 + 下线模型自动迁移（DeepSeek V4.1 Flash 原生视觉 / GLM-5.3 高速版 / Qwen3.8 全线视觉 / Kimi K3.1 Pro）',
+    summary: [
+      'DeepSeek：V4.1 Flash（模型名 deepseek-flash，2026-09-10 上线、10-17 更新小版本）取代 V4 Flash 与 V4 Flash Vision(实验)，原生多模态并进主力模型，V4 Pro 保留作深度推理',
+      '智谱：新增 GLM-5.3 高速版 glm-5.3-flashx（约 200 tok/s、原生多模态）；GLM-4-Flash 改登记官方带日期 ID glm-4-flash-250414（裸 glm-4-flash 官方未确认）',
+      '通义：qwen3.8-max / qwen3.7-plus / qwen3.8-flash 全线 1M 上下文且原生支持图片输入，qwen3.8-omni-flash 接替下线的 qwen3.5-omni-plus；ASR 模型 ID 升到 qwen-audio-3.1-asr-flash-filetrans',
+      'Moonshot：Kimi K3.1 Pro 与 K3.1 Pro 高速版上线（1M 上下文、原生图视频、reasoning_effort 三档），K2 系列（10-31 起对新注册关闭、年底下线）移出注册表',
+      '旧模型 ID 全部走 store/aiConfig 的 MODEL_MIGRATION 自动迁移，历史设置无缝切换；能力位校正：四家上下文缓存均为自动命中（DeepSeek / 通义由 false 改 true）',
+      '测试与文档同步：providers-capabilities 重写（新增默认模型与下线模型断言），key-verify / long-form 等 8 个用例文件改用新 ID；AGENTS / 速查表 / 测试手册 / 维护清单登记'
+    ],
+    categories: [
+      {
+        title: 'AI 模型库',
+        items: [
+          'utils/ai/providers.js：DeepSeek 模型表改为 deepseek-flash（V4.1 Flash，原生多模态）+ deepseek-v4-pro；visionModels 改 deepseek-flash，删除 deepseek-v4-flash-vision-exp（官方 2026-09-10 起下线，旧名仅临时路由到 V4.1 Flash）',
+          'utils/ai/providers.js：智谱新增 glm-5.3-flashx（GLM-5.3 高速版 = 官方 FlashX，1M 上下文 / 128K 输出 / 原生多模态），visionModels 补 flashx；glm-4-flash 改 glm-4-flash-250414',
+          'utils/ai/providers.js：通义模型表改 qwen3.8-max / qwen3.7-plus / qwen3.8-flash / qwen3.8-omni-flash，四个均标记 vision:true（官方 3.8-10 模型概览列在视觉理解），visionModels 取 qwen3.8-flash（识别最便宜）+ omni',
+          'utils/ai/providers.js：Moonshot 模型表改 kimi-k3.1-pro / kimi-k3.1-pro-highspeed / kimi-k3，visionModels 同步；K2 线（kimi-k2.6、kimi-k2.7-code、kimi-k2.7-code-highspeed）移除',
+          'utils/ai/providers.js：通义 ASR 模型 ID 由 qwen-audio-3.0-asr-flash-filetrans 升到 qwen-audio-3.1-asr-flash-filetrans（仍为 url 网关模式，客户端不可直传，getAsrProvider 依旧只选智谱）'
+        ]
+      },
+      {
+        title: '迁移与兼容',
+        items: [
+          'store/aiConfig.js：MODEL_MIGRATION 补 6 条 —— deepseek-v4-flash / deepseek-v4-flash-vision-exp → deepseek-flash，glm-4-flash → glm-4-flash-250414，qwen3.5-omni-plus → qwen3.8-omni-flash，kimi-k2.6 → kimi-k3，kimi-k2.7-code → kimi-k3.1-pro，kimi-k2.7-code-highspeed → kimi-k3.1-pro-highspeed',
+          'store/aiConfig.js：默认模型初值与兜底回落由 deepseek-v4-flash 改为 deepseek-flash',
+          'config/runtime.js：titleModel / fallbackModel 改 deepseek-flash；utils/ai/chat-request.js（3 处）与 chat-stream.js（1 处）的 deepseek 兜底模型同步改名',
+          'composables/useChatActions.js：图片不支持时的提示文案改新模型名（DeepSeek V4.1 Flash / Kimi K3·K3.1 / GLM-5.3 Flash·FlashX / Qwen3.8）；pages/settings/sub/ai.vue 自定义模型输入提示改 glm-5.3-flashx、kimi-k3.1-pro'
+        ]
+      },
+      {
+        title: '能力位',
+        items: [
+          'utils/ai/providers.js：DeepSeek supportsContextCache false → true（磁盘前缀缓存自动命中，官方 2024-08 起，无请求参数）；streamNoResponseFormat 保持 true（V4 时代流式 + json_object 空回复坑，V4.1 未复测不放开）',
+          'utils/ai/providers.js：通义 supportsContextCache false → true（隐式前缀缓存自动生效，≥1024 token，无需参数）；supportsStructuredOutput 仍保持 false —— 官方已支持 json_object 但项目侧未实测，登记到 AI维护清单待实测项',
+          'utils/ai/providers.js：智谱 visionModels 由单条 glm-5.3-flash 扩为 flash + flashx；GLM-ASR 仍为 glm-asr-2512（官方 2026-10 推荐模型，未换代）'
+        ]
+      },
+      {
+        title: '测试',
+        items: [
+          'tests/providers-capabilities.test.js：期望值全部换到新模型 ID，新增「2026-10 模型就位」断言（glm-5.3-flashx / qwen3.8-omni-flash / kimi-k3.1-pro）+ 下线模型不得出现（deepseek-v4-flash-vision-exp / qwen3.5-omni-plus / kimi-k2.6 / kimi-k2.7-code）+ 默认模型断言（deepseek → deepseek-flash）',
+          'tests/key-verify.test.js：默认模型断言改 deepseek-flash（key 校验发的是厂商默认模型，改名后必须同步）',
+          'tests/long-form.test.js、ai-eval.test.js、ai-audit-fixes.test.js、agent-arg-recovery.test.js、agent-nudge.test.js、agent-weather-search.test.js、confirm-gate.test.js、correction-regression.test.js：mock 夹具里的 deepseek-v4-flash 统一改 deepseek-flash'
+        ]
+      },
+      {
+        title: '文档',
+        items: [
+          'AGENTS.md：AI 厂商表（四家模型清单）与版本行更新到 4.50.0',
+          'docs/速查表.md：新增「改 AI 模型清单 / 厂商能力位」检索行（providers.js + aiConfig 迁移 + 能力位三件套）',
+          'docs/思迹AI功能测试手册.md：厂商矩阵、视觉矩阵、遗留 ID 迁移、模型列表等用例的模型名换成新 ID',
+          'docs/AI维护清单.md：登记本轮厂商模型复核结果（含未复测项：qwen json_object、DeepSeek V4.1 流式 response_format）',
+          'docs/会话检查点.md：补 4.50.0 条目与当前状态'
+        ]
+      }
+    ]
+  },
+  {
     version: '4.49.0',
     date: '2026-10-28',
     title: '修天气查询只承诺不执行：联网工具被写成 JSON action 时按工具真执行，空 reply 不再误报「没理解」',

@@ -10,7 +10,7 @@ import { asyncSetStorage, asyncSetStorageJSON } from '@/utils/store-helpers.js'
 export const useAiConfigStore = defineStore('aiConfig', () => {
   const providerKeys = ref({})       // { deepseek: 'sk-xxx', openai: 'sk-yyy' }
   const aiProvider = ref('deepseek')  // 当前厂商 id
-  const aiModel = ref('deepseek-v4-flash') // 当前模型 id
+  const aiModel = ref('deepseek-flash') // 当前模型 id
 
   // ==================== Getters ====================
   const hasApiKey = computed(() => !!(providerKeys.value[aiProvider.value]))
@@ -179,14 +179,25 @@ export const useAiConfigStore = defineStore('aiConfig', () => {
       'kimi-latest': 'kimi-k3',
       'moonshot-v1-8k': 'kimi-k3',
       'moonshot-v1-32k': 'kimi-k3',
-      'moonshot-v1-128k': 'kimi-k3'
+      'moonshot-v1-128k': 'kimi-k3',
+      // 4.50.0 DeepSeek V4.1：deepseek-v4-flash 改名 deepseek-flash，视觉实验模型下线（能力并入 V4.1 Flash）
+      'deepseek-v4-flash': 'deepseek-flash',
+      'deepseek-v4-flash-vision-exp': 'deepseek-flash',
+      // 4.50.0 智谱：GLM-4-Flash 只认带日期后缀的 ID（裸 glm-4-flash 官方未确认）
+      'glm-4-flash': 'glm-4-flash-250414',
+      // 4.50.0 通义：qwen3.5-omni-plus 让位给 3.8-omni-flash
+      'qwen3.5-omni-plus': 'qwen3.8-omni-flash',
+      // 4.50.0 Moonshot：K2 系列 2026-10-31 起对新用户关闭、年底下线，统一升到 K3 线
+      'kimi-k2.6': 'kimi-k3',
+      'kimi-k2.7-code': 'kimi-k3.1-pro',
+      'kimi-k2.7-code-highspeed': 'kimi-k3.1-pro-highspeed'
     }
     const resolvedModel = MODEL_MIGRATION[model] || model
 
     if (resolvedModel && resolvedModel.includes('-')) {
       const availableModels = getProviderModels(aiProvider.value)
       const modelExists = availableModels.some(m => m.id === resolvedModel)
-      aiModel.value = modelExists ? resolvedModel : (availableModels[0]?.id || 'deepseek-v4-flash')
+      aiModel.value = modelExists ? resolvedModel : (availableModels[0]?.id || 'deepseek-flash')
     } else if (resolvedModel === '1' || resolvedModel === 1) {
       const models = AI_PROVIDERS[aiProvider.value]?.models || []
       aiModel.value = models[1]?.id || getProviderDefaultModel(aiProvider.value)

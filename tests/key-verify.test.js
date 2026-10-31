@@ -37,7 +37,7 @@ describe('verifyProviderKey', () => {
     expect(captured.url).toBe('https://api.deepseek.com/v1/chat/completions')
     expect(captured.method).toBe('POST')
     expect(captured.header.Authorization).toBe('Bearer sk-test-123')
-    expect(captured.data.model).toBe('deepseek-v4-flash')
+    expect(captured.data.model).toBe('deepseek-flash')
     expect(captured.data.max_tokens).toBe(1)
     expect(captured.data.stream).toBe(false)
     expect(captured.data.messages[0]).toEqual({ role: 'user', content: 'ping' })
