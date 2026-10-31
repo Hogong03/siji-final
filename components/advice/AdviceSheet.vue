@@ -21,7 +21,7 @@ const props = defineProps({
 		default: () => ({ greeting: '', bucketLabel: '', focus: '', items: [], env: {} })
 	}
 })
-const emit = defineEmits(['close', 'go', 'disable-auto', 'open-notify'])
+const emit = defineEmits(['close', 'go', 'disable-auto', 'open-notify', 'reject'])
 
 /** 入场动画开关：先挂载再置位，否则 translateY(100%) → 0 的过渡不会触发 */
 const active = ref(false)
@@ -77,6 +77,7 @@ function onGo(item) {
 						<text v-if="d.firstStep" class="adv-card-step">先做：{{ d.firstStep }}</text>
 						<view class="adv-card-foot">
 							<text class="adv-card-evidence" @tap.stop="toggleEvidence(d.id)">{{ expanded === d.id ? '收起依据' : '看依据' }}</text>
+							<text class="adv-card-reject" @tap.stop="emit('reject', d)">不相关</text>
 						</view>
 						<text v-if="expanded === d.id && d.evidence" class="adv-card-ref">{{ d.evidence.text }}（{{ d.evidence.ref }}）</text>
 					</view>
@@ -294,8 +295,15 @@ function onGo(item) {
 
 .adv-card-foot {
 	display: flex;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: space-between;
 	margin-top: 8rpx;
+}
+
+.adv-card-reject {
+	font-size: 22rpx;
+	color: #A1A1AA;
+	padding: 4rpx 0 4rpx 16rpx;
 }
 
 .adv-card-evidence {
@@ -421,6 +429,10 @@ html.theme-dark {
 		color: #71717A;
 	}
 
+	.adv-card-reject {
+		color: #71717A;
+	}
+
 	.adv-card-ref {
 		color: #A1A1AA;
 		background: #27272A;
@@ -515,6 +527,10 @@ html.theme-dark {
 	}
 
 	.adv-card-evidence {
+		color: #71717A;
+	}
+
+	.adv-card-reject {
 		color: #71717A;
 	}
 

@@ -27,6 +27,7 @@ import { collectAdvice, pickAdviceFocus, ADVICE_LIMIT } from './advice-rules.js'
 import { buildCandidates } from './advice-candidates.js'
 import { filterCandidates } from './advice-select.js'
 import { pickForPanel } from './advice-timing.js'
+import { bumpDiag } from './advice-diag.js'
 
 /** 4.51.0：取数已平移，此处只做再导出，保持对外 API 不变（tests/advice.test.js 直接 import collectSnapshot） */
 export { collectSnapshot, RELATION_STALE_DAYS }
@@ -61,6 +62,8 @@ export function buildDirections(opts = {}) {
   const cands = buildCandidates(opts.snapshot || {}, { now, loops: opts.loops, goals: opts.goals })
   const filtered = filterCandidates(cands, { now, coolingDown: opts.coolingDown })
   const timing = pickForPanel(filtered.items, { energy: opts.energy })
+  const srcRule = cands.filter((c) => c.source === 'rule').length
+  const srcLoop = cands.filter((c) => c.source === 'loop').length
   return {
     items: timing.items,
     reason: timing.reason,
@@ -69,7 +72,9 @@ export function buildDirections(opts = {}) {
       available: filtered.items.length,
       droppedNoRef: filtered.droppedNoRef,
       droppedDup: filtered.droppedDup,
-      droppedCooldown: filtered.droppedCooldown
+      droppedCooldown: filtered.droppedCooldown,
+      srcRule,
+      srcLoop
     }
   }
 }
@@ -84,6 +89,10 @@ export function buildAdvice(opts = {}) {
   const snapshot = collectSnapshot(now, env, opts.deps || {})
   const items = collectAdvice(snapshot, { limit: opts.limit || ADVICE_LIMIT })
   const dir = buildDirections({ snapshot, now, loops: opts.loops, goals: opts.goals, energy: opts.energy, coolingDown: opts.coolingDown })
+  // M3 埋点：各层拦截与来源分布按日聚合（只存计数，不存候选原文）
+  try {
+    if (opts.recordDiag !== false) bumpDiag(dir.stats, now)
+  } catch (e) { /* 统计失败不影响建议 */ }
   return {
     ymd: ymdOf(now),
     bucket: snapshot.bucket,

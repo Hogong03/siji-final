@@ -35,7 +35,9 @@ import { buildPlanSummary, shouldShowPlanSummary, markPlanSummaryShown } from '@
 import { useVirtualMessages } from '@/composables/useVirtualMessages.js'
 import { getPromptFlag, setPromptFlag } from '@/utils/reminder/settings.js'
 import { buildAdvice, shouldShowAdvice, markAdviceShown } from '@/utils/advice.js'
-import { recordShown as recordAdviceShown, recordAccepted as recordAdviceAccepted, recordSilence } from '@/utils/advice-feedback.js'
+import { recordShown as recordAdviceShown, recordAccepted as recordAdviceAccepted, recordIgnored as recordAdviceIgnored, recordRejected as recordAdviceRejected, recordSilence } from '@/utils/advice-feedback.js'
+import { newSession, markShown, markActed, ignoredIds } from '@/utils/advice-session.js'
+import { bumpDiag } from '@/utils/advice-diag.js'
 import { isDark } from '@/utils/theme.js'
 import { useDiaryAI } from '@/composables/useDiaryAI.js'
 import { ref as vueRef } from 'vue'
@@ -612,14 +614,24 @@ function currentAdviceEnv() {
 	}
 }
 
-/** M3：记一次方向曝光（冷却按 id 算） */
-function markDirectionsShown(built) {
-	;(built && built.directions ? built.directions : []).forEach((d) => {
+/** M3 埋点：本次面板的展示与动作追踪（关闭时据此区分 ignored / accepted / rejected） */
+let adviceSession = newSession()
+
+/**
+ * 记一次方向曝光（冷却按 id 算）
+ * @param {Object} built
+ * @param {'auto'|'manual'} source 自动入口 / 手动打开 —— 分开计数，沉默率只用 auto
+ */
+function markDirectionsShown(built, source) {
+	const dirs = built && built.directions ? built.directions : []
+	markShown(adviceSession, dirs)
+	dirs.forEach((d) => {
 		if (d && d.id) recordAdviceShown(d.id)
 	})
+	if (dirs.length) bumpDiag(source === 'manual' ? { manualShown: dirs.length } : { autoShown: dirs.length })
 }
 
-/** 手动/自动打开建议面板（打开即记一次，避免同签名反复弹） */
+/** 手动打开建议面板（打开即记一次，避免同签名反复弹） */
 function openAdvice() {
 	let built = EMPTY_ADVICE
 	try {
@@ -629,16 +641,32 @@ function openAdvice() {
 	}
 	adviceData.value = built
 	showAdvice.value = true
+	bumpDiag({ manualOpens: 1 })
 	markAdviceShown(Date.now(), built.signature)
-	markDirectionsShown(built)
+	markDirectionsShown(built, 'manual')
 }
 
+/** 关闭面板：本次展示过、但没点任何方向 → ignored（关闭不是拒绝） */
 function closeAdvice() {
+	const pending = ignoredIds(adviceSession)
+	pending.forEach((id) => recordAdviceIgnored(id))
+	adviceSession = newSession()
 	showAdvice.value = false
 }
 
-/** 表内「不再自动弹出」：写开关并关掉当前这张 */
+/** 单条「不相关」：记 rejected（14 天冷却），不影响同面板其它方向 */
+function onAdviceReject(direction) {
+	if (!direction || !direction.id) return
+	markActed(adviceSession, direction.id, 'rejected')
+	recordAdviceRejected(direction.id)
+	const list = (adviceData.value && adviceData.value.directions) || []
+	adviceData.value = Object.assign({}, adviceData.value, { directions: list.filter((x) => x.id !== direction.id) })
+	uni.showToast({ title: '好，这条不再提', icon: 'none' })
+}
+
+/** 表内「不再自动弹出」：这是展示方式设置，不是对某条建议的评价 —— 单独计数，不计 rejected */
 function disableAdviceAuto() {
+	bumpDiag({ autoDisabled: 1 })
 	setPromptFlag('advice', false)
 	closeAdvice()
 	uni.showToast({ title: '已关闭自动建议', icon: 'none' })
@@ -669,6 +697,8 @@ function onLoopDismiss() {
 }
 
 function goAdvice(item) {
+	// 先标记动作再关面板：否则关闭逻辑会把它算成 ignored
+	if (item && item.id) markActed(adviceSession, item.id, 'accepted')
 	closeAdvice()
 	if (item && item.id) recordAdviceAccepted(item.id)
 	const a = item && item.action
@@ -697,6 +727,8 @@ function maybeShowAdvice() {
 	if (showOnboarding.value) return
 	if (noKeyGuideVisible.value) return
 	if (showPlanSummary.value) return
+	// M3 埋点：自动入口尝试一次（沉默率分母的一部分）
+	bumpDiag({ autoEntries: 1 })
 	let built = EMPTY_ADVICE
 	try {
 		built = buildAdvice({ now: Date.now(), env: currentAdviceEnv() })
@@ -716,7 +748,7 @@ function maybeShowAdvice() {
 		adviceData.value = built
 		showAdvice.value = true
 		markAdviceShown(Date.now(), built.signature)
-		markDirectionsShown(built)
+		markDirectionsShown(built, 'auto')
 	}, 900)
 }
 
@@ -1130,6 +1162,7 @@ function handleWelcomeChip(text) {
     @go="goAdvice"
     @disable-auto="disableAdviceAuto"
     @open-notify="openAdviceNotifySettings"
+    @reject="onAdviceReject"
   />
 
     <!-- 模型快速切换 Modal -->
