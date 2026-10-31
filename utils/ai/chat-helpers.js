@@ -15,6 +15,7 @@ import { buildDecisionsContext } from '@/utils/decisions.js'
 import { buildPlanContext } from '@/utils/plan-context.js'
 import { energyScan } from '@/utils/energy-context.js'
 import { buildProgressDigest } from '@/utils/progress-digest.js'
+import { buildContextPacket, renderContextPacket } from '@/utils/context-pack.js'
 import { buildVisionMessage } from '@/utils/image.js'
 import { logger } from '../logger.js'
 import { asyncSetStorageJSON } from '../store-helpers.js'
@@ -130,6 +131,13 @@ export function buildChatMessages(userMessage, history, cfg, opts = {}) {
       system += progressDigest
     }
   }
+
+  // 4.51.0 / M1：情境包 —— 把「关于你的」事实压成一段 ≤300 字，固定放 system 末尾（离用户消息最近）。
+  // 只聚合，不新增数据；零数据返回空串不注入；取数失败不阻断对话。
+  try {
+    const packetText = renderContextPacket(buildContextPacket({ energyLevel: energy.level }))
+    if (packetText) system += `\n\n---\n${packetText}`
+  } catch (e) { /* 情境包失败不影响本轮对话 */ }
 
   // 不再单独注入 detectMentionedRelations，避免重复
 
