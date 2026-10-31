@@ -15,7 +15,7 @@ export const V430 = [
       '通义：qwen3.8-max / qwen3.7-plus / qwen3.8-flash 全线 1M 上下文且原生支持图片输入，qwen3.8-omni-flash 接替下线的 qwen3.5-omni-plus；ASR 模型 ID 升到 qwen-audio-3.1-asr-flash-filetrans',
       'Moonshot：Kimi K3.1 Pro 与 K3.1 Pro 高速版上线（1M 上下文、原生图视频、reasoning_effort 三档），K2 系列（10-31 起对新注册关闭、年底下线）移出注册表',
       '旧模型 ID 全部走 store/aiConfig 的 MODEL_MIGRATION 自动迁移，历史设置无缝切换；能力位校正：四家上下文缓存均为自动命中（DeepSeek / 通义由 false 改 true）',
-      '测试与文档同步：providers-capabilities 重写（新增默认模型与下线模型断言），key-verify / long-form 等 8 个用例文件改用新 ID；AGENTS / 速查表 / 测试手册 / 维护清单登记'
+      '测试与文档同步：providers-capabilities 重写（新增默认模型与下线模型断言），key-verify / long-form 等 9 个用例文件改用新 ID；AGENTS / 速查表 / 测试手册 / 维护清单登记'
     ],
     categories: [
       {
@@ -31,7 +31,7 @@ export const V430 = [
       {
         title: '迁移与兼容',
         items: [
-          'store/aiConfig.js：MODEL_MIGRATION 补 6 条 —— deepseek-v4-flash / deepseek-v4-flash-vision-exp → deepseek-flash，glm-4-flash → glm-4-flash-250414，qwen3.5-omni-plus → qwen3.8-omni-flash，kimi-k2.6 → kimi-k3，kimi-k2.7-code → kimi-k3.1-pro，kimi-k2.7-code-highspeed → kimi-k3.1-pro-highspeed',
+          'store/aiConfig.js：MODEL_MIGRATION 补 7 条 —— deepseek-v4-flash / deepseek-v4-flash-vision-exp → deepseek-flash，glm-4-flash → glm-4-flash-250414，qwen3.5-omni-plus → qwen3.8-omni-flash，kimi-k2.6 → kimi-k3，kimi-k2.7-code → kimi-k3.1-pro，kimi-k2.7-code-highspeed → kimi-k3.1-pro-highspeed',
           'store/aiConfig.js：默认模型初值与兜底回落由 deepseek-v4-flash 改为 deepseek-flash',
           'config/runtime.js：titleModel / fallbackModel 改 deepseek-flash；utils/ai/chat-request.js（3 处）与 chat-stream.js（1 处）的 deepseek 兜底模型同步改名',
           'composables/useChatActions.js：图片不支持时的提示文案改新模型名（DeepSeek V4.1 Flash / Kimi K3·K3.1 / GLM-5.3 Flash·FlashX / Qwen3.8）；pages/settings/sub/ai.vue 自定义模型输入提示改 glm-5.3-flashx、kimi-k3.1-pro'
