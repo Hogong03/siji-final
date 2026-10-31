@@ -28,7 +28,11 @@ import {
   recordShown,
   recordAccepted,
   recordRejected,
-  getLoopStats
+  getLoopStats,
+  LOOP_EVICT_LOG_KEY,
+  EVICT_LOG_MAX,
+  appendEvictLog,
+  getEvictLog
 } from './open-loops-stats.js'
 
 /** 弃用表与计数在 open-loops-stats.js；这里再导出，保持对外 API 一处 */
@@ -41,7 +45,11 @@ export {
   recordShown,
   recordAccepted,
   recordRejected,
-  getLoopStats
+  getLoopStats,
+  LOOP_EVICT_LOG_KEY,
+  EVICT_LOG_MAX,
+  appendEvictLog,
+  getEvictLog
 }
 
 export const LOOP_KEY = 'siji_open_loops'
@@ -261,6 +269,8 @@ export function createFromCandidate(cand, opts = {}) {
   if (!cap.ok) return { ok: false, reason: 'capacity' }
   let nextList = list
   if (cap.evictIds.length) {
+    // 先记日志再删：至少能追溯被淘汰的是哪一条、什么状态、什么时候
+    appendEvictLog(list.filter((l) => cap.evictIds.includes(l.id)), now)
     nextList = list.map((l) => (cap.evictIds.includes(l.id) ? Object.assign({}, l, { is_deleted: 1, deleted_at: now }) : l))
   }
 

@@ -8,6 +8,9 @@ import { asyncSetStorageJSON } from './store-helpers.js'
 
 export const LOOP_STATS_KEY = 'siji_loop_stats'
 export const LOOP_DISMISS_KEY = 'siji_loop_dismissed'
+/** 容量淘汰日志（环形，保留最近 N 条，可追溯被淘汰的是哪一条） */
+export const LOOP_EVICT_LOG_KEY = 'siji_loop_evict_log'
+export const EVICT_LOG_MAX = 50
 /** 用户点「不用了」后，同一标题 7 天内不再问 */
 export const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000
 
@@ -56,6 +59,34 @@ export function recordRejected(now) { bumpStat('rejected', now) }
 
 export function getLoopStats() {
   return readJson(LOOP_STATS_KEY, { shown: 0, accepted: 0, rejected: 0, capacityBlocked: 0 })
+}
+
+/**
+ * 记一条容量淘汰（id / 状态 / 原 last_at / 淘汰时间）
+ * 只记事实，不做聚合；环形保留最近 EVICT_LOG_MAX 条。
+ */
+export function appendEvictLog(items, now = Date.now()) {
+  const list = Array.isArray(items) ? items.filter(Boolean) : []
+  if (!list.length) return []
+  const entries = list.map((l) => ({
+    id: l.id,
+    title: String(l.title || '').slice(0, 30),
+    status: l.status || '',
+    last_at: Number(l.last_at) || 0,
+    evicted_at: now,
+    reason: 'capacity'
+  }))
+  const prev = readJson(LOOP_EVICT_LOG_KEY, [])
+  const next = (Array.isArray(prev) ? prev : []).concat(entries).slice(-EVICT_LOG_MAX)
+  writeJson(LOOP_EVICT_LOG_KEY, next)
+  return entries
+}
+
+/** 读淘汰日志（倒序，最近的在最前） */
+export function getEvictLog(limit = 20) {
+  const list = readJson(LOOP_EVICT_LOG_KEY, [])
+  const arr = Array.isArray(list) ? list : []
+  return arr.slice(-Math.max(1, limit)).reverse()
 }
 
 /** 与规则层的 normalizeTitle 同口径，但不引它，避免统计依赖规则细节 */

@@ -24,6 +24,8 @@ import {
   isDismissed,
   getLoopStats,
   recordRejected,
+  getEvictLog,
+  appendEvictLog,
   LOOP_MAX
 } from '../utils/open-loops.js'
 
@@ -255,6 +257,27 @@ describe('容量：200 条与淘汰顺序', () => {
     expect(r.ok).toBe(true)
     expect(getAllLoops()).toHaveLength(LOOP_MAX)
     expect(getAllLoops().some((l) => l.id === 'd1')).toBe(false)
+  })
+
+  it('淘汰写日志：能追溯 id / 状态 / 时间', () => {
+    const full = [...filler(LOOP_MAX - 1, 'open'), { id: 'd1', title: '旧事', status: 'dropped', last_at: 123, is_deleted: 0 }]
+    uni.setStorageSync('siji_open_loops', JSON.stringify(full))
+    createFromCandidate(cand('新的一件事'))
+    const log = getEvictLog()
+    expect(log).toHaveLength(1)
+    expect(log[0].id).toBe('d1')
+    expect(log[0].status).toBe('dropped')
+    expect(log[0].last_at).toBe(123)
+    expect(log[0].evicted_at).toBeGreaterThan(0)
+    expect(log[0].reason).toBe('capacity')
+  })
+
+  it('淘汰日志是环形的：最多保留 50 条', () => {
+    const items = Array.from({ length: 60 }, (_, i) => ({ id: 'e' + i, title: 't' + i, status: 'done', last_at: i }))
+    appendEvictLog(items)
+    const log = getEvictLog(100)
+    expect(log).toHaveLength(50)
+    expect(log[0].id).toBe('e59')
   })
 })
 
