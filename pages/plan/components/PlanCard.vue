@@ -71,8 +71,7 @@ function formatEst(ds) {
 
 <template>
 	<view class="plan-card"
-		:class="{ 'card-done': isDonePlan(item), 'card-expired': isExpiredPlan(item), 'card-urg': item.priority === 2, 'card-imp': item.priority === 1, 'card-frozen': !!item.frozen_at }"
-		@tap="emit('go-detail', item.client_id)">
+		:class="{ 'card-done': isDonePlan(item), 'card-expired': isExpiredPlan(item), 'card-urg': item.priority === 2, 'card-imp': item.priority === 1, 'card-frozen': !!item.frozen_at }">
 		<!-- 标题行 -->
 		<view class="card-top">
 			<view class="priority-dot" :style="{ background: priorityColors[item.priority] || '#999' }" />

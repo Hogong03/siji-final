@@ -6,7 +6,8 @@ const props = defineProps({
 	filteredPlans: { type: Array, required: true },
 	priorityColors: { type: Object, required: true },
 	swipeItem: { type: String, default: null },
-	getSwipeOffset: { type: Function, default: () => '0px' }
+	getSwipeOffset: { type: Function, default: () => '0px' },
+	isSwiping: { type: Boolean, default: false }
 })
 const emit = defineEmits([
 	'go-detail', 'go-templates', 'go-new',
@@ -16,7 +17,7 @@ const emit = defineEmits([
 </script>
 
 <template>
-	<scroll-view class="plan-scroll" scroll-y @scroll="emit('touch-end', {})" :scroll-with-animation="false">
+	<scroll-view class="plan-scroll" scroll-y :scroll-with-animation="false">
 		<EmptyState v-if="filteredPlans.length === 0" icon="plan" title="暂无计划" description="使用模板快速创建，或让 AI 帮你规划">
 			<view class="empty-actions">
 				<view class="empty-btn primary btn-tactile" @tap="emit('go-templates')">从模板创建</view>
@@ -49,10 +50,12 @@ const emit = defineEmits([
 				<!-- 卡片本体（可滑动） -->
 				<view
 					class="card-slide"
+					:class="{ 'is-swiping': isSwiping }"
 					:style="{ transform: `translateX(${getSwipeOffset(item)})` }"
 					@touchstart="emit('touch-start', $event, item)"
 					@touchmove="emit('touch-move', $event, item)"
 					@touchend="emit('touch-end', item)"
+					@touchcancel="emit('touch-end', item)"
 					@tap="emit('card-tap', item)"
 				>
 					<PlanCard
@@ -109,6 +112,11 @@ const emit = defineEmits([
 .card-slide {
 	transition: transform 0.2s ease;
 	will-change: transform;
+}
+
+/* 拖动中不做补间，否则每次 touchmove 都在追赶，手感发黏 */
+.card-slide.is-swiping {
+	transition: none;
 }
 
 /* 左滑操作按钮 — fixed 风格定位，硬编码颜色 */

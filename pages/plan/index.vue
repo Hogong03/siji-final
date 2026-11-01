@@ -49,7 +49,7 @@
 	} = usePlanList()
 
 	const {
-		swipeItem, onTouchStart, onTouchMove, onTouchEnd,
+		swipeItem, isSwiping, onTouchStart, onTouchMove, onTouchEnd,
 		getSwipeOffset, closeSwipe, handleTap, handleComplete, handleEdit, handleDelete
 	} = usePlanSwipe(quickToggleStatus, goDetail, removePlan)
 
@@ -193,6 +193,7 @@
 			:priorityColors="priorityColors"
 			:swipeItem="swipeItem"
 			:getSwipeOffset="getSwipeOffset"
+			:isSwiping="isSwiping"
 			@go-detail="goDetail"
 			@go-templates="goTemplates"
 			@go-new="goNew"
